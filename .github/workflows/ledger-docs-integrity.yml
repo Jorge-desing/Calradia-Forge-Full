@@ -1,0 +1,50 @@
+name: Ledger Integrity & Documentation Audit
+
+on:
+  push:
+    paths:
+      - 'docs/**'
+      - 'src/**'
+      - 'tools/**'
+      - '.agents/**'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'src/**'
+      - 'tools/**'
+      - '.agents/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-integrity:
+    name: SHA-256 Ledger & Documentation Parity Audit
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python (3.12)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Audit Ledger Cryptographic Hash Chain
+        run: |
+          python -c "from agents.tools import audit_ledger_integrity; res = audit_ledger_integrity({}); print(res); assert 'PASSED' in res, 'Ledger integrity failed!'"
+
+      - name: Audit Tactical Section Playbooks
+        run: |
+          python -c "from agents.tools import audit_section_playbooks; res = audit_section_playbooks({}); print(res); assert 'PASSED' in res, 'Playbooks audit failed!'"
+
+      - name: Audit Code Smells & Anti-Shadowing
+        run: |
+          python -c "from agents.tools import audit_code_smells; res = audit_code_smells({}); print(res); assert 'PASSED' in res, 'Code smells audit failed!'"
+
+      - name: Audit Documentation Bilingual Parity
+        run: |
+          python -c "from agents.tools import audit_documentation_parity; print(audit_documentation_parity({}))"

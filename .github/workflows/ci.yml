@@ -1,0 +1,56 @@
+name: Calradia Forge CI - Build & Quality Gates
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build, Gate & Full Test Suite (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET SDK (8.0.x)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Python (3.12)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Solution Build (Release)
+        run: dotnet build CalradiaForge.sln -c Release -v:minimal
+
+      - name: Verify Stateless Campaign Behavior Gate (Mandatory)
+        shell: powershell
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify_stateless_behavior.ps1
+
+      - name: Run Full Test Suite (Core, ForgeWeave, Desktop MVVM & RenderTests)
+        shell: cmd
+        run: cmd.exe /c "tools\Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul"
+
+      - name: Validate Gauntlet Icon Assets & Sprites
+        run: |
+          python tools/Validate-CalradiaForge-DecorativeSprites.py
+          python tools/validate_game_icon_assets.py --require-tpac
+
+      - name: Run Python Multi-Agent Tests & Compaction Benchmarks
+        run: python -m unittest tests/test_forge_agents.py

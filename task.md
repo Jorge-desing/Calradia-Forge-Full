@@ -389,6 +389,14 @@
 - [x] Validar 100% de la suite de pruebas: compilación limpia en Release, 4/4 comportamientos sin estado, 338 Core, 73 ForgeWeave, 63 Desktop, 289 WPF Render y 31/31 agentes.
 - [x] Sincronizar y pushear a GitHub (`main`).
 
+## Workflows de GitHub Actions para CI/CD, Empaquetado y Auditoría de Integridad (Rev066)
+- [x] Eliminar workflow genérico roto `python-package-conda.yml` (que dependía de `environment.yml` inexistente).
+- [x] Crear workflow de Integración Continua (`.github/workflows/ci.yml`) en `windows-latest`: compilación .NET 8 / Framework 4.7.2, validación de comportamientos sin estado (4/4), suite completa de pruebas (Core 338, ForgeWeave 73, Desktop 63, RenderTests 289), verificación de sprites/iconos Gauntlet y suite multi-agente.
+- [x] Crear pipeline de empaquetado y distribución (`.github/workflows/release-packaging.yml`): empaquetado multihilo FastPackageEngine (`package.ps1`), auditoría de seguridad y ausencia de DLLs de TaleWorlds, subida de artefactos y publicación automática de GitHub Releases en tags `v*`.
+- [x] Crear workflow de auditoría de documentación e integridad criptográfica (`.github/workflows/ledger-docs-integrity.yml`): verificación de cadena SHA-256 de 55 revisiones del Registro de Mejoras, paridad bilingüe EN/ES, playbooks de Gauntlet y detección de code smells.
+- [x] Sincronizar y pushear a GitHub (`main`) bajo la Regla E ajustada.
+
+
 
 
 
