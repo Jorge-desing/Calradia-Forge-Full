@@ -92,7 +92,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string CategoryTroubleshootingAdvice => GetCategoryTroubleshootingAdvice(currentCategory);
         [DataSourceProperty] public string CategoryRecommendedMacro => GetCategoryRecommendedMacro(currentCategory);
         [DataSourceProperty] public string MacroActionLabel => T("⚡ Run Macro");
-        [DataSourceProperty] public string MacroActionHint => string.Format(T("Execute recommended procedural macro for {0}: {1}"), currentCategory.ToUpperInvariant(), CategoryRecommendedMacro);
+        [DataSourceProperty] public string MacroActionHint => string.Format(T("Execute recommended procedural macro for {0}: {1}"), (currentCategory ?? "overview").ToUpperInvariant(), CategoryRecommendedMacro);
 
         // ── DETAILED MODE TOGGLE (Rev047) ──────────────────────────────────────────
         private bool _isDetailedMode;
@@ -3878,7 +3878,7 @@ namespace CalradiaForge.Mod
         {
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"=== {T("CALRADIA FORGE ARCHITECTURAL GUIDE")} ===");
-            sb.AppendLine($"{T("Category")}: {currentCategory.ToUpperInvariant()} · {ActiveModderRoleLabel}\n");
+            sb.AppendLine($"{T("Category")}: {(currentCategory ?? "overview").ToUpperInvariant()} · {ActiveModderRoleLabel}\n");
             sb.AppendLine($"--- {T("Technical Mission")} ---");
             sb.AppendLine(CategoryMissionDescription);
             sb.AppendLine();

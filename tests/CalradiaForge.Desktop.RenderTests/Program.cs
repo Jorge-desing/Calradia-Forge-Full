@@ -338,6 +338,7 @@ internal static class Program
                     Check(Math.Abs(window.ActualWidth - window.MinWidth) < 1 && Math.Abs(window.ActualHeight - window.MinHeight) < 1,
                         "The minimum-window regression must render at the actual 980x680-DIP application viewport.");
                     AssertCompactHeaderAtMinimum(window);
+                    AssertFooterFitsShellViewport(window);
                     AssertEmptyLedgerFitsMinimumSurface(window);
                     var minimumSurface = (FrameworkElement)window.Content;
                     var workspaceViewport = Descendants(window).OfType<ScrollViewer>().SingleOrDefault(item =>
@@ -1473,6 +1474,36 @@ internal static class Program
         if (!string.IsNullOrEmpty(statusText?.Text) && statusText.Text.Length >= 20)
             Check(statusText.ActualHeight > statusText.FontSize * 1.25,
                 $"The long application status must use more than one line instead of clipping at minimum width; actual height {statusText.ActualHeight:0.#} DIP, text '{statusText.Text}'.");
+    }
+
+    static void AssertFooterFitsShellViewport(Window window)
+    {
+        var shell = Descendants(window).OfType<FrameworkElement>().SingleOrDefault(element =>
+            element.GetType().FullName == "CalradiaForge.Desktop.Presentation.WorkbenchShellView");
+        var layout = shell == null ? null : Descendants(shell).OfType<Grid>().SingleOrDefault(grid =>
+            grid.Margin == new Thickness(14, 8, 14, 12));
+        var footer = Descendants(window).OfType<TextBlock>().SingleOrDefault(element =>
+            string.Equals(AutomationProperties.GetAutomationId(element), "KeyboardShortcutHint", StringComparison.Ordinal));
+        Check(shell != null && layout != null && footer != null && footer.IsVisible && footer.ActualWidth > 0 && footer.ActualHeight > 0,
+            "The keyboard-shortcut footer and its shell viewport must remain visible at minimum window size.");
+        if (layout == null || footer == null) return;
+
+        var bounds = Bounds(footer, layout);
+        Console.WriteLine($"FOOTER_LAYOUT_DIAG bounds={bounds} viewport={layout.ActualWidth:0.#}x{layout.ActualHeight:0.#} inset={layout.ActualHeight - bounds.Bottom:0.#}");
+        Check(bounds.Left >= -1 && bounds.Top >= -1 && bounds.Right <= layout.ActualWidth + 1 && bounds.Bottom <= layout.ActualHeight + 1,
+            $"The keyboard-shortcut footer must fit inside the shell's content viewport at 980x680 DIP: {bounds} / {layout.ActualWidth:0.#}x{layout.ActualHeight:0.#} DIP.");
+        Check(layout.ActualHeight - bounds.Bottom >= 4,
+            $"The localized shortcut footer must preserve a 4-DIP bottom inset instead of sitting on the clipped shell edge: inset={layout.ActualHeight - bounds.Bottom:0.#} DIP.");
+
+        var pixelsPerDip = VisualTreeHelper.GetDpi(footer).PixelsPerDip;
+        var measuredText = new FormattedText(footer.Text ?? string.Empty, CultureInfo.CurrentUICulture, footer.FlowDirection,
+            new Typeface(footer.FontFamily, footer.FontStyle, footer.FontWeight, footer.FontStretch), footer.FontSize,
+            footer.Foreground, pixelsPerDip)
+        {
+            MaxTextWidth = Math.Max(1, footer.ActualWidth)
+        };
+        Check(measuredText.Height <= footer.ActualHeight + 1,
+            $"The complete localized shortcut hint must fit inside its own text bounds at minimum window size: desired {measuredText.Height:0.#}, actual {footer.ActualHeight:0.#} DIP.");
     }
 
     static void AssertHeaderLabelsFitAtNormalWidth(Application app, Window window)

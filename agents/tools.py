@@ -706,6 +706,24 @@ def audit_code_smells(raw: bool = False) -> str:
     else:
         issues.append("PipeServer.cs not found.")
 
+    # 12. Check PanelViewModel.cs for safe currentCategory null handling
+    panel_vm_path = repo_root / "src" / "CalradiaForge.Mod" / "PanelViewModel.cs"
+    if panel_vm_path.exists():
+        vm_text = panel_vm_path.read_text(encoding="utf-8", errors="ignore")
+        if '(currentCategory ?? "overview").ToUpperInvariant()' not in vm_text:
+            issues.append("PanelViewModel.cs: MacroActionHint or ExecuteCategoryHelp lacks null fallback for currentCategory.")
+    else:
+        issues.append("PanelViewModel.cs not found.")
+
+    # 13. Check ForgeCommands.cs for safe DeclaringType formatting in ListPatches & VerifyIntegrity
+    fc_path = repo_root / "src" / "CalradiaForge.Mod" / "Commands" / "ForgeCommands.cs"
+    if fc_path.exists():
+        fc_text = fc_path.read_text(encoding="utf-8", errors="ignore")
+        if "p.Original.DeclaringType != null" not in fc_text:
+            issues.append("ForgeCommands.cs: ListPatches lacks null guard for p.Original.DeclaringType.")
+    else:
+        issues.append("ForgeCommands.cs not found.")
+
     if issues:
         raw_res = "Code Smells & Antipatterns Audit FAILED:\n" + "\n".join(f"  - {iss}" for iss in issues)
     else:
@@ -719,7 +737,8 @@ def audit_code_smells(raw: bool = False) -> str:
             "  - Cognitive memory: Semantic relation facts accurately track GetRelation and LastRelationDelta.\n"
             "  - Assembly inspection: 100% null-safe assembly reference and version formatting.\n"
             "  - UI & Hotkeys: SubModule keyboard polling enforces 100% null propagation on vm.\n"
-            "  - Runtime & Transport: IPC Handle, PipeServer, and SnapshotComparer enforce full null safety."
+            "  - Runtime & Transport: IPC Handle, PipeServer, and SnapshotComparer enforce full null safety.\n"
+            "  - Gauntlet UI & Console Commands: Null-safe currentCategory resolution and DeclaringType formatting."
         )
 
     distilled, _ = ForgeTokenCompactor.distill("audit_code_smells", raw_res, force_raw=raw)
@@ -789,6 +808,17 @@ def audit_concurrency_hazards(raw: bool = False) -> str:
     else:
         issues.append("GameLocalization.cs not found.")
 
+    # 6. ForgePatcher concurrency and JIT pointer checks
+    forge_patcher_path = repo_root / "src" / "CalradiaForge.Sdk" / "Patcher" / "ForgePatcher.cs"
+    if forge_patcher_path.exists():
+        patcher_text = forge_patcher_path.read_text(encoding="utf-8", errors="ignore")
+        if "_syncLock" not in patcher_text or "lock (_syncLock)" not in patcher_text:
+            issues.append("ForgePatcher.cs does not implement _syncLock for thread-safe patch list management.")
+        if "IntPtr.Zero" not in patcher_text:
+            issues.append("ForgePatcher.cs: PatchRecord.IsIntact() does not validate function pointer against IntPtr.Zero.")
+    else:
+        issues.append("ForgePatcher.cs not found.")
+
     if issues:
         raw_res = "Concurrency Hazards Audit FAILED:\n" + "\n".join(f"  - {iss}" for iss in issues)
     else:
@@ -798,7 +828,8 @@ def audit_concurrency_hazards(raw: bool = False) -> str:
             "  - ForgeAgentMemory: Global SyncRoot guards all agent registrations and memory tiers.\n"
             "  - Desktop PipeClient: SemaphoreSlim gate ensures thread-safe asynchronous IPC streaming.\n"
             "  - Game Thread Dispatch: Engine calls are strictly marshaled via GameThreadActionDispatch.\n"
-            "  - GameLocalization: ConcurrentDictionary guarantees thread-safe token caching across threads."
+            "  - GameLocalization: ConcurrentDictionary guarantees thread-safe token caching across threads.\n"
+            "  - ForgePatcher: _syncLock thread synchronization and defensive IntPtr pointer validation in IsIntact()."
         )
 
     distilled, _ = ForgeTokenCompactor.distill("audit_concurrency_hazards", raw_res, force_raw=raw)

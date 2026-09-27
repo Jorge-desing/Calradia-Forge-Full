@@ -356,6 +356,19 @@
 - [x] Superar 100% de las suites de prueba: 31/31 pruebas unitarias de agentes (`test_forge_agents.py`), 239 Core, 73 ForgeWeave, 63 Desktop MVVM, 289 WPF Render/Layout, y 4/4 en `verify_stateless_behavior.ps1`.
 - [x] Generar paquetes de distribución release 25.2.0 (`Modules`, `Source-SDK`, `Desktop`) con `tools/package.ps1`.
 
+## Gran Ronda de Corrección de Errores, Concurrencia de Patcher y Robustez de UI (Rev063)
+- [x] Blindaje de concurrencia y seguridad de memoria en `src/CalradiaForge.Sdk/Patcher/ForgePatcher.cs` (`_syncLock` en `appliedPatches`, clonación segura en `RevertAll`, y verificación segura de punteros JIT en `PatchRecord.IsIntact()` contra `IntPtr.Zero` y excepciones de acceso).
+- [x] Blindaje de formateo en `src/CalradiaForge.Mod/Commands/ForgeCommands.cs` (`ListPatches` y `VerifyIntegrity` para métodos dinámicos sin `DeclaringType`).
+- [x] Blindaje ante referencias nulas de categoría en `src/CalradiaForge.Mod/PanelViewModel.cs` (`(currentCategory ?? "overview").ToUpperInvariant()` en `MacroActionHint` y `ExecuteCategoryHelp`).
+- [x] Expansión de `BugHunterAgent` en `agents/tools.py` (`audit_concurrency_hazards` con verificación de `ForgePatcher`, y `audit_code_smells` con guardas de UI y comandos).
+- [x] Añadir pruebas unitarias de regresión en `tests/test_forge_agents.py`.
+- [x] Verificación completa de compilación (`dotnet build CalradiaForge.sln -c Release` 0 errores / 0 advertencias).
+- [x] Ejecución de suite de pruebas: stateless behavior (4/4), pruebas completas (Core, ForgeWeave, Desktop MVVM, RenderTests), y pruebas unitarias de agentes (31+ pasadas).
+- [x] Generación automática de paquetes de distribución vía `tools/package.ps1` con `FastPackageEngine`.
+- [x] Redacción de Propuesta 24 en `learning_proposal.md`.
+- [x] Sincronización y push a GitHub (`main`) siguiendo `RULE[git_sync_workflow.md]`.
+
+
 
 
 

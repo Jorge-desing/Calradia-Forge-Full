@@ -64,8 +64,12 @@ namespace CalradiaForge.Mod.Commands
             string result = $"Active Patches ({patches.Count}):\n";
             foreach (var p in patches)
             {
-                string target = p.Original != null ? $"{p.Original.DeclaringType?.Name}.{p.Original.Name}" : "UnknownTarget";
-                string replacement = p.Replacement != null ? $"{p.Replacement.DeclaringType?.Name}.{p.Replacement.Name}" : "UnknownReplacement";
+                string target = p.Original != null 
+                    ? (p.Original.DeclaringType != null ? $"{p.Original.DeclaringType.Name}.{p.Original.Name}" : p.Original.Name) 
+                    : "UnknownTarget";
+                string replacement = p.Replacement != null 
+                    ? (p.Replacement.DeclaringType != null ? $"{p.Replacement.DeclaringType.Name}.{p.Replacement.Name}" : p.Replacement.Name) 
+                    : "UnknownReplacement";
                 result += $"- {target} -> {replacement} (Module: {p.SourceModule})\n";
             }
             return result;
@@ -95,7 +99,10 @@ namespace CalradiaForge.Mod.Commands
             string result = $"WARNING: {broken.Count} patches have been overwritten by other frameworks!\n";
             foreach (var p in broken)
             {
-                result += $"- Broken: {p.Original?.DeclaringType?.Name}.{p.Original?.Name}\n";
+                string brokenName = p.Original != null 
+                    ? (p.Original.DeclaringType != null ? $"{p.Original.DeclaringType.Name}.{p.Original.Name}" : p.Original.Name) 
+                    : "Unknown";
+                result += $"- Broken: {brokenName}\n";
             }
             return result;
         }

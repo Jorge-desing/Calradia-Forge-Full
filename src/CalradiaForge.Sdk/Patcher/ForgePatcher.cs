@@ -18,16 +18,33 @@ namespace CalradiaForge.Sdk.Patcher
         public unsafe bool IsIntact()
         {
             if (Original == null) return false;
-            byte* ptr = (byte*)Original.MethodHandle.GetFunctionPointer();
-            return *ptr == 0x49 && *(ptr + 1) == 0xBB;
+            try
+            {
+                if (Original.MethodHandle.Value == IntPtr.Zero) return false;
+                IntPtr fnPtr = Original.MethodHandle.GetFunctionPointer();
+                if (fnPtr == IntPtr.Zero) return false;
+                byte* ptr = (byte*)fnPtr;
+                return *ptr == 0x49 && *(ptr + 1) == 0xBB;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 
     public static class ForgePatcher
     {
+        private static readonly object _syncLock = new object();
         private static readonly List<PatchRecord> appliedPatches = new List<PatchRecord>();
 
-        public static IReadOnlyList<PatchRecord> GetAppliedPatches() => appliedPatches.AsReadOnly();
+        public static IReadOnlyList<PatchRecord> GetAppliedPatches()
+        {
+            lock (_syncLock)
+            {
+                return appliedPatches.ToList().AsReadOnly();
+            }
+        }
 
         /// <summary>
         /// Audits all applied patches to ensure they haven't been overwritten by other frameworks (like Harmony).
@@ -35,7 +52,10 @@ namespace CalradiaForge.Sdk.Patcher
         /// </summary>
         public static List<PatchRecord> VerifyIntegrity()
         {
-            return appliedPatches.Where(p => !p.IsIntact()).ToList();
+            lock (_syncLock)
+            {
+                return appliedPatches.Where(p => !p.IsIntact()).ToList();
+            }
         }
 
         /// <summary>
@@ -43,9 +63,13 @@ namespace CalradiaForge.Sdk.Patcher
         /// </summary>
         public static void Register(PatchRecord record)
         {
-            if (record != null && !appliedPatches.Contains(record))
+            if (record == null) return;
+            lock (_syncLock)
             {
-                appliedPatches.Add(record);
+                if (!appliedPatches.Contains(record))
+                {
+                    appliedPatches.Add(record);
+                }
             }
         }
 
@@ -56,7 +80,10 @@ namespace CalradiaForge.Sdk.Patcher
         {
             if (record == null || record.OriginalBytes == null) throw new ArgumentException("Invalid patch record.");
             MethodSwapper.RestoreMethod(record.Original, record.OriginalBytes);
-            appliedPatches.Remove(record);
+            lock (_syncLock)
+            {
+                appliedPatches.Remove(record);
+            }
         }
 
         /// <summary>
@@ -64,10 +91,16 @@ namespace CalradiaForge.Sdk.Patcher
         /// </summary>
         public static void RevertAll()
         {
-            // Traverse backwards to avoid index issues when removing
-            for (int i = appliedPatches.Count - 1; i >= 0; i--)
+            List<PatchRecord> snapshot;
+            lock (_syncLock)
             {
-                Revert(appliedPatches[i]);
+                snapshot = appliedPatches.ToList();
+            }
+
+            // Traverse backwards to avoid index issues when removing
+            for (int i = snapshot.Count - 1; i >= 0; i--)
+            {
+                Revert(snapshot[i]);
             }
         }
 
