@@ -405,3 +405,18 @@
 - [x] Desvinculación de git y purga física de todos los directorios `__pycache__` y archivos de bytecode compilado `*.pyc`.
 - [x] Verificación de paso completo de los controles de calidad: compilación limpia en Release (0 errores / 0 advertencias), verificación de comportamiento sin estado (4/4), suite de pruebas de la solución (Core 338, ForgeWeave 73, Desktop 63, WPF Render 289) y pruebas de agentes de Antigravity (31/31).
 - [x] Sincronización y push a GitHub (`main`) bajo la Regla E.
+
+## Gran Ronda de Mejoras Visuales a los 8 Visualizadores y Estudios de Dominio WPF (Rev068)
+- [x] Refinamiento estético y enriquecimiento gráfico del Visualizador de Jerarquía de Tropas (`TroopTreeVisualizerDashboardTemplate`): medidores visuales de HP/vitalidad, medidores de armadura con insignia de escudo, badges de rol marcial y encuadre noble dorado.
+- [x] Refinamiento del Estudio de Audio Táctico (`AudioMixerInspectorDashboardTemplate`): chasis de osciloscopio táctico con retícula de decibelios, espectro de 5 bandas con etiquetas audibles y vúmetros estéreo duales (L/R) calibrados.
+- [x] Enriquecimiento del Simulador de Empresas y Equilibrio Cívico (`WorkshopSimulatorDashboardTemplate`): barras de rentabilidad comparativa con desglose de coste/beneficio, insignia de máximo rendimiento y medidores gráficos de prosperidad, lealtad y riesgo de rebelión.
+- [x] Perfeccionamiento del Inspector de Memoria Cognitiva CoALA (`AgentMemoryInspectorDashboardTemplate`): tarjetas de hechos semánticos con barras TTL, línea de tiempo episódica con pips temporales y formato de reglas procedimentales en bloques tácticos legibles.
+- [x] Refinamiento del Radar de Seguridad CLR y Metadatos PE (`CodeSecurityAuditorDashboardTemplate`): sellos heráldicos de conformidad, badges de reglas y fichas de verificación de tokens.
+- [x] Armonización del Visualizador de Topología de Módulos (`ModuleHierarchyValidatorDashboardTemplate`): pipeline de carga Native a CalradiaForge con flechas de progresión marcial y contadores de dependencias.
+- [x] Enriquecimiento del Barómetro Geopolítico y del Senado (`KingdomDiplomacyStudioDashboardTemplate`): barómetros de tensión entre reinos con código de color dinámico, medidor de consenso senatorial y balance militar.
+- [x] Pulido del Estudio de Síntesis de Planos de Componentes (`ComponentGeneratorStudioDashboardTemplate`) y Flight Deck de Operaciones Genéricas (`GenericOperationOverviewDashboardTemplate`).
+- [x] Verificación de compilación limpia de la solución en Release (0 errores / 0 advertencias).
+- [x] Verificación de 4/4 criterios sin estado (`verify_stateless_behavior.ps1`).
+- [x] Ejecución de la suite de pruebas de Desktop MVVM (63 pruebas) y suite completa de Render WPF (289 casos en 3 temas y 4 escalas).
+- [x] Ejecución de verificación UI Automation de la ventana WPF.
+- [x] Sincronización y push a GitHub (`main`) bajo la Regla E.

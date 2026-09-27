@@ -335,6 +335,7 @@ namespace CalradiaForge.Tests
             test("Zero-Scroll Desktop Navigation (Accordion, ZenMode, CategoryPicker, Breadcrumbs, Recent)", TestZeroScrollDesktopInterface);
             test("Desktop Top and Bottom Panel Typography Upgrades (TitleBar, Header, Breadcrumbs, StatusBar)", TestDesktopPanelFontSizesAndLayout);
             test("In-Game UI Simplification, Modular Categories & In-Game Modding Tools", TestInGameUiSimplificationAndFeatures);
+            test("F10 Rising Edge and GauntletLayer Lifecycle Telemetry", TestPanelHotkeyAndLayerLifecycleTelemetry);
             test("Framework, SDK and Core Architectural Enhancements (TimeSlicer, ForgeText, ModelRegistry, DialogueBuilder, LifecycleGuard)", TestForgeFrameworkAndSdkEnhancements);
             test("ForgeDiplomacy & Kingdom War/Peace Scoring", TestDiplomacyScoring);
             test("ForgeSettlementSystem & Rebellion Risk Index", TestSettlementRebellionRisk);
@@ -1847,6 +1848,59 @@ namespace MyCustomMod.QuestBehaviors
             string reassembled = ForgeSaveChunker.Reassemble(chunks);
             if (reassembled != largePayload)
                 throw new Exception("ForgeSaveChunker reassembled payload does not match original.");
+        }
+
+        private static void TestPanelHotkeyAndLayerLifecycleTelemetry()
+        {
+            string[] candidates = new[]
+            {
+                Path.GetFullPath("src/CalradiaForge.Mod/SubModule.cs"),
+                Path.GetFullPath("../../../../../src/CalradiaForge.Mod/SubModule.cs"),
+                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "../../../../../src/CalradiaForge.Mod/SubModule.cs")),
+                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "../../src/CalradiaForge.Mod/SubModule.cs"))
+            };
+            string path = candidates.FirstOrDefault(File.Exists);
+            if (path == null) throw new FileNotFoundException("Could not locate SubModule.cs.");
+
+            string source = File.ReadAllText(path);
+            int tickStart = source.IndexOf("protected override void OnApplicationTick(float dt)", StringComparison.Ordinal);
+            int openStart = source.IndexOf("void Open()", StringComparison.Ordinal);
+            int openEnd = source.IndexOf("void OpenExtensionPage(", StringComparison.Ordinal);
+            if (tickStart < 0 || openStart < 0 || openEnd <= openStart)
+                throw new Exception("Could not isolate the panel hotkey and layer lifecycle methods.");
+
+            string tick = source.Substring(tickStart, openStart - tickStart);
+            string open = source.Substring(openStart, openEnd - openStart);
+            string[] requiredHotkeyTokens = new[]
+            {
+                "Input.IsKeyPressed(cachedHotkey)",
+                "Input.IsKeyDown(InputKey.F10)",
+                "Input.IsKeyDownImmediate(InputKey.F10)",
+                "f10Held && !f10ProbeHeld",
+                "f10ProbeHeld = f10Held",
+                "Panel hotkey detected: "
+            };
+            foreach (string token in requiredHotkeyTokens)
+                if (!tick.Contains(token)) throw new Exception("OnApplicationTick is missing F10 regression guard: " + token);
+
+            string[] requiredLayerTokens = new[]
+            {
+                "new GauntletLayer(",
+                "Panel GauntletLayer created.",
+                "layer.LoadMovie(\"CalradiaForge\",vm)",
+                "owner.AddLayer(layer)",
+                "Panel GauntletLayer attached to owner.",
+                "ScreenManager.TrySetFocus(layer)",
+                "Panel movie loaded and layer attached"
+            };
+            int previous = -1;
+            foreach (string token in requiredLayerTokens)
+            {
+                int current = open.IndexOf(token, StringComparison.Ordinal);
+                if (current < 0 || current <= previous)
+                    throw new Exception("Open() is missing or misorders GauntletLayer lifecycle telemetry: " + token);
+                previous = current;
+            }
         }
 
         private static void TestNoviceModderFeatures()

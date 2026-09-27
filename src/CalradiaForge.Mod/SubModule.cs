@@ -393,10 +393,14 @@ namespace CalradiaForge.Mod
             runtime.RefreshGameLanguage();
             owner=ScreenManager.TopScreen;if(owner==null)throw new InvalidOperationException("No active game screen for the panel");
             runtime.Register("CalradiaForge","Info","Opening panel on "+owner.GetType().FullName);
+            runtime.Register("CalradiaForge","Info","Creating panel GauntletLayer.");
             vm=new PanelViewModel(runtime,Close);layer=new GauntletLayer("CalradiaForge",500,true);
+            runtime.Register("CalradiaForge","Info","Panel GauntletLayer created.");
             try {
                 layer.UIContext.BrushFactory.LoadBrushFile("CalradiaForge");
-                layer.LoadMovie("CalradiaForge",vm);layer.IsFocusLayer=true;layer.InputRestrictions.SetInputRestrictions();owner.AddLayer(layer);ScreenManager.TrySetFocus(layer);
+                layer.LoadMovie("CalradiaForge",vm);layer.IsFocusLayer=true;layer.InputRestrictions.SetInputRestrictions();owner.AddLayer(layer);
+                runtime.Register("CalradiaForge","Info","Panel GauntletLayer attached to owner.");
+                ScreenManager.TrySetFocus(layer);
                 runtime.Register("CalradiaForge","Info","Panel movie loaded and layer attached");
             } catch {Close();throw;}
         }
