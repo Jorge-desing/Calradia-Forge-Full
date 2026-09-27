@@ -67,12 +67,16 @@ CANONICAL_PREFAB_ICONS = {
     "calradiaforge_archery_target",
     "calradiaforge_compass",
     "calradiaforge_crossed_swords",
-    "calradiaforge_gear_hammer",
     "calradiaforge_knight_banner",
     "calradiaforge_scroll_unfurled",
-    "calradiaforge_gears",
-    "calradiaforge_magnifying_glass",
-    "calradiaforge_stopwatch",
+    "calradiaforge_open_book",
+    "calradiaforge_puzzle",
+    "calradiaforge_files",
+    "calradiaforge_eye_target",
+    "calradiaforge_test_tubes",
+    "calradiaforge_histogram",
+    "calradiaforge_anvil",
+    "calradiaforge_plug",
 }
 ATLAS_SPRITES = CANONICAL_ATLAS_ICONS | set(DECORATION_SIZES)
 EXPECTED_ATLAS_SPRITE_COUNT = 30
@@ -80,14 +84,14 @@ REQUIRED_SPRITES = ATLAS_SPRITES
 EXPECTED_SPRITE_COUNT = EXPECTED_ATLAS_SPRITE_COUNT
 EXPECTED_ATLAS_SIZE = (4096, 512)
 NAVIGATION_ICONS = {
-    "ForgeSummary": "calradiaforge_compass",
-    "ForgeModules": "calradiaforge_gears",
-    "ForgeLogs": "calradiaforge_scroll_unfurled",
-    "ForgeInspector": "calradiaforge_magnifying_glass",
-    "ForgeTests": "calradiaforge_crossed_swords",
-    "ForgeMetrics": "calradiaforge_stopwatch",
-    "ForgeFramework": "calradiaforge_gear_hammer",
-    "ForgeExtensions": "calradiaforge_knight_banner",
+    "ForgeSummary": "calradiaforge_open_book",
+    "ForgeModules": "calradiaforge_puzzle",
+    "ForgeLogs": "calradiaforge_files",
+    "ForgeInspector": "calradiaforge_eye_target",
+    "ForgeTests": "calradiaforge_test_tubes",
+    "ForgeMetrics": "calradiaforge_histogram",
+    "ForgeFramework": "calradiaforge_anvil",
+    "ForgeExtensions": "calradiaforge_plug",
 }
 
 
@@ -135,7 +139,7 @@ def validate_source_inputs(module_path):
         if element.attrib.get("Sprite")
     }
     if not CANONICAL_PREFAB_ICONS.issubset(sprite_names):
-        raise ValueError("The Gauntlet prefab does not use every generated Game-icons sprite.")
+        raise ValueError("The Gauntlet prefab is missing one or more canonical Game-icons references.")
     buttons = {element.attrib.get("Id"): element for element in prefab.iter("ButtonWidget")}
     for button_id, sprite_name in NAVIGATION_ICONS.items():
         button = buttons.get(button_id)

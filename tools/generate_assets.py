@@ -172,6 +172,14 @@ children=E.SubElement(panel,'Children')
 def frame(parent, id_value, x, y, width, height, color='#29463AFF', sprite='BlankWhiteSquare_9'):
     return E.SubElement(parent,'Widget',Id=id_value,DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth=str(width),SuggestedHeight=str(height),MarginLeft=str(x),MarginTop=str(y),Sprite=sprite,Color=color)
 
+def scrollbar(parent, id_value, margin_top, margin_bottom, margin_right, width=10):
+    handle_id=id_value+'Handle'
+    bar=E.SubElement(parent,'ScrollbarWidget',Id=id_value,WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth=str(width),HorizontalAlignment='Right',VerticalAlignment='Top',MarginTop=str(margin_top),MarginBottom=str(margin_bottom),MarginRight=str(margin_right),AlignmentAxis='Vertical',Handle=handle_id,MaxValue='100',MinValue='0')
+    bar_children=E.SubElement(bar,'Children')
+    E.SubElement(bar_children,'Widget',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='2',HorizontalAlignment='Center',Sprite='BlankWhiteSquare_9',Color='#5A4033FF',AlphaFactor='0.2')
+    E.SubElement(bar_children,'ImageWidget',Id=handle_id,WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedHeight='10',SuggestedWidth='4',HorizontalAlignment='Center',Brush='FaceGen.Scrollbar.Handle',**{'Brush.AlphaFactor':'0.7'})
+    return bar
+
 def text(parent, id_value, value, x, y, width, height, brush='GameTip.Text', **extra):
     return E.SubElement(parent,'TextWidget',Id=id_value,DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth=str(width),SuggestedHeight=str(height),MarginLeft=str(x),MarginTop=str(y),Brush=brush,Text=value,**extra)
 
@@ -227,16 +235,21 @@ rail.attrib.pop('DoNotPassEventsToChildren',None)
 rail_children=E.SubElement(rail,'Children')
 nav_attrs={'Id':'ForgeAreaNavigation','WidthSizePolicy':'Fixed','HeightSizePolicy':'Fixed','SuggestedWidth':'206','SuggestedHeight':'384','MarginLeft':'12','MarginTop':'20','StackLayout.LayoutMethod':'VerticalTopToBottom'}
 nav=E.SubElement(E.SubElement(rail_children,'ListPanel',**nav_attrs),'Children')
-routes=[('Summary','Summary','calradiaforge_compass','IsSummaryActive'),('Modules','Modules','calradiaforge_gears','IsModulesActive'),('Logs','Logs','calradiaforge_scroll_unfurled','IsLogsActive'),('Inspector','Inspector','calradiaforge_magnifying_glass','IsInspectorActive'),('Tests','Tests','calradiaforge_crossed_swords','IsTestsActive'),('Metrics','Metrics','calradiaforge_stopwatch','IsMetricsActive'),('Framework','Framework','calradiaforge_gear_hammer','IsFrameworkActive'),('Extensions','Extensions','calradiaforge_knight_banner','IsExtensionsActive')]
+routes=[('Summary','Summary','calradiaforge_open_book','IsSummaryActive'),('Modules','Modules','calradiaforge_puzzle','IsModulesActive'),('Logs','Logs','calradiaforge_files','IsLogsActive'),('Inspector','Inspector','calradiaforge_eye_target','IsInspectorActive'),('Tests','Tests','calradiaforge_test_tubes','IsTestsActive'),('Metrics','Metrics','calradiaforge_histogram','IsMetricsActive'),('Framework','Framework','calradiaforge_anvil','IsFrameworkActive'),('Extensions','Extensions','calradiaforge_plug','IsExtensionsActive')]
 for cmd,label,icon,active in routes:
     button(nav,cmd,'@'+label+'Label',202,icon,height=42,selected=active,brush='CalradiaForge.CategoryTab',margin_right=0,margin_bottom=4)
 E.SubElement(rail_children,'ImageWidget',Id='ForgeRailPineFelt',DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='198',SuggestedHeight='8',MarginLeft='16',MarginTop='394',Sprite='forge_pine_felt',Color='#FFFFFFFF')
 E.SubElement(rail_children,'ImageWidget',Id='ForgeRailCloth',DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='228',MaxHeight='256',MarginLeft='1',MarginTop='425',MarginBottom='5',Sprite='forge_rail_cartographic_field_v1',Color='#FFFFFFFF')
 E.SubElement(rail_children,'TextWidget',Id='ForgeRailGuidance',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='198',MaxHeight='125',MarginLeft='16',MarginTop='433',MarginBottom='12',Brush='CalradiaForge.Muted',Text='@QuickGuide',**{'Brush.FontSize':'15'})
 
+# A route-specific heraldic marker sits in the 24-DIP gutter beside the
+# section heading. Only the active route's ornament is visible at a time.
+for cmd,label,icon,active in routes:
+    E.SubElement(children,'ImageWidget',Id='ForgeHeaderOrnament'+cmd,IsVisible='@'+active,DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='24',SuggestedHeight='12',MarginLeft='256',MarginTop='114',Sprite='forge_header_'+cmd.lower()+'_v1',Color='#FFFFFFFF')
+
 # Active route context and a compact, keyboard-focusable evidence toggle.
-text(children,'ForgeCurrentSection','@CurrentSectionLabel',280,102,620,35,'CalradiaForge.HeaderGold',HorizontalAlignment='Left',**{'Brush.FontSize':'28'})
-text(children,'ForgeSectionHelp','@SectionHelpLabel',280,137,620,28,'CalradiaForge.Muted',HorizontalAlignment='Left',**{'Brush.FontSize':'16'})
+E.SubElement(children,'TextWidget',Id='ForgeCurrentSection',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='35',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='102',Brush='CalradiaForge.HeaderGold',Text='@CurrentSectionLabel',HorizontalAlignment='Left',**{'Brush.FontSize':'28'})
+E.SubElement(children,'TextWidget',Id='ForgeSectionHelp',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='28',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='137',Brush='CalradiaForge.Muted',Text='@SectionHelpLabel',HorizontalAlignment='Left',**{'Brush.FontSize':'16'})
 focus=E.SubElement(E.SubElement(children,'ListPanel',Id='ForgeEvidenceToggle',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='780',SuggestedHeight='46',MarginTop='101',MarginRight='24',HorizontalAlignment='Right',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
 button(focus,'ToggleEvidenceFocus','@FocusEvidenceLabel',130,height=42,brush='CalradiaForge.TacticalButton',margin_right=6)
 sdk_launcher=button(focus,'SdkCatalogButton','@SdkCatalogLabel',80,height=42,brush='CalradiaForge.TacticalButton',margin_right=6,hint='@SdkCatalogHint')
@@ -306,17 +319,17 @@ for cmd,label,width in [('Refresh','Refresh',164),('Scan','Scan',164),('Pin','Pi
 button(quick_actions,'Run','@RunLabel',164,height=42,brush='CalradiaForge.Primary')
 
 # Evidence ledger stays on an untextured, high-contrast surface; existing page navigation remains intact.
-body_frame=E.SubElement(children,'Widget',Id='ForgeEvidenceFrame',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='280',MarginRight='24',MarginTop='@EvidenceTop',MarginBottom='178',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
+body_frame=E.SubElement(children,'Widget',Id='ForgeEvidenceFrame',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='@EvidenceTop',MarginBottom='178',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
 body=E.SubElement(E.SubElement(body_frame,'Children'),'Widget',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginTop='1',MarginRight='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0A0D0BFF')
 evidence_children=E.SubElement(body,'Children')
 E.SubElement(evidence_children,'TextWidget',Id='ForgeEvidenceHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='31',MarginLeft='16',MarginTop='6',MarginRight='160',Brush='CalradiaForge.HeaderGold',Text='@EvidenceHeading',**{'Brush.FontSize':'22'})
 E.SubElement(evidence_children,'TextWidget',Id='ForgeEvidencePage',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='135',SuggestedHeight='31',HorizontalAlignment='Right',MarginRight='11',MarginTop='6',Brush='CalradiaForge.Gold',Text='@PageLabel',**{'Brush.FontSize':'19'})
 E.SubElement(evidence_children,'TextWidget',Id='ForgeEmptyEvidence',IsVisible='@IsContentEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='38',MarginLeft='20',MarginTop='62',MarginRight='20',Brush='CalradiaForge.Muted',Text='@ContentPlaceholder',**{'Brush.FontSize':'19'})
-evidence_scroll=E.SubElement(evidence_children,'ScrollablePanel',Id='ForgeEvidenceScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='18',MarginTop='44',MarginRight='16',MarginBottom='12',ClipRect='ForgeEvidenceClip',InnerPanel='ForgeEvidenceClip\\ForgeEvidenceContent',VerticalScrollbar='ForgeEvidenceScrollBar')
+evidence_scroll=E.SubElement(evidence_children,'ScrollablePanel',Id='ForgeEvidenceScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='18',MarginTop='44',MarginRight='16',MarginBottom='12',ClipRect='ForgeEvidenceClip',InnerPanel='ForgeEvidenceClip\\ForgeEvidenceContent',VerticalScrollbar='..\\ForgeEvidenceScrollBar')
 evidence_scroll_children=E.SubElement(evidence_scroll,'Children')
 evidence_clip=E.SubElement(evidence_scroll_children,'Widget',Id='ForgeEvidenceClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
 E.SubElement(E.SubElement(evidence_clip,'Children'),'TextWidget',Id='ForgeEvidenceContent',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',Brush='CalradiaForge.TerminalText',Text='@Content',VerticalAlignment='Top',ClipContents='true',**{'Brush.FontSize':'@EvidenceFontSize'})
-E.SubElement(evidence_scroll_children,'ScrollBarWidget',Id='ForgeEvidenceScrollBar',WidthSizePolicy='Fixed',SuggestedWidth='10',HeightSizePolicy='StretchToParent',HorizontalAlignment='Right')
+scrollbar(evidence_children,'ForgeEvidenceScrollBar',44,12,16)
 
 # The evidence frame ends at y=702 in both modes; keep a quiet brass rule below it.
 E.SubElement(children,'ImageWidget',Id='ForgeEvidenceActionBrassRule',DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='8',MarginLeft='280',MarginRight='24',MarginBottom='158',VerticalAlignment='Bottom',Sprite='forge_patina_brass',Color='#FFFFFFFF')
@@ -354,7 +367,7 @@ search_inner=E.SubElement(E.SubElement(search_frame,'Children'),'Widget',DoNotAc
 search_inner_children=E.SubElement(search_inner,'Children')
 E.SubElement(search_inner_children,'EditableTextWidget',Id='ForgeSdkCatalogSearch',IsFocusable='true',UpdateTextOnTyping='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='10',MarginRight='10',Brush='GameTip.Text',Text='@SearchText',**{'Hint.HintText':'@SearchHint'})
 E.SubElement(search_inner_children,'TextWidget',Id='ForgeSdkCatalogSearchPlaceholder',IsVisible='@IsSdkCatalogSearchEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='10',MarginRight='10',VerticalAlignment='Center',Brush='CalradiaForge.Muted',Text='@SdkCatalogSearchPlaceholder',**{'Brush.FontSize':'15'})
-sdk_scroll=E.SubElement(sdk_children,'ScrollablePanel',Id='ForgeSdkCatalogScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='12',MarginRight='12',MarginTop='104',MarginBottom='12',ClipRect='ForgeSdkCatalogClip',InnerPanel='ForgeSdkCatalogClip\\ForgeSdkCatalogTools',VerticalScrollbar='ForgeSdkCatalogScrollBar')
+sdk_scroll=E.SubElement(sdk_children,'ScrollablePanel',Id='ForgeSdkCatalogScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='12',MarginRight='12',MarginTop='104',MarginBottom='12',ClipRect='ForgeSdkCatalogClip',InnerPanel='ForgeSdkCatalogClip\\ForgeSdkCatalogTools',VerticalScrollbar='..\\ForgeSdkCatalogScrollBar')
 sdk_scroll_children=E.SubElement(sdk_scroll,'Children')
 sdk_clip=E.SubElement(sdk_scroll_children,'Widget',Id='ForgeSdkCatalogClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
 sdk_list=E.SubElement(E.SubElement(sdk_clip,'Children'),'ListPanel',Id='ForgeSdkCatalogTools',DataSource='{SdkTools}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
@@ -363,7 +376,7 @@ sdk_entry=E.SubElement(sdk_template,'ButtonWidget',IsVisible='@IsVisible',IsSele
 sdk_entry_children=E.SubElement(sdk_entry,'Children')
 E.SubElement(sdk_entry_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='23',MarginLeft='12',MarginRight='12',MarginTop='4',Brush='CalradiaForge.ButtonText',Text='@Title',**{'Brush.FontSize':'16'})
 E.SubElement(sdk_entry_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='17',MarginLeft='12',MarginRight='12',MarginTop='27',Brush='CalradiaForge.Muted',Text='@Hint',**{'Brush.FontSize':'12'})
-E.SubElement(sdk_scroll_children,'ScrollBarWidget',Id='ForgeSdkCatalogScrollBar',WidthSizePolicy='Fixed',SuggestedWidth='10',HeightSizePolicy='StretchToParent',HorizontalAlignment='Right')
+scrollbar(sdk_children,'ForgeSdkCatalogScrollBar',104,12,12)
 sdk_empty=E.SubElement(sdk_children,'Widget',Id='ForgeSdkCatalogEmptyState',IsVisible='@IsSdkCatalogEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='12',MarginRight='12',MarginTop='104',MarginBottom='12')
 E.SubElement(E.SubElement(sdk_empty,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='40',Brush='CalradiaForge.Muted',Text='@SdkCatalogEmptyLabel',HorizontalAlignment='Center',VerticalAlignment='Center',**{'Brush.FontSize':'16'})
 
@@ -386,14 +399,14 @@ history_nav_children=E.SubElement(history_navigation,'Children')
 history_prev=button(history_nav_children,'HistoryPrev','@HistoryPrevLabel',34,height=34,margin_right=6,hint='@HistoryPrevHint')
 history_prev.set('Command.Click','ExecuteHistoryPrevious')
 button(history_nav_children,'HistoryNext','@HistoryNextLabel',34,height=34,margin_right=0,hint='@HistoryNextHint')
-history_scroll=E.SubElement(history_children,'ScrollablePanel',Id='ForgeCommandHistoryScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='100',MarginRight='12',MarginTop='52',MarginBottom='12',ClipRect='ForgeCommandHistoryClip',InnerPanel='ForgeCommandHistoryClip\\ForgeCommandHistoryEntries',VerticalScrollbar='ForgeCommandHistoryScrollBar')
+history_scroll=E.SubElement(history_children,'ScrollablePanel',Id='ForgeCommandHistoryScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='100',MarginRight='12',MarginTop='52',MarginBottom='12',ClipRect='ForgeCommandHistoryClip',InnerPanel='ForgeCommandHistoryClip\\ForgeCommandHistoryEntries',VerticalScrollbar='..\\ForgeCommandHistoryScrollBar')
 history_scroll_children=E.SubElement(history_scroll,'Children')
 history_clip=E.SubElement(history_scroll_children,'Widget',Id='ForgeCommandHistoryClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
 history_list=E.SubElement(E.SubElement(history_clip,'Children'),'ListPanel',Id='ForgeCommandHistoryEntries',DataSource='{CommandHistoryList}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
 history_template=E.SubElement(history_list,'ItemTemplate')
 history_entry=E.SubElement(history_template,'ButtonWidget',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='42',MarginBottom='4',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteLoad'})
 E.SubElement(E.SubElement(history_entry,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='10',MarginRight='10',Brush='CalradiaForge.ButtonText',Text='@CommandText',VerticalAlignment='Center',**{'Brush.FontSize':'14'})
-E.SubElement(history_scroll_children,'ScrollBarWidget',Id='ForgeCommandHistoryScrollBar',WidthSizePolicy='Fixed',SuggestedWidth='10',HeightSizePolicy='StretchToParent',HorizontalAlignment='Right')
+scrollbar(history_children,'ForgeCommandHistoryScrollBar',52,12,12)
 
 # Category suggested commands flyout sits right over the action deck when open.
 cmds_panel=E.SubElement(children,'Widget',Id='ForgeCategoryCommandsPanel',IsVisible='@IsCategoryCommandsOpen',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='660',SuggestedHeight='320',MarginLeft='280',MarginTop='283',Sprite='BlankWhiteSquare_9',Color='#17261FFF')
@@ -415,7 +428,7 @@ for slot_num in (1,2,3):
     slot_btn=E.SubElement(slots_bar_children,'ButtonWidget',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='170',SuggestedHeight='28',MarginRight='6',Brush='CalradiaForge.TacticalButton',**{'Command.Click':f'ExecuteQuickSlot{slot_num}','Hint.HintText':f'@QuickSlot{slot_num}Hint'})
     E.SubElement(E.SubElement(slot_btn,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.ButtonText',Text=f'@QuickSlot{slot_num}Label',HorizontalAlignment='Center',VerticalAlignment='Center',**{'Brush.FontSize':'11'})
 
-cmds_scroll=E.SubElement(cmds_children,'ScrollablePanel',Id='ForgeCategoryCommandsScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='12',MarginRight='12',MarginTop='72',MarginBottom='8',ClipRect='ForgeCategoryCommandsClip',InnerPanel='ForgeCategoryCommandsClip\\ForgeCategoryCommandsEntries',VerticalScrollbar='ForgeCategoryCommandsScrollBar')
+cmds_scroll=E.SubElement(cmds_children,'ScrollablePanel',Id='ForgeCategoryCommandsScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='12',MarginRight='12',MarginTop='72',MarginBottom='8',ClipRect='ForgeCategoryCommandsClip',InnerPanel='ForgeCategoryCommandsClip\\ForgeCategoryCommandsEntries',VerticalScrollbar='..\\ForgeCategoryCommandsScrollBar')
 cmds_scroll_children=E.SubElement(cmds_scroll,'Children')
 cmds_clip=E.SubElement(cmds_scroll_children,'Widget',Id='ForgeCategoryCommandsClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
 cmds_list=E.SubElement(E.SubElement(cmds_clip,'Children'),'ListPanel',Id='ForgeCategoryCommandsEntries',DataSource='{CategorySuggestedCommands}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
@@ -438,7 +451,7 @@ E.SubElement(cmd_select_children,'TextWidget',DoNotAcceptEvents='true',WidthSize
 cmd_run_btn=E.SubElement(cmds_row_children,'ButtonWidget',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='58',SuggestedHeight='36',Brush='CalradiaForge.Primary',**{'Command.Click':'ExecuteRun'})
 E.SubElement(E.SubElement(cmd_run_btn,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.PrimaryText',Text='@RunLabel',HorizontalAlignment='Center',VerticalAlignment='Center',**{'Brush.FontSize':'13'})
 
-E.SubElement(cmds_scroll_children,'ScrollBarWidget',Id='ForgeCategoryCommandsScrollBar',WidthSizePolicy='Fixed',SuggestedWidth='10',HeightSizePolicy='StretchToParent',HorizontalAlignment='Right')
+scrollbar(cmds_children,'ForgeCategoryCommandsScrollBar',72,8,12)
 
 # A right-column help card stays clear of the SDK surface at the narrow profile.
 key_help=E.SubElement(children,'Widget',Id='ForgeKeyHelpPanel',IsVisible='@IsKeyHelpOpen',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='320',SuggestedHeight='220',MarginRight='24',MarginTop='166',HorizontalAlignment='Right',Sprite='BlankWhiteSquare_9',Color='#17261FFF')
@@ -454,7 +467,7 @@ E.SubElement(key_help_children,'TextWidget',Id='ForgeKeyHelpPrimary',DoNotAccept
 E.SubElement(key_help_children,'TextWidget',Id='ForgeKeyHelpSecondary',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='48',MarginLeft='12',MarginRight='12',MarginTop='112',Brush='CalradiaForge.Muted',Text='@KeyHelpSecondaryHint',**{'Brush.FontSize':'13'})
 
 # Category Playbook & Troubleshooting Panel for detailed mode.
-playbook_panel=E.SubElement(children,'Widget',Id='ForgePlaybookPanel',IsVisible='@IsDetailedMode',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='320',SuggestedHeight='390',MarginRight='24',MarginTop='166',HorizontalAlignment='Right',Sprite='BlankWhiteSquare_9',Color='#17261FFF')
+playbook_panel=E.SubElement(children,'Widget',Id='ForgePlaybookPanel',IsVisible='@IsPlaybookVisible',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='320',SuggestedHeight='390',MarginRight='24',MarginTop='166',HorizontalAlignment='Right',Sprite='BlankWhiteSquare_9',Color='#17261FFF')
 playbook_surface=E.SubElement(E.SubElement(playbook_panel,'Children'),'Widget',Id='ForgePlaybookSurface',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginRight='1',MarginTop='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0D1511FF')
 playbook_children=E.SubElement(playbook_surface,'Children')
 playbook_header=E.SubElement(playbook_children,'Widget',Id='ForgePlaybookHeader',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='34')
@@ -511,7 +524,7 @@ palette_search_inner=E.SubElement(E.SubElement(palette_search_frame,'Children'),
 palette_search_children=E.SubElement(palette_search_inner,'Children')
 E.SubElement(palette_search_children,'EditableTextWidget',Id='ForgeNavigationPaletteSearch',IsFocusable='true',UpdateTextOnTyping='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='10',MarginRight='10',Brush='GameTip.Text',Text='@NavigationPaletteSearchText',**{'Hint.HintText':'@NavigationPaletteSearchPlaceholder'})
 E.SubElement(palette_search_children,'TextWidget',Id='NavigationPaletteSearchPlaceholder',IsVisible='@IsNavigationPaletteSearchEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='10',MarginRight='10',Brush='CalradiaForge.Muted',Text='@NavigationPaletteSearchPlaceholder',VerticalAlignment='Center',**{'Brush.FontSize':'16'})
-palette_scroll=E.SubElement(palette_children,'ScrollablePanel',Id='NavigationPaletteScroll',IsVisible='@NavigationPaletteHasResults',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='20',MarginRight='20',MarginTop='146',MarginBottom='50',ClipRect='NavigationPaletteClip',InnerPanel='NavigationPaletteClip\\NavigationPaletteItems',VerticalScrollbar='NavigationPaletteScrollBar')
+palette_scroll=E.SubElement(palette_children,'ScrollablePanel',Id='NavigationPaletteScroll',IsVisible='@NavigationPaletteHasResults',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='20',MarginRight='20',MarginTop='146',MarginBottom='50',ClipRect='NavigationPaletteClip',InnerPanel='NavigationPaletteClip\\NavigationPaletteItems',VerticalScrollbar='..\\NavigationPaletteScrollBar')
 palette_scroll_children=E.SubElement(palette_scroll,'Children')
 palette_clip=E.SubElement(palette_scroll_children,'Widget',Id='NavigationPaletteClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
 palette_list=E.SubElement(E.SubElement(palette_clip,'Children'),'ListPanel',Id='NavigationPaletteItems',DataSource='{NavigationPaletteResults}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
@@ -526,7 +539,7 @@ E.SubElement(palette_result_children,'TextWidget',DoNotAcceptEvents='true',Width
 E.SubElement(palette_result_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='27',MarginLeft='166',MarginRight='10',MarginTop='34',Brush='CalradiaForge.Muted',Text='@Description',VerticalAlignment='Center',**{'Brush.FontSize':'13'})
 palette_favorite=E.SubElement(palette_row_children,'ButtonWidget',IsVisible='@CanFavorite',IsFocusable='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='48',SuggestedHeight='68',MarginLeft='6',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteToggleFavorite','Hint.HintText':'@FavoriteHint'})
 E.SubElement(E.SubElement(palette_favorite,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.Gold',Text='@FavoriteLabel',HorizontalAlignment='Center',VerticalAlignment='Center',**{'Brush.FontSize':'21'})
-E.SubElement(palette_scroll_children,'ScrollBarWidget',Id='NavigationPaletteScrollBar',WidthSizePolicy='Fixed',SuggestedWidth='10',HeightSizePolicy='StretchToParent',HorizontalAlignment='Right')
+scrollbar(palette_children,'NavigationPaletteScrollBar',146,50,20)
 palette_empty=E.SubElement(palette_children,'Widget',Id='NavigationPaletteEmptyState',IsVisible='@IsNavigationPaletteEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='20',MarginRight='20',MarginTop='146',MarginBottom='50')
 E.SubElement(E.SubElement(palette_empty,'Children'),'TextWidget',Id='NavigationPaletteEmptyMessage',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='54',Brush='CalradiaForge.Muted',Text='@NavigationPaletteEmptyLabel',HorizontalAlignment='Center',VerticalAlignment='Center',**{'Brush.FontSize':'17'})
 E.SubElement(palette_children,'TextWidget',Id='NavigationPaletteKeyboardHint',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='28',MarginLeft='20',MarginRight='20',MarginBottom='12',VerticalAlignment='Bottom',Brush='CalradiaForge.Muted',Text='@NavigationPaletteNavigationHint',**{'Brush.FontSize':'14'})

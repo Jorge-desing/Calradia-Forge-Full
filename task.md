@@ -368,6 +368,20 @@
 - [x] Redacción de Propuesta 24 en `learning_proposal.md`.
 - [x] Sincronización y push a GitHub (`main`) siguiendo `RULE[git_sync_workflow.md]`.
 
+## Gran Ronda de Mejoras Visuales a la Interfaz Gauntlet In-Game y Telemetría Táctica (Rev064)
+- [x] Corrección de la geometría de Viewport en `src/CalradiaForge.Mod/PanelViewModel.cs` (`EvidenceHeight` 482f en modo Focus para cumplir la regla estricta de 702f con margen inferior).
+- [x] Enriquecimiento de telemetría en tiempo real en encabezado táctico (`src/CalradiaForge.Mod/PanelViewModel.cs`): badges para estado de memoria CoALA, despachos ForgeWeave y rol activo de modder con colores dinámicos.
+- [x] Sincronización y armonización de iconos de navegación semánticos en `tools/generate_assets.py` y `tools/validate_game_icon_assets.py`.
+- [x] Preservación del contrato de scrollbar de evidencia de alto contraste sin `ImageWidget` en `ForgeEvidenceFrame`.
+- [x] Refinamiento estético del panel de playbooks tácticos procedimentales (`ForgePlaybookPanel`) y comandos curados (`ForgeCategoryCommandsPanel`).
+- [x] Verificación de compilación limpia de la solución (.NET Framework 4.7.2 y .NET 8).
+- [x] Verificación de 4/4 criterios sin estado (`verify_stateless_behavior.ps1`).
+- [x] Ejecución de suite completa de pruebas de la solución (`Run-CalradiaForge-Tests.bat`): 338 Core, 73 ForgeWeave, 63 Desktop, 289 WPF Render.
+- [x] Ejecución de suite multi-agente (`test_forge_agents.py` 31/31 pasadas).
+- [x] Generación automática de paquetes de distribución (`package.ps1`) con `FastPackageEngine`.
+- [x] Redacción de Propuesta 25 en `learning_proposal.md` y formalización de la regla de Staging Selectivo en `.agents/rules/git_sync_workflow.md`, `AGENTS.md` y `CODEX.md`.
+- [x] Sincronización selectiva y push a GitHub (`main`) siguiendo la nueva regla estricta de staging aislado.
+
 
 
 

@@ -37,11 +37,17 @@ Before staging or committing changes, ensure that:
 ## 3. Git Staging & Commit Conventions
 1. **Inspect Working Tree:**
    ```powershell
-   git status
+   git status --porcelain
    ```
-   Verify all modified and untracked files are intentional.
-2. **Stage Intended Changes:**
-   Stage modified and added files cleanly (`git add <files>` or `git add .` after confirming exclusions).
+   Verify exactly which files were modified and identify agent-authored files versus any external/unrelated changes.
+2. **Strict Selective Staging (PROHIBIDO `git add .` / `git add -A`):**
+   - **Agent-Authored Changes Only:** Stage ONLY the specific files that the agent has explicitly modified, added, or verified for the current task scope.
+   - **Zero External Spillover:** NEVER stage or commit external files, unrelated user edits, temporary artifacts, or files outside the explicit changeset.
+   - **Explicit Relative Paths:** Always stage files explicitly by their relative path:
+     ```powershell
+     git add path/to/file1 path/to/file2
+     ```
+   - **Blanket Prohibition:** Blanket staging commands (`git add .`, `git add -A`, `git add --all`, `git add *`) are strictly prohibited in all circumstances.
 3. **Structured Commit Message:**
    Write clear, semantic commit messages in Spanish or English matching repository conventions:
    - Concise imperative subject line (e.g. `feat: ...`, `fix: ...`, `refactor: ...`, `chore: ...`).

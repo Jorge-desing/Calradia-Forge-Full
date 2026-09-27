@@ -55,6 +55,48 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public bool HasPinnedCommands => _pinnedCommands.Count > 0;
         [DataSourceProperty] public string ActiveModderRoleLabel => GetModderRoleLabel(_activeModderRole);
         [DataSourceProperty] public string ActiveModderRoleHint => GetModderRoleHint(_activeModderRole);
+        [DataSourceProperty] public string ActiveModderRoleColor => GetModderRoleColor(_activeModderRole);
+        [DataSourceProperty] public string ActiveModderRoleBadgeText => GetModderRoleBadgeText(_activeModderRole);
+        [DataSourceProperty]
+        public string CoALAMemoryStatusText
+        {
+            get
+            {
+                try
+                {
+                    int count = CalradiaForge.Sdk.ForgeAgentMemory.RegisteredAgentsCount;
+                    int max = CalradiaForge.Sdk.ForgeAgentMemory.MaximumAgents;
+                    return $"CoALA: {count}/{max} Agentes · Activa";
+                }
+                catch
+                {
+                    return "CoALA: 0/2048 Agentes · Activa";
+                }
+            }
+        }
+        [DataSourceProperty]
+        public string ForgeWeaveStatusBadge
+        {
+            get
+            {
+                try
+                {
+                    int handlers = runtime?.TestEngine?.ForgeWeaveSubscriptionCount ?? 0;
+                    int dispatches = 0;
+                    try
+                    {
+                        var snap = runtime?.TestEngine?.CaptureForgeWeave();
+                        if (snap != null) dispatches = snap.DispatchCount;
+                    }
+                    catch { }
+                    return $"Weave: {dispatches} evt · {handlers} hdl";
+                }
+                catch
+                {
+                    return "Weave: 0 evt · 0 hdl";
+                }
+            }
+        }
         [DataSourceProperty] public string CategoryHelpLabel => T("Category Guide & Rules");
         [DataSourceProperty] public string CategoryHelpHint => T("View technical mission, TaleWorlds invariants, and commands for this category.");
         [DataSourceProperty] public string CycleRoleLabel => T("Modder Role Presets");
@@ -114,6 +156,8 @@ namespace CalradiaForge.Mod
         }
         [DataSourceProperty] public string DetailModeLabel => _isDetailedMode ? T("Detail: [EXTENDED]") : T("Detail: [COMPACT]");
         [DataSourceProperty] public string DetailModeHint => T("Toggle between compact quick-slot bar and extended engineering playbook with troubleshooting rules.");
+        [DataSourceProperty] public bool IsPlaybookVisible => _isDetailedMode && !evidenceFocused;
+        [DataSourceProperty] public float WorkspaceRightMargin => _isDetailedMode && !evidenceFocused ? 344f : 24f;
 
         private bool _isCategoryCommandsOpen;
         [DataSourceProperty]
@@ -712,15 +756,15 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string ContextValue => FormatContext(runtime.CurrentContext.ToString());
         bool evidenceFocused;
         [DataSourceProperty] public bool ShowCommandDeck => !evidenceFocused;
-        [DataSourceProperty] public float EvidenceTop => evidenceFocused ? 166f : 335f;
-        [DataSourceProperty] public float EvidenceHeight => evidenceFocused ? 536f : 367f;
+        [DataSourceProperty] public float EvidenceTop => evidenceFocused ? 220f : 392f;
+        [DataSourceProperty] public float EvidenceHeight => evidenceFocused ? 482f : 310f;
         [DataSourceProperty] public int EvidenceFontSize => evidenceFocused ? 24 : 18;
         [DataSourceProperty] public string FocusEvidenceLabel => evidenceFocused ? T("Show tools") : T("Focus evidence");
         [DataSourceProperty] public string EvidenceHeading => T(CurrentName);
         public void ExecuteToggleEvidenceFocus()
         {
             evidenceFocused = !evidenceFocused;
-            foreach (var name in new[] { nameof(ShowCommandDeck), nameof(EvidenceTop), nameof(EvidenceHeight), nameof(EvidenceFontSize), nameof(FocusEvidenceLabel) }) OnPropertyChanged(name);
+            foreach (var name in new[] { nameof(ShowCommandDeck), nameof(IsPlaybookVisible), nameof(WorkspaceRightMargin), nameof(EvidenceTop), nameof(EvidenceHeight), nameof(EvidenceFontSize), nameof(FocusEvidenceLabel) }) OnPropertyChanged(name);
         }
         [DataSourceProperty] public bool IsContextVisible => !string.IsNullOrEmpty(ContextValue);
         [DataSourceProperty] public string TestingLabel => T("Testing");
@@ -1253,6 +1297,8 @@ namespace CalradiaForge.Mod
             nameof(CategorySdkLabel), nameof(CategorySdkHint), nameof(SearchText), nameof(SdkTools), nameof(IsSimDynastyActive),
             nameof(SimDynastyLabel), nameof(SimDynastyHint), nameof(IsSimCrimeActive), nameof(SimCrimeLabel), nameof(SimCrimeHint),
             nameof(CategoryMissionDescription), nameof(CategoryEngineRules), nameof(ActiveModderRoleLabel),
+            nameof(ActiveModderRoleColor), nameof(ActiveModderRoleBadgeText),
+            nameof(CoALAMemoryStatusText), nameof(ForgeWeaveStatusBadge),
             nameof(ActiveModderRoleHint), nameof(HasPinnedCommands), nameof(CategorySuggestedCommands), nameof(PinnedCommands),
             nameof(SuggestedCommandsTitle), nameof(SuggestedCommandsHint), nameof(SuggestedCommandsLabel),
             nameof(PinCurrentCommandLabel), nameof(PinCurrentCommandHint),
@@ -1261,6 +1307,7 @@ namespace CalradiaForge.Mod
             nameof(CategoryPlaybookTitle), nameof(CategoryPlaybookStep1), nameof(CategoryPlaybookStep2), nameof(CategoryPlaybookStep3),
             nameof(CategoryTroubleshootingTitle), nameof(CategoryTroubleshootingAdvice),
             nameof(CategoryRecommendedMacro), nameof(IsDetailedMode), nameof(DetailModeLabel), nameof(DetailModeHint),
+            nameof(IsPlaybookVisible), nameof(WorkspaceRightMargin), nameof(ShowCommandDeck), nameof(EvidenceTop),
             nameof(MacroActionLabel), nameof(MacroActionHint)
         };
 
@@ -2014,6 +2061,8 @@ namespace CalradiaForge.Mod
         {
             OnPropertyChanged(nameof(MemoryHealthText));
             OnPropertyChanged(nameof(ContextValue));
+            OnPropertyChanged(nameof(CoALAMemoryStatusText));
+            OnPropertyChanged(nameof(ForgeWeaveStatusBadge));
             if (current == "metrics" || current == "summary")
             {
                 Send(current);
@@ -3746,6 +3795,8 @@ namespace CalradiaForge.Mod
             RebuildCategoryCommands();
             OnPropertyChanged(nameof(ActiveModderRoleLabel));
             OnPropertyChanged(nameof(ActiveModderRoleHint));
+            OnPropertyChanged(nameof(ActiveModderRoleColor));
+            OnPropertyChanged(nameof(ActiveModderRoleBadgeText));
             NotifyLayout();
             ShowToast(ActiveModderRoleLabel);
         }
@@ -3759,6 +3810,8 @@ namespace CalradiaForge.Mod
                 RebuildCategoryCommands();
                 OnPropertyChanged(nameof(ActiveModderRoleLabel));
                 OnPropertyChanged(nameof(ActiveModderRoleHint));
+                OnPropertyChanged(nameof(ActiveModderRoleColor));
+                OnPropertyChanged(nameof(ActiveModderRoleBadgeText));
                 NotifyLayout();
                 ShowToast(ActiveModderRoleLabel);
             }
@@ -4107,6 +4160,30 @@ namespace CalradiaForge.Mod
                     return T("Focus: Rule compliance, SaveableTypeDefiners, memory GC, ForgeWeave replays, and diagnostics.");
                 default:
                     return T("Click to cycle modder role preset (highlights and customizes section commands).");
+            }
+        }
+
+        string GetModderRoleColor(ModderRole role)
+        {
+            switch (role)
+            {
+                case ModderRole.NarrativeDialogues: return "#48B0D5FF";
+                case ModderRole.TroopCombatArtisan: return "#C7A45AFF";
+                case ModderRole.EconomyWorldArchitect: return "#56B885FF";
+                case ModderRole.CoreDevPerformanceAuditor: return "#E06C75FF";
+                default: return "#E1C177FF";
+            }
+        }
+
+        string GetModderRoleBadgeText(ModderRole role)
+        {
+            switch (role)
+            {
+                case ModderRole.NarrativeDialogues: return T("NARRATIVE");
+                case ModderRole.TroopCombatArtisan: return T("COMBAT");
+                case ModderRole.EconomyWorldArchitect: return T("ECONOMY");
+                case ModderRole.CoreDevPerformanceAuditor: return T("CORE DEV");
+                default: return T("ALL ROLES");
             }
         }
 
