@@ -1,0 +1,47 @@
+# TpacTool Max Versiyon 1.0 — Ek Lisans Notu
+
+**Taslak — dağıtım öncesi gözden geçirme için**
+
+Telif hakkı (c) 2026 emir41han-sketch / Iron Modding M&B Bannerlord II ekibi.
+
+Proje sayfası: https://www.patreon.com/cw/ironmoddingbannerlord
+
+## 1. Kapsam
+
+Bu not; emir41han-sketch veya Iron Modding M&B Bannerlord II ekibi tarafından oluşturulan özgün TpacTool Max eklerini, yani özgün kodu, görselleri, dokümantasyonu, marka unsurlarını ve dağıtım materyallerini kapsar. Upstream TpacTool kaynak kodunu veya Avalonia, AssimpNet/Open Asset Import Library, Silk.NET, .NET, lz4net ve bağımlılıkları gibi üçüncü taraf bileşenleri yeniden lisanslamaz, değiştirmez veya kısıtlamaz. Bu bileşenler kendi lisanslarına ve notice dosyalarına tabi olmaya devam eder.
+
+Orijinal upstream TpacTool telif bildirimi ve lisansı `LICENSE` dosyasında korunur ve projenin upstream bölümleri için geçerlidir.
+
+## 2. TpacTool Max ekleri için MIT lisansı
+
+Birinci bölümde belirtilen özgün TpacTool Max ekleri MIT Lisansı altında sunulur. Bu eklerin ve ilgili dokümantasyon dosyalarının bir kopyasını edinen herkese, aşağıdaki koşula tabi olmak üzere ekleri ücretsiz ve sınırsız biçimde kullanma, kopyalama, değiştirme, birleştirme, yayımlama, dağıtma, alt lisanslama ve satma izni verilir:
+
+Eklerin tüm kopyalarında veya önemli bölümlerinde yukarıdaki telif bildirimi ve bu izin bildirimi korunmalıdır.
+
+EKLER, TİCARİ ELVERİŞLİLİK, BELİRLİ BİR AMACA UYGUNLUK VE İHLAL ETMEME GARANTİLERİ DAHİL OLMAK ÜZERE AÇIK VEYA ZIMNİ HİÇBİR GARANTİ OLMAKSIZIN “OLDUĞU GİBİ” SUNULUR. TELİF HAKKI SAHİBİ VE KATKIDA BULUNANLAR, EKLERDEN VEYA EKLERİN KULLANIMINDAN KAYNAKLANAN HİÇBİR TALEP, ZARAR YA DA SORUMLULUKTAN SORUMLU DEĞİLDİR.
+
+TpacTool Max’in herkese açık ve ücretsiz bir uygulama olarak kalması amaçlanmaktadır. Bu not, Mount & Blade II: Bannerlord, TaleWorlds veya başka hak sahiplerine ait oyun varlıkları için herhangi bir lisans vermez.
+
+## 3. Proje adı ve kimliği
+
+MIT Lisansı, birinci bölüm kapsamındaki kaynak kodu ve diğer telif hakkına tabi materyaller için geçerlidir. Ancak bu lisans; TpacTool Max adı, Iron Modding adı, logolar, proje bağlantıları veya resmi paket kimliği üzerinde marka hakkı vermez.
+
+Değiştirilmiş bir sürüm, uygulanabilir lisanslara uygun şekilde oluşturulabilir ve dağıtılabilir; ancak resmi Iron Modding sürümü gibi sunulamaz ve Iron Modding, TaleWorlds veya başka bir hak sahibi tarafından onaylandığı izlenimi veremez. Farklı isim kullanan bir fork, zorunlu telif ve lisans bildirimlerini koruyarak kendi kimliğini kullanabilir.
+
+## 4. Oyun varlıkları
+
+Mount & Blade II: Bannerlord, TaleWorlds veya diğer hak sahiplerine ait TPAC dosyaları ve varlıklar bu not kapsamında lisanslanmamıştır. Kullanıcılar bu varlıklara uygulanan koşullara uymaktan ve gerekli izinleri almaktan kendileri sorumludur.
+
+## 5. Garanti ve sorumluluk reddi
+
+TpacTool Max ekleri; ticari elverişlilik, belirli bir amaca uygunluk ve ihlal etmeme garantileri dahil olmak üzere açık veya zımni hiçbir garanti verilmeksizin “OLDUĞU GİBİ” sunulur. Telif hakkı sahibi ve katkıda bulunanlar, yazılımın, dışa aktarılan dosyaların, üçüncü taraf bileşenlerin veya oyun varlıklarının kullanımından kaynaklanan veri kaybı, uyumsuzluk veya hasardan sorumlu değildir.
+
+## 6. Çelişki durumunda
+
+Bu notun herhangi bir hükmü upstream `LICENSE` dosyasıyla veya bir üçüncü taraf lisansıyla çelişirse, ilgili bileşen için uygulanabilir upstream veya üçüncü taraf lisansı geçerli olur. Bu not, gerekli hiçbir telif, lisans veya atıf bildirimini gizlemeyi, kaldırmayı veya geçersiz kılmayı amaçlamaz.
+
+## 7. İletişim
+
+Özgün TpacTool Max eklerine ilişkin bu not Iron Modding M&B Bannerlord II ekibine aittir.
+
+Proje sayfası: https://www.patreon.com/cw/ironmoddingbannerlord

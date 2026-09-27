@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><TargetFrameworks>net472;net8.0</TargetFrameworks></PropertyGroup>
+ <ItemGroup><ProjectReference Include="../CalradiaForge.Sdk/CalradiaForge.Sdk.csproj" /></ItemGroup>
+ <ItemGroup><EmbeddedResource Include="../../localization/*.xml" LogicalName="CalradiaForge.Localization.%(Filename).xml"/></ItemGroup>
+ <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <Reference Include="System.Runtime.Serialization"/>
+    <Reference Include="System.Xml.Linq"/>
+    <Reference Include="System.IO.Compression"/>
+    <Reference Include="System.IO.Compression.FileSystem"/>
+    <Reference Include="$(GameBin)\Newtonsoft.Json.dll"><Private>false</Private></Reference>
+    <Reference Include="$(GameBin)\TaleWorlds*.dll" Exclude="$(GameBin)\TaleWorlds.Native.dll"><Private>false</Private></Reference>
+ </ItemGroup>
+</Project>

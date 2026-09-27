@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseAppHost>false</UseAppHost>
+    <ApplicationIcon>../../assets/calradia-forge.ico</ApplicationIcon>
+    <Company>Calradia Forge Team</Company>
+    <Product>Calradia Forge Desktop</Product>
+    <Description>Standalone companion for verified Calradia Forge developer tooling.</Description>
+    <Copyright>Copyright (c) 2026 Calradia Forge Team</Copyright>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../CalradiaForge.Core/CalradiaForge.Core.csproj" />
+    <None Remove="Resources/Textures/**/*.png" />
+    <Resource Include="Resources/Textures/Optimized/war-table-illustrated-cloth.png" />
+    <Resource Include="Resources/Textures/Optimized/parchment-cartographic-paper.png" />
+    <Resource Include="Resources/Textures/Optimized/titlebar-embroidered-cloth.png" />
+    <Resource Include="Resources/Textures/Optimized/titlebar-botanical-band-v1.png" />
+    <Resource Include="Resources/Textures/Optimized/titlebar-cartographic-panorama-rev057.png" />
+    <Resource Include="Resources/Textures/Optimized/titlebar-heraldic-corner.png" />
+    <Resource Include="Resources/Textures/Optimized/header-heraldic-compass-v2.png" />
+    <Resource Include="Resources/Textures/Optimized/header-corner-engraving-v1.png" />
+    <Resource Include="Resources/Textures/Optimized/evidence-ledger-empty-v1.png" />
+    <Resource Include="Resources/Textures/Optimized/rail-field-compass-v1.png" />
+    <Resource Include="Resources/Textures/Optimized/parchment-field-journal-ornament-v1.png" />
+    <Resource Include="Resources/Textures/Optimized/dossier-corner-ornament-rev057.png" />
+    <Resource Include="Resources/Textures/Optimized/workbench-cartographic-board-v1.png" />
+    <Resource Include="Resources/Textures/Optimized/workbench-heraldic-rail-portrait-rev064.png" />
+    <Resource Include="Resources/Textures/Optimized/workbench-heraldic-shield-v1.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="MaterialDesignThemes" Version="5.3.2" />
+    <PackageReference Include="AsmResolver.DotNet" Version="6.0.1" />
+  </ItemGroup>
+</Project>

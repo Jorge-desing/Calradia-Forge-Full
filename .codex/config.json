@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/partial-codex-config.json",
+  "project": "CalradiaForge",
+  "version": "23.0.0",
+  "description": "Modular modding framework, live developer tooling, and standalone assembly workbench for Mount & Blade II: Bannerlord",
+  "instructions": "AGENTS.md",
+  "alternateInstructions": "CODEX.md",
+  "commands": {
+    "build": "dotnet build CalradiaForge.sln -c Release -v:minimal",
+    "test": "cmd.exe /c \"tools\\Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul\"",
+    "verify": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\verify_stateless_behavior.ps1",
+    "package": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\package.ps1",
+    "codexCompatStatus": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\Manage-CodexCaptureCompat.ps1 -Action Status",
+    "codexCompatTest": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\Manage-CodexCaptureCompat.ps1 -Action Test"
+  },
+  "constraints": [
+    "Never name folders, namespaces, or classes Campaign or Localization",
+    "Maintain zero SaveableTypeDefiner and stateless SyncData in CampaignBehaviors",
+    "Enforce English and Spanish dual-language parity for all documentation in docs/",
+    "Preserve static source contracts in CalradiaForge.Desktop"
+  ],
+  "targetFrameworks": {
+    "gameModule": "net472",
+    "desktopWorkbench": "net8.0-windows",
+    "coreSdk": "net472;net8.0"
+  }
+}

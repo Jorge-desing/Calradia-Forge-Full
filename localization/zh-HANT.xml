@@ -1,0 +1,231 @@
+<?xml version='1.0' encoding='utf-8'?>
+<strings language="zh-HANT">
+  <string key="Assign unique IDs" value="Assign unique IDs" />
+  <string key="Build or reinstall module" value="Build or reinstall module" />
+  <string key="Calradia Forge" value="卡拉迪亞熔爐" />
+  <string key="Campaign copy confirmed" value="已確認戰役副本" />
+  <string key="Check module folder" value="Check module folder" />
+  <string key="Close" value="關閉" />
+  <string key="Commands" value="命令" />
+  <string key="Compare" value="比較" />
+  <string key="Confirm campaign copy" value="確認戰役副本" />
+  <string key="Connect" value="連線" />
+  <string key="Connected" value="已連線" />
+  <string key="Context" value="內容" />
+  <string key="Declared DLL missing" value="Declared DLL missing" />
+  <string key="Dependency cycle" value="Dependency cycle" />
+  <string key="Disable testing" value="停用測試" />
+  <string key="Disconnected" value="已斷線" />
+  <string key="Duplicate ID" value="重複 ID" />
+  <string key="Enable testing" value="啟用測試" />
+  <string key="Enable testing and confirm campaign copy" value="啟用測試並確認戰役複本" />
+  <string key="Enter the Bannerlord process ID" value="Enter the Bannerlord process ID" />
+  <string key="Exact object ID required" value="需要精確的物件 ID" />
+  <string key="Export report" value="匯出報告" />
+  <string key="Extension diagnostics" value="Extension diagnostics" />
+  <string key="Fix XML" value="Fix XML" />
+  <string key="Fix manifest" value="Fix manifest" />
+  <string key="Import log" value="匯入記錄" />
+  <string key="Inspector" value="檢查器" />
+  <string key="Inspect framework" value="Inspect framework" />
+  <string key="Framework" value="框架" />
+  <string key="ForgeWeave framework" value="ForgeWeave 框架" />
+  <string key="ForgeWeave shows declared extension handlers, order, health and timing without applying patches." value="ForgeWeave 顯示已宣告的擴充處理常式、順序、狀態與耗時，而不套用修補程式。" />
+  <string key="Handlers" value="處理常式" />
+  <string key="Quarantined" value="已隔離" />
+  <string key="Dispatches" value="調度" />
+  <string key="Failures" value="失敗" />
+  <string key="Mean" value="平均值" />
+  <string key="Maximum" value="最大值" />
+  <string key="Recent events" value="最近事件" />
+  <string key="Framework findings" value="框架發現" />
+  <string key="Harmony" value="Harmony" />
+  <string key="Harmony patch atlas" value="Harmony 補丁圖譜" />
+  <string key="Optional read-only Harmony diagnostics. Shared targets are review candidates, not proven conflicts." value="可選的唯讀 Harmony 診斷。共用目標是需要檢查的候選項，並非已證實的衝突。" />
+  <string key="Patch preflight" value="補丁預檢" />
+  <string key="Patch blueprint preflight" value="補丁藍圖預檢" />
+  <string key="Providers" value="提供者" />
+  <string key="Resolved" value="已解析" />
+  <string key="Review items" value="審查項目" />
+  <string key="Preflight findings" value="預檢結果" />
+  <string key="Check patch blueprints" value="Check patch blueprints" />
+  <string key="Patch blueprint declarations are read-only. This check does not apply a patch." value="Patch blueprint declarations are read-only. This check does not apply a patch." />
+  <string key="Install dependency" value="Install dependency" />
+  <string key="Invalid DLL path" value="Invalid DLL path" />
+  <string key="Inventory" value="Inventory" />
+  <string key="Logs" value="日誌" />
+  <string key="Maximum 100 snapshots" value="最多 100 個快照" />
+  <string key="Missing SubModule.xml" value="Missing SubModule.xml" />
+  <string key="Module folder" value="模組資料夾" />
+  <string key="Module scan started. Refresh Modules to see results." value="已開始掃描模組。重新整理「模組」以查看結果。" />
+  <string key="Modules" value="模組" />
+  <string key="Next" value="下一頁" />
+  <string key="No changes" value="沒有變更" />
+  <string key="Object no longer available" value="物件已無法使用" />
+  <string key="Open report" value="開啟報告" />
+  <string key="Performance" value="效能" />
+  <string key="Pin" value="釘選" />
+  <string key="Pin this object first" value="請先釘選此物件" />
+  <string key="Previous" value="上一頁" />
+  <string key="Raw data" value="原始資料" />
+  <string key="Ready" value="就緒" />
+  <string key="Refresh" value="重新整理" />
+  <string key="Remove circular dependency" value="Remove circular dependency" />
+  <string key="Run command" value="Run command" />
+  <string key="Run test" value="執行測試" />
+  <string key="Scan modules" value="掃描模組" />
+  <string key="Scanning…" value="Scanning…" />
+  <string key="Search / argument" value="搜尋 / 引數" />
+  <string key="Seed" value="種子" />
+  <string key="Session" value="工作階段" />
+  <string key="Session process ID" value="工作階段處理程序 ID" />
+  <string key="Single-player only" value="僅限單人遊戲" />
+  <string key="Start Bannerlord with Calradia Forge enabled, then connect. Offline module scanning is available without the game." value="啟用 Calradia Forge 後啟動 Bannerlord 並連線。不啟動遊戲也能掃描模組。" />
+  <string key="Summary" value="概覽" />
+  <string key="Table" value="表格" />
+  <string key="Testing" value="測試" />
+  <string key="Tests" value="測試" />
+  <string key="Troops" value="Troops" />
+  <string key="Unknown test" value="未知測試" />
+  <string key="Use a copied campaign. This enables state-changing tests for this session." value="Use a copied campaign. This enables state-changing tests for this session." />
+  <string key="Use filename only" value="Use filename only" />
+  <string key="Wrong context" value="內容不正確" />
+  <string key="Capture report" value="擷取報告" />
+  <string key="Live session" value="即時工作階段" />
+  <string key="Snapshots" value="快照" />
+  <string key="Dependencies" value="相依項目" />
+  <string key="Remove snapshot" value="移除快照" />
+  <string key="Run batch" value="批次執行" />
+  <string key="Find an object by type and ID. Pin a baseline before comparing." value="依類型和 ID 尋找物件。比較前請釘選基準。" />
+  <string key="Run one test ID, or a comma-separated batch. Batches stop on the first failure." value="執行一個測試 ID 或以逗號分隔的批次。批次會在首次失敗時停止。" />
+  <string key="Inspect installed modules without changing files or launcher settings." value="檢查已安裝的模組，不變更檔案或啟動器設定。" />
+  <string key="Browse a live session or the current report. Export preserves the current report." value="瀏覽即時工作階段或目前報告。匯出會保留目前報告。" />
+  <string key="Enable Live session to use game actions." value="Enable Live session to use game actions." />
+  <string key="No records captured." value="No records captured." />
+  <string key="Scan modules, open a report, or connect to Bannerlord to begin." value="Scan modules, open a report, or connect to Bannerlord to begin." />
+  <string key="New report" value="新報告" />
+  <string key="Captured live session" value="Captured live session" />
+  <string key="Snapshot removed" value="已移除快照" />
+  <string key="Snapshot not found" value="找不到快照" />
+  <string key="Invalid extension context" value="無效的擴充功能內容" />
+  <string key="Select between 1 and 50 tests" value="選擇 1 到 50 個測試" />
+  <string key="Native target" value="Native 版本" />
+  <string key="Yes" value="是" />
+  <string key="No" value="否" />
+  <string key="Any" value="任意" />
+  <string key="Campaign" value="戰役" />
+  <string key="Mission" value="任務" />
+  <string key="Complete" value="完整" />
+  <string key="Order" value="順序" />
+  <string key="Blocked" value="已封鎖" />
+  <string key="Error" value="錯誤" />
+  <string key="No log entries match this search." value="沒有符合此搜尋的記錄項目。" />
+  <string key="Clear Search / argument and press Ctrl+Enter to show all available logs." value="清除「搜尋 / 參數」，然後按 Ctrl+Enter 顯示所有可用記錄。" />
+  <string key="Keyboard focus" value="鍵盤焦點" />
+  <string key="Sections" value="區段" />
+  <string key="Workbench" value="工作台" />
+  <string key="Current source" value="Current source" />
+  <string key="Session and files" value="工作階段與檔案" />
+  <string key="Section tools" value="區段工具" />
+  <string key="Results" value="結果" />
+  <string key="Language" value="語言" />
+  <string key="Text size" value="文字大小" />
+  <string key="Developer workbench" value="開發者工作台" />
+  <string key="Workbench sections" value="Workbench sections" />
+  <string key="Search or exact object/test ID" value="Search or exact object/test ID" />
+  <string key="Test seed" value="Test seed" />
+  <string key="Operation in progress" value="Operation in progress" />
+  <string key="Report details" value="Report details" />
+  <string key="Enabled" value="已啟用" />
+  <string key="Disabled" value="已停用" />
+  <string key="Choose a tool" value="選擇工具" />
+  <string key="Modules: check dependencies.&#10;Inspector: capture object state.&#10;Tests: verify your extension." value="模組：檢查相依性。&#10;檢查器：擷取物件狀態。&#10;測試：驗證你的擴充功能。" />
+  <string key="Browse safely. State-changing tests require test mode; campaign tests also require a working copy." value="安全瀏覽。會變更狀態的測試需要測試模式；戰役測試還需要工作複本。" />
+  <string key="Your development session at a glance." value="開發工作階段概覽。" />
+  <string key="Search the records captured in this session. Leave the search empty to show all." value="搜尋此工作階段中擷取的記錄。將搜尋留空以顯示全部。" />
+  <string key="Measurements cover instrumented operations, not the entire game." value="測量涵蓋已插樁的作業，而非整個遊戲。" />
+  <string key="Work order" value="Work order" />
+  <string key="Report state" value="報告狀態" />
+  <string key="Evidence retained" value="已保留證據" />
+  <string key="Attention" value="Attention" />
+  <string key="Replay lab" value="重播實驗室" />
+  <string key="Replay selected event" value="Replay selected event" />
+  <string key="Enter a retained event sequence, then run a guarded replay." value="輸入保留的事件序列，然後執行受保護的重播。" />
+  <string key="Replay" value="重播" />
+  <string key="Replay source" value="重播來源" />
+  <string key="Replay outcome" value="重播結果" />
+  <string key="Replay mode" value="重播模式" />
+  <string key="Replay rejected" value="重播遭拒" />
+  <string key="Replay completed" value="重播完成" />
+  <string key="Select a retained event sequence." value="選取保留的事件序列。" />
+  <string key="No retained events are available." value="沒有可用的保留事件。" />
+  <string key="Live replay reuses existing test and campaign-copy safeguards." value="即時重播會重複使用現有的測試模式與戰役副本保護。" />
+  <string key="Test permission" value="測試權限" />
+  <string key="Selected evidence" value="已選證據" />
+  <string key="No evidence selected" value="未選取證據" />
+  <string key="Retained event sequence" value="Retained event sequence" />
+  <string key="Offline report" value="Offline report" />
+  <string key="{0} selected · {1} retained" value="已選取 {0} · 已保留 {1}" />
+  <string key="Connect to a live session to replay retained events." value="Connect to a live session to replay retained events." />
+  <string key="The connected game does not expose Replay Lab." value="The connected game does not expose Replay Lab." />
+  <string key="ForgeWeave Replay Lab reuses retained host events for controlled verification. It does not intercept methods or inject event data." value="ForgeWeave Replay Lab reuses retained host events for controlled verification. It does not intercept methods or inject event data." />
+  <string key="Help: AutoRegister summary" value="僅掃描指定組件並註冊支援的 SDK 契約。" />
+  <string key="Help: Gauntlet page summary" value="宣告可由 Forge 作為獨立圖層開啟的 Gauntlet prefab。" />
+  <string key="Help: Gauntlet command summary" value="宣告無參數的 Gauntlet 命令方法及其所需情境。" />
+  <string key="Help: Open page summary" value="要求 Forge 主機開啟已註冊的擴充頁面。" />
+  <string key="Help: Assembly workbench summary" value="在背景讀取受限的 PE/.NET 中繼資料，不載入或執行 DLL。變更版本前需預覽，並建立含來源備份與雜湊的已驗證副本。" />
+  <string key="Help: Safety summary" value="屬性僅驗證中繼資料，不會隔離第三方程式碼。頁面命令仍由擴充作者撰寫，必須遵守 Bannerlord 主執行緒規則。" />
+  <string key="Assembly path or list index" value="組件路徑或序號" />
+  <string key="Version" value="版本" />
+  <string key="List installed DLLs" value="列出已安裝的 DLL" />
+  <string key="Select DLL row" value="選取 DLL 列" />
+  <string key="Inspect metadata" value="檢查中繼資料" />
+  <string key="Preview version" value="預覽版本" />
+  <string key="Apply copy" value="套用至副本" />
+  <string key="Assembly workbench" value="組件工作台" />
+  <string key="Open extension page" value="開啟擴充頁面" />
+  <string key="Context help" value="情境說明" />
+  <string key="Gauntlet extension pages" value="Gauntlet 擴充頁面" />
+  <string key="Type a page ID in the argument field, then use Open extension page." value="在引數欄輸入頁面 ID，然後選取「開啟擴充頁面」。" />
+  <string key="Use Context help for offline SDK guidance and the Assembly workbench." value="使用情境說明檢視離線 SDK 指南與組件工作台。" />
+  <string key="Assembly workbench guidance" value="組件工作台指南" />
+  <string key="List installed DLLs, enter a row number, and select it. Inspection reads PE metadata only; it never loads or executes the file." value="列出已安裝的 DLL，輸入列號並選取。檢查僅讀取 PE 中繼資料，不會載入或執行檔案。" />
+  <string key="For a version change, enter a four-part version, preview first, then apply only to create a copy under LocalAppData/CalradiaForge/AssemblyWorkbench." value="變更版本時輸入四段版本號，先預覽，再套用以在 LocalAppData/CalradiaForge/AssemblyWorkbench 建立副本。" />
+  <string key="Strong-name signed and mixed-mode assemblies are rejected. The original is preserved; a source backup and SHA-256 evidence are written." value="拒絕強式名稱簽署與混合模式組件。保留原始檔，並寫入來源備份與 SHA-256 證據。" />
+  <string key="In-game SDK help" value="遊戲內 SDK 說明" />
+  <string key="0 matching lines found." value="找不到符合的行。" />
+  <string key="ADVANCED SDK" value="進階 SDK" />
+  <string key="Audio manifest audit completed." value="音訊清單稽核已完成。" />
+  <string key="Audio test executed." value="音訊測試已執行。" />
+  <string key="Browse all 110+ Advanced SDK tools" value="瀏覽全部 110 多個進階 SDK 工具" />
+  <string key="COMMAND HISTORY" value="命令歷史紀錄" />
+  <string key="Casus Belli evaluation completed." value="戰爭理由評估已完成。" />
+  <string key="Clear History" value="清除歷史紀錄" />
+  <string key="Clear all recorded command history." value="清除所有已記錄的命令歷史。" />
+  <string key="Close the SDK catalog." value="關閉 SDK 目錄。" />
+  <string key="Copied to clipboard." value="已複製到剪貼簿。" />
+  <string key="Crime &amp; underworld simulation completed." value="犯罪與地下世界模擬已完成。" />
+  <string key="Ctrl+F: input · Ctrl+Enter: refresh output" value="Ctrl+F：輸入 · Ctrl+Enter：重新整理輸出" />
+  <string key="Ctrl+K: help · Ctrl+W: watch · Tab: focus" value="Ctrl+K：說明 · Ctrl+W：監看 · Tab：焦點" />
+  <string key="Dynasty &amp; succession evaluation completed." value="王朝與繼承評估已完成。" />
+  <string key="Filter cleared. Showing all lines." value="篩選已清除。正在顯示所有行。" />
+  <string key="Filtered to {0} matching lines." value="已篩選出 {0} 行符合內容。" />
+  <string key="Heap trimmed: reclaimed {0:F1} MB" value="堆積記憶體已整理：回收 {0:F1} MB" />
+  <string key="History ▾" value="歷史紀錄 ▾" />
+  <string key="Live Watch Activated (1s tick)" value="即時監看已啟用（間隔 1 秒）" />
+  <string key="Live Watch Deactivated" value="即時監看已關閉" />
+  <string key="Load next command from history (Down Arrow)." value="載入歷史紀錄中的下一個命令（向下箭頭）。" />
+  <string key="Load previous command from history (Up Arrow)." value="載入歷史紀錄中的上一個命令（向上箭頭）。" />
+  <string key="Localization audit completed." value="在地化稽核已完成。" />
+  <string key="Open the searchable Advanced SDK tool catalog." value="開啟可搜尋的進階 SDK 工具目錄。" />
+  <string key="Output display cleared." value="已清除目前顯示的輸出。" />
+  <string key="Party simulation completed." value="部隊模擬已完成。" />
+  <string key="SDK Catalog" value="SDK 工具目錄" />
+  <string key="Save system health audit passed." value="存檔系統狀態稽核已通過。" />
+  <string key="Scaffold generated. Use Copy to clipboard to save it." value="初始架構已產生。使用「複製到剪貼簿」來儲存。" />
+  <string key="Siege tactics analysis completed." value="圍城戰術分析已完成。" />
+  <string key="Toggle recent command history dropdown." value="展開或收合最近命令歷史下拉清單。" />
+  <string key="Toggle tactical keyboard shortcuts guide (Ctrl+K)." value="顯示或隱藏戰術鍵盤快速鍵指南（Ctrl+K）。" />
+  <string key="Trade simulation completed." value="貿易模擬已完成。" />
+  <string key="[ ⌨ Keys ]" value="[ ⌨ 按鍵 ]" />
+</strings>

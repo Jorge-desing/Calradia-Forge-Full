@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net472</TargetFramework></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/CalradiaForge.Sdk/CalradiaForge.Sdk.csproj" Private="false" />
+    <ProjectReference Include="../CalradiaForge.PriceContracts/CalradiaForge.PriceContracts.csproj" Private="false" />
+    <Reference Include="$(GameBin)\TaleWorlds.MountAndBlade.dll"><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

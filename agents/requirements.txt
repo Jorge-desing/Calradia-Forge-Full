@@ -1,0 +1,6 @@
+# Calradia Forge - Google Antigravity Autonomous Agents Requirements
+google-antigravity>=0.1.19
+google-genai>=2.25.0
+pydantic>=2.13.0
+protobuf>=7.36.0
+absl-py>=2.5.0

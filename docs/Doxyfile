@@ -1,0 +1,9 @@
+# Doxyfile 1.9.0
+PROJECT_NAME           = "Calradia Forge SDK"
+PROJECT_NUMBER         = "v10.0.0"
+OUTPUT_DIRECTORY       = "html"
+INPUT                  = "../src/CalradiaForge.Sdk" "../src/CalradiaForge.Core"
+FILE_PATTERNS          = *.cs
+RECURSIVE              = YES
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO

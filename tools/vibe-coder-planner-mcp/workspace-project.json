@@ -1,0 +1,5 @@
+{
+  "name": "Calradia Forge",
+  "description": "A standalone developer suite for Mount & Blade II: Bannerlord 1.4.8, with an in-game Forge panel, a Windows desktop workbench, and the ForgeWeave SDK. The current workspace describes version 22.0.0.",
+  "tech_stack": ["C#", ".NET 8", ".NET Framework 4.7.2", "WPF", "Bannerlord SDK"]
+}

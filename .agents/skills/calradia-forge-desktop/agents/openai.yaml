@@ -1,0 +1,3 @@
+interface:
+  display_name: "Calradia Forge Desktop"
+  short_description: "Develop and validate the standalone WPF desktop workbench"

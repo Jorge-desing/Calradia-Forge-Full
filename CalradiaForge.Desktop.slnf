@@ -1,0 +1,9 @@
+{
+  "solution": {
+    "path": "CalradiaForge.sln",
+    "projects": [
+      "tests\\CalradiaForge.Desktop.RenderTests\\CalradiaForge.Desktop.RenderTests.csproj",
+      "tests\\CalradiaForge.Desktop.Tests\\CalradiaForge.Desktop.Tests.csproj"
+    ]
+  }
+}

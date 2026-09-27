@@ -1,0 +1,29 @@
+TpacTool Max Version 1.0 — Third-Party Notices
+
+This file applies to third-party components used by the build. It is separate from both the original upstream TpacTool LICENSE and the TpacTool Max additions freeware terms.
+
+Avalonia UI
+Project: https://github.com/AvaloniaUI/Avalonia
+License: MIT
+The Avalonia copyright and MIT permission notice must be retained according to the resolved package and source distribution.
+
+AssimpNet / Open Asset Import Library
+Projects: https://github.com/assimp/assimp-net and https://github.com/assimp/assimp
+The applicable AssimpNet binding and native Assimp notices must be retained. The upstream Assimp license and bundled-component notices apply to the resolved package.
+
+Silk.NET.OpenGL
+Project: https://github.com/dotnet/Silk.NET
+License: MIT/X11
+Silk.NET and dependency notices must remain with builds that include the OpenGL backend.
+
+.NET 8.0 / System.Numerics
+Project: https://github.com/dotnet/runtime
+License: MIT
+The .NET Foundation and Contributors copyright and MIT permission notice apply to the relevant runtime/source components.
+
+lz4net
+Project: https://github.com/MiloszKrajewski/lz4net
+The license and notices shipped with the resolved package must be retained if lz4net is included in a build.
+
+Bannerlord game assets
+TPAC files and game assets belong to their respective rights holders. This tool license does not grant permission to redistribute extracted game assets. Users must follow TaleWorlds and applicable modding/asset terms.

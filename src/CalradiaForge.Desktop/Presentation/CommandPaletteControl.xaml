@@ -1,0 +1,42 @@
+<UserControl x:Class="CalradiaForge.Desktop.Presentation.CommandPaletteControl"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:services="clr-namespace:CalradiaForge.Desktop.Services"
+ xmlns:presentation="clr-namespace:CalradiaForge.Desktop.Presentation"
+ xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+ xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+ MinWidth="0" MinHeight="0">
+<Border AutomationProperties.AutomationId="CommandPaletteOverlay" Background="#E60D1714" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="4" Padding="28" Panel.ZIndex="20" Visibility="{Binding IsCommandPaletteOpen, Converter={StaticResource BooleanToVisibilityConverter}}">
+    <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" HorizontalAlignment="Center" MaxHeight="610" MaxWidth="760" Padding="20" VerticalAlignment="Center">
+     <DockPanel>
+      <StackPanel DockPanel.Dock="Top">
+       <Grid>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <StackPanel>
+         <TextBlock Style="{StaticResource SectionHeading}" Text="{DynamicResource Ui.CommandPalette}"/>
+         <TextBlock Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,10" Text="{DynamicResource Ui.SearchHint}" TextWrapping="Wrap"/>
+        </StackPanel>
+        <Button AutomationProperties.AutomationId="CloseCommandPaletteButton" AutomationProperties.Name="{DynamicResource Ui.Close}" Command="{Binding ClosePaletteCommand}" Content="{DynamicResource Ui.Close}" Grid.Column="1" MinHeight="34" MinWidth="72" Padding="8,4"/>
+       </Grid>
+       <TextBox AutomationProperties.AutomationId="CommandPaletteSearch" AutomationProperties.Name="{DynamicResource Ui.Search}" MinHeight="42" Padding="12,6" Text="{Binding PaletteFilter, UpdateSourceTrigger=PropertyChanged}" ToolTip="{DynamicResource Ui.Search}" VerticalContentAlignment="Center">
+        <TextBox.InputBindings>
+         <KeyBinding Command="{Binding SelectFirstPaletteToolCommand}" Key="Return"/>
+        </TextBox.InputBindings>
+       </TextBox>
+      </StackPanel>
+      <ListBox AutomationProperties.AutomationId="CommandPaletteToolList" AutomationProperties.Name="{DynamicResource Ui.CommandPalette}" Background="Transparent" BorderThickness="0" ItemsSource="{Binding PaletteTools}" Margin="0,12,0,0" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" SelectedItem="{Binding SelectedTool}" VirtualizingPanel.CacheLength="1,1" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.VirtualizationMode="Recycling">
+       <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling"/></ItemsPanelTemplate></ListBox.ItemsPanel>
+       <ListBox.ItemTemplate>
+        <DataTemplate>
+         <Grid Margin="0,5">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+          <StackPanel><TextBlock FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Title}"/><TextBlock FontSize="10" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding Id}"/></StackPanel>
+          <TextBlock FontSize="10" Foreground="{DynamicResource BrassBrush}" Grid.Column="1" Text="{Binding KindLabel}" VerticalAlignment="Center"/>
+         </Grid>
+        </DataTemplate>
+       </ListBox.ItemTemplate>
+      </ListBox>
+     </DockPanel>
+    </Border>
+   </Border>
+</UserControl>

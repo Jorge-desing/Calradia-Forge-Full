@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/CalradiaForge.Sdk/CalradiaForge.Sdk.csproj" />
+    <ProjectReference Include="../../src/CalradiaForge.Core/CalradiaForge.Core.csproj" />
+    <ProjectReference Include="../../src/CalradiaForge.Mod/CalradiaForge.Mod.csproj" />
+    <ProjectReference Include="../../examples/CalradiaForge.Examples/CalradiaForge.Examples.csproj" />
+    <ProjectReference Include="../../examples/CalradiaForge.PriceProvider/CalradiaForge.PriceProvider.csproj" />
+    <ProjectReference Include="../../examples/CalradiaForge.PriceConsumer/CalradiaForge.PriceConsumer.csproj" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="$(GameBin)\TaleWorlds.Library.dll"><Private>true</Private></Reference>
+    <PackageReference Include="AsmResolver.DotNet" Version="6.0.1" />
+    <Compile Include="../../src/CalradiaForge.Mod/PipeServer.cs" Link="PipeServer.cs" />
+  </ItemGroup>
+</Project>

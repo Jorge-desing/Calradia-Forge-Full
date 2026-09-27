@@ -1,0 +1,231 @@
+<?xml version='1.0' encoding='utf-8'?>
+<strings language="it">
+  <string key="Assign unique IDs" value="Assign unique IDs" />
+  <string key="Build or reinstall module" value="Build or reinstall module" />
+  <string key="Calradia Forge" value="Forgia di Calradia" />
+  <string key="Campaign copy confirmed" value="Copia campagna confermata" />
+  <string key="Check module folder" value="Check module folder" />
+  <string key="Close" value="Chiudi" />
+  <string key="Commands" value="Comandi" />
+  <string key="Compare" value="Confronta" />
+  <string key="Confirm campaign copy" value="Conferma copia campagna" />
+  <string key="Connect" value="Connetti" />
+  <string key="Connected" value="Connesso" />
+  <string key="Context" value="Contesto" />
+  <string key="Declared DLL missing" value="Declared DLL missing" />
+  <string key="Dependency cycle" value="Dependency cycle" />
+  <string key="Disable testing" value="Disattiva test" />
+  <string key="Disconnected" value="Disconnesso" />
+  <string key="Duplicate ID" value="ID duplicato" />
+  <string key="Enable testing" value="Attiva test" />
+  <string key="Enable testing and confirm campaign copy" value="Attiva i test e conferma la copia della campagna" />
+  <string key="Enter the Bannerlord process ID" value="Enter the Bannerlord process ID" />
+  <string key="Exact object ID required" value="È richiesto l'ID esatto dell'oggetto" />
+  <string key="Export report" value="Esporta rapporto" />
+  <string key="Extension diagnostics" value="Extension diagnostics" />
+  <string key="Fix XML" value="Fix XML" />
+  <string key="Fix manifest" value="Fix manifest" />
+  <string key="Import log" value="Importa registro" />
+  <string key="Inspector" value="Ispettore" />
+  <string key="Inspect framework" value="Inspect framework" />
+  <string key="Framework" value="Framework" />
+  <string key="ForgeWeave framework" value="Framework ForgeWeave" />
+  <string key="ForgeWeave shows declared extension handlers, order, health and timing without applying patches." value="ForgeWeave mostra gestori di estensioni dichiarati, ordine, stato e tempi senza applicare patch." />
+  <string key="Handlers" value="Gestori" />
+  <string key="Quarantined" value="In quarantena" />
+  <string key="Dispatches" value="Invii" />
+  <string key="Failures" value="Errori" />
+  <string key="Mean" value="Media" />
+  <string key="Maximum" value="Massimo" />
+  <string key="Recent events" value="Eventi recenti" />
+  <string key="Framework findings" value="Risultati del framework" />
+  <string key="Harmony" value="Harmony" />
+  <string key="Harmony patch atlas" value="Atlante delle patch Harmony" />
+  <string key="Optional read-only Harmony diagnostics. Shared targets are review candidates, not proven conflicts." value="Diagnostica Harmony facoltativa in sola lettura. I bersagli condivisi sono candidati alla revisione, non conflitti dimostrati." />
+  <string key="Patch preflight" value="Preconvalida delle patch" />
+  <string key="Patch blueprint preflight" value="Preconvalida del blueprint della patch" />
+  <string key="Providers" value="Fornitori" />
+  <string key="Resolved" value="Risolti" />
+  <string key="Review items" value="Elementi da revisionare" />
+  <string key="Preflight findings" value="Risultati della preconvalida" />
+  <string key="Check patch blueprints" value="Check patch blueprints" />
+  <string key="Patch blueprint declarations are read-only. This check does not apply a patch." value="Patch blueprint declarations are read-only. This check does not apply a patch." />
+  <string key="Install dependency" value="Install dependency" />
+  <string key="Invalid DLL path" value="Invalid DLL path" />
+  <string key="Inventory" value="Inventory" />
+  <string key="Logs" value="Registri" />
+  <string key="Maximum 100 snapshots" value="Massimo 100 istantanee" />
+  <string key="Missing SubModule.xml" value="Missing SubModule.xml" />
+  <string key="Module folder" value="Cartella moduli" />
+  <string key="Module scan started. Refresh Modules to see results." value="Analisi dei moduli avviata. Aggiorna Moduli per vedere i risultati." />
+  <string key="Modules" value="Moduli" />
+  <string key="Next" value="Successivo" />
+  <string key="No changes" value="Nessuna modifica" />
+  <string key="Object no longer available" value="L'oggetto non è più disponibile" />
+  <string key="Open report" value="Apri rapporto" />
+  <string key="Performance" value="Prestazioni" />
+  <string key="Pin" value="Fissa" />
+  <string key="Pin this object first" value="Fissa prima questo oggetto" />
+  <string key="Previous" value="Precedente" />
+  <string key="Raw data" value="Dati grezzi" />
+  <string key="Ready" value="Pronto" />
+  <string key="Refresh" value="Aggiorna" />
+  <string key="Remove circular dependency" value="Remove circular dependency" />
+  <string key="Run command" value="Run command" />
+  <string key="Run test" value="Esegui test" />
+  <string key="Scan modules" value="Analizza moduli" />
+  <string key="Scanning…" value="Scanning…" />
+  <string key="Search / argument" value="Cerca / argomento" />
+  <string key="Seed" value="Seme" />
+  <string key="Session" value="Sessione" />
+  <string key="Session process ID" value="ID processo sessione" />
+  <string key="Single-player only" value="Solo giocatore singolo" />
+  <string key="Start Bannerlord with Calradia Forge enabled, then connect. Offline module scanning is available without the game." value="Avvia Bannerlord con Calradia Forge attivato e connettiti. La scansione dei moduli funziona senza il gioco." />
+  <string key="Summary" value="Riepilogo" />
+  <string key="Table" value="Tabella" />
+  <string key="Testing" value="Test" />
+  <string key="Tests" value="Test" />
+  <string key="Troops" value="Troops" />
+  <string key="Unknown test" value="Test sconosciuto" />
+  <string key="Use a copied campaign. This enables state-changing tests for this session." value="Use a copied campaign. This enables state-changing tests for this session." />
+  <string key="Use filename only" value="Use filename only" />
+  <string key="Wrong context" value="Contesto errato" />
+  <string key="Capture report" value="Acquisisci rapporto" />
+  <string key="Live session" value="Sessione live" />
+  <string key="Snapshots" value="Istantanee" />
+  <string key="Dependencies" value="Dipendenze" />
+  <string key="Remove snapshot" value="Rimuovi istantanea" />
+  <string key="Run batch" value="Esegui gruppo" />
+  <string key="Find an object by type and ID. Pin a baseline before comparing." value="Trova un oggetto per tipo e ID. Fissa una base prima di confrontare." />
+  <string key="Run one test ID, or a comma-separated batch. Batches stop on the first failure." value="Esegui un ID di test o un lotto separato da virgole. I lotti si fermano al primo errore." />
+  <string key="Inspect installed modules without changing files or launcher settings." value="Ispeziona i moduli installati senza modificare file o impostazioni del launcher." />
+  <string key="Browse a live session or the current report. Export preserves the current report." value="Consulta una sessione live o il rapporto corrente. L’esportazione conserva il rapporto." />
+  <string key="Enable Live session to use game actions." value="Enable Live session to use game actions." />
+  <string key="No records captured." value="No records captured." />
+  <string key="Scan modules, open a report, or connect to Bannerlord to begin." value="Scan modules, open a report, or connect to Bannerlord to begin." />
+  <string key="New report" value="Nuovo rapporto" />
+  <string key="Captured live session" value="Captured live session" />
+  <string key="Snapshot removed" value="Istantanea rimossa" />
+  <string key="Snapshot not found" value="Istantanea non trovata" />
+  <string key="Invalid extension context" value="Contesto dell'estensione non valido" />
+  <string key="Select between 1 and 50 tests" value="Seleziona da 1 a 50 test" />
+  <string key="Native target" value="Versione di Native" />
+  <string key="Yes" value="Sì" />
+  <string key="No" value="No" />
+  <string key="Any" value="Qualsiasi" />
+  <string key="Campaign" value="Campagna" />
+  <string key="Mission" value="Missione" />
+  <string key="Complete" value="Completo" />
+  <string key="Order" value="Ordine" />
+  <string key="Blocked" value="Bloccati" />
+  <string key="Error" value="Errore" />
+  <string key="No log entries match this search." value="Nessuna voce di registro corrisponde alla ricerca." />
+  <string key="Clear Search / argument and press Ctrl+Enter to show all available logs." value="Cancella Ricerca / argomento e premi Ctrl+Invio per mostrare tutti i registri disponibili." />
+  <string key="Keyboard focus" value="Focus tastiera" />
+  <string key="Sections" value="Sezioni" />
+  <string key="Workbench" value="Banco di lavoro" />
+  <string key="Current source" value="Current source" />
+  <string key="Session and files" value="Sessione e file" />
+  <string key="Section tools" value="Strumenti sezione" />
+  <string key="Results" value="Risultati" />
+  <string key="Language" value="Lingua" />
+  <string key="Text size" value="Dimensione testo" />
+  <string key="Developer workbench" value="Banco di lavoro dello sviluppatore" />
+  <string key="Workbench sections" value="Workbench sections" />
+  <string key="Search or exact object/test ID" value="Search or exact object/test ID" />
+  <string key="Test seed" value="Test seed" />
+  <string key="Operation in progress" value="Operation in progress" />
+  <string key="Report details" value="Report details" />
+  <string key="Enabled" value="Attivato" />
+  <string key="Disabled" value="Disattivato" />
+  <string key="Choose a tool" value="Scegli uno strumento" />
+  <string key="Modules: check dependencies.&#10;Inspector: capture object state.&#10;Tests: verify your extension." value="Moduli: controlla le dipendenze.&#10;Ispettore: cattura lo stato dell'oggetto.&#10;Test: verifica la tua estensione." />
+  <string key="Browse safely. State-changing tests require test mode; campaign tests also require a working copy." value="Esplora in sicurezza. I test che modificano lo stato richiedono la modalità test; i test in campagna richiedono anche una copia di lavoro." />
+  <string key="Your development session at a glance." value="La tua sessione di sviluppo a colpo d'occhio." />
+  <string key="Search the records captured in this session. Leave the search empty to show all." value="Cerca i registri acquisiti in questa sessione. Lascia vuota la ricerca per mostrarli tutti." />
+  <string key="Measurements cover instrumented operations, not the entire game." value="Le misurazioni coprono operazioni strumentate, non l'intero gioco." />
+  <string key="Work order" value="Work order" />
+  <string key="Report state" value="Stato rapporto" />
+  <string key="Evidence retained" value="Prove conservate" />
+  <string key="Attention" value="Attention" />
+  <string key="Replay lab" value="Laboratorio di ripetizione" />
+  <string key="Replay selected event" value="Replay selected event" />
+  <string key="Enter a retained event sequence, then run a guarded replay." value="Immetti una sequenza di evento conservata, quindi esegui una ripetizione protetta." />
+  <string key="Replay" value="Ripeti" />
+  <string key="Replay source" value="Origine della ripetizione" />
+  <string key="Replay outcome" value="Esito della ripetizione" />
+  <string key="Replay mode" value="Modalità di ripetizione" />
+  <string key="Replay rejected" value="Ripetizione rifiutata" />
+  <string key="Replay completed" value="Ripetizione completata" />
+  <string key="Select a retained event sequence." value="Seleziona una sequenza di evento conservata." />
+  <string key="No retained events are available." value="Nessun evento conservato disponibile." />
+  <string key="Live replay reuses existing test and campaign-copy safeguards." value="La ripetizione dal vivo riutilizza le protezioni esistenti della modalità di prova e della copia della campagna." />
+  <string key="Test permission" value="Permesso test" />
+  <string key="Selected evidence" value="Prove selezionate" />
+  <string key="No evidence selected" value="Nessuna prova selezionata" />
+  <string key="Retained event sequence" value="Retained event sequence" />
+  <string key="Offline report" value="Offline report" />
+  <string key="{0} selected · {1} retained" value="{0} selezionati · {1} conservati" />
+  <string key="Connect to a live session to replay retained events." value="Connect to a live session to replay retained events." />
+  <string key="The connected game does not expose Replay Lab." value="The connected game does not expose Replay Lab." />
+  <string key="ForgeWeave Replay Lab reuses retained host events for controlled verification. It does not intercept methods or inject event data." value="ForgeWeave Replay Lab reuses retained host events for controlled verification. It does not intercept methods or inject event data." />
+  <string key="Help: AutoRegister summary" value="Esamina solo l'assembly indicato e registra i contratti SDK supportati." />
+  <string key="Help: Gauntlet page summary" value="Dichiara un prefab Gauntlet autonomo che Forge può aprire come livello." />
+  <string key="Help: Gauntlet command summary" value="Dichiara un comando Gauntlet senza parametri e il contesto richiesto." />
+  <string key="Help: Open page summary" value="Richiede all'host Forge di aprire una pagina di estensione registrata." />
+  <string key="Help: Assembly workbench summary" value="Legge metadati PE/.NET limitati in background senza caricare né eseguire la DLL. Le modifiche di versione richiedono un'anteprima e creano una copia verificata con backup e hash." />
+  <string key="Help: Safety summary" value="Gli attributi convalidano i metadati, ma non isolano il codice di terze parti. I comandi restano codice dell'autore e devono rispettare le regole del thread principale di Bannerlord." />
+  <string key="Assembly path or list index" value="Percorso assembly o indice" />
+  <string key="Version" value="Versione" />
+  <string key="List installed DLLs" value="Elenca DLL installate" />
+  <string key="Select DLL row" value="Seleziona riga DLL" />
+  <string key="Inspect metadata" value="Ispeziona metadati" />
+  <string key="Preview version" value="Anteprima versione" />
+  <string key="Apply copy" value="Applica alla copia" />
+  <string key="Assembly workbench" value="Banco degli assembly" />
+  <string key="Open extension page" value="Apri pagina estensione" />
+  <string key="Context help" value="Guida contestuale" />
+  <string key="Gauntlet extension pages" value="Pagine di estensione Gauntlet" />
+  <string key="Type a page ID in the argument field, then use Open extension page." value="Inserisci l'ID pagina nel campo argomento, poi scegli Apri pagina estensione." />
+  <string key="Use Context help for offline SDK guidance and the Assembly workbench." value="Usa la guida contestuale per i suggerimenti SDK offline e il banco degli assembly." />
+  <string key="Assembly workbench guidance" value="Guida al banco degli assembly" />
+  <string key="List installed DLLs, enter a row number, and select it. Inspection reads PE metadata only; it never loads or executes the file." value="Elenca le DLL installate, inserisci il numero di riga e selezionala. L'ispezione legge solo metadati PE e non carica né esegue il file." />
+  <string key="For a version change, enter a four-part version, preview first, then apply only to create a copy under LocalAppData/CalradiaForge/AssemblyWorkbench." value="Per cambiare versione, inserisci quattro componenti, visualizza prima l'anteprima e applica solo per creare una copia in LocalAppData/CalradiaForge/AssemblyWorkbench." />
+  <string key="Strong-name signed and mixed-mode assemblies are rejected. The original is preserved; a source backup and SHA-256 evidence are written." value="Gli assembly strong-name firmati e misti vengono rifiutati. L'originale è conservato; vengono salvati un backup sorgente e prove SHA-256." />
+  <string key="In-game SDK help" value="Aiuto SDK nel gioco" />
+  <string key="0 matching lines found." value="Nessuna riga corrispondente trovata." />
+  <string key="ADVANCED SDK" value="SDK AVANZATO" />
+  <string key="Audio manifest audit completed." value="L’audit del manifest audio è completato." />
+  <string key="Audio test executed." value="Il test audio è stato eseguito." />
+  <string key="Browse all 110+ Advanced SDK tools" value="Esplora gli oltre 110 strumenti avanzati dell’SDK" />
+  <string key="COMMAND HISTORY" value="CRONOLOGIA COMANDI" />
+  <string key="Casus Belli evaluation completed." value="La valutazione del casus belli è completata." />
+  <string key="Clear History" value="Cancella cronologia" />
+  <string key="Clear all recorded command history." value="Cancella tutta la cronologia dei comandi registrata." />
+  <string key="Close the SDK catalog." value="Chiude il catalogo SDK." />
+  <string key="Copied to clipboard." value="Copiato negli appunti." />
+  <string key="Crime &amp; underworld simulation completed." value="La simulazione di criminalità e malavita è completata." />
+  <string key="Ctrl+F: input · Ctrl+Enter: refresh output" value="Ctrl+F: input · Ctrl+Enter: aggiorna l’output" />
+  <string key="Ctrl+K: help · Ctrl+W: watch · Tab: focus" value="Ctrl+K: aiuto · Ctrl+W: monitoraggio · Tab: focus" />
+  <string key="Dynasty &amp; succession evaluation completed." value="La valutazione di dinastia e successione è completata." />
+  <string key="Filter cleared. Showing all lines." value="Filtro rimosso. Sono visualizzate tutte le righe." />
+  <string key="Filtered to {0} matching lines." value="Filtrate {0} righe corrispondenti." />
+  <string key="Heap trimmed: reclaimed {0:F1} MB" value="Heap ripulito: recuperati {0:F1} MB" />
+  <string key="History ▾" value="Cronologia ▾" />
+  <string key="Live Watch Activated (1s tick)" value="Monitoraggio in tempo reale attivato (intervallo di 1 s)" />
+  <string key="Live Watch Deactivated" value="Monitoraggio in tempo reale disattivato" />
+  <string key="Load next command from history (Down Arrow)." value="Carica il comando successivo dalla cronologia (freccia giù)." />
+  <string key="Load previous command from history (Up Arrow)." value="Carica il comando precedente dalla cronologia (freccia su)." />
+  <string key="Localization audit completed." value="L’audit della localizzazione è completato." />
+  <string key="Open the searchable Advanced SDK tool catalog." value="Apre il catalogo consultabile degli strumenti avanzati dell’SDK." />
+  <string key="Output display cleared." value="L’output visualizzato è stato cancellato." />
+  <string key="Party simulation completed." value="La simulazione del gruppo è completata." />
+  <string key="SDK Catalog" value="Catalogo SDK" />
+  <string key="Save system health audit passed." value="Il controllo dell’integrità dei salvataggi è riuscito." />
+  <string key="Scaffold generated. Use Copy to clipboard to save it." value="Lo scheletro è stato generato. Usa Copia negli appunti per salvarlo." />
+  <string key="Siege tactics analysis completed." value="L’analisi delle tattiche d’assedio è completata." />
+  <string key="Toggle recent command history dropdown." value="Mostra o nasconde il menu a discesa della cronologia recente dei comandi." />
+  <string key="Toggle tactical keyboard shortcuts guide (Ctrl+K)." value="Mostra o nasconde la guida tattica alle scorciatoie da tastiera (Ctrl+K)." />
+  <string key="Trade simulation completed." value="La simulazione commerciale è completata." />
+  <string key="[ ⌨ Keys ]" value="[ ⌨ Tasti ]" />
+</strings>

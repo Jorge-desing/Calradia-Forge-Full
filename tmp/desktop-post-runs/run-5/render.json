@@ -1,0 +1,1694 @@
+{
+  "passed": true,
+  "milliseconds": 5363,
+  "performance": {
+    "renderPassCount": 152,
+    "renderLayoutMilliseconds": 759.6,
+    "renderLayoutP50Milliseconds": 2.08,
+    "renderLayoutP95Milliseconds": 22.96,
+    "renderLayoutMaxMilliseconds": 52.41,
+    "visualTreeSnapshotBuilds": 91,
+    "visualTreeSnapshotHits": 1289,
+    "visualTreeNodesVisited": 66258
+  },
+  "phaseTimings": {
+    "nonvisual-fixtures-and-contracts": 514.3002,
+    "app-startup-and-first-render": 1285.2803,
+    "all-route-navigation-and-filter-checks": 796.9208,
+    "localization-and-scale-matrix": 1134.8422,
+    "theme-and-scale-matrix": 1552.6718
+  },
+  "scope": "Actual WPF template instantiation and layout. Not a visual clipping approval or game performance sample.",
+  "records": [
+    {
+      "test": "mvvm-native-input-picker-commands",
+      "passed": true,
+      "preservesInputOnCancel": true
+    },
+    {
+      "test": "async-page-disposal-rejects-late-completion",
+      "cancellationRequested": true,
+      "lateEvidenceRetained": false,
+      "passed": true
+    },
+    {
+      "test": "assembly-static-inspection",
+      "passed": true,
+      "source": "CalradiaForge.Desktop.RenderTests.dll"
+    },
+    {
+      "test": "assembly-edit-preview-backup-copy-validation",
+      "passed": true
+    },
+    {
+      "test": "assembly-invalid-input-rejected",
+      "passed": true
+    },
+    {
+      "test": "declarative-page-and-command-contracts",
+      "passed": true
+    },
+    {
+      "test": "desktop-illustrated-textures-are-local-packaged-pngs",
+      "resources": 15,
+      "passed": true
+    },
+    {
+      "test": "game-icons-resources-and-semantic-group-mapping",
+      "passed": true,
+      "icons": 5
+    },
+    {
+      "test": "render-route",
+      "route": "SubModuleValidator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "AssemblyInspector",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "AssemblyVersionPatchLab",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "ModConflictMatrix",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "XmlSchemaValidator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "WatchdogParser",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "CrashAnalyzer",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "ApiDeprecationChecker",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "PackagingAuditor",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "MissionMeshGuard",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SaveTypeDefinerAuditor",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "GauntletEventPassChecker",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "CampaignNamespaceGuard",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "ModIdAuditor",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "AudioFmodMixerInspector",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SpritePackageAuditor",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "FbxAsciiPreflight",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "LiveConsole",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "ObjectInspector",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SaveInspector",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SaveBinaryParser",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "MemoryProfiler",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "GauntletInspector",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "GauntletLivePreview",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "PartyInventory",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "MapPathfindingDebugger",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SoundXmlSynthesizer",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "TroopXmlSynthesizer",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "ItemXmlSynthesizer",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "WeaponCraftingForge",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "BrushSynthesizer",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "XmlSnippetForge",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "LocalizationHashGenerator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "LocalizationMatrix",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "ItemBalanceAnalyzer",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "TroopTreeVisualizer",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "PerkTreeCalculator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "DiplomaticMatrix",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SettlementCalculator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "PartyCalculator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "CombatAgentSpawner",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "MockEngine",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "WorkshopEnterpriseSimulator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SiegeNavmeshTactician",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "WarCasusBelliEngine",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "DynasticSuccessionEvaluator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "UnderworldCrimeSimulator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "ModPackager",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "DependencySorter",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "HarmonyPatcher",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "HarmonyTranspiler",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "QuestDialogBuilder",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "RecentExports",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SdkCheatSheet",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "ShortcutGuide",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "ConsoleReference",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "NoviceBehavior",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "NoviceTroop",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "NoviceQuest",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "NoviceItem",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "NoviceSubmodule",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "NoviceChecklist",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "NoviceEvents",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "NoviceHint",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "NoviceWorkshop",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "NoviceParty",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "NoviceBuilding",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "NoviceCombatAi",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeKingdomManager",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeClanManager",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeRebellionSystem",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgePolicyEnforcer",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeVassalRelations",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeDiplomacyEngine",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeMarriageArranger",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeHeirDesignator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeElectionRigger",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTreasonSystem",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCivilWarTrigger",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeAllianceBuilder",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTruceNegotiator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCasusBelli",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeSpyNetwork",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeAssassinationPlot",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeInfluenceMarket",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeRenownTracker",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTitleGranter",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeFactionSplitter",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeNobleCourt",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeQuestManager",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeWeatherController",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTimeManipulator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeReligionSystem",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTraitManager",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeBanditController",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeHideoutSpawner",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeMercenaryHiring",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeVillageHearthManager",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeLoyaltyModifier",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeSecurityModifier",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeWoundRateController",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeNotableSpawner",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCaravanGuardManager",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeRandomEventTrigger",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgePlagueSimulator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeBanditInvasion",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeBountyHunting",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeSlaveTrade",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTournamentGenerator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCustomSettlementBuilder",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeNavalTravel",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCampingSystem",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeHuntingSystem",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeForagingSystem",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCompanionSpawner",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTradeManager",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCaravanController",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeWorkshopManager",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeMarketFluctuation",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTaxesController",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeSmugglingSystem",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeBlackMarket",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeLoanSystem",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeBankSystem",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeInvestmentTracker",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeResourceDepletion",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeInflationController",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTradeRouteOptimizer",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeMerchantGuilds",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCurrencyExchange",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgePricePegging",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeBribeManager",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeEconomicCrisis",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeProsperityBooster",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeFamineSimulator",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeSupplyChainManager",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeFormationController",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeSiegeEngineManager",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeDamageModifier",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeArmorPenetration",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeWeaponBreakage",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeMoraleShock",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeFleeLogic",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCavalryCharge",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgePikemanBrace",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeArcherVolley",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeFriendlyFireAvoidance",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeWeatherCombatMod",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeNightVisionPenalties",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeBleedEffect",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgePoisonEffect",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeStunEffect",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCleaveStrike",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeHeadshotBonus",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeDismountChance",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeShieldBash",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeExecutionMoves",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeAmbushTactics",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeLootingBehavior",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeBodyguardAssignment",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeDuellingSystem",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTargetPriority",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeWeaponSwapLogic",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeFormationSpacing",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeFloatingDamage",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCustomCrosshair",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeMinimapOverlay",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeHealthBars",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCombatCompass",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeAdvancedKillfeed",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeInventorySort",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgePartyFilter",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTroopTreeViewer",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeEncyclopediaExtender",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeDialogueOptionsUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTradeProfitUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeKingdomOverviewUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeClanRolesUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeSiegeHUD",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeTournamentBracketUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeWeaponStatsUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeCharacterEditorExtra",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeMapBordersUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeArmyMoraleUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeGarrisonManagerUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeWorkshopStatsUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeSettlementIcons",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgePrisonerRansomUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeRelationshipBarsUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeSkillTrackerUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeGoldTrackerUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeInfluenceGainUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeRenownGainUI",
+      "passed": true
+    },
+    {
+      "test": "render-route",
+      "route": "SDK_ForgeFoodConsumptionUI",
+      "passed": true
+    },
+    {
+      "test": "report-tabs-keyboard-navigation-and-lazy-views",
+      "evidenceDefault": true,
+      "rawResultOneWay": true,
+      "passed": true
+    },
+    {
+      "test": "localized-clear-filter-restores-catalog-and-focus",
+      "passed": true
+    },
+    {
+      "test": "desktop-shell-synchronous-performance-observations",
+      "thresholdMilliseconds": 16.7,
+      "filterRefresh": {
+        "samples": 8,
+        "p50Milliseconds": 0.13,
+        "p95Milliseconds": 9.69,
+        "maxMilliseconds": 9.69,
+        "atOrAboveFrameThreshold": 0,
+        "p50AllocatedBytes": 7488,
+        "maxAllocatedBytes": 140840
+      },
+      "routeSelection": {
+        "samples": 194,
+        "p50Milliseconds": 0.84,
+        "p95Milliseconds": 1.16,
+        "maxMilliseconds": 8.33,
+        "atOrAboveFrameThreshold": 0,
+        "p50AllocatedBytes": 70376,
+        "maxAllocatedBytes": 119408
+      },
+      "note": "ViewModel synchronous measurements only; WPF layout/render time is reported separately.",
+      "passed": true
+    },
+    {
+      "test": "quick-and-empty-tool-filtering",
+      "quickMatches": 2,
+      "restoredCount": 194,
+      "emptyState": true,
+      "passed": true
+    },
+    {
+      "test": "operational-rail-virtualization",
+      "passed": true,
+      "details": {
+        "routeRows": 194,
+        "groupHeaders": 11,
+        "footerRows": 1,
+        "itemCount": 206,
+        "initialRealized": 9,
+        "favoriteLayoutChecks": 8,
+        "scrolledRealized": 7,
+        "scrollableHeight": 198,
+        "startOffset": 0,
+        "testedOffset": 202,
+        "virtualizationMode": "Recycling",
+        "realizedFooterHistories": true
+      }
+    },
+    {
+      "test": "recent-history-viewport",
+      "recentCount": 12,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "en",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "en",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "en",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "en",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "es",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "es",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "es",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "es",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "pt",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "pt",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "pt",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "pt",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "de",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "de",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "de",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "de",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "fr",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "fr",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "fr",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "fr",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "it",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "it",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "it",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "it",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "pl",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "pl",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "pl",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "pl",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "ru",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "ru",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "ru",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "ru",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "tr",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "tr",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "tr",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "tr",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "zh-HANS",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "zh-HANS",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "zh-HANS",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "zh-HANS",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "zh-HANT",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "zh-HANT",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "zh-HANT",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "zh-HANT",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "ja",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "ja",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "ja",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "ja",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "ko",
+      "scale": 1,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "ko",
+      "scale": 1.25,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "ko",
+      "scale": 1.5,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "render-language-scale-layout",
+      "language": "ko",
+      "scale": 2,
+      "emptyEvidence": true,
+      "longLabels": true,
+      "headerControls": true,
+      "passed": true
+    },
+    {
+      "test": "minimum-window-responsive-layout",
+      "width": 980,
+      "height": 680,
+      "passed": true
+    },
+    {
+      "test": "render-theme-scale-layout",
+      "theme": "war-table",
+      "scale": 1,
+      "routes": 6,
+      "toolKinds": 6,
+      "longLabels": true,
+      "selectorStates": true,
+      "passed": true
+    },
+    {
+      "test": "render-theme-scale-layout",
+      "theme": "war-table",
+      "scale": 1.25,
+      "routes": 6,
+      "toolKinds": 6,
+      "longLabels": true,
+      "selectorStates": false,
+      "passed": true
+    },
+    {
+      "test": "render-theme-scale-layout",
+      "theme": "war-table",
+      "scale": 1.5,
+      "routes": 6,
+      "toolKinds": 6,
+      "longLabels": true,
+      "selectorStates": false,
+      "passed": true
+    },
+    {
+      "test": "render-theme-scale-layout",
+      "theme": "war-table",
+      "scale": 2,
+      "routes": 6,
+      "toolKinds": 6,
+      "longLabels": true,
+      "selectorStates": false,
+      "passed": true
+    },
+    {
+      "test": "render-theme-scale-layout",
+      "theme": "parchment",
+      "scale": 1,
+      "routes": 6,
+      "toolKinds": 6,
+      "longLabels": true,
+      "selectorStates": true,
+      "passed": true
+    },
+    {
+      "test": "render-theme-scale-layout",
+      "theme": "parchment",
+      "scale": 1.25,
+      "routes": 6,
+      "toolKinds": 6,
+      "longLabels": true,
+      "selectorStates": false,
+      "passed": true
+    },
+    {
+      "test": "render-theme-scale-layout",
+      "theme": "parchment",
+      "scale": 1.5,
+      "routes": 6,
+      "toolKinds": 6,
+      "longLabels": true,
+      "selectorStates": false,
+      "passed": true
+    },
+    {
+      "test": "render-theme-scale-layout",
+      "theme": "parchment",
+      "scale": 2,
+      "routes": 6,
+      "toolKinds": 6,
+      "longLabels": true,
+      "selectorStates": false,
+      "passed": true
+    },
+    {
+      "test": "render-theme-scale-layout",
+      "theme": "high-contrast",
+      "scale": 1,
+      "routes": 6,
+      "toolKinds": 6,
+      "longLabels": true,
+      "selectorStates": true,
+      "passed": true
+    },
+    {
+      "test": "render-theme-scale-layout",
+      "theme": "high-contrast",
+      "scale": 1.25,
+      "routes": 6,
+      "toolKinds": 6,
+      "longLabels": true,
+      "selectorStates": false,
+      "passed": true
+    },
+    {
+      "test": "render-theme-scale-layout",
+      "theme": "high-contrast",
+      "scale": 1.5,
+      "routes": 6,
+      "toolKinds": 6,
+      "longLabels": true,
+      "selectorStates": false,
+      "passed": true
+    },
+    {
+      "test": "render-theme-scale-layout",
+      "theme": "high-contrast",
+      "scale": 2,
+      "routes": 6,
+      "toolKinds": 6,
+      "longLabels": true,
+      "selectorStates": false,
+      "passed": true
+    },
+    {
+      "test": "render-test-does-not-write-desktop-preferences",
+      "passed": true
+    }
+  ]
+}

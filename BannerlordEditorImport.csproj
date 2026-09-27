@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>BannerlordEditorImport</AssemblyName>
+    <!-- The project lives in Downloads, which contains unrelated C# trees. -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- SendKeys vive en System.Windows.Forms -->
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="EditorImportAutomation.cs" />
+    <!-- UI Automation, WinForms (SendKeys/Cursor) y Drawing (Point):
+         todas parte del .NET Framework en Windows, no requieren NuGet.
+         Se referencian explícitamente porque UseWindowsForms no es
+         del todo fiable para targets net47x según la versión del SDK. -->
+    <Reference Include="UIAutomationClient" />
+    <Reference Include="UIAutomationTypes" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <!-- AutomationElement.Current.BoundingRectangle is a WindowsBase Rect. -->
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+</Project>

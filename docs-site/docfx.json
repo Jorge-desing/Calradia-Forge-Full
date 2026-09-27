@@ -1,0 +1,24 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "../src/CalradiaForge.Sdk",
+          "files": ["CalradiaForge.Sdk.csproj"]
+        }
+      ],
+      "dest": "api"
+    }
+  ],
+  "build": {
+    "content": [
+      { "files": ["*.md", "toc.yml", "api/**.yml", "api/index.md"] }
+    ],
+    "output": "../artifacts/docfx-site",
+    "template": ["default"],
+    "globalMetadata": {
+      "_appTitle": "Calradia Forge SDK",
+      "_enableSearch": true
+    }
+  }
+}

@@ -1,0 +1,102 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+  <!-- High contrast theme. Keys intentionally mirror TacticalPalette.xaml. -->
+  <Color x:Key="Palette.Coal">#050B09</Color>
+  <Color x:Key="Palette.DeepPine">#0B1712</Color>
+  <Color x:Key="Palette.Tempered">#1D3A2E</Color>
+  <Color x:Key="Palette.Brass">#FFD75A</Color>
+  <Color x:Key="Palette.Verdigris">#7CFFB2</Color>
+  <Color x:Key="Palette.Ember">#FF8066</Color>
+  <Color x:Key="Palette.Paper">#FFFDF5</Color>
+  <Color x:Key="Palette.Ink">#000000</Color>
+  <Color x:Key="Palette.LogoText">#FFFDF5</Color>
+  <Color x:Key="Palette.Muted">#D4E5D8</Color>
+  <Color x:Key="Palette.Border">#D6C27A</Color>
+  <Color x:Key="Palette.Input">#030806</Color>
+  <Color x:Key="Palette.Focus">#FFFDF5</Color>
+  <Color x:Key="Palette.Success">#7CFFB2</Color>
+  <Color x:Key="Palette.Warning">#FFD75A</Color>
+  <Color x:Key="Palette.Empty">#BFD6C5</Color>
+  <Color x:Key="Palette.RailSurface">#07130F</Color>
+  <Color x:Key="Palette.CardHighlight">#254A3A</Color>
+  <Color x:Key="Palette.ComboHover">#17372A</Color>
+  <Color x:Key="Palette.ComboHoverText">#FFFDF5</Color>
+  <Color x:Key="Palette.ComboSelected">#28583F</Color>
+  <Color x:Key="Palette.ComboSelectedText">#FFFDF5</Color>
+  <Color x:Key="Palette.CaptionControl">#0B1712</Color>
+  <Color x:Key="Palette.CaptionHover">#1D3A2E</Color>
+  <Color x:Key="Palette.CaptionCloseHover">#6E120C</Color>
+  <Color x:Key="Palette.DisabledButtonSurface">#101C17</Color>
+  <Color x:Key="Palette.DisabledButtonText">#D4E5D8</Color>
+  <Color x:Key="Palette.DisabledButtonBorder">#A7B7AC</Color>
+  <sys:Double x:Key="Token.Radius">4</sys:Double>
+  <sys:Double x:Key="Token.Gutter">12</sys:Double>
+  <Thickness x:Key="Token.Inset.Compact">8,5</Thickness>
+  <Thickness x:Key="Token.Inset.Card">12</Thickness>
+  <Thickness x:Key="Token.Inset.Rail">16</Thickness>
+  <Thickness x:Key="Token.Inset.Header">12,10</Thickness>
+  <Thickness x:Key="Token.Inset.Button">12,7</Thickness>
+  <Thickness x:Key="Token.FocusThickness">3</Thickness>
+  <sys:Double x:Key="Token.BodyFont">13</sys:Double>
+  <sys:Double x:Key="Token.TitleFont">27</sys:Double>
+  <sys:Double x:Key="Token.HeadingFont">13</sys:Double>
+  <sys:Double x:Key="Token.LabelFont">10</sys:Double>
+  <sys:Double x:Key="Token.CodeFont">12</sys:Double>
+  <sys:Double x:Key="Token.RailWidth">300</sys:Double>
+  <sys:Double x:Key="Token.HistoryHeight">142</sys:Double>
+  <sys:Double x:Key="Token.SmallHistoryHeight">96</sys:Double>
+  <sys:Double x:Key="Token.FocusOpacity">1</sys:Double>
+  <sys:Double x:Key="Token.StatusIconOpacity">0.82</sys:Double>
+  <sys:Double x:Key="Token.CaptionHeight">42</sys:Double>
+  <SolidColorBrush x:Key="CoalBrush" Color="{StaticResource Palette.Coal}"/>
+  <SolidColorBrush x:Key="DeepPineBrush" Color="{StaticResource Palette.DeepPine}"/>
+  <SolidColorBrush x:Key="TemperedBrush" Color="{StaticResource Palette.Tempered}"/>
+  <SolidColorBrush x:Key="BrassBrush" Color="{StaticResource Palette.Brass}"/>
+  <SolidColorBrush x:Key="VerdigrisBrush" Color="{StaticResource Palette.Verdigris}"/>
+  <SolidColorBrush x:Key="EmberBrush" Color="{StaticResource Palette.Ember}"/>
+  <SolidColorBrush x:Key="PaperBrush" Color="{StaticResource Palette.Paper}"/>
+  <SolidColorBrush x:Key="InkBrush" Color="{StaticResource Palette.Ink}"/>
+  <SolidColorBrush x:Key="LogoTextBrush" Color="{StaticResource Palette.LogoText}"/>
+  <SolidColorBrush x:Key="MutedTextBrush" Color="{StaticResource Palette.Muted}"/>
+  <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource Palette.Border}"/>
+  <SolidColorBrush x:Key="InputBrush" Color="{StaticResource Palette.Input}"/>
+  <SolidColorBrush x:Key="FocusBrush" Color="{StaticResource Palette.Focus}"/>
+  <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource Palette.Success}"/>
+  <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource Palette.Warning}"/>
+  <SolidColorBrush x:Key="EmptyBrush" Color="{StaticResource Palette.Empty}"/>
+  <SolidColorBrush x:Key="RailSurfaceBrush" Color="{StaticResource Palette.RailSurface}"/>
+  <SolidColorBrush x:Key="CardHighlightBrush" Color="{StaticResource Palette.CardHighlight}"/>
+  <SolidColorBrush x:Key="ComboHoverBrush" Color="{StaticResource Palette.ComboHover}"/>
+  <SolidColorBrush x:Key="ComboHoverTextBrush" Color="{StaticResource Palette.ComboHoverText}"/>
+  <SolidColorBrush x:Key="ComboSelectedBrush" Color="{StaticResource Palette.ComboSelected}"/>
+  <SolidColorBrush x:Key="ComboSelectedTextBrush" Color="{StaticResource Palette.ComboSelectedText}"/>
+  <SolidColorBrush x:Key="TitleBarControlBrush" Color="{StaticResource Palette.CaptionControl}"/>
+  <SolidColorBrush x:Key="TitleBarControlHoverBrush" Color="{StaticResource Palette.CaptionHover}"/>
+  <SolidColorBrush x:Key="TitleBarCloseHoverBrush" Color="{StaticResource Palette.CaptionCloseHover}"/>
+  <SolidColorBrush x:Key="DisabledButtonSurfaceBrush" Color="{StaticResource Palette.DisabledButtonSurface}"/>
+  <SolidColorBrush x:Key="DisabledButtonTextBrush" Color="{StaticResource Palette.DisabledButtonText}"/>
+  <SolidColorBrush x:Key="DisabledButtonBorderBrush" Color="{StaticResource Palette.DisabledButtonBorder}"/>
+  <SolidColorBrush x:Key="TitleBarGlyphBrush" Color="{StaticResource Palette.Paper}"/>
+  <SolidColorBrush x:Key="TitleBarHoverGlyphBrush" Color="{StaticResource Palette.Paper}"/>
+  <SolidColorBrush x:Key="TitleBarCloseHoverGlyphBrush" Color="{StaticResource Palette.Paper}"/>
+  <!-- Surface brushes stay solid for contrast; passive, low-opacity artwork may remain visible. -->
+  <Visibility x:Key="DecorativeTextureVisibility">Visible</Visibility>
+  <sys:Double x:Key="Token.RailIllustrationOpacity">0.24</sys:Double>
+  <!-- The brass-on-transparent heraldic mark remains legible over the solid dark title bar. -->
+  <Visibility x:Key="TitleBarHeraldicMarkVisibility">Visible</Visibility>
+  <Visibility x:Key="TitleBarJournalMarkVisibility">Collapsed</Visibility>
+  <Visibility x:Key="HeaderImageVisibility">Collapsed</Visibility>
+  <Visibility x:Key="HeaderFallbackVisibility">Visible</Visibility>
+  <SolidColorBrush x:Key="PineBrush" Color="{StaticResource Palette.DeepPine}"/>
+  <SolidColorBrush x:Key="QuietBrassBrush" Color="{StaticResource Palette.Brass}"/>
+  <SolidColorBrush x:Key="ParchmentBrush" Color="{StaticResource Palette.Input}"/>
+  <SolidColorBrush x:Key="TextBrush" Color="{StaticResource Palette.Paper}"/>
+  <SolidColorBrush x:Key="SteelBorderBrush" Color="{StaticResource Palette.Border}"/>
+  <SolidColorBrush x:Key="FrameSurfaceBrush" Color="{StaticResource Palette.DeepPine}"/>
+  <SolidColorBrush x:Key="NavigationSurfaceBrush" Color="{StaticResource Palette.RailSurface}"/>
+  <SolidColorBrush x:Key="FrameSurfaceSolidBrush" Color="{StaticResource Palette.DeepPine}"/>
+  <SolidColorBrush x:Key="NavigationSurfaceSolidBrush" Color="{StaticResource Palette.RailSurface}"/>
+  <SolidColorBrush x:Key="TitleBarSurfaceSolidBrush" Color="{StaticResource Palette.DeepPine}"/>
+  <SolidColorBrush x:Key="Surface.MaterialTexture" Color="Transparent"/>
+  <SolidColorBrush x:Key="TitleBarMaterialTexture" Color="Transparent"/>
+  <SolidColorBrush x:Key="TitleBarSurfaceBrush" Color="{StaticResource Palette.DeepPine}"/>
+</ResourceDictionary>

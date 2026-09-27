@@ -1,0 +1,12 @@
+<Project>
+  <!-- Older builds emitted test app-host EXEs. Test entrypoints are now launched only through BAT wrappers. -->
+  <Target Name="RemoveLegacyTestHostExecutables" AfterTargets="Build">
+    <ItemGroup>
+      <_LegacyTestHost Include="$(MSBuildProjectDirectory)\bin\**\$(AssemblyName).exe" />
+      <_LegacyTestHost Include="$(MSBuildProjectDirectory)\bin\**\$(AssemblyName).exe.config" />
+      <_LegacyTestHost Include="$(MSBuildProjectDirectory)\obj\**\$(AssemblyName).exe" />
+      <_LegacyTestHost Include="$(MSBuildProjectDirectory)\obj\**\$(AssemblyName).exe.config" />
+    </ItemGroup>
+    <Delete Files="@(_LegacyTestHost)" />
+  </Target>
+</Project>

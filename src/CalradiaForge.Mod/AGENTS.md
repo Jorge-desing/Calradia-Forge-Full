@@ -1,0 +1,13 @@
+# Bannerlord and dotnet-artisan integration
+
+This directory builds the in-game Mount & Blade II: Bannerlord module. Resolve the actual project target and shared build properties before applying .NET guidance; the module currently targets `net472`, while `Directory.Build.props` sets `LangVersion` to `latest`.
+
+`ClanCharacterProgressionBehavior` is registered explicitly in `SubModule.OnGameStart`; keep it undecorated with `[AutoRegisterBehavior]`. `ForgeBehaviorLoader.RegisterAll` scans this assembly, so combining the attribute with the explicit registration creates two behavior instances and duplicates its campaign-event subscriptions.
+
+- Use `dotnet-artisan`'s `using-dotnet` and `dotnet-advisor` routing for .NET work, then combine the selected .NET skill with [bannerlord-dotnet-artisan](../../.agents/skills/bannerlord-dotnet-artisan/SKILL.md) and the relevant `bannerlord-*` skill. Preserve the useful C#, testing, tooling, performance, debugging, and design guidance by translating it to Bannerlord's lifecycle and runtime.
+- Distinguish language syntax from runtime APIs: newer C# syntax may compile under the configured compiler, but library APIs still need to exist on `net472` and in the game's installed references. Check compiler support and real references before applying a recommendation.
+- Apply `dotnet-csharp` concurrency and async guidance without moving TaleWorlds entity access or event handling off the game thread. Follow the relevant campaign, mission, quest, or shared-pattern skill for lifecycle and thread-affinity rules.
+- Translate `dotnet-ui` concepts to the actual surface: Gauntlet uses `bannerlord-gauntlet-ui` or `bannerlord-missionview-hud`; the separate .NET 8 WPF workbench uses `calradia-forge-desktop` and `calradia-forge-ui-automation`. Keep each framework's APIs on its own surface.
+- Adapt `dotnet-testing`, `dotnet-tooling`, `dotnet-debugging`, and `dotnet-devops` to this repository's test harnesses, MSBuild targets, Bannerlord diagnostics, and packaging scripts. Do not assume xUnit, Playwright, CI providers, or modern .NET runtime features are already part of the game module; use the existing project contract or add a dependency only when the task requires it.
+- Use Microsoft Learn and Context7 for .NET platform APIs. Use version-matched Bannerlord documentation and installed TaleWorlds assemblies for game contracts; generic .NET references cannot establish engine behavior.
+- The plugin's `scan-dotnet-targets.py` currently infers modern `netN.N` TFMs and can miss legacy `net472`. When checking this module, scope detection to its `.csproj` and verify `TargetFramework` and `LangVersion` directly instead of trusting the repository-wide inferred maximum.

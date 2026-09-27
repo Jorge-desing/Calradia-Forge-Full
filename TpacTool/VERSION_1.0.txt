@@ -1,0 +1,7 @@
+TpacTool Max Versiyon 1.0
+Yayın türü: Freeware
+Ürün adı: TpacTool Max
+Windows çalıştırılabilir dosyası: TpacTool Max.exe
+Kurulum: TpacTool Max Versiyon 1.0 Kurulum.exe
+Lisans: LICENSE_FREEWARE_TR.txt ve LICENSE_IRON_MODDING.txt
+Kaynak kodu: Ayrı Source tesliminde bulunur; kurulum dosyasına dahil değildir.

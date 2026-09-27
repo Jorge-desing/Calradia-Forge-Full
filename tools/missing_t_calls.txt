@@ -1,0 +1,180 @@
+Total missing: 179
+forge_b5911a953b0d | 0 matching lines found.
+forge_dd3b39dacbf7 | ADVANCED SDK
+forge_7dd251bbda9c | AUDIT
+forge_7b68fe551085 | After
+forge_2bbef1316798 | Analyze audio configurations, missing FMOD banks, and invalid 3D mission emitters.
+forge_0568f107bb3c | Analyze town market equilibrium, price elasticity curves, and workshop ROI over 30 days.
+forge_fb2872c88097 | Argument / Search input: Type a filter or parameter, then press Ctrl+Enter to submit.
+forge_db157fd16a04 | Assess noble clan succession, scoring adult heirs, and monitoring live lifecycle telemetry.
+forge_d6927db636ae | Audio & Sound Tester: Test audio bus categories, trigger sound events, and validate module_sounds.xml assets.
+forge_d3046b006b18 | Audio Audit
+forge_3fa8323f7290 | Audio Inspector: Deep audit of module_sounds.xml for audio category mixer compliance (.ogg/.wav).
+forge_703cde651166 | Audio Tester
+forge_f3bccf3efbfe | Audio manifest audit completed.
+forge_ee88528b0625 | Audio test executed.
+forge_ca838f28dc06 | Audit Models
+forge_e484a2ac3038 | Audit active translations, detect missing string IDs, and verify UTF-8 BOM encoding.
+forge_ad1519f13833 | Audit all 36 Bannerlord modding rules across installed modules.
+forge_e8c40ee35972 | Audit settlement loyalty deltas, food security, and rebellion risks.
+forge_31281484830a | Audit: Rule Compliance Auditor, GameModel Audit, System Diagnostics.
+forge_aef9f93738c8 | Bandit Party Spawner: Generate partyTemplates.xml + MobileParty save-safe spawner logic. Enter a clan name above.
+forge_9bb725005055 | Before
+forge_32815dbc58d7 | Behavior Scaffold: Generate a fully annotated CampaignBehaviorBase with SyncData, events, and time-slicing patterns. Enter a name above.
+forge_153f0a2d00cb | Browse all 110+ Advanced SDK tools
+forge_04fb89acf8ae | COMMAND HISTORY
+forge_088c216cc077 | Calculate battle tactical math, morale shocks, and siege breach chances.
+forge_652f49f994ea | CampaignEvent Explainer: Learn when each CampaignEvent fires and how to use it. Enter an event name (e.g. 'HourlyTickEvent') or 'all' for the full catalog.
+forge_00d42d84a1d8 | Casus Belli Engine
+forge_2b24fefc06af | Casus Belli Engine: Evaluate geopolitical war justification scoring, border friction, and council votes.
+forge_1671fd14dfa5 | Casus Belli evaluation completed.
+forge_83b12c2216ef | Clear
+forge_9768be40e931 | Clear History
+forge_4e6e062d6524 | Clear all recorded command history.
+forge_8b389923a0b4 | Clear terminal output display buffer.
+forge_4b47883af6d2 | Click to load and execute: 
+forge_3a7199386703 | Close Calradia Forge interface.
+forge_908a8468ea6d | Combat AI Component: Generate AgentComponent + MissionLogic with deferred _initialized pattern.
+forge_f40dc140f050 | Combat Tactics
+forge_9a1760caee4e | Combat Tactics: Compute cavalry shock impact, formation shielding factors, and siege wall breach progression using ForgeCombatTactics.
+forge_9c7e0c95f738 | Compare object state with last pinned snapshot.
+forge_078b9a63675a | Configure mod settings and variables.
+forge_65cb1c224b8b | Crime & Underworld
+forge_1a5b5a6ad016 | Crime & underworld simulation completed.
+forge_518c7236c53a | Diplomacy Lab
+forge_ee708e4acd0b | Diplomacy Lab: Evaluate kingdom power ratios, war viability scores, and tribute settlements using ForgeApi.Diplomacy.
+forge_feaebd7eeef3 | Dynasty & Succession
+forge_768aed888e82 | Dynasty & Succession Evaluator: Inspect clan dynastic succession, living adult heirs, leadership succession scores, and progression telemetry.
+forge_1b497f9d7f85 | Dynasty & succession evaluation completed.
+forge_795c50488e54 | Evaluate geopolitical war justification scoring, border friction, and council votes.
+forge_a113eca78e48 | Evaluate learning rates, clan tier renown, and hero development curves.
+forge_e368f67c43b4 | Execute extension commands.
+forge_37069cb4b90d | Explain CampaignEvents in plain language: when they fire, what parameters they pass, and usage examples.
+forge_b13945c508a8 | Filter cleared. Showing all lines.
+forge_1390edc63a2d | Filter current output lines matching the search / argument input.
+forge_055819ab7f57 | Filtered to {0} matching lines.
+forge_21bfcd7c3d6f | ForgeWeave: Framework Replay Lab, Extensions, Harmony Patches, Preflight.
+forge_8310de3df5eb | Game State
+forge_c85aa77fc1e0 | Gauntlet Hint Forge: Generate ViewModel hint properties and Hint.HintText XML attributes.
+forge_808c24d5ce99 | Gauntlet Hint Forge: Generates C# [DataSourceProperty] ViewModel hints, Gauntlet Hint.HintText XML attributes, and localization XML. Enter a button title above.
+forge_f333d14249a2 | Generate MissionLogic with mesh/skeleton crash guards and OnTick lifecycle hooks.
+forge_a84e05b4358d | Generate a CampaignBehaviorBase scaffold with events, SyncData, and time-slicing anti-lag patterns.
+forge_44010dbb146e | Generate a QuestBase C# scaffold with the critical double-SetDialogs() rule and save-safe fields.
+forge_c0667d25a217 | Generate a complete valid SubModule.xml for a new mod with dependency list and DLL registration.
+forge_59ace8ce489d | Generate a valid Items.xml snippet for a custom weapon or armor with all attributes annotated.
+forge_6f9e3cfc862e | Generate a valid NPCCharacters.xml snippet for a custom troop with annotated slots and skills.
+forge_27bae14129a6 | Generate buildings.xml (3 tiers) + SettlementFoodModel/BuildingDevelopmentModel Decorator.
+forge_de3134409108 | Generate partyTemplates.xml + MobileParty save-safe spawner logic.
+forge_14e7435ceff0 | Generate scaffold/template for the selected novice tool using the argument above.
+forge_da827ea86260 | Generate valid workshops.xml + CampaignBehaviorBase with production cycle and underflow safety.
+forge_8763a99b62a7 | Go to next page.
+forge_46ce3d8df2ec | Go to previous page.
+forge_46956e000ef9 | Heap Memory Cleaned
+forge_50ce67c7fc43 | Heap trimmed: reclaimed {0:F1} MB
+forge_6583c717f13e | History ▾
+forge_52688800e0e4 | INSPECT
+forge_05f1ca5fd616 | Inspect 31KB chunking protection, SaveableTypeDefiner base IDs (>= 2.5M), and save health.
+forge_40320ae29e32 | Inspect live campaign, hero, and mission simulation state.
+forge_95fce518e7db | Inspect the current Settlement object immediately.
+forge_a0fc705ed085 | Inspect the player Hero object immediately.
+forge_8b511f30863c | Inspector: Live Object Inspector, Snapshots, Metrics, Console.
+forge_99606c9a1627 | Item XML Builder: Generate a valid Items.xml snippet for a weapon or armor. Enter a name (e.g. 'IronSword') above.
+forge_bfcb05eb2eed | Live System Snapshot: Audit all active GameModels (including decorators) and registered CampaignBehaviors.
+forge_aead6e983f8a | Live System Snapshot: Dump diagnostic report of all active models and behaviors.
+forge_582f2cd9b20f | Live Watch Activated (1s tick)
+forge_2d559fafb5c2 | Live Watch Deactivated
+forge_2780abe560d2 | Load next command from history (Down Arrow).
+forge_ed8b52d5e5c7 | Load previous command from history (Up Arrow).
+forge_1eac77f38238 | Localization Audit
+forge_910d2f4e2f5f | Localization Auditor: Check active translations, detect missing string IDs, and verify UTF-8 BOM encoding.
+forge_1c4c3d2a6aab | Localization audit completed.
+forge_a58da793c725 | Metrics
+forge_5f00d094c5c3 | Mod Readiness Checklist: Verify your mod is ready to distribute — folder structure, save safety, XML registration, and more.
+forge_065e63b7091f | Mod Settings
+forge_f13081dfe79c | Model Audit: Live inspection of active GameModels, decorator chains, and registered CampaignBehaviors.
+forge_e1b1b36c3902 | Model wall breach thresholds, dynamic navmesh tags, and assault casualty projections.
+forge_788f399acd9c | NOVICE
+forge_865721309253 | No lines matched filter: 
+forge_e1ef4d8f8a10 | No telemetry or report data loaded. Select a tool or execute an action above.
+forge_45c4fd89c61c | Novice Hub: Behavior Scaffold, Troop XML, Quest Scaffold, Item XML, SubModule.xml, Mod Checklist, Event Explainer, Hint Forge.
+forge_709276c8392f | OVERVIEW
+forge_0acff9a2de67 | Output display cleared.
+forge_f823fe2f8930 | Overview: Project Wizard, Summary, Modules, Dependencies, Logs.
+forge_fd62fce29af3 | Page Navigation: Use Previous/Next buttons or Ctrl+< / Ctrl+> to navigate multi-page outputs.
+forge_f69d47a9cd2e | Party Simulator
+forge_5832e7e7b259 | Party Spawner & Roster Simulator: Evaluate party blueprints, troop compositions, daily wages, and movement speed penalties.
+forge_298d79d4c832 | Party simulation completed.
+forge_5b1b224c0a8e | Performance Metrics.
+forge_0fdcf395d990 | Pin object to snapshots.
+forge_9e07af6cad8b | Progression Lab
+forge_c9c612d767ae | Progression Lab: Analyze skill learning rates, perk modifiers, and clan dynastic progression using ForgeApi.Progression.
+forge_5388944cd236 | Project Wizard: Configure new mod parameters and scaffold boilerplate structures.
+forge_bc0aea7f7060 | Quest Scaffold: Generate a QuestBase C# class with the critical double-SetDialogs() rule enforced. Enter a class name above.
+forge_ebda9fa993e3 | Reclaimed
+forge_11147300f800 | Replay past event in isolated lab sandbox.
+forge_3aa703e9ea9e | Review pinned memory snapshots.
+forge_2b8304e4e571 | Rule Compliance
+forge_bb55c704a171 | Rule Compliance Auditor: Scans module directory and verifies adherence to all 36 architectural, audio, save, and UI mod rules.
+forge_12e576b66b1f | Run active audit on target module or system.
+forge_e1cc7dfd524c | Run active simulation with search argument.
+forge_252e5d379f06 | Run selected integration test.
+forge_3927eae47f89 | Run the mod readiness checklist: folder structure, save safety, XML IDs, and distribution safety.
+forge_f1c124e5e8fa | SIMULATE
+forge_7f9b7758b31f | Save Inspector
+forge_3f652bd102d0 | Save System Health Inspector: Inspect 31KB chunking protection, SaveableTypeDefiner base IDs (>= 2.5M), and data serialization safety.
+forge_50e8fa699d85 | Save system health audit passed.
+forge_f4b0f74fd12a | Scaffold generated. Use Copy to clipboard to save it.
+forge_2697911cc35b | Settlement Audit
+forge_f4e40a47dff9 | Settlement Audit: Calculate loyalty drift, militia equilibrium, food stocks, and rebellion hazards using ForgeApi.Settlements.
+forge_0d24f525be3c | Settlement Building: Generate buildings.xml (3 tiers) + SettlementFoodModel/BuildingDevelopmentModel Decorator.
+forge_a60d880873e8 | Siege Tactician
+forge_442fd8791ff3 | Siege Tactician: Model wall breach thresholds, dynamic navmesh tags, and assault casualty projections.
+forge_fb69d1d9a74d | Siege tactics analysis completed.
+forge_44e082dc9a33 | Simulate alley extortion yields, contraband smuggling margins, and settlement crime decay.
+forge_2de465d1a425 | Simulate kingdom war viability, tribute balances, and alliance likelihood.
+forge_e53d49b2b0b5 | Simulate procedural party blueprints, troop compositions, and movement speeds.
+forge_86e132c7fe8b | Simulate supply/demand prices, workshop profits, and underworld rackets.
+forge_87d51be19209 | Simulate: Diplomacy, Settlements, Trade Economy, Combat Tactics, Progression.
+forge_b7b912f06938 | SubModule.xml Generator: Generate a complete valid SubModule.xml for a new mod. Enter your mod ID (e.g. 'MyFirstMod') above.
+forge_2d200145c408 | System Audit
+forge_5d65da5b4ad2 | System Diagnostics: Complete telemetry dump of active models, behaviors, and memory heap.
+forge_784a22a45b09 | System Telemetry: Displays current runtime memory pressure, session context, and testing mode.
+forge_e44c5e40a1f5 | TOOLKIT
+forge_cda2b01a1716 | Test sound playback, audio mixer categories, and module_sounds.xml assets.
+forge_60419f4e2e06 | Toggle live telemetry watch mode (auto-refreshes memory and tick metrics every second).
+forge_78d49d020849 | Toggle recent command history dropdown.
+forge_a006eefe667b | Toggle tactical keyboard shortcuts guide (Ctrl+K).
+forge_a1bad96c1f98 | Toolkit: Integration Tests, Extension Commands, Mod Settings.
+forge_1d5949defccb | Trade & Economy
+forge_7a98c14714d8 | Trade & Economy: Model dynamic supply/demand pricing, workshop profitability, and underworld alley rackets using ForgeApi.Trade.
+forge_76a28e12cd5a | Trade Simulator
+forge_784fa846d5f5 | Trade Simulator: Analyze town market equilibrium, price elasticity curves, and workshop ROI over 30 days.
+forge_c5de2e25402f | Trade simulation completed.
+forge_21c57d3112b8 | Trigger immediate garbage collection to reclaim memory.
+forge_0a98caac3684 | Trim Heap
+forge_ac2a6fec4fe4 | Troop XML Builder: Generate a valid NPCCharacters.xml snippet for a custom troop. Enter a name (e.g. 'Legionary') above and copy the XML.
+forge_3f594e57eb0e | Underworld & Crime Simulator: Model alley extortion yields, contraband smuggling margins, and settlement crime rating decay.
+forge_9f396b977ce1 | WEAVE
+forge_947c7fb80f64 | Workshop Scaffold: Generate valid workshops.xml + CampaignBehaviorBase with production cycle and underflow safety.
+forge_05d04cc462be | [ ⌨ Keys ]
+forge_cca32954a0f3 | [ ⏱ Watch ]
+forge_446912d680d2 | [ ⏱ Watch: ON ]
+forge_84a062351f35 | [ 🔍 Filter ]
+forge_024dd28911ee | [ 🔍 Filtered ]
+forge_57bdbfe6cabc | ⚒️ Workshop Scaffold
+forge_97a40dbd52eb | ⚔ Troop XML
+forge_09c51cd38074 | ⚔️ Combat Logic
+forge_9e009374af7a | ⚡ Run Sim
+forge_b08421674671 | ✅ Checklist
+forge_262ff491440d | 🎓 Generate
+forge_1a4800d9e625 | 🎨 Hint Forge
+forge_362e8a959568 | 🏕️ Bandit Spawner
+forge_6460cb472202 | 🏗️ Building Architect
+forge_4157408c5cb2 | 🏰 Settlement
+forge_e65891ef6baa | 👤 Player
+forge_d5763a92ebcf | 📜 Quest
+forge_60cff13f89db | 📡 Events
+forge_0147919d5728 | 📦 SubModule.xml
+forge_93990d6028b9 | 🗡 Item XML
+forge_6dc5df7f146c | 🛡 Audit
+forge_c77be5777b40 | 🧱 Behavior

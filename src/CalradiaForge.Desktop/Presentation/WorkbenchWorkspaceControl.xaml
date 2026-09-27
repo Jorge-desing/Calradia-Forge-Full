@@ -1,0 +1,79 @@
+<UserControl x:Class="CalradiaForge.Desktop.Presentation.WorkbenchWorkspaceControl"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:services="clr-namespace:CalradiaForge.Desktop.Services"
+ xmlns:presentation="clr-namespace:CalradiaForge.Desktop.Presentation"
+ xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+ xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+ MinWidth="0" MinHeight="0">
+<Grid>
+ <ScrollViewer AutomationProperties.AutomationId="ResponsiveWorkbenchScrollViewport" Background="Transparent" BorderThickness="0" CanContentScroll="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+ <presentation:AdaptiveWorkbenchPanel x:Name="ResponsiveWorkbenchPanel" AutomationProperties.AutomationId="ResponsiveWorkbenchLayout"
+  MinimumPrimaryWidth="{Binding CurrentPage.MinimumPresentationWidth, FallbackValue=360}"
+  PreferredSecondaryWidth="280" MinimumSecondaryWidth="250" PreferredContextWidth="310" MinimumContextWidth="260" Gap="8">
+  <Border AutomationProperties.AutomationId="ActiveWorkbenchFrame" Style="{StaticResource PageCard}">
+     <Grid>
+      
+      
+      
+     <ContentControl AutomationProperties.AutomationId="ActiveWorkbenchContent" Content="{Binding CurrentPage}" KeyboardNavigation.TabNavigation="Continue"/></Grid>
+    </Border>
+  <Border AutomationProperties.AutomationId="PinnedDeckCard" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" MinHeight="132" MinWidth="0" Padding="8" Visibility="{Binding IsSplitDeckActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+       <DockPanel LastChildFill="True">
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+         <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+         </Grid.ColumnDefinitions>
+         <StackPanel Grid.Column="0">
+          <TextBlock FontFamily="Georgia" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.PinnedDeckSplitView}" TextWrapping="Wrap"/>
+          <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="{Binding PinnedToolTitle}" TextTrimming="CharacterEllipsis"/>
+          <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding PinnedToolCategory}" TextTrimming="CharacterEllipsis"/>
+         </StackPanel>
+         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,4,0" Padding="4,1">
+           <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="{Binding PinnedExecutionStatus}"/>
+          </Border>
+          <Button AutomationProperties.AutomationId="PinCurrentToolButton" Command="{Binding PinCurrentToolToSplitDeckCommand}" FontSize="8" Margin="0,0,3,0" Padding="4,1" ToolTip="{DynamicResource Ui.PinActiveToolToolTip}">
+           <TextBlock FontSize="8" Text="{DynamicResource Ui.Pin}"/>
+          </Button>
+          <Button AutomationProperties.AutomationId="ClearPinnedDeckButton" Command="{Binding ClearPinnedDeckCommand}" FontSize="8" Margin="0,0,3,0" Padding="4,1" ToolTip="{DynamicResource Ui.ClearPinnedOutput}">
+           <TextBlock FontSize="8" Text="{DynamicResource Ui.ClearInput}"/>
+          </Button>
+          <Button AutomationProperties.AutomationId="CloseSplitDeckButton" Command="{Binding CloseSplitDeckCommand}" FontSize="8" Padding="4,1" ToolTip="{DynamicResource Ui.CloseSplitView}">
+           <TextBlock FontSize="8" Text="{DynamicResource Ui.Close}"/>
+          </Button>
+         </StackPanel>
+        </Grid>
+        <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" DockPanel.Dock="Bottom" Height="100" Margin="0,6,0,0">
+         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding PinnedEvidence}">
+           <ItemsControl.ItemTemplate>
+            <DataTemplate>
+             <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="4,2">
+              <Grid>
+               <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+               </Grid.ColumnDefinitions>
+               <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Grid.Column="0" Margin="0,0,6,0" Text="{Binding Status}"/>
+               <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Grid.Column="1" Text="{Binding Detail}" TextWrapping="Wrap"/>
+              </Grid>
+             </Border>
+            </DataTemplate>
+           </ItemsControl.ItemTemplate>
+          </ItemsControl>
+         </ScrollViewer>
+        </Border>
+        <TextBox AcceptsReturn="True" AutomationProperties.AutomationId="PinnedDeckRawResultText" FontFamily="Consolas" FontSize="{DynamicResource Token.CodeFont}" HorizontalScrollBarVisibility="Auto" IsReadOnly="True" IsUndoEnabled="False" Text="{Binding PinnedRawResult, Mode=OneWay}" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+       </DockPanel>
+      </Border>
+ <Border AutomationProperties.AutomationId="ContextDossierPanel" VerticalAlignment="Stretch" Margin="4,0,4,0"
+  Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="4" Padding="8"
+  Visibility="{Binding IsContextDossierOpen, Converter={StaticResource BooleanToVisibilityConverter}}">
+  <presentation:ToolDossierControl DataContext="{Binding CurrentPage}"/>
+ </Border>
+ </presentation:AdaptiveWorkbenchPanel>
+ </ScrollViewer>
+</Grid>
+</UserControl>

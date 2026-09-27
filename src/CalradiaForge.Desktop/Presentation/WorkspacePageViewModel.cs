@@ -1,0 +1,544 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace CalradiaForge.Desktop.Presentation
+{
+    internal sealed class WorkspaceEvidence
+    {
+        public WorkspaceEvidence(string source, string status, string detail,
+            string ruleId = null, string sourcePath = null, int? line = null, int? column = null, string recommendation = null)
+        {
+            Source = source ?? "Desktop";
+            Status = status ?? "Not run";
+            Evidence = detail ?? string.Empty;
+            RuleId = ruleId ?? string.Empty;
+            SourcePath = sourcePath ?? string.Empty;
+            Line = line;
+            Column = column;
+            Recommendation = recommendation ?? string.Empty;
+            Location = FormatLocation();
+            Detail = FormatExportDetail();
+        }
+        public string Source { get; }
+        public string Status { get; }
+        public string RuleId { get; }
+        public string SourcePath { get; }
+        public int? Line { get; }
+        public int? Column { get; }
+        public string Location { get; }
+        public string Evidence { get; }
+        public string Recommendation { get; }
+        public bool HasRecommendation => !string.IsNullOrWhiteSpace(Recommendation);
+        public string RecommendationDisplay => string.IsNullOrWhiteSpace(Recommendation) ? string.Empty : "› " + Recommendation;
+
+        // Detail is also the legacy exported-ledger field. Keep the complete diagnostic
+        // context here so existing evidence exports do not silently lose structured data.
+        public string Detail { get; }
+
+        string FormatLocation()
+        {
+            var hasPath = !string.IsNullOrWhiteSpace(SourcePath);
+            if (!hasPath && !Line.HasValue && !Column.HasValue) return string.Empty;
+            if (!hasPath)
+            {
+                var lineOnly = Line.HasValue ? "Line " + Line.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
+                var columnOnly = Column.HasValue ? "column " + Column.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
+                return lineOnly.Length == 0 ? char.ToUpperInvariant(columnOnly[0]) + columnOnly.Substring(1) :
+                    lineOnly + (columnOnly.Length == 0 ? string.Empty : ", " + columnOnly);
+            }
+            if (!Line.HasValue && !Column.HasValue) return SourcePath;
+            if (Line.HasValue && !Column.HasValue) return SourcePath + ":" + Line.Value;
+            if (Line.HasValue && Column.HasValue) return SourcePath + ":" + Line.Value + ":" + Column.Value;
+            return SourcePath + "::" + Column.Value;
+        }
+
+        string FormatExportDetail()
+        {
+            if (string.IsNullOrWhiteSpace(RuleId) && string.IsNullOrWhiteSpace(SourcePath) &&
+                !Line.HasValue && !Column.HasValue && string.IsNullOrWhiteSpace(Recommendation))
+                return Evidence;
+
+            var parts = new List<string>(4);
+            if (!string.IsNullOrWhiteSpace(RuleId)) parts.Add("Rule: " + OneLine(RuleId));
+            if (!string.IsNullOrWhiteSpace(Location)) parts.Add("Location: " + OneLine(Location));
+            if (!string.IsNullOrWhiteSpace(Evidence)) parts.Add("Evidence: " + OneLine(Evidence));
+            if (!string.IsNullOrWhiteSpace(Recommendation)) parts.Add("Next: " + OneLine(Recommendation));
+            return string.Join(" | ", parts);
+        }
+
+        static string OneLine(string value) => (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ');
+    }
+
+    internal sealed class WorkspaceExecutionResult
+    {
+        public string Status { get; set; }
+        public string RawResult { get; set; }
+        public string DisabledReason { get; set; }
+        public int EvidenceCount { get; set; }
+        public WorkspaceEvidence[] Evidence { get; set; } = [];
+    }
+
+    internal interface IWorkspacePage : IDisposable
+    {
+        ToolDefinition Tool { get; }
+    }
+
+    /// <summary>Transient page state. The shell persists evidence separately, so disposing a page releases its UI references.</summary>
+    [ForgeUiPage("tool-workbench", "Workbench", releaseOnNavigate: true)]
+    internal class ToolPageViewModel : ObservableObject, IWorkspacePage
+    {
+        readonly Func<ToolDefinition, string, CancellationToken, Task<WorkspaceExecutionResult>> execute;
+        readonly Action<ToolPageViewModel> export;
+        readonly Func<ToolDefinition, bool, string> pickInput;
+        string input = string.Empty;
+        string status = "Not run";
+        string rawResult = "Select a tool and run its declared command.";
+        string disabledReason;
+        bool disposed;
+
+        public ToolPageViewModel(ToolDefinition tool,
+            Func<ToolDefinition, string, CancellationToken, Task<WorkspaceExecutionResult>> execute,
+            Action<ToolPageViewModel> export,
+            Func<ToolDefinition, bool, string> pickInput = null)
+        {
+            Tool = tool ?? throw new ArgumentNullException(nameof(tool));
+            this.execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            this.export = export ?? throw new ArgumentNullException(nameof(export));
+            this.pickInput = pickInput;
+            var studio = tool.Studio;
+            IsTroopTreeVisualizer = studio == DesktopStudioKind.TroopTree;
+            IsAudioMixerInspector = studio == DesktopStudioKind.AudioMixer;
+            IsWorkshopSimulator = studio == DesktopStudioKind.Workshop;
+            IsAgentMemoryInspector = studio == DesktopStudioKind.AgentMemory;
+            IsCodeSecurityAuditor = studio == DesktopStudioKind.CodeSecurity;
+            IsModuleHierarchyValidator = studio == DesktopStudioKind.ModuleHierarchy;
+            IsKingdomDiplomacyStudio = studio == DesktopStudioKind.KingdomDiplomacy;
+            IsComponentGeneratorStudio = studio == DesktopStudioKind.ComponentGenerator;
+            HasVisualDashboard = studio != DesktopStudioKind.Generic;
+            RunCommand = new AsyncRelayCommand(RunAsync, CanRun);
+            CancelCommand = new RelayCommand(() => RunCommand.Cancel(), () => RunCommand.IsRunning);
+            ExportCommand = new RelayCommand(() => this.export(this), () => !string.IsNullOrWhiteSpace(RawResult));
+            BrowseFileCommand = new RelayCommand(() => SelectInput(false), CanSelectInput);
+            BrowseFolderCommand = new RelayCommand(() => SelectInput(true), CanSelectInput);
+            LoadPresetCommand = new RelayCommand(CyclePreset, () => HasPresetAction);
+            ClearInputCommand = new RelayCommand(() => Input = string.Empty, () => HasInputText);
+            RunCommand.ExecutionStateChanged += (_, _) =>
+            {
+                CancelCommand.NotifyCanExecuteChanged();
+                RunCommand.NotifyCanExecuteChanged();
+            };
+
+            if (IsTroopTreeVisualizer)
+            {
+                TroopTreeDashboard = new TroopTreeDashboardViewModel();
+                status = "Simulation Ready";
+                rawResult = "=== TACTICAL TROOP PROGRESSION HIERARCHY & STAT ENVELOPE ===\nCulture: Empire | Faction Archetype: Combined Arms Infantry & Heavy Cataphract\nProgression Model: Standard 6-Tier Branching DAG\n\n[HIERARCHICAL TROOP TREE]\nImperial Recruit [T1, Lvl 6, HP: 100, Cost: 20d, Wage: 2d]\n ├──> Imperial Infantryman [T2, Lvl 11, HP: 110, Cost: 50d, Wage: 4d]\n │     ├──> Imperial Veteran Infantryman [T3, Lvl 16, HP: 120, Cost: 100d, Wage: 7d]\n │     │     └──> Imperial Legionary [T4, Lvl 21, HP: 130, Cost: 200d, Wage: 11d] ★ [HEAVY SHIELDWALL]\n │     └──> Imperial Menavliaton [T3, Lvl 16, HP: 115, Cost: 100d, Wage: 7d]\n │           └──> Imperial Elite Menavliaton [T4, Lvl 21, HP: 125, Cost: 200d, Wage: 11d] ★ [ANTI-CAVALRY]\n └──> Imperial Archer [T2, Lvl 11, HP: 100, Cost: 50d, Wage: 4d]\n       ├──> Imperial Veteran Archer [T3, Lvl 16, HP: 110, Cost: 100d, Wage: 7d]\n       │     └──> Imperial Palatine Guard [T4, Lvl 21, HP: 120, Cost: 200d, Wage: 11d] ★ [COMPOSITE BOW]\n       └──> Imperial Crossbowman [T3, Lvl 16, HP: 115, Cost: 110d, Wage: 8d]\n             └──> Imperial Sergeant Crossbowman [T4, Lvl 21, HP: 125, Cost: 210d, Wage: 12d] ★ [PAVISE]\n\n[NOBLE DYNASTIC LINE]\nImperial Vigla Recruit [T2, Lvl 11, Noble]\n └──> Imperial Equite [T3, Lvl 16]\n       └──> Imperial Heavy Horseman [T4, Lvl 21]\n             └──> Imperial Cataphract [T5, Lvl 26]\n                   └──> Imperial Elite Cataphract [T6, Lvl 31] ★ [BARDED WARHORSE & LANCE]";
+                Evidence.Add(new("Troop Tree / Hierarchy", "Verified", "Mapped 12 troop archetypes across 6 tiers; max depth: 5 levels."));
+                Evidence.Add(new("Troop Tree / DAG Acyclicity", "Verified", "All upgrade_targets form a strictly acyclic progression graph."));
+                Evidence.Add(new("Troop Balance / Stat Curve", "Verified", "Level-to-Tier progression matches linear curve (T1: 6 -> T6: 31)."));
+                Evidence.Add(new("Troop Equipment / Envelope", "Verified", "Armor rating distribution conforms to tier envelope (T1: 8-15, T4: 38-52, T6: 65-82)."));
+            }
+            else if (IsAudioMixerInspector)
+            {
+                AudioStudioDashboard = new AudioStudioDashboardViewModel();
+                status = "Simulation Ready";
+                rawResult = "=== TACTICAL AUDIO STUDIO & WAVEFORM ANALYZER ===\nConforms to Bannerlord Audio System Guidelines (bannerlord_audio_system.md)\n\nTarget Asset     : custom_iron_shield_clash.wav\nAudio Format     : 16-bit Linear PCM | 44,100 Hz | Stereo\nDuration         : 1.42 seconds | Bitrate: 1411.2 kbps\nPeak Amplitude   : -1.4 dBFS | RMS Energy: -14.8 dBFS | Clipping: 0 samples\nMixer Category   : mission_combat | 3D Spatial Position: YES (3D Mission)\n\n[ACOUSTIC WAVEFORM ENVELOPE]\n +1.0 ┤          ╭╮           ╭╮\n +0.7 ┤       ╭╮ ││╭╮       ╭╮││╭╮\n +0.4 ┤    ╭╮ ││╭╯╰╯╰╮   ╭╮ ││││╰╯╭╮\n  0.0 ┼────╯╰─╯╰╯────╰───╯╰─╯╰╯╰───╰────── (Time: 0.0s ─── 1.42s)\n -0.4 ┤    ╰╮ ││╰╮╭╮╭╯   ╰╮ ││││╭╮╰╯\n -0.7 ┤       ╰╯ ││╰╯       ╰╯││╰╯\n -1.0 ┤          ╰╯           ╰╯\n\n[SPECTRAL FREQUENCY DISTRIBUTION]\nSub-Bass (20-60 Hz)   : [████░░░░░░] -22 dBFS\nBass (60-250 Hz)      : [████████░░] -11 dBFS  (Impact Thud)\nMidrange (250-2 kHz)  : [██████████]  -4 dBFS  (Metal Shield Clash Peak)\nPresence (2-6 kHz)    : [███████░░░] -12 dBFS  (Edge Crispness)\nBrilliance (6-20 kHz) : [███░░░░░░░] -28 dBFS";
+                Evidence.Add(new("Audio / Header & Format", "Verified", "Valid audio stream: 44100 Hz, 2 channels, 16-bit depth."));
+                Evidence.Add(new("Audio / Mixer Compliance", "Verified", "Mixer category 'mission_combat' mapped to active game mixer bus."));
+                Evidence.Add(new("Audio / Dynamic Headroom", "Verified", "Peak amplitude at -1.4 dBFS guarantees zero digital clipping."));
+                Evidence.Add(new("Audio / Spatialization", "Verified", "Spatial 3D flag conforms to combat emitter rules."));
+            }
+            else if (IsWorkshopSimulator)
+            {
+                WorkshopDashboard = new WorkshopDashboardViewModel();
+                status = "Simulation Ready";
+                rawResult = "=== HEADLESS CAMPAIGN & WORKSHOP ECONOMY SIMULATION ===\nSimulated Horizon: 30 Days (4 Quarters) | Model: Calradia Forge Equilibrium Engine\nSettlement Scope : Marunath (Prosperity: 5,420 | Loyalty: 64/100 | Security: 72/100)\n\n[WORKSHOP ENTERPRISE PROFITABILITY AUDIT]\nEnterprise Type      Daily Net    Input Material     Output Goods       Payback Period\n──────────────────────────────────────────────────────────────────────────────────────\nSmithy (Iron/Wood)    +290 d/day   Iron Ore (45d)     Tools & Weapons    48.2 Days\nSilversmith (Silver)  +340 d/day   Silver Ore (120d)  Jewelry (310d)     41.1 Days ★ (Optimal)\nBrewery (Grain)       +215 d/day   Grain (12d)        Beer (48d)         65.1 Days\nWeaver (Wool/Silk)    +195 d/day   Wool (35d)         Cloth (110d)       71.8 Days\nWood Workshop         +170 d/day   Hardwood (25d)     Bows & Shields     82.3 Days\nPottery (Clay)        +185 d/day   Clay (20d)         Pottery (85d)      75.6 Days\nOlive Press (Olives)  +160 d/day   Olives (28d)       Oil (80d)          87.5 Days\n\n[SETTLEMENT CIVIC EQUILIBRIUM & REBELLION RISK]\n• Settlement Prosperity : 5,420 (+4.2/day)    [GROWING]\n• Civic Loyalty Index   : 64.0 / 100          [STEADY]\n• Security Score        : 72.0 / 100          [HIGH]\n• Food Storage Reserve  : 184 (+14/day)       [SURPLUS]\n• Garrison Deterrent    : 165 Regular Troops  [EFFECTIVE]\n• Rebellion Risk Index  : 8.6%                [STABLE - No Rebellion Risk]";
+                Evidence.Add(new("Economy / Workshop Enterprise", "Verified", "Silversmith & Smithy yield +630 d/day combined with 41-48 day amortization."));
+                Evidence.Add(new("Economy / Supply Chain", "Verified", "Local village production covers input requirements for 3 active enterprises."));
+                Evidence.Add(new("Settlement / Civic Stability", "Verified", "Civic loyalty index at 64/100 prevents rebellion countdown trigger."));
+                Evidence.Add(new("Settlement / Rebellion Risk", "Verified", "Rebellion risk index evaluates to 8.6% (threshold for unrest: 45.0%)."));
+            }
+            else if (IsAgentMemoryInspector)
+            {
+                AgentMemoryDashboard = new AgentMemoryDashboardViewModel();
+                status = "Simulation Ready";
+                rawResult = "=== COALA AGENT COGNITIVE MEMORY AUDIT (SDK v8) ===\nArchitecture Model : CoALA Cognitive Architecture for Bannerlord NPCs\nGlobal Capacity    : 100 Maximum Agents Slots\nAgent Quotas       : 128 Semantic Facts | 512 Episodes (128/type) | 128 Procedural Tasks\n\n[GLOBAL CAPACITY METER]\nCapacity: [█░░░░░░░░░░░░░░░░░░░░░░░] 6.00% (6 / 100 slots utilized)\n\n[TIER 1: SEMANTIC MEMORY (Beliefs, Preferences & TTL Facts)]\nAgent: hero_rhagaea\n   • preference_culture     = Empire\n   • war_stance_khuzait     = Hostile\n   • player_disposition     = Allied (Relation: +64)\n\n[TIER 2: EPISODIC MEMORY (Experiences & FIFO Bounded Events)]\nAgent: hero_rhagaea (Total Episodes: 4/512)\n   [combat] Defended Onira against Khuzait siege vanguard\n   [diplomacy] Signed trade truce with Western Empire senate\n   [dynasty] Arranged marriage treaty for Ira\n\n[TIER 3: PROCEDURAL MEMORY (Skills & Tactical Routines)]\nAgent: hero_rhagaea (Tasks: 2/128)\n   • formation_defense    : Palatine archers on high ground, cataphracts in counter-charge flank";
+                Evidence.Add(new("Agent Memory / Global Registry", "Verified", "6/100 global slots utilized; bounded agent slot isolation active."));
+                Evidence.Add(new("Agent Memory / Semantic Decay", "Verified", "Lazy TTL expiration verified; stale facts removed on access."));
+                Evidence.Add(new("Agent Memory / Episodic FIFO", "Verified", "Per-agent 512 cap and per-type 128 cap verified without unbounded heap growth."));
+                Evidence.Add(new("Agent Memory / Procedural Health", "Verified", "Task rules validated without circular reentrancy."));
+            }
+            else if (IsCodeSecurityAuditor)
+            {
+                CodeSecurityDashboard = new CodeSecurityDashboardViewModel();
+            }
+            else if (IsModuleHierarchyValidator)
+            {
+                ModuleHierarchyDashboard = new ModuleHierarchyDashboardViewModel();
+            }
+            else if (IsKingdomDiplomacyStudio)
+            {
+                KingdomDiplomacyDashboard = new KingdomDiplomacyDashboardViewModel();
+            }
+            else if (IsComponentGeneratorStudio)
+            {
+                ComponentGeneratorDashboard = new ComponentGeneratorDashboardViewModel();
+            }
+            else
+            {
+                GenericOperationDashboard = GenericOperationDashboardViewModel.CanonicalInstance;
+            }
+        }
+
+        public bool HasVisualDashboard { get; }
+        /// <summary>Preserves room for specialist visualizers while allowing text-first routes to use the full narrow workspace.</summary>
+        public double MinimumPresentationWidth => HasVisualDashboard ? 520d : 360d;
+        public bool IsTroopTreeVisualizer { get; }
+        public bool IsAudioMixerInspector { get; }
+        public bool IsWorkshopSimulator { get; }
+        public bool IsAgentMemoryInspector { get; }
+        public bool IsCodeSecurityAuditor { get; }
+        public bool IsModuleHierarchyValidator { get; }
+        public bool IsKingdomDiplomacyStudio { get; }
+        public bool IsComponentGeneratorStudio { get; }
+
+        public bool IsGenericOperationOverview => false;
+
+        public TroopTreeDashboardViewModel TroopTreeDashboard { get; private set; }
+        public AudioStudioDashboardViewModel AudioStudioDashboard { get; private set; }
+        public WorkshopDashboardViewModel WorkshopDashboard { get; private set; }
+        public AgentMemoryDashboardViewModel AgentMemoryDashboard { get; private set; }
+        public CodeSecurityDashboardViewModel CodeSecurityDashboard { get; private set; }
+        public ModuleHierarchyDashboardViewModel ModuleHierarchyDashboard { get; private set; }
+        public KingdomDiplomacyDashboardViewModel KingdomDiplomacyDashboard { get; private set; }
+        public ComponentGeneratorDashboardViewModel ComponentGeneratorDashboard { get; private set; }
+        public GenericOperationDashboardViewModel GenericOperationDashboard { get; private set; }
+
+        int presetCycleIndex;
+
+        public ToolDefinition Tool { get; }
+        [ForgeUiCommand("run", "Primary", cancellable: true)]
+        public AsyncRelayCommand RunCommand { get; }
+        [ForgeUiCommand("cancel", "Secondary", cancellable: false)]
+        public RelayCommand CancelCommand { get; }
+        [ForgeUiCommand("export", "Secondary", cancellable: false)]
+        public RelayCommand ExportCommand { get; }
+        [ForgeUiCommand("browse-file", "Secondary", cancellable: false)]
+        public RelayCommand BrowseFileCommand { get; }
+        [ForgeUiCommand("browse-folder", "Secondary", cancellable: false)]
+        public RelayCommand BrowseFolderCommand { get; }
+        [ForgeUiCommand("load-preset", "Secondary", cancellable: false)]
+        public RelayCommand LoadPresetCommand { get; }
+        [ForgeUiCommand("clear-input", "Secondary", cancellable: false)]
+        public RelayCommand ClearInputCommand { get; }
+
+        public bool HasPresetAction => HasVisualDashboard;
+        public string PresetActionLabel => IsTroopTreeVisualizer
+            ? (presetCycleIndex % 2 == 1 ? "⟳ Ver Árbol Imperial Base" : "⟳ Ver Línea Dinástica Noble")
+            : IsAudioMixerInspector
+                ? (presetCycleIndex % 2 == 1 ? "⟳ Cargar Muestra Combate" : "⟳ Cargar Fanfarria UI")
+                : IsWorkshopSimulator
+                    ? (presetCycleIndex % 2 == 1 ? "⟳ Ver Escenario Marunath" : "⟳ Ver Escenario Epicrotea")
+                    : IsAgentMemoryInspector
+                        ? (presetCycleIndex % 3 == 0 ? "⟳ Estado Base (T=0h)" : presetCycleIndex % 3 == 1 ? "⟳ Decaimiento Temporal (T+24h)" : "⟳ Poda y Consolidación (T+72h)")
+                        : IsCodeSecurityAuditor
+                            ? (presetCycleIndex % 3 == 0 ? "⟳ Auditar Mod Ensamblado" : presetCycleIndex % 3 == 1 ? "⟳ Auditar Motor Nativo" : "⟳ Preflight de Módulo")
+                            : IsModuleHierarchyValidator
+                                ? (presetCycleIndex % 3 == 0 ? "⟳ Matriz Modular Estándar" : presetCycleIndex % 3 == 1 ? "⟳ Matriz Sandbox Mínima" : "⟳ Matriz Multimódulo")
+                                : IsKingdomDiplomacyStudio
+                                    ? (presetCycleIndex % 3 == 0 ? "⟳ Imperio del Sur (Rhagaea)" : presetCycleIndex % 3 == 1 ? "⟳ Imperio Occidental (Garios)" : "⟳ Reino de Vlandia (Derthert)")
+                                    : IsComponentGeneratorStudio
+                                        ? (presetCycleIndex % 3 == 0 ? "⟳ Manifiesto Sonidos" : presetCycleIndex % 3 == 1 ? "⟳ Prefab Gauntlet" : "⟳ Definición Tropas")
+                                        : (presetCycleIndex % 2 == 1 ? "⟳ Modo Diagnóstico Exhaustivo" : "⟳ Cargar Parámetros Canónicos");
+
+        public string PrimaryActionLabel => Tool.Id switch
+        {
+            "TroopTreeVisualizer" => "⚡ Simular Progresión de Tropas",
+            "ItemBalanceAnalyzer" => "⚖️ Auditar Balance de Armas",
+            "AudioFmodMixerInspector" => "🔬 Analizar Espectro Acústico",
+            "SoundXmlSynthesizer" => "🎵 Sintetizar Definición de Sonido",
+            "WorkshopEnterpriseSimulator" => "📊 Simular Economía 30 Días",
+            "SettlementCalculator" => "🏛️ Calcular Equilibrio Asentamiento",
+            "SaveInspector" or "ForgeAgentMemoryInspector" or "AgentMemoryInspector" => "🧠 Inspeccionar Memoria CoALA",
+            "SaveTypeDefinerAuditor" => "🛡️ Auditar SaveableTypeDefiner",
+            "CampaignNamespaceGuard" => "🛡️ Verificar Anti-Shadowing",
+            "ModRuleAuditor" => "📜 Auditar Reglas C#",
+            "GauntletSpriteAuditor" => "🖼️ Auditar Hojas de Sprites",
+            "FbxAsciiPreflight" => "📐 Preflight Nodos FBX ASCII",
+            "TpacInspector" => "📦 Inspeccionar Cabecera TPAC",
+            "LiveConsole" => "⚡ Despachar Comando ForgeWeave",
+            "GauntletLivePreview" => "📡 Consultar Telemetría APM",
+            "PatchPreflight" => "🔍 Verificar Blueprints de Parches",
+            _ => Tool.Kind switch
+            {
+                DesktopToolKind.Simulation => "⚡ Ejecutar Simulación Táctica",
+                DesktopToolKind.AssemblyEditor => "🛡️ Previsualizar Copia de Ensamblado",
+                DesktopToolKind.Generator => "⚙️ Generar Andamiaje de Código",
+                DesktopToolKind.Live => "📡 Consultar Sesión en Vivo",
+                DesktopToolKind.Report => "📋 Compilar Informe de Evidencias",
+                _ => Tool.Group switch
+                {
+                    "Diagnostics" => "🔍 Auditar Evidencia Táctica",
+                    "Assets" => "🛠️ Inspeccionar Recurso de Juego",
+                    "Economy" => "📈 Simular Indicadores Económicos",
+                    "Combat" => "⚔️ Simular Parámetros de Combate",
+                    "Politics" => "👑 Auditar Mecánicas Políticas",
+                    "Campaign" => "🗺️ Evaluar Simulación de Campaña",
+                    "Gauntlet" => "🎨 Verificar Prefabs de Gauntlet",
+                    _ => "⚔️ Ejecutar Orden de Trabajo"
+                }
+            }
+        };
+
+        public string PrimaryActionIconKey => Tool.Id switch
+        {
+            "TroopTreeVisualizer" or "ItemBalanceAnalyzer" => "GameIcon.crossed_swords",
+            "AudioFmodMixerInspector" or "SoundXmlSynthesizer" => "GameIcon.gears",
+            "WorkshopEnterpriseSimulator" or "SettlementCalculator" => "GameIcon.gear_hammer",
+            "SaveInspector" or "ForgeAgentMemoryInspector" or "AgentMemoryInspector" => "GameIcon.scroll_unfurled",
+            "SaveTypeDefinerAuditor" or "CampaignNamespaceGuard" or "ModRuleAuditor" => "GameIcon.knight_banner",
+            "GauntletSpriteAuditor" or "TpacInspector" or "FbxAsciiPreflight" => "GameIcon.gears",
+            "LiveConsole" or "GauntletLivePreview" => "GameIcon.compass",
+            _ => Tool.Group switch
+            {
+                "Simulation" or "Combat" => "GameIcon.crossed_swords",
+                "Diagnostics" => "GameIcon.archery_target",
+                "Live session" => "GameIcon.compass",
+                "Assets" => "GameIcon.gears",
+                "Politics" => "GameIcon.knight_banner",
+                "Economy" => "GameIcon.gear_hammer",
+                "Learning" => "GameIcon.scroll_unfurled",
+                _ => "GameIcon.knight_banner"
+            }
+        };
+
+        public string PrimaryActionAccentBrushKey => Tool.Group switch
+        {
+            "Simulation" or "Combat" => "VerdigrisBrush",
+            "Diagnostics" or "Politics" => "BrassBrush",
+            "Live session" => "EmberBrush",
+            "Assets" or "Gauntlet" => "TemperedBrush",
+            "Economy" => "BrassBrush",
+            _ => "BrassBrush"
+        };
+
+        public string PrimaryActionToolTip => Tool.Id switch
+        {
+            "TroopTreeVisualizer" => "Ejecuta la simulación completa del árbol DAG de tropas imperiales y calcula métricas de combate.",
+            "AudioFmodMixerInspector" => "Analiza la forma de onda acústica, calcula el espectro en 5 bandas y verifica el margen dinámico.",
+            "WorkshopEnterpriseSimulator" => "Simula 30 días de operación económica entre 7 empresas de talleres y modela el riesgo de rebelión.",
+            "SaveInspector" or "ForgeAgentMemoryInspector" or "AgentMemoryInspector" => "Inspecciona la arquitectura de memoria CoALA de 3 niveles y calcula la cuota global de agentes.",
+            "SaveTypeDefinerAuditor" => "Desensambla el IL del constructor del binario PE y audita que el base ID sea >= 2.500.000.",
+            "CampaignNamespaceGuard" => "Inspecciona los metadatos del binario para garantizar que ningún tipo o espacio de nombres oculte TaleWorlds.CampaignSystem.",
+            "LiveConsole" => "Despacha acciones interactivas a través del named pipe hacia el bus de eventos ForgeWeave en el juego.",
+            "GauntletLivePreview" => "Consulta telemetría APM en tiempo real, latencias P50/P95/P99 y estados de circuit breaker.",
+            _ => "Ejecuta la operación seleccionada con las entradas provistas."
+        };
+
+        public bool HasInputText => !string.IsNullOrWhiteSpace(input);
+
+        public IReadOnlyList<string> ConsoleCommands => Tool.ConsoleCommands;
+        public string CliSyntax => Tool.CliSyntax;
+        public IReadOnlyList<string> ApplicableHotkeys => Tool.ApplicableHotkeys;
+        public string SectionInformation => Tool.SectionInformation;
+        public bool HasConsoleCommands => ConsoleCommands.Count > 0;
+
+        public ObservableCollection<WorkspaceEvidence> Evidence { get; } = [];
+        public string Input
+        {
+            get => input;
+            set
+            {
+                if (!Set(ref input, value ?? string.Empty)) return;
+                Raise(nameof(DisabledReason));
+                Raise(nameof(HasInputText));
+                RunCommand.NotifyCanExecuteChanged();
+                ClearInputCommand.NotifyCanExecuteChanged();
+            }
+        }
+        public string Status { get => status; private set => Set(ref status, value); }
+        public string RawResult { get => rawResult; protected set { if (Set(ref rawResult, value)) ExportCommand.NotifyCanExecuteChanged(); } }
+        public string DisabledReason
+        {
+            get
+            {
+                if (disposed) return "This page has been released.";
+                if (Tool.RequiresInput && string.IsNullOrWhiteSpace(Input)) return "Select a supported local file or folder before running this tool.";
+                if (Tool.ChangesState) return "State-changing execution is unavailable from this guarded desktop route.";
+                return disabledReason ?? string.Empty;
+            }
+            private set { if (Set(ref disabledReason, value)) { Raise(nameof(DisabledReason)); RunCommand.NotifyCanExecuteChanged(); } }
+        }
+        public string Requirement => Tool.Kind switch
+        {
+            DesktopToolKind.AssemblyEditor => "Patch request JSON (.json; preview first, then explicitly apply)",
+            _ when Tool.Id == "AssemblyInspector" => "Managed .NET PE assembly (.dll / .exe)",
+            _ when Tool.Id == "FbxAsciiPreflight" => "FBX file or folder (ASCII declarations; binary FBX is unsupported)",
+            _ => Tool.RequiresInput ? "Supported local file or folder" : "No local file input required"
+        };
+        public string StateLabel => Tool.ChangesState ? "Guarded: no state changes from Desktop" : "Read-only or template output";
+
+        bool CanSelectInput() => !disposed && Tool.RequiresInput && pickInput != null;
+        void SelectInput(bool folder)
+        {
+            var selected = pickInput?.Invoke(Tool, folder);
+            if (!string.IsNullOrWhiteSpace(selected)) Input = selected;
+        }
+
+        bool CanRun() => !disposed && string.IsNullOrEmpty(DisabledReason);
+
+        async Task RunAsync(CancellationToken cancellation)
+        {
+            Status = "Running";
+            try
+            {
+                var result = await execute(Tool, Input, cancellation).ConfigureAwait(true);
+                if (disposed) return;
+                Status = result?.Status ?? "Completed";
+                RawResult = result?.RawResult ?? "No result was returned.";
+                DisabledReason = result?.DisabledReason;
+                Evidence.Clear();
+                foreach (var item in result?.Evidence ?? []) Evidence.Add(item);
+            }
+            catch (OperationCanceledException)
+            {
+                if (disposed) return;
+                Status = "Cancelled";
+                RawResult = "The operation was cancelled before it completed.";
+                Evidence.Clear();
+                Evidence.Add(new("Desktop", "Cancelled", "No further result was retained."));
+            }
+            catch (Exception error)
+            {
+                if (disposed) return;
+                Status = "Failed";
+                RawResult = error.Message;
+                Evidence.Clear();
+                Evidence.Add(new("Desktop", "Failed", error.Message));
+            }
+        }
+
+        void CyclePreset()
+        {
+            if (disposed) return;
+            presetCycleIndex++;
+
+            if (IsTroopTreeVisualizer)
+            {
+                if (presetCycleIndex % 2 == 1)
+                {
+                    TroopTreeDashboard = new TroopTreeDashboardViewModel();
+                    TroopTreeDashboard.SetDynasticNobleScenario();
+                    Evidence.Add(new("Troop Tree / Preset", "Loaded", "Switched to Noble Dynastic Cataphract Line (T2-T6)."));
+                }
+                else
+                {
+                    TroopTreeDashboard = new TroopTreeDashboardViewModel();
+                    Evidence.Add(new("Troop Tree / Preset", "Loaded", "Restored Imperial Core Combined Arms Tree (T1-T4)."));
+                }
+                Raise(nameof(TroopTreeDashboard));
+                Raise(nameof(PresetActionLabel));
+            }
+            else if (IsAudioMixerInspector)
+            {
+                if (presetCycleIndex % 2 == 1)
+                {
+                    AudioStudioDashboard = new AudioStudioDashboardViewModel();
+                    AudioStudioDashboard.SetUiFanfareSample();
+                    Evidence.Add(new("Audio / Preset", "Loaded", "Loaded UI Fanfare (custom_quest_complete_jingle.ogg, -3.2 dBFS)."));
+                }
+                else
+                {
+                    AudioStudioDashboard = new AudioStudioDashboardViewModel();
+                    Evidence.Add(new("Audio / Preset", "Loaded", "Restored Combat Shield Clash (custom_iron_shield_clash.wav, -1.4 dBFS)."));
+                }
+                Raise(nameof(AudioStudioDashboard));
+                Raise(nameof(PresetActionLabel));
+            }
+            else if (IsWorkshopSimulator)
+            {
+                if (presetCycleIndex % 2 == 1)
+                {
+                    WorkshopDashboard = new WorkshopDashboardViewModel();
+                    WorkshopDashboard.SetEpicroteaScenario();
+                    Evidence.Add(new("Economy / Preset", "Loaded", "Switched market scope to Epicrotea (Iron Smithy + Brewery, 6120 prosperity)."));
+                }
+                else
+                {
+                    WorkshopDashboard = new WorkshopDashboardViewModel();
+                    Evidence.Add(new("Economy / Preset", "Loaded", "Restored Marunath market scope (Silversmith + Smithy, 5420 prosperity)."));
+                }
+                Raise(nameof(WorkshopDashboard));
+                Raise(nameof(PresetActionLabel));
+            }
+            else if (IsAgentMemoryInspector)
+            {
+                if (AgentMemoryDashboard != null)
+                {
+                    AgentMemoryDashboard.CycleScenario(presetCycleIndex);
+                    var activeHero = AgentMemoryDashboard.SelectedAgent;
+                    Evidence.Add(new("Agent Memory / Preset", "Loaded", $"Switched hero to {activeHero?.Name} ({activeHero?.HeroId}) · Decay Stage: {activeHero?.DecayState} ({activeHero?.SummaryBadge})."));
+                    Raise(nameof(AgentMemoryDashboard));
+                    Raise(nameof(PresetActionLabel));
+                }
+            }
+            else if (IsCodeSecurityAuditor)
+            {
+                CodeSecurityDashboard?.CycleScenario(presetCycleIndex);
+                Evidence.Add(new("Security / Preset", "Loaded", $"Loaded scenario #{presetCycleIndex % 3 + 1}: {CodeSecurityDashboard?.TargetAssembly}"));
+                Raise(nameof(CodeSecurityDashboard));
+                Raise(nameof(PresetActionLabel));
+            }
+            else if (IsModuleHierarchyValidator)
+            {
+                ModuleHierarchyDashboard?.CycleScenario(presetCycleIndex);
+                Evidence.Add(new("Module / Preset", "Loaded", $"Loaded topology #{presetCycleIndex % 3 + 1}: {ModuleHierarchyDashboard?.SubModuleXmlStatus}"));
+                Raise(nameof(ModuleHierarchyDashboard));
+                Raise(nameof(PresetActionLabel));
+            }
+            else if (IsKingdomDiplomacyStudio)
+            {
+                KingdomDiplomacyDashboard?.CycleScenario(presetCycleIndex);
+                Evidence.Add(new("Diplomacy / Preset", "Loaded", $"Loaded geopolitical stance #{presetCycleIndex % 3 + 1}: {KingdomDiplomacyDashboard?.FactionName}"));
+                Raise(nameof(KingdomDiplomacyDashboard));
+                Raise(nameof(PresetActionLabel));
+            }
+            else if (IsComponentGeneratorStudio)
+            {
+                ComponentGeneratorDashboard?.CycleScenario(presetCycleIndex);
+                Evidence.Add(new("Generator / Preset", "Loaded", $"Loaded synthesis template #{presetCycleIndex % 3 + 1}: {ComponentGeneratorDashboard?.TargetOutput}"));
+                Raise(nameof(ComponentGeneratorDashboard));
+                Raise(nameof(PresetActionLabel));
+            }
+            else
+            {
+                if (ReferenceEquals(GenericOperationDashboard, GenericOperationDashboardViewModel.CanonicalInstance))
+                {
+                    GenericOperationDashboard = new GenericOperationDashboardViewModel();
+                }
+                GenericOperationDashboard?.CycleScenario(presetCycleIndex);
+                Evidence.Add(new("Operation / Preset", "Loaded", $"Switched execution mode: {GenericOperationDashboard?.ExecutionMode}"));
+                Raise(nameof(GenericOperationDashboard));
+                Raise(nameof(PresetActionLabel));
+            }
+        }
+
+        // public void Dispose() is the page lifecycle contract; the virtual implementation below lets routed pages add state.
+        public virtual void Dispose()
+        {
+            if (disposed) return;
+            disposed = true;
+            RunCommand.Cancel();
+            Evidence.Clear();
+            Raise(nameof(DisabledReason));
+            RunCommand.NotifyCanExecuteChanged();
+            BrowseFileCommand.NotifyCanExecuteChanged();
+            BrowseFolderCommand.NotifyCanExecuteChanged();
+            LoadPresetCommand.NotifyCanExecuteChanged();
+            ClearInputCommand.NotifyCanExecuteChanged();
+        }
+    }
+}

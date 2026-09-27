@@ -1,0 +1,231 @@
+<?xml version='1.0' encoding='utf-8'?>
+<strings language="ja">
+  <string key="Assign unique IDs" value="Assign unique IDs" />
+  <string key="Build or reinstall module" value="Build or reinstall module" />
+  <string key="Calradia Forge" value="カルラディアの鍛冶場" />
+  <string key="Campaign copy confirmed" value="キャンペーンのコピー確認済み" />
+  <string key="Check module folder" value="Check module folder" />
+  <string key="Close" value="閉じる" />
+  <string key="Commands" value="コマンド" />
+  <string key="Compare" value="比較" />
+  <string key="Confirm campaign copy" value="キャンペーンのコピーを確認" />
+  <string key="Connect" value="接続" />
+  <string key="Connected" value="接続済み" />
+  <string key="Context" value="コンテキスト" />
+  <string key="Declared DLL missing" value="Declared DLL missing" />
+  <string key="Dependency cycle" value="Dependency cycle" />
+  <string key="Disable testing" value="テストを無効化" />
+  <string key="Disconnected" value="切断" />
+  <string key="Duplicate ID" value="重複した ID" />
+  <string key="Enable testing" value="テストを有効化" />
+  <string key="Enable testing and confirm campaign copy" value="テストを有効にしてキャンペーンのコピーを確認" />
+  <string key="Enter the Bannerlord process ID" value="Enter the Bannerlord process ID" />
+  <string key="Exact object ID required" value="正確なオブジェクト ID が必要です" />
+  <string key="Export report" value="レポート出力" />
+  <string key="Extension diagnostics" value="Extension diagnostics" />
+  <string key="Fix XML" value="Fix XML" />
+  <string key="Fix manifest" value="Fix manifest" />
+  <string key="Import log" value="ログをインポート" />
+  <string key="Inspector" value="インスペクター" />
+  <string key="Inspect framework" value="Inspect framework" />
+  <string key="Framework" value="フレームワーク" />
+  <string key="ForgeWeave framework" value="ForgeWeave フレームワーク" />
+  <string key="ForgeWeave shows declared extension handlers, order, health and timing without applying patches." value="ForgeWeave はパッチを適用せず、宣言済み拡張ハンドラー、順序、状態、時間を表示します。" />
+  <string key="Handlers" value="ハンドラー" />
+  <string key="Quarantined" value="隔離中" />
+  <string key="Dispatches" value="ディスパッチ" />
+  <string key="Failures" value="失敗" />
+  <string key="Mean" value="平均" />
+  <string key="Maximum" value="最大" />
+  <string key="Recent events" value="最近のイベント" />
+  <string key="Framework findings" value="フレームワークの検出結果" />
+  <string key="Harmony" value="Harmony" />
+  <string key="Harmony patch atlas" value="Harmony パッチ一覧" />
+  <string key="Optional read-only Harmony diagnostics. Shared targets are review candidates, not proven conflicts." value="読み取り専用の任意のHarmony診断です。共有ターゲットは確認候補であり、証明済みの競合ではありません。" />
+  <string key="Patch preflight" value="パッチ事前検証" />
+  <string key="Patch blueprint preflight" value="パッチ設計図の事前検証" />
+  <string key="Providers" value="プロバイダー" />
+  <string key="Resolved" value="解決済み" />
+  <string key="Review items" value="確認項目" />
+  <string key="Preflight findings" value="事前検証の結果" />
+  <string key="Check patch blueprints" value="Check patch blueprints" />
+  <string key="Patch blueprint declarations are read-only. This check does not apply a patch." value="Patch blueprint declarations are read-only. This check does not apply a patch." />
+  <string key="Install dependency" value="Install dependency" />
+  <string key="Invalid DLL path" value="Invalid DLL path" />
+  <string key="Inventory" value="Inventory" />
+  <string key="Logs" value="ログ" />
+  <string key="Maximum 100 snapshots" value="スナップショットは最大 100 件" />
+  <string key="Missing SubModule.xml" value="Missing SubModule.xml" />
+  <string key="Module folder" value="モジュールフォルダー" />
+  <string key="Module scan started. Refresh Modules to see results." value="モジュールのスキャンを開始しました。結果を確認するにはモジュールを更新してください。" />
+  <string key="Modules" value="モジュール" />
+  <string key="Next" value="次へ" />
+  <string key="No changes" value="変更なし" />
+  <string key="Object no longer available" value="オブジェクトは利用できなくなりました" />
+  <string key="Open report" value="レポートを開く" />
+  <string key="Performance" value="パフォーマンス" />
+  <string key="Pin" value="固定" />
+  <string key="Pin this object first" value="先にこのオブジェクトを固定してください" />
+  <string key="Previous" value="前へ" />
+  <string key="Raw data" value="生データ" />
+  <string key="Ready" value="準備完了" />
+  <string key="Refresh" value="更新" />
+  <string key="Remove circular dependency" value="Remove circular dependency" />
+  <string key="Run command" value="Run command" />
+  <string key="Run test" value="テスト実行" />
+  <string key="Scan modules" value="モジュールを検査" />
+  <string key="Scanning…" value="Scanning…" />
+  <string key="Search / argument" value="検索 / 引数" />
+  <string key="Seed" value="シード" />
+  <string key="Session" value="セッション" />
+  <string key="Session process ID" value="セッションプロセス ID" />
+  <string key="Single-player only" value="シングルプレイヤー専用" />
+  <string key="Start Bannerlord with Calradia Forge enabled, then connect. Offline module scanning is available without the game." value="Calradia Forge を有効にして Bannerlord を起動し、接続してください。ゲームなしでモジュールを検査できます。" />
+  <string key="Summary" value="概要" />
+  <string key="Table" value="表" />
+  <string key="Testing" value="テスト" />
+  <string key="Tests" value="テスト" />
+  <string key="Troops" value="Troops" />
+  <string key="Unknown test" value="不明なテスト" />
+  <string key="Use a copied campaign. This enables state-changing tests for this session." value="Use a copied campaign. This enables state-changing tests for this session." />
+  <string key="Use filename only" value="Use filename only" />
+  <string key="Wrong context" value="コンテキストが正しくありません" />
+  <string key="Capture report" value="レポートを取得" />
+  <string key="Live session" value="ライブセッション" />
+  <string key="Snapshots" value="スナップショット" />
+  <string key="Dependencies" value="依存関係" />
+  <string key="Remove snapshot" value="スナップショット削除" />
+  <string key="Run batch" value="一括実行" />
+  <string key="Find an object by type and ID. Pin a baseline before comparing." value="種類と ID でオブジェクトを検索します。比較前に基準を固定してください。" />
+  <string key="Run one test ID, or a comma-separated batch. Batches stop on the first failure." value="1 つのテスト ID またはカンマ区切りのバッチを実行します。バッチは最初の失敗で停止します。" />
+  <string key="Inspect installed modules without changing files or launcher settings." value="ファイルやランチャー設定を変更せずに、インストール済みモジュールを確認します。" />
+  <string key="Browse a live session or the current report. Export preserves the current report." value="ライブセッションまたは現在のレポートを確認します。エクスポートでレポートを保持できます。" />
+  <string key="Enable Live session to use game actions." value="Enable Live session to use game actions." />
+  <string key="No records captured." value="No records captured." />
+  <string key="Scan modules, open a report, or connect to Bannerlord to begin." value="Scan modules, open a report, or connect to Bannerlord to begin." />
+  <string key="New report" value="新しいレポート" />
+  <string key="Captured live session" value="Captured live session" />
+  <string key="Snapshot removed" value="スナップショットを削除しました" />
+  <string key="Snapshot not found" value="スナップショットが見つかりません" />
+  <string key="Invalid extension context" value="無効な拡張コンテキスト" />
+  <string key="Select between 1 and 50 tests" value="1 ～ 50 件のテストを選択" />
+  <string key="Native target" value="Native バージョン" />
+  <string key="Yes" value="はい" />
+  <string key="No" value="いいえ" />
+  <string key="Any" value="任意" />
+  <string key="Campaign" value="キャンペーン" />
+  <string key="Mission" value="ミッション" />
+  <string key="Complete" value="完了" />
+  <string key="Order" value="順序" />
+  <string key="Blocked" value="ブロック済み" />
+  <string key="Error" value="エラー" />
+  <string key="No log entries match this search." value="この検索に一致するログ項目はありません。" />
+  <string key="Clear Search / argument and press Ctrl+Enter to show all available logs." value="「検索 / 引数」をクリアして Ctrl+Enter を押すと、すべてのログが表示されます。" />
+  <string key="Keyboard focus" value="キーボードフォーカス" />
+  <string key="Sections" value="セクション" />
+  <string key="Workbench" value="ワークベンチ" />
+  <string key="Current source" value="Current source" />
+  <string key="Session and files" value="セッションとファイル" />
+  <string key="Section tools" value="セクションツール" />
+  <string key="Results" value="結果" />
+  <string key="Language" value="言語" />
+  <string key="Text size" value="文字サイズ" />
+  <string key="Developer workbench" value="開発者ワークベンチ" />
+  <string key="Workbench sections" value="Workbench sections" />
+  <string key="Search or exact object/test ID" value="Search or exact object/test ID" />
+  <string key="Test seed" value="Test seed" />
+  <string key="Operation in progress" value="Operation in progress" />
+  <string key="Report details" value="Report details" />
+  <string key="Enabled" value="有効" />
+  <string key="Disabled" value="無効" />
+  <string key="Choose a tool" value="ツールを選択" />
+  <string key="Modules: check dependencies.&#10;Inspector: capture object state.&#10;Tests: verify your extension." value="モジュール: 依存関係を確認。&#10;インスペクター: オブジェクトの状態を取得。&#10;テスト: 拡張機能を確認。" />
+  <string key="Browse safely. State-changing tests require test mode; campaign tests also require a working copy." value="安全に確認できます。状態を変更するテストにはテストモードが必要で、キャンペーンテストには作業用コピーも必要です。" />
+  <string key="Your development session at a glance." value="開発セッションの概要。" />
+  <string key="Search the records captured in this session. Leave the search empty to show all." value="このセッションで取得した記録を検索します。すべて表示するには検索を空のままにします。" />
+  <string key="Measurements cover instrumented operations, not the entire game." value="測定対象は計測済みの操作であり、ゲーム全体ではありません。" />
+  <string key="Work order" value="Work order" />
+  <string key="Report state" value="レポート状態" />
+  <string key="Evidence retained" value="保持された証拠" />
+  <string key="Attention" value="Attention" />
+  <string key="Replay lab" value="再生ラボ" />
+  <string key="Replay selected event" value="Replay selected event" />
+  <string key="Enter a retained event sequence, then run a guarded replay." value="保持されたイベントシーケンスを入力して、保護された再生を実行します。" />
+  <string key="Replay" value="再生" />
+  <string key="Replay source" value="再生元" />
+  <string key="Replay outcome" value="再生結果" />
+  <string key="Replay mode" value="再生モード" />
+  <string key="Replay rejected" value="再生は拒否されました" />
+  <string key="Replay completed" value="再生完了" />
+  <string key="Select a retained event sequence." value="保持されたイベントシーケンスを選択してください。" />
+  <string key="No retained events are available." value="保持されたイベントはありません。" />
+  <string key="Live replay reuses existing test and campaign-copy safeguards." value="ライブ再生では、既存のテストモードとキャンペーンコピーの保護を再利用します。" />
+  <string key="Test permission" value="テスト権限" />
+  <string key="Selected evidence" value="選択した証拠" />
+  <string key="No evidence selected" value="証拠が選択されていません" />
+  <string key="Retained event sequence" value="Retained event sequence" />
+  <string key="Offline report" value="Offline report" />
+  <string key="{0} selected · {1} retained" value="選択 {0} · 保持 {1}" />
+  <string key="Connect to a live session to replay retained events." value="Connect to a live session to replay retained events." />
+  <string key="The connected game does not expose Replay Lab." value="The connected game does not expose Replay Lab." />
+  <string key="ForgeWeave Replay Lab reuses retained host events for controlled verification. It does not intercept methods or inject event data." value="ForgeWeave Replay Lab reuses retained host events for controlled verification. It does not intercept methods or inject event data." />
+  <string key="Help: AutoRegister summary" value="指定したアセンブリだけを検査し、対応する SDK 契約を登録します。" />
+  <string key="Help: Gauntlet page summary" value="Forge が独立したレイヤーとして開ける Gauntlet prefab を宣言します。" />
+  <string key="Help: Gauntlet command summary" value="パラメーターなしの Gauntlet コマンドと必要なコンテキストを宣言します。" />
+  <string key="Help: Open page summary" value="Forge ホストに登録済みの拡張ページを開くよう要求します。" />
+  <string key="Help: Assembly workbench summary" value="DLL を読み込み・実行せず、制限付き PE/.NET メタデータをバックグラウンドで読み取ります。バージョン変更はプレビュー後に、バックアップとハッシュ付きの検証済みコピーを作成します。" />
+  <string key="Help: Safety summary" value="属性はメタデータを検証しますが、第三者コードを隔離しません。ページコマンドは拡張作者のコードであり、Bannerlord のメインスレッド規則に従う必要があります。" />
+  <string key="Assembly path or list index" value="アセンブリのパスまたは番号" />
+  <string key="Version" value="バージョン" />
+  <string key="List installed DLLs" value="インストール済み DLL を一覧表示" />
+  <string key="Select DLL row" value="DLL の行を選択" />
+  <string key="Inspect metadata" value="メタデータを検査" />
+  <string key="Preview version" value="バージョンをプレビュー" />
+  <string key="Apply copy" value="コピーに適用" />
+  <string key="Assembly workbench" value="アセンブリ作業台" />
+  <string key="Open extension page" value="拡張ページを開く" />
+  <string key="Context help" value="コンテキストヘルプ" />
+  <string key="Gauntlet extension pages" value="Gauntlet 拡張ページ" />
+  <string key="Type a page ID in the argument field, then use Open extension page." value="引数欄にページ ID を入力し、拡張ページを開くを選択します。" />
+  <string key="Use Context help for offline SDK guidance and the Assembly workbench." value="オフライン SDK ガイドとアセンブリ作業台にはコンテキストヘルプを使用します。" />
+  <string key="Assembly workbench guidance" value="アセンブリ作業台のガイド" />
+  <string key="List installed DLLs, enter a row number, and select it. Inspection reads PE metadata only; it never loads or executes the file." value="インストール済み DLL を一覧表示し、行番号を入力して選択します。検査は PE メタデータのみを読み、ファイルを読み込み・実行しません。" />
+  <string key="For a version change, enter a four-part version, preview first, then apply only to create a copy under LocalAppData/CalradiaForge/AssemblyWorkbench." value="バージョン変更では 4 つの数値を入力し、先にプレビューしてから適用すると LocalAppData/CalradiaForge/AssemblyWorkbench にコピーが作成されます。" />
+  <string key="Strong-name signed and mixed-mode assemblies are rejected. The original is preserved; a source backup and SHA-256 evidence are written." value="strong name 署名済みおよび混合モードのアセンブリは拒否されます。元ファイルを保持し、ソースのバックアップと SHA-256 証跡を保存します。" />
+  <string key="In-game SDK help" value="ゲーム内 SDK ヘルプ" />
+  <string key="0 matching lines found." value="一致する行が見つかりません。" />
+  <string key="ADVANCED SDK" value="高度な SDK" />
+  <string key="Audio manifest audit completed." value="オーディオマニフェストの監査が完了しました。" />
+  <string key="Audio test executed." value="オーディオテストを実行しました。" />
+  <string key="Browse all 110+ Advanced SDK tools" value="110 件以上の高度な SDK ツールをすべて閲覧" />
+  <string key="COMMAND HISTORY" value="コマンド履歴" />
+  <string key="Casus Belli evaluation completed." value="開戦事由の評価が完了しました。" />
+  <string key="Clear History" value="履歴を消去" />
+  <string key="Clear all recorded command history." value="記録されたコマンド履歴をすべて消去します。" />
+  <string key="Close the SDK catalog." value="SDK カタログを閉じます。" />
+  <string key="Copied to clipboard." value="クリップボードにコピーしました。" />
+  <string key="Crime &amp; underworld simulation completed." value="犯罪と裏社会のシミュレーションが完了しました。" />
+  <string key="Ctrl+F: input · Ctrl+Enter: refresh output" value="Ctrl+F：入力 · Ctrl+Enter：出力を更新" />
+  <string key="Ctrl+K: help · Ctrl+W: watch · Tab: focus" value="Ctrl+K：ヘルプ · Ctrl+W：監視 · Tab：フォーカス" />
+  <string key="Dynasty &amp; succession evaluation completed." value="王朝と継承の評価が完了しました。" />
+  <string key="Filter cleared. Showing all lines." value="フィルターを解除しました。すべての行を表示しています。" />
+  <string key="Filtered to {0} matching lines." value="一致する行を {0} 件に絞り込みました。" />
+  <string key="Heap trimmed: reclaimed {0:F1} MB" value="ヒープを整理しました：{0:F1} MB を回収" />
+  <string key="History ▾" value="履歴 ▾" />
+  <string key="Live Watch Activated (1s tick)" value="ライブ監視を有効にしました（間隔 1 秒）" />
+  <string key="Live Watch Deactivated" value="ライブ監視を無効にしました" />
+  <string key="Load next command from history (Down Arrow)." value="履歴から次のコマンドを読み込みます（下矢印）。" />
+  <string key="Load previous command from history (Up Arrow)." value="履歴から前のコマンドを読み込みます（上矢印）。" />
+  <string key="Localization audit completed." value="ローカライズ監査が完了しました。" />
+  <string key="Open the searchable Advanced SDK tool catalog." value="検索可能な高度な SDK ツールカタログを開きます。" />
+  <string key="Output display cleared." value="表示中の出力を消去しました。" />
+  <string key="Party simulation completed." value="部隊シミュレーションが完了しました。" />
+  <string key="SDK Catalog" value="SDK カタログ" />
+  <string key="Save system health audit passed." value="セーブデータの状態監査に合格しました。" />
+  <string key="Scaffold generated. Use Copy to clipboard to save it." value="ひな形を生成しました。「クリップボードにコピー」を使って保存してください。" />
+  <string key="Siege tactics analysis completed." value="攻城戦術の分析が完了しました。" />
+  <string key="Toggle recent command history dropdown." value="最近のコマンド履歴のドロップダウンを表示または非表示にします。" />
+  <string key="Toggle tactical keyboard shortcuts guide (Ctrl+K)." value="戦術キーボードショートカットガイドを表示または非表示にします（Ctrl+K）。" />
+  <string key="Trade simulation completed." value="交易シミュレーションが完了しました。" />
+  <string key="[ ⌨ Keys ]" value="[ ⌨ キー ]" />
+</strings>

@@ -1,0 +1,7 @@
+8005107E1FFBFDF89731C91D9A5180C42B7921654FF4CF79681504139321B9A0  pine_woodgrain.png  [source=assets\gauntlet-imagegen\pine_woodgrain.png]
+C4C14AA1EFF020782ABBC5D6F1CF2A0DB2FAFA926228E489A4A7B98D5C09D142  inkwash_vellum.png  [source=assets\gauntlet-imagegen\inkwash_vellum.png]
+99B79039DF750E7441C47C971040D258D006A4E8F27ED557309172CA7D47320A  war_table_illustrated_cloth_v1.png  [source=assets\gauntlet-imagegen\war_table_illustrated_cloth_v1.png]
+2CE1D129A1AA2C7D8A67A21FB869C0443673BB7E22F935E482C9E67A0C8368D7  prepared-forge_dark_wood.png  [source=assets\gauntlet-imagegen\prepared\forge_dark_wood.png]
+C9869CEE38B635018D0A7BC04E9815173FE7BD76540D70502F184D431B5838FB  prepared-forge_inkwash.png  [source=assets\gauntlet-imagegen\prepared\forge_inkwash.png]
+BAA3FE55A8311502BE6ED0B7FD9201C7782265AE1086811361898EB9FC205FDF  prepared-forge_war_table_cloth.png  [source=assets\gauntlet-imagegen\prepared\forge_war_table_cloth.png]
+BAA3FE55A8311502BE6ED0B7FD9201C7782265AE1086811361898EB9FC205FDF  spriteparts-forge_war_table_cloth.png  [source=modules\CalradiaForge\GUI\SpriteParts\ui_calradiaforge\forge_war_table_cloth.png]

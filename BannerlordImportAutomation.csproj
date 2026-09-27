@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- net48: framework que realmente soporta FlaUI 5.0.0 (verificado en nuget.org).
+         No necesita coincidir con el framework del Editor: este proyecto es un
+         cliente de automatización externo, solo corre sobre Windows. -->
+    <TargetFramework>net48</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>BannerlordImportAutomation</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Company>Calradia Forge Team</Company>
+    <Product>Bannerlord Import Automation</Product>
+    <Description>Interactive helper for submitting assets to the Bannerlord Resource Browser.</Description>
+    <Copyright>Copyright © 2026 Calradia Forge Team</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- FlaUI: librería de UI Automation para .NET, vía NuGet (versión
+         estable más reciente verificada al momento de escribir esto). -->
+    <PackageReference Include="FlaUI.Core" Version="5.0.0" />
+    <PackageReference Include="FlaUI.UIA3" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="ResourceBrowserTargetResolver.cs" />
+    <Compile Include="ImportBatchPolicy.cs" />
+  </ItemGroup>
+
+</Project>

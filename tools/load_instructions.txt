@@ -1,0 +1,238 @@
+0000:  
+0001:  IL_001B
+0003:  
+0004:  System.IO.Stream System.IO.BinaryReader::get_BaseStream()
+0009:  System.Boolean System.IO.Stream::get_CanSeek()
+000E:  IL_001B
+0010:  When load a whole Tpac file into memory, the base stream must support random access (seek).
+0015:  System.Void System.IO.IOException::.ctor(System.String)
+001A:  
+001B:  
+001C:  
+001D:  System.Void TpacTool.Lib.AssetPackage::set_HeaderLoaded(System.Boolean)
+0022:  
+0023:  System.UInt32 System.IO.BinaryReader::ReadUInt32()
+0028:  1128353876
+002D:  IL_004A
+002F:  Not a Tpac file: 
+0034:  
+0035:  System.IO.FileInfo TpacTool.Lib.AssetPackage::get_File()
+003A:  System.String System.IO.FileSystemInfo::get_FullName()
+003F:  System.String System.String::Concat(System.String, System.String)
+0044:  System.Void System.IO.IOException::.ctor(System.String)
+0049:  
+004A:  
+004B:  System.UInt32 System.IO.BinaryReader::ReadUInt32()
+0050:  
+0051:  
+0052:  
+0053:  
+0054:  
+0055:  IL_006E
+0057:  Unsupported Tpac version: 
+005C:  V_0
+005E:  System.String System.UInt32::ToString()
+0063:  System.String System.String::Concat(System.String, System.String)
+0068:  System.Void System.Exception::.ctor(System.String)
+006D:  
+006E:  
+006F:  
+0070:  System.Guid TpacTool.Lib.Utils::ReadGuid(System.IO.BinaryReader)
+0075:  System.Void TpacTool.Lib.AssetPackage::set_Guid(System.Guid)
+007A:  
+007B:  System.UInt32 System.IO.BinaryReader::ReadUInt32()
+0080:  
+0081:  
+0082:  System.UInt32 System.IO.BinaryReader::ReadUInt32()
+0087:  
+0088:  
+0089:  System.UInt32 System.IO.BinaryReader::ReadUInt32()
+008E:  
+008F:  
+0090:  
+0091:  IL_024A
+0096:  
+0097:  System.Guid TpacTool.Lib.Utils::ReadGuid(System.IO.BinaryReader)
+009C:  V_3
+009E:  System.Boolean TpacTool.Lib.TypedAssetFactory::CreateTypedAsset(System.Guid, TpacTool.Lib.AssetItem&)
+00A3:  
+00A4:  
+00A5:  
+00A6:  System.Guid TpacTool.Lib.Utils::ReadGuid(System.IO.BinaryReader)
+00AB:  System.Void TpacTool.Lib.AssetItem::set_Guid(System.Guid)
+00B0:  
+00B1:  V_4
+00B3:  
+00B4:  
+00B5:  IL_00BF
+00B7:  
+00B8:  System.UInt32 System.IO.BinaryReader::ReadUInt32()
+00BD:  V_4
+00BF:  
+00C0:  V_4
+00C2:  System.Void TpacTool.Lib.AssetItem::set_Version(System.UInt32)
+00C7:  
+00C8:  
+00C9:  System.String TpacTool.Lib.Utils::ReadSizedString(System.IO.BinaryReader)
+00CE:  System.Void TpacTool.Lib.AssetItem::set_Name(System.String)
+00D3:  
+00D4:  System.UInt64 System.IO.BinaryReader::ReadUInt64()
+00D9:  V_5
+00DB:  
+00DC:  
+00DD:  V_5
+00DF:  
+00E0:  System.Void TpacTool.Lib.AssetItem::ReadMetadata(System.IO.BinaryReader, System.Int32)
+00E5:  
+00E6:  System.Int64 System.IO.BinaryReader::ReadInt64()
+00EB:  
+00EC:  
+00ED:  System.Int32 System.IO.BinaryReader::ReadInt32()
+00F2:  V_6
+00F4:  V_6
+00F6:  TpacTool.Lib.AbstractExternalLoader
+00FB:  V_7
+00FD:  
+00FE:  V_9
+0100:  IL_0195
+0105:  
+0106:  System.UInt64 System.IO.BinaryReader::ReadUInt64()
+010B:  V_10
+010D:  
+010E:  System.UInt64 System.IO.BinaryReader::ReadUInt64()
+0113:  V_11
+0115:  
+0116:  System.UInt64 System.IO.BinaryReader::ReadUInt64()
+011B:  V_12
+011D:  
+011E:  System.Guid TpacTool.Lib.Utils::ReadGuid(System.IO.BinaryReader)
+0123:  V_13
+0125:  
+0126:  System.Guid TpacTool.Lib.Utils::ReadGuid(System.IO.BinaryReader)
+012B:  
+012C:  System.IO.FileInfo TpacTool.Lib.AssetPackage::get_File()
+0131:  V_14
+0133:  System.Boolean TpacTool.Lib.TypedDataFactory::CreateTypedLoader(System.Guid, System.IO.FileInfo, TpacTool.Lib.AbstractExternalLoader&)
+0138:  
+0139:  V_14
+013B:  V_15
+013D:  V_15
+013F:  V_10
+0141:  System.UInt64 TpacTool.Lib.AbstractExternalLoader::_offset
+0146:  V_15
+0148:  V_11
+014A:  System.UInt64 TpacTool.Lib.AbstractExternalLoader::_actualSize
+014F:  V_15
+0151:  V_12
+0153:  System.UInt64 TpacTool.Lib.AbstractExternalLoader::_storageSize
+0158:  V_15
+015A:  V_13
+015C:  System.Void TpacTool.Lib.AbstractExternalLoader::set_OwnerGuid(System.Guid)
+0161:  V_15
+0163:  
+0164:  System.UInt64 System.IO.BinaryReader::ReadUInt64()
+0169:  System.UInt64 TpacTool.Lib.AbstractExternalLoader::_unknownUlong
+016E:  V_15
+0170:  
+0171:  System.UInt32 System.IO.BinaryReader::ReadUInt32()
+0176:  System.UInt32 TpacTool.Lib.AbstractExternalLoader::_unknownUint
+017B:  V_15
+017D:  
+017E:  System.Byte System.IO.BinaryReader::ReadByte()
+0183:  TpacTool.Lib.AbstractExternalLoader+StorageFormat TpacTool.Lib.AbstractExternalLoader::_storageFormat
+0188:  V_7
+018A:  V_9
+018C:  V_15
+018E:  
+018F:  V_9
+0191:  
+0192:  
+0193:  V_9
+0195:  V_9
+0197:  V_6
+0199:  IL_0105
+019E:  
+019F:  V_7
+01A1:  System.Void TpacTool.Lib.AssetItem::ConsumeDataSegments(TpacTool.Lib.AbstractExternalLoader[])
+01A6:  
+01A7:  IL_01D0
+01A9:  V_7
+01AB:  V_16
+01AD:  
+01AE:  V_17
+01B0:  IL_01C8
+01B2:  V_16
+01B4:  V_17
+01B6:  
+01B7:  
+01B8:  System.Void TpacTool.Lib.AbstractExternalLoader::ForceLoad()
+01BD:  System.Void TpacTool.Lib.AbstractExternalLoader::MarkLongLive()
+01C2:  V_17
+01C4:  
+01C5:  
+01C6:  V_17
+01C8:  V_17
+01CA:  V_16
+01CC:  
+01CD:  
+01CE:  IL_01B2
+01D0:  
+01D1:  System.Int32 System.IO.BinaryReader::ReadInt32()
+01D6:  V_8
+01D8:  
+01D9:  System.Collections.Generic.List`1<TpacTool.Lib.AssetItem+UnknownDependence> TpacTool.Lib.AssetItem::get_UnknownDependences()
+01DE:  V_8
+01E0:  System.Void System.Collections.Generic.List`1<TpacTool.Lib.AssetItem+UnknownDependence>::set_Capacity(System.Int32)
+01E5:  
+01E6:  V_18
+01E8:  IL_0234
+01EA:  
+01EB:  System.Guid TpacTool.Lib.Utils::ReadGuid(System.IO.BinaryReader)
+01F0:  V_19
+01F2:  
+01F3:  System.Guid TpacTool.Lib.Utils::ReadGuid(System.IO.BinaryReader)
+01F8:  V_20
+01FA:  
+01FB:  System.Guid TpacTool.Lib.Utils::ReadGuid(System.IO.BinaryReader)
+0200:  V_21
+0202:  System.Void TpacTool.Lib.AssetItem+UnknownDependence::.ctor()
+0207:  
+0208:  V_19
+020A:  System.Void TpacTool.Lib.AssetItem+UnknownDependence::set_UnknownGuid1(System.Guid)
+020F:  
+0210:  V_20
+0212:  System.Void TpacTool.Lib.AssetItem+UnknownDependence::set_UnknownGuid2(System.Guid)
+0217:  
+0218:  V_21
+021A:  System.Void TpacTool.Lib.AssetItem+UnknownDependence::set_UnknownGuid3(System.Guid)
+021F:  V_22
+0221:  
+0222:  System.Collections.Generic.List`1<TpacTool.Lib.AssetItem+UnknownDependence> TpacTool.Lib.AssetItem::get_UnknownDependences()
+0227:  V_22
+0229:  System.Void System.Collections.Generic.List`1<TpacTool.Lib.AssetItem+UnknownDependence>::Add(!0)
+022E:  V_18
+0230:  
+0231:  
+0232:  V_18
+0234:  V_18
+0236:  V_8
+0238:  IL_01EA
+023A:  
+023B:  System.Collections.Generic.List`1<TpacTool.Lib.AssetItem> TpacTool.Lib.AssetPackage::get_Items()
+0240:  
+0241:  System.Void System.Collections.Generic.List`1<TpacTool.Lib.AssetItem>::Add(!0)
+0246:  
+0247:  
+0248:  
+0249:  
+024A:  
+024B:  
+024C:  
+024D:  
+024E:  IL_0096
+0253:  
+0254:  IL_025D
+0256:  
+0257:  
+0258:  System.Void TpacTool.Lib.AssetPackage::set_DataLoaded(System.Boolean)
+025D:  

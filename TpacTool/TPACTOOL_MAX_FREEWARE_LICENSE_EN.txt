@@ -1,0 +1,47 @@
+# TpacTool Max Version 1.0 — Additional License Notice
+
+**Draft — review before distribution**
+
+Copyright (c) 2026 emir41han-sketch / Iron Modding M&B Bannerlord II team.
+
+Project page: https://www.patreon.com/cw/ironmoddingbannerlord
+
+## 1. Scope
+
+This notice applies only to the original TpacTool Max additions created by emir41han-sketch or the Iron Modding M&B Bannerlord II team, including original code, artwork, documentation, branding, and distribution materials. It does not replace, limit, or relicense upstream TpacTool source code or third-party components such as Avalonia, AssimpNet/Open Asset Import Library, Silk.NET, .NET, lz4net, or their dependencies. Those components remain subject to their own licenses and notices.
+
+The original upstream TpacTool copyright and license remain available in `LICENSE` and must be preserved for the upstream portions of the project.
+
+## 2. MIT license for TpacTool Max additions
+
+The original TpacTool Max additions covered by Section 1 are released under the MIT License. Permission is hereby granted, free of charge, to any person obtaining a copy of those additions and associated documentation files, to deal in the additions without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and sell copies, and to permit persons to whom the additions are furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the additions.
+
+THE ADDITIONS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE ADDITIONS OR THE USE OR OTHER DEALINGS IN THE ADDITIONS.
+
+TpacTool Max is intended to remain a publicly available and free application. This notice does not grant any license to Mount & Blade II: Bannerlord, TaleWorlds, or other third-party game assets.
+
+## 3. Project name and identity
+
+The MIT License applies to source code and other copyrightable material within the scope of Section 1. It does not grant trademark rights in the TpacTool Max name, the Iron Modding name, logos, project URLs, or official package identity.
+
+A modified version may be created and distributed under the applicable licenses, but it must not be presented as an official Iron Modding release or imply endorsement by Iron Modding, TaleWorlds, or another rights holder. A fork using a different name may identify itself independently while retaining the required copyright and license notices.
+
+## 4. Game assets
+
+TPAC files and assets belonging to Mount & Blade II: Bannerlord, TaleWorlds, or other rights holders are not licensed by this notice. Users are responsible for complying with the terms that apply to those assets and for obtaining any required permission.
+
+## 5. Warranty and liability
+
+The TpacTool Max additions are provided "AS IS", without warranty of any kind, express or implied, including warranties of merchantability, fitness for a particular purpose, and non-infringement. The copyright holder and contributors are not liable for data loss, incompatibility, or damage arising from use of the software, exported files, third-party components, or game assets.
+
+## 6. Conflicts
+
+If any provision of this notice conflicts with the upstream `LICENSE` or a third-party license, the applicable upstream or third-party license controls for the component covered by that license. This notice is not intended to hide, remove, or override any required copyright, license, or attribution notice.
+
+## 7. Contact
+
+This notice for the original TpacTool Max additions belongs to the Iron Modding M&B Bannerlord II team.
+
+Project page: https://www.patreon.com/cw/ironmoddingbannerlord

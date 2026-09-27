@@ -1,0 +1,231 @@
+<?xml version='1.0' encoding='utf-8'?>
+<strings language="en">
+  <string key="Assign unique IDs" value="Assign unique IDs" />
+  <string key="Build or reinstall module" value="Build or reinstall module" />
+  <string key="Calradia Forge" value="Calradia Forge" />
+  <string key="Campaign copy confirmed" value="Campaign copy confirmed" />
+  <string key="Check module folder" value="Check module folder" />
+  <string key="Close" value="Close" />
+  <string key="Commands" value="Commands" />
+  <string key="Compare" value="Compare" />
+  <string key="Confirm campaign copy" value="Confirm campaign copy" />
+  <string key="Connect" value="Connect" />
+  <string key="Connected" value="Connected" />
+  <string key="Context" value="Context" />
+  <string key="Declared DLL missing" value="Declared DLL missing" />
+  <string key="Dependency cycle" value="Dependency cycle" />
+  <string key="Disable testing" value="Disable testing" />
+  <string key="Disconnected" value="Disconnected" />
+  <string key="Duplicate ID" value="Duplicate ID" />
+  <string key="Enable testing" value="Enable testing" />
+  <string key="Enable testing and confirm campaign copy" value="Enable testing and confirm campaign copy" />
+  <string key="Enter the Bannerlord process ID" value="Enter the Bannerlord process ID" />
+  <string key="Exact object ID required" value="Exact object ID required" />
+  <string key="Export report" value="Export report" />
+  <string key="Extension diagnostics" value="Extension diagnostics" />
+  <string key="Fix XML" value="Fix XML" />
+  <string key="Fix manifest" value="Fix manifest" />
+  <string key="Import log" value="Import log" />
+  <string key="Inspector" value="Inspector" />
+  <string key="Inspect framework" value="Inspect framework" />
+  <string key="Framework" value="Framework" />
+  <string key="ForgeWeave framework" value="ForgeWeave framework" />
+  <string key="ForgeWeave shows declared extension handlers, order, health and timing without applying patches." value="ForgeWeave shows declared extension handlers, order, health and timing without applying patches." />
+  <string key="Handlers" value="Handlers" />
+  <string key="Quarantined" value="Quarantined" />
+  <string key="Dispatches" value="Dispatches" />
+  <string key="Failures" value="Failures" />
+  <string key="Mean" value="Mean" />
+  <string key="Maximum" value="Maximum" />
+  <string key="Recent events" value="Recent events" />
+  <string key="Framework findings" value="Framework findings" />
+  <string key="Harmony" value="Harmony" />
+  <string key="Harmony patch atlas" value="Harmony patch atlas" />
+  <string key="Optional read-only Harmony diagnostics. Shared targets are review candidates, not proven conflicts." value="Optional read-only Harmony diagnostics. Shared targets are review candidates, not proven conflicts." />
+  <string key="Patch preflight" value="Patch preflight" />
+  <string key="Patch blueprint preflight" value="Patch blueprint preflight" />
+  <string key="Providers" value="Providers" />
+  <string key="Resolved" value="Resolved" />
+  <string key="Review items" value="Review items" />
+  <string key="Preflight findings" value="Preflight findings" />
+  <string key="Check patch blueprints" value="Check patch blueprints" />
+  <string key="Patch blueprint declarations are read-only. This check does not apply a patch." value="Patch blueprint declarations are read-only. This check does not apply a patch." />
+  <string key="Install dependency" value="Install dependency" />
+  <string key="Invalid DLL path" value="Invalid DLL path" />
+  <string key="Inventory" value="Inventory" />
+  <string key="Logs" value="Logs" />
+  <string key="Maximum 100 snapshots" value="Maximum 100 snapshots" />
+  <string key="Missing SubModule.xml" value="Missing SubModule.xml" />
+  <string key="Module folder" value="Module folder" />
+  <string key="Module scan started. Refresh Modules to see results." value="Module scan started. Refresh Modules to see results." />
+  <string key="Modules" value="Modules" />
+  <string key="Next" value="Next" />
+  <string key="No changes" value="No changes" />
+  <string key="Object no longer available" value="Object no longer available" />
+  <string key="Open report" value="Open report" />
+  <string key="Performance" value="Performance" />
+  <string key="Pin" value="Pin" />
+  <string key="Pin this object first" value="Pin this object first" />
+  <string key="Previous" value="Previous" />
+  <string key="Raw data" value="Raw data" />
+  <string key="Ready" value="Ready" />
+  <string key="Refresh" value="Refresh" />
+  <string key="Remove circular dependency" value="Remove circular dependency" />
+  <string key="Run command" value="Run command" />
+  <string key="Run test" value="Run test" />
+  <string key="Scan modules" value="Scan modules" />
+  <string key="Scanning…" value="Scanning…" />
+  <string key="Search / argument" value="Search / argument" />
+  <string key="Seed" value="Seed" />
+  <string key="Session" value="Session" />
+  <string key="Session process ID" value="Session process ID" />
+  <string key="Single-player only" value="Single-player only" />
+  <string key="Start Bannerlord with Calradia Forge enabled, then connect. Offline module scanning is available without the game." value="Start Bannerlord with Calradia Forge enabled, then connect. Offline module scanning is available without the game." />
+  <string key="Summary" value="Summary" />
+  <string key="Table" value="Table" />
+  <string key="Testing" value="Testing" />
+  <string key="Tests" value="Tests" />
+  <string key="Troops" value="Troops" />
+  <string key="Unknown test" value="Unknown test" />
+  <string key="Use a copied campaign. This enables state-changing tests for this session." value="Use a copied campaign. This enables state-changing tests for this session." />
+  <string key="Use filename only" value="Use filename only" />
+  <string key="Wrong context" value="Wrong context" />
+  <string key="Capture report" value="Capture report" />
+  <string key="Live session" value="Live session" />
+  <string key="Snapshots" value="Snapshots" />
+  <string key="Dependencies" value="Dependencies" />
+  <string key="Remove snapshot" value="Remove snapshot" />
+  <string key="Run batch" value="Run batch" />
+  <string key="Find an object by type and ID. Pin a baseline before comparing." value="Find an object by type and ID. Pin a baseline before comparing." />
+  <string key="Run one test ID, or a comma-separated batch. Batches stop on the first failure." value="Run one test ID, or a comma-separated batch. Batches stop on the first failure." />
+  <string key="Inspect installed modules without changing files or launcher settings." value="Inspect installed modules without changing files or launcher settings." />
+  <string key="Browse a live session or the current report. Export preserves the current report." value="Browse a live session or the current report. Export preserves the current report." />
+  <string key="Enable Live session to use game actions." value="Enable Live session to use game actions." />
+  <string key="No records captured." value="No records captured." />
+  <string key="Scan modules, open a report, or connect to Bannerlord to begin." value="Scan modules, open a report, or connect to Bannerlord to begin." />
+  <string key="New report" value="New report" />
+  <string key="Captured live session" value="Captured live session" />
+  <string key="Snapshot removed" value="Snapshot removed" />
+  <string key="Snapshot not found" value="Snapshot not found" />
+  <string key="Invalid extension context" value="Invalid extension context" />
+  <string key="Select between 1 and 50 tests" value="Select between 1 and 50 tests" />
+  <string key="Native target" value="Native target" />
+  <string key="Yes" value="Yes" />
+  <string key="No" value="No" />
+  <string key="Any" value="Any" />
+  <string key="Campaign" value="Campaign" />
+  <string key="Mission" value="Mission" />
+  <string key="Complete" value="Complete" />
+  <string key="Order" value="Order" />
+  <string key="Blocked" value="Blocked" />
+  <string key="Error" value="Error" />
+  <string key="No log entries match this search." value="No log entries match this search." />
+  <string key="Clear Search / argument and press Ctrl+Enter to show all available logs." value="Clear Search / argument and press Ctrl+Enter to show all available logs." />
+  <string key="Keyboard focus" value="Keyboard focus" />
+  <string key="Sections" value="Sections" />
+  <string key="Workbench" value="Workbench" />
+  <string key="Current source" value="Current source" />
+  <string key="Session and files" value="Session and files" />
+  <string key="Section tools" value="Section tools" />
+  <string key="Results" value="Results" />
+  <string key="Language" value="Language" />
+  <string key="Text size" value="Text size" />
+  <string key="Developer workbench" value="Developer workbench" />
+  <string key="Workbench sections" value="Workbench sections" />
+  <string key="Search or exact object/test ID" value="Search or exact object/test ID" />
+  <string key="Test seed" value="Test seed" />
+  <string key="Operation in progress" value="Operation in progress" />
+  <string key="Report details" value="Report details" />
+  <string key="Enabled" value="Enabled" />
+  <string key="Disabled" value="Disabled" />
+  <string key="Choose a tool" value="Choose a tool" />
+  <string key="Modules: check dependencies.&#10;Inspector: capture object state.&#10;Tests: verify your extension." value="Modules: check dependencies.&#10;Inspector: capture object state.&#10;Tests: verify your extension." />
+  <string key="Browse safely. State-changing tests require test mode; campaign tests also require a working copy." value="Browse safely. State-changing tests require test mode; campaign tests also require a working copy." />
+  <string key="Your development session at a glance." value="Your development session at a glance." />
+  <string key="Search the records captured in this session. Leave the search empty to show all." value="Search the records captured in this session. Leave the search empty to show all." />
+  <string key="Measurements cover instrumented operations, not the entire game." value="Measurements cover instrumented operations, not the entire game." />
+  <string key="Work order" value="Work order" />
+  <string key="Report state" value="Report state" />
+  <string key="Evidence retained" value="Evidence retained" />
+  <string key="Attention" value="Attention" />
+  <string key="Replay lab" value="Replay lab" />
+  <string key="Replay selected event" value="Replay selected event" />
+  <string key="Enter a retained event sequence, then run a guarded replay." value="Enter a retained event sequence, then run a guarded replay." />
+  <string key="Replay" value="Replay" />
+  <string key="Replay source" value="Replay source" />
+  <string key="Replay outcome" value="Replay outcome" />
+  <string key="Replay mode" value="Replay mode" />
+  <string key="Replay rejected" value="Replay rejected" />
+  <string key="Replay completed" value="Replay completed" />
+  <string key="Select a retained event sequence." value="Select a retained event sequence." />
+  <string key="No retained events are available." value="No retained events are available." />
+  <string key="Live replay reuses existing test and campaign-copy safeguards." value="Live replay reuses existing test and campaign-copy safeguards." />
+  <string key="Test permission" value="Test permission" />
+  <string key="Selected evidence" value="Selected evidence" />
+  <string key="No evidence selected" value="No evidence selected" />
+  <string key="Retained event sequence" value="Retained event sequence" />
+  <string key="Offline report" value="Offline report" />
+  <string key="{0} selected · {1} retained" value="{0} selected · {1} retained" />
+  <string key="Connect to a live session to replay retained events." value="Connect to a live session to replay retained events." />
+  <string key="The connected game does not expose Replay Lab." value="The connected game does not expose Replay Lab." />
+  <string key="ForgeWeave Replay Lab reuses retained host events for controlled verification. It does not intercept methods or inject event data." value="ForgeWeave Replay Lab reuses retained host events for controlled verification. It does not intercept methods or inject event data." />
+  <string key="Help: AutoRegister summary" value="Discovers supported extension contracts in the explicitly supplied assembly only." />
+  <string key="Help: Gauntlet page summary" value="Declares a standalone Gauntlet prefab that Forge can open as an overlay." />
+  <string key="Help: Gauntlet command summary" value="Declares a parameterless Gauntlet command method on a Forge UI page ViewModel." />
+  <string key="Help: Open page summary" value="Requests that the active Forge host open one registered extension prefab." />
+  <string key="Help: Assembly workbench summary" value="Reads bounded PE/.NET metadata on a worker thread without loading or executing the selected DLL. Version changes require a preview and create a verified copy with a source backup and hashes." />
+  <string key="Help: Safety summary" value="Extension attributes validate metadata; they do not sandbox third-party code. Page commands remain the extension author's code and must follow Bannerlord's main-thread rules." />
+  <string key="Assembly path or list index" value="Assembly path or list index" />
+  <string key="Version" value="Version" />
+  <string key="List installed DLLs" value="List installed DLLs" />
+  <string key="Select DLL row" value="Select DLL row" />
+  <string key="Inspect metadata" value="Inspect metadata" />
+  <string key="Preview version" value="Preview version" />
+  <string key="Apply copy" value="Apply copy" />
+  <string key="Assembly workbench" value="Assembly workbench" />
+  <string key="Open extension page" value="Open extension page" />
+  <string key="Context help" value="Context help" />
+  <string key="Gauntlet extension pages" value="Gauntlet extension pages" />
+  <string key="Type a page ID in the argument field, then use Open extension page." value="Type a page ID in the argument field, then use Open extension page." />
+  <string key="Use Context help for offline SDK guidance and the Assembly workbench." value="Use Context help for offline SDK guidance and the Assembly workbench." />
+  <string key="Assembly workbench guidance" value="Assembly workbench guidance" />
+  <string key="List installed DLLs, enter a row number, and select it. Inspection reads PE metadata only; it never loads or executes the file." value="List installed DLLs, enter a row number, and select it. Inspection reads PE metadata only; it never loads or executes the file." />
+  <string key="For a version change, enter a four-part version, preview first, then apply only to create a copy under LocalAppData/CalradiaForge/AssemblyWorkbench." value="For a version change, enter a four-part version, preview first, then apply only to create a copy under LocalAppData/CalradiaForge/AssemblyWorkbench." />
+  <string key="Strong-name signed and mixed-mode assemblies are rejected. The original is preserved; a source backup and SHA-256 evidence are written." value="Strong-name signed and mixed-mode assemblies are rejected. The original is preserved; a source backup and SHA-256 evidence are written." />
+  <string key="In-game SDK help" value="In-game SDK help" />
+  <string key="0 matching lines found." value="0 matching lines found." />
+  <string key="ADVANCED SDK" value="ADVANCED SDK" />
+  <string key="Audio manifest audit completed." value="Audio manifest audit completed." />
+  <string key="Audio test executed." value="Audio test executed." />
+  <string key="Browse all 110+ Advanced SDK tools" value="Browse all 110+ Advanced SDK tools" />
+  <string key="COMMAND HISTORY" value="COMMAND HISTORY" />
+  <string key="Casus Belli evaluation completed." value="Casus Belli evaluation completed." />
+  <string key="Clear History" value="Clear History" />
+  <string key="Clear all recorded command history." value="Clear all recorded command history." />
+  <string key="Close the SDK catalog." value="Close the SDK catalog." />
+  <string key="Copied to clipboard." value="Copied to clipboard." />
+  <string key="Crime &amp; underworld simulation completed." value="Crime &amp; underworld simulation completed." />
+  <string key="Ctrl+F: input · Ctrl+Enter: refresh output" value="Ctrl+F: input · Ctrl+Enter: refresh output" />
+  <string key="Ctrl+K: help · Ctrl+W: watch · Tab: focus" value="Ctrl+K: help · Ctrl+W: watch · Tab: focus" />
+  <string key="Dynasty &amp; succession evaluation completed." value="Dynasty &amp; succession evaluation completed." />
+  <string key="Filter cleared. Showing all lines." value="Filter cleared. Showing all lines." />
+  <string key="Filtered to {0} matching lines." value="Filtered to {0} matching lines." />
+  <string key="Heap trimmed: reclaimed {0:F1} MB" value="Heap trimmed: reclaimed {0:F1} MB" />
+  <string key="History ▾" value="History ▾" />
+  <string key="Live Watch Activated (1s tick)" value="Live Watch Activated (1s tick)" />
+  <string key="Live Watch Deactivated" value="Live Watch Deactivated" />
+  <string key="Load next command from history (Down Arrow)." value="Load next command from history (Down Arrow)." />
+  <string key="Load previous command from history (Up Arrow)." value="Load previous command from history (Up Arrow)." />
+  <string key="Localization audit completed." value="Localization audit completed." />
+  <string key="Open the searchable Advanced SDK tool catalog." value="Open the searchable Advanced SDK tool catalog." />
+  <string key="Output display cleared." value="Output display cleared." />
+  <string key="Party simulation completed." value="Party simulation completed." />
+  <string key="SDK Catalog" value="SDK Catalog" />
+  <string key="Save system health audit passed." value="Save system health audit passed." />
+  <string key="Scaffold generated. Use Copy to clipboard to save it." value="Scaffold generated. Use Copy to clipboard to save it." />
+  <string key="Siege tactics analysis completed." value="Siege tactics analysis completed." />
+  <string key="Toggle recent command history dropdown." value="Toggle recent command history dropdown." />
+  <string key="Toggle tactical keyboard shortcuts guide (Ctrl+K)." value="Toggle tactical keyboard shortcuts guide (Ctrl+K)." />
+  <string key="Trade simulation completed." value="Trade simulation completed." />
+  <string key="[ ⌨ Keys ]" value="[ ⌨ Keys ]" />
+</strings>

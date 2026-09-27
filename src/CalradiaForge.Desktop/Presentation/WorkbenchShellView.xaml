@@ -1,0 +1,19 @@
+<UserControl x:Class="CalradiaForge.Desktop.Presentation.WorkbenchShellView"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:presentation="clr-namespace:CalradiaForge.Desktop.Presentation"
+ MinWidth="0" MinHeight="0">
+ <Grid Margin="14,8,14,12">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*" MinHeight="320"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <presentation:WorkbenchHeaderControl Grid.Row="0"/>
+  <presentation:WorkbenchStatusControl Grid.Row="1"/>
+  <Grid Grid.Row="2">
+   <Grid.ColumnDefinitions><ColumnDefinition Width="0.55*" MinWidth="220" MaxWidth="276"/><ColumnDefinition Width="12"/><ColumnDefinition Width="1.45*" MinWidth="400"/></Grid.ColumnDefinitions>
+   <presentation:WorkbenchNavigationControl Grid.Column="0"/>
+   <Grid Grid.Column="1"/>
+   <presentation:WorkbenchWorkspaceControl Grid.Column="2"/>
+  </Grid>
+  <presentation:WorkbenchFooterControl Grid.Row="3"/>
+  <presentation:CommandPaletteControl Grid.Row="0" Grid.RowSpan="4" Panel.ZIndex="20"/>
+ </Grid>
+</UserControl>

@@ -1,0 +1,60 @@
+<UserControl x:Class="CalradiaForge.Desktop.Presentation.WorkbenchNavigationControl"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:services="clr-namespace:CalradiaForge.Desktop.Services"
+ xmlns:presentation="clr-namespace:CalradiaForge.Desktop.Presentation"
+ xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+ xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+ MinWidth="0" MinHeight="0">
+<Border AutomationProperties.AutomationId="OperationalRailCard" Style="{StaticResource RailCard}">
+     <Grid>
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*" MinHeight="24"/></Grid.RowDefinitions>
+      <Image AutomationProperties.AutomationId="OperationalRailTextureDecoration" ClipToBounds="True" Focusable="False" Grid.RowSpan="2" HorizontalAlignment="Stretch" IsHitTestVisible="False" Opacity="{DynamicResource Token.RailIllustrationOpacity}" RenderOptions.BitmapScalingMode="HighQuality" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/workbench-heraldic-rail-portrait-rev064.png" Stretch="Uniform" VerticalAlignment="Stretch">
+       <Image.Visibility><MultiBinding Converter="{StaticResource DecorativeAccentVisibilityConverter}" ConverterParameter="DecorativeTextureVisibility"><Binding Path="DecorativeAccentsEnabled"/><Binding Path="ThemeId"/></MultiBinding></Image.Visibility>
+      </Image>
+      <StackPanel Grid.Row="0">
+       <Grid Margin="0,0,0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="22"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Image AutomationProperties.AutomationId="OperationalRailCompassDecoration" Focusable="False" Grid.Column="0" Height="18" HorizontalAlignment="Left" IsHitTestVisible="False" Opacity="0.44" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/rail-field-compass-v1.png" Stretch="Uniform" VerticalAlignment="Center" Width="18">
+         <Image.Visibility><MultiBinding Converter="{StaticResource DecorativeAccentVisibilityConverter}" ConverterParameter="DecorativeTextureVisibility"><Binding Path="DecorativeAccentsEnabled"/><Binding Path="ThemeId"/></MultiBinding></Image.Visibility>
+        </Image>
+        <TextBlock Grid.Column="1" Style="{StaticResource SectionHeading}" Text="{DynamicResource Ui.Operations}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+       </Grid>
+       <Grid Margin="0,0,0,3">
+        <Path Data="{StaticResource GameIcon.magnifying_glass}" Fill="{DynamicResource BrassBrush}" Height="13" HorizontalAlignment="Left" IsHitTestVisible="False" Margin="8,0,0,0" Panel.ZIndex="1" Stretch="Uniform" VerticalAlignment="Center" Width="13"/>
+        <TextBox x:Name="OperationalSearchTextBox" AutomationProperties.AutomationId="OperationalSearchFilter" AutomationProperties.Name="{DynamicResource Ui.Search}" MinHeight="42" Padding="27,6,39,6" Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" ToolTip="{DynamicResource Ui.SearchHint}" VerticalContentAlignment="Center" services:FocusRequestBehavior.Request="{Binding SearchFocusRequest}"/>
+        <TextBlock AutomationProperties.AutomationId="OperationalSearchHint" Text="{DynamicResource Ui.SearchHint}" Margin="28,0,42,0" Foreground="{DynamicResource MutedTextBrush}" FontSize="{DynamicResource Token.LabelFont}" FontStyle="Italic" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" IsHitTestVisible="False" Focusable="False">
+         <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=OperationalSearchTextBox}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+        </TextBlock>
+        <Button AutomationProperties.AutomationId="ClearToolFilterButton" AutomationProperties.Name="{DynamicResource Ui.ClearSearch}" Command="{Binding ClearFilterCommand}" Panel.ZIndex="2" ToolTip="{DynamicResource Ui.ClearSearch}">
+         <Button.Style>
+          <Style BasedOn="{StaticResource SearchClearButton}" TargetType="Button">
+           <Setter Property="Width" Value="32"/><Setter Property="Height" Value="32"/><Setter Property="MinWidth" Value="32"/><Setter Property="MinHeight" Value="32"/><Setter Property="Padding" Value="3"/>
+           <Style.Triggers><DataTrigger Binding="{Binding Filter}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers>
+          </Style>
+         </Button.Style>
+         <Path Data="M3,3 L11,11 M11,3 L3,11" Height="10" IsHitTestVisible="False" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.5" Width="10"/>
+        </Button>
+       </Grid>
+       <Grid Margin="0,1,0,4">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <TextBlock Margin="0,0,6,0" Style="{StaticResource KickerText}" Text="{DynamicResource Ui.Areas}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+        <ComboBox AutomationProperties.AutomationId="CategorySelector" AutomationProperties.Name="{DynamicResource Ui.Areas}" Grid.Column="1" ItemsSource="{Binding Categories}" MinWidth="0" SelectedItem="{Binding SelectedCategory}" ToolTip="{DynamicResource Ui.Areas}"/>
+       </Grid>
+       <!-- Modder Role Specialization Filter -->
+       <Grid Margin="0,0,0,4">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <TextBlock Margin="0,0,6,0" Style="{StaticResource KickerText}" Text="{DynamicResource Ui.RoleLabel}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+        <Button AutomationProperties.AutomationId="ModderRolePresetButton" AutomationProperties.Name="{Binding ActiveModderRoleLabel}" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" Command="{Binding CycleModderRoleCommand}" Cursor="Hand" Grid.Column="1" HorizontalContentAlignment="Left" Padding="6,3" ToolTip="{Binding ActiveModderRoleHint}">
+         <StackPanel Orientation="Horizontal">
+          <Path Data="{StaticResource GameIcon.knight_banner}" Fill="{DynamicResource BrassBrush}" Height="12" Margin="0,0,5,0" Stretch="Uniform" VerticalAlignment="Center" Width="12"/>
+          <TextBlock FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding ActiveModderRoleLabel}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+         </StackPanel>
+        </Button>
+       </Grid>
+      </StackPanel>
+      <ListBox AutomationProperties.AutomationId="OperationalRailToolViewport" AutomationProperties.Name="{DynamicResource Ui.Operations}" Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Focusable="False" Grid.Row="1" ItemContainerStyle="{StaticResource OperationalRailListBoxItem}" ItemsSource="{Binding OperationalRailEntries}" KeyboardNavigation.TabNavigation="Continue" MinHeight="24" Padding="3,4,3,6" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ToolTip="{DynamicResource Ui.ScrollSections}" VirtualizingPanel.CacheLength="1,1" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.VirtualizationMode="Recycling">
+       <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling"/></ItemsPanelTemplate></ListBox.ItemsPanel>
+      </ListBox>
+     </Grid>
+    </Border>
+</UserControl>

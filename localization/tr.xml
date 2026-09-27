@@ -1,0 +1,231 @@
+<?xml version='1.0' encoding='utf-8'?>
+<strings language="tr">
+  <string key="Assign unique IDs" value="Assign unique IDs" />
+  <string key="Build or reinstall module" value="Build or reinstall module" />
+  <string key="Calradia Forge" value="Calradia Ocağı" />
+  <string key="Campaign copy confirmed" value="Sefer kopyası onaylandı" />
+  <string key="Check module folder" value="Check module folder" />
+  <string key="Close" value="Kapat" />
+  <string key="Commands" value="Komutlar" />
+  <string key="Compare" value="Karşılaştır" />
+  <string key="Confirm campaign copy" value="Sefer kopyasını onayla" />
+  <string key="Connect" value="Bağlan" />
+  <string key="Connected" value="Bağlandı" />
+  <string key="Context" value="Bağlam" />
+  <string key="Declared DLL missing" value="Declared DLL missing" />
+  <string key="Dependency cycle" value="Dependency cycle" />
+  <string key="Disable testing" value="Testleri kapat" />
+  <string key="Disconnected" value="Bağlantı kesildi" />
+  <string key="Duplicate ID" value="Yinelenen kimlik" />
+  <string key="Enable testing" value="Testleri aç" />
+  <string key="Enable testing and confirm campaign copy" value="Testleri etkinleştirin ve sefer kopyasını onaylayın" />
+  <string key="Enter the Bannerlord process ID" value="Enter the Bannerlord process ID" />
+  <string key="Exact object ID required" value="Nesnenin tam kimliği gerekli" />
+  <string key="Export report" value="Raporu dışa aktar" />
+  <string key="Extension diagnostics" value="Extension diagnostics" />
+  <string key="Fix XML" value="Fix XML" />
+  <string key="Fix manifest" value="Fix manifest" />
+  <string key="Import log" value="Günlüğü içe aktar" />
+  <string key="Inspector" value="İnceleyici" />
+  <string key="Inspect framework" value="Inspect framework" />
+  <string key="Framework" value="Çerçeve" />
+  <string key="ForgeWeave framework" value="ForgeWeave çerçevesi" />
+  <string key="ForgeWeave shows declared extension handlers, order, health and timing without applying patches." value="ForgeWeave, yama uygulamadan bildirilmiş eklenti işleyicilerini, sırayı, durumu ve süreyi gösterir." />
+  <string key="Handlers" value="İşleyiciler" />
+  <string key="Quarantined" value="Karantinada" />
+  <string key="Dispatches" value="Dağıtımlar" />
+  <string key="Failures" value="Hatalar" />
+  <string key="Mean" value="Ortalama" />
+  <string key="Maximum" value="Maksimum" />
+  <string key="Recent events" value="Son olaylar" />
+  <string key="Framework findings" value="Çerçeve bulguları" />
+  <string key="Harmony" value="Harmony" />
+  <string key="Harmony patch atlas" value="Harmony yama atlası" />
+  <string key="Optional read-only Harmony diagnostics. Shared targets are review candidates, not proven conflicts." value="Salt okunur isteğe bağlı Harmony tanılaması. Paylaşılan hedefler kanıtlanmış çakışmalar değil, inceleme adaylarıdır." />
+  <string key="Patch preflight" value="Yama ön doğrulaması" />
+  <string key="Patch blueprint preflight" value="Yama taslağı ön doğrulaması" />
+  <string key="Providers" value="Sağlayıcılar" />
+  <string key="Resolved" value="Çözüldü" />
+  <string key="Review items" value="İnceleme öğeleri" />
+  <string key="Preflight findings" value="Ön doğrulama bulguları" />
+  <string key="Check patch blueprints" value="Check patch blueprints" />
+  <string key="Patch blueprint declarations are read-only. This check does not apply a patch." value="Patch blueprint declarations are read-only. This check does not apply a patch." />
+  <string key="Install dependency" value="Install dependency" />
+  <string key="Invalid DLL path" value="Invalid DLL path" />
+  <string key="Inventory" value="Inventory" />
+  <string key="Logs" value="Günlükler" />
+  <string key="Maximum 100 snapshots" value="En fazla 100 anlık görüntü" />
+  <string key="Missing SubModule.xml" value="Missing SubModule.xml" />
+  <string key="Module folder" value="Modül klasörü" />
+  <string key="Module scan started. Refresh Modules to see results." value="Modül taraması başlatıldı. Sonuçları görmek için Modüller'i yenileyin." />
+  <string key="Modules" value="Modüller" />
+  <string key="Next" value="Sonraki" />
+  <string key="No changes" value="Değişiklik yok" />
+  <string key="Object no longer available" value="Nesne artık kullanılamıyor" />
+  <string key="Open report" value="Raporu aç" />
+  <string key="Performance" value="Performans" />
+  <string key="Pin" value="Sabitle" />
+  <string key="Pin this object first" value="Önce bu nesneyi sabitleyin" />
+  <string key="Previous" value="Önceki" />
+  <string key="Raw data" value="Ham veriler" />
+  <string key="Ready" value="Hazır" />
+  <string key="Refresh" value="Yenile" />
+  <string key="Remove circular dependency" value="Remove circular dependency" />
+  <string key="Run command" value="Run command" />
+  <string key="Run test" value="Testi çalıştır" />
+  <string key="Scan modules" value="Modülleri tara" />
+  <string key="Scanning…" value="Scanning…" />
+  <string key="Search / argument" value="Arama / bağımsız değişken" />
+  <string key="Seed" value="Tohum" />
+  <string key="Session" value="Oturum" />
+  <string key="Session process ID" value="Oturum işlem kimliği" />
+  <string key="Single-player only" value="Yalnızca tek oyunculu" />
+  <string key="Start Bannerlord with Calradia Forge enabled, then connect. Offline module scanning is available without the game." value="Bannerlord’u Calradia Forge etkin olarak başlatıp bağlanın. Modül taraması oyun olmadan çalışır." />
+  <string key="Summary" value="Özet" />
+  <string key="Table" value="Tablo" />
+  <string key="Testing" value="Test" />
+  <string key="Tests" value="Testler" />
+  <string key="Troops" value="Troops" />
+  <string key="Unknown test" value="Bilinmeyen test" />
+  <string key="Use a copied campaign. This enables state-changing tests for this session." value="Use a copied campaign. This enables state-changing tests for this session." />
+  <string key="Use filename only" value="Use filename only" />
+  <string key="Wrong context" value="Yanlış bağlam" />
+  <string key="Capture report" value="Raporu yakala" />
+  <string key="Live session" value="Canlı oturum" />
+  <string key="Snapshots" value="Anlık görüntüler" />
+  <string key="Dependencies" value="Bağımlılıklar" />
+  <string key="Remove snapshot" value="Görüntüyü kaldır" />
+  <string key="Run batch" value="Toplu çalıştır" />
+  <string key="Find an object by type and ID. Pin a baseline before comparing." value="Tür ve kimliğe göre bir nesne bulun. Karşılaştırmadan önce bir temel durumu sabitleyin." />
+  <string key="Run one test ID, or a comma-separated batch. Batches stop on the first failure." value="Bir test kimliği veya virgülle ayrılmış bir toplu işlem çalıştırın. Toplu işlemler ilk hatada durur." />
+  <string key="Inspect installed modules without changing files or launcher settings." value="Dosyaları veya başlatıcı ayarlarını değiştirmeden kurulu modülleri inceleyin." />
+  <string key="Browse a live session or the current report. Export preserves the current report." value="Canlı oturumu veya geçerli raporu görüntüleyin. Dışa aktarma raporu korur." />
+  <string key="Enable Live session to use game actions." value="Enable Live session to use game actions." />
+  <string key="No records captured." value="No records captured." />
+  <string key="Scan modules, open a report, or connect to Bannerlord to begin." value="Scan modules, open a report, or connect to Bannerlord to begin." />
+  <string key="New report" value="Yeni rapor" />
+  <string key="Captured live session" value="Captured live session" />
+  <string key="Snapshot removed" value="Anlık görüntü kaldırıldı" />
+  <string key="Snapshot not found" value="Anlık görüntü bulunamadı" />
+  <string key="Invalid extension context" value="Geçersiz eklenti bağlamı" />
+  <string key="Select between 1 and 50 tests" value="1 ile 50 arasında test seçin" />
+  <string key="Native target" value="Native sürümü" />
+  <string key="Yes" value="Evet" />
+  <string key="No" value="Hayır" />
+  <string key="Any" value="Herhangi biri" />
+  <string key="Campaign" value="Sefer" />
+  <string key="Mission" value="Görev" />
+  <string key="Complete" value="Tamamlandı" />
+  <string key="Order" value="Sıra" />
+  <string key="Blocked" value="Engellenenler" />
+  <string key="Error" value="Hata" />
+  <string key="No log entries match this search." value="Bu aramayla eşleşen günlük kaydı yok." />
+  <string key="Clear Search / argument and press Ctrl+Enter to show all available logs." value="Tüm günlük kayıtlarını göstermek için Arama / bağımsız değişken alanını temizleyin ve Ctrl+Enter tuşlarına basın." />
+  <string key="Keyboard focus" value="Klavye odağı" />
+  <string key="Sections" value="Bölümler" />
+  <string key="Workbench" value="Çalışma alanı" />
+  <string key="Current source" value="Current source" />
+  <string key="Session and files" value="Oturum ve dosyalar" />
+  <string key="Section tools" value="Bölüm araçları" />
+  <string key="Results" value="Sonuçlar" />
+  <string key="Language" value="Dil" />
+  <string key="Text size" value="Metin boyutu" />
+  <string key="Developer workbench" value="Geliştirici çalışma alanı" />
+  <string key="Workbench sections" value="Workbench sections" />
+  <string key="Search or exact object/test ID" value="Search or exact object/test ID" />
+  <string key="Test seed" value="Test seed" />
+  <string key="Operation in progress" value="Operation in progress" />
+  <string key="Report details" value="Report details" />
+  <string key="Enabled" value="Etkin" />
+  <string key="Disabled" value="Devre dışı" />
+  <string key="Choose a tool" value="Bir araç seçin" />
+  <string key="Modules: check dependencies.&#10;Inspector: capture object state.&#10;Tests: verify your extension." value="Modüller: bağımlılıkları denetleyin.&#10;İnceleyici: nesne durumunu yakalayın.&#10;Testler: eklentinizi doğrulayın." />
+  <string key="Browse safely. State-changing tests require test mode; campaign tests also require a working copy." value="Güvenle göz atın. Durumu değiştiren testler test modunu gerektirir; sefer testleri ayrıca bir çalışma kopyası gerektirir." />
+  <string key="Your development session at a glance." value="Geliştirme oturumunuza bir bakış." />
+  <string key="Search the records captured in this session. Leave the search empty to show all." value="Bu oturumda yakalanan kayıtları arayın. Tümünü göstermek için aramayı boş bırakın." />
+  <string key="Measurements cover instrumented operations, not the entire game." value="Ölçümler, oyunun tamamını değil araçlandırılmış işlemleri kapsar." />
+  <string key="Work order" value="Work order" />
+  <string key="Report state" value="Rapor durumu" />
+  <string key="Evidence retained" value="Saklanan kanıt" />
+  <string key="Attention" value="Attention" />
+  <string key="Replay lab" value="Yeniden oynatma laboratuvarı" />
+  <string key="Replay selected event" value="Replay selected event" />
+  <string key="Enter a retained event sequence, then run a guarded replay." value="Korunan bir olay dizisi girin, ardından korumalı yeniden oynatmayı çalıştırın." />
+  <string key="Replay" value="Yeniden oynat" />
+  <string key="Replay source" value="Yeniden oynatma kaynağı" />
+  <string key="Replay outcome" value="Yeniden oynatma sonucu" />
+  <string key="Replay mode" value="Yeniden oynatma modu" />
+  <string key="Replay rejected" value="Yeniden oynatma reddedildi" />
+  <string key="Replay completed" value="Yeniden oynatma tamamlandı" />
+  <string key="Select a retained event sequence." value="Korunan bir olay dizisi seçin." />
+  <string key="No retained events are available." value="Korunan olay yok." />
+  <string key="Live replay reuses existing test and campaign-copy safeguards." value="Canlı yeniden oynatma, mevcut test modu ve kampanya kopyası korumalarını yeniden kullanır." />
+  <string key="Test permission" value="Test izni" />
+  <string key="Selected evidence" value="Seçilen kanıt" />
+  <string key="No evidence selected" value="Kanıt seçilmedi" />
+  <string key="Retained event sequence" value="Retained event sequence" />
+  <string key="Offline report" value="Offline report" />
+  <string key="{0} selected · {1} retained" value="{0} seçildi · {1} saklandı" />
+  <string key="Connect to a live session to replay retained events." value="Connect to a live session to replay retained events." />
+  <string key="The connected game does not expose Replay Lab." value="The connected game does not expose Replay Lab." />
+  <string key="ForgeWeave Replay Lab reuses retained host events for controlled verification. It does not intercept methods or inject event data." value="ForgeWeave Replay Lab reuses retained host events for controlled verification. It does not intercept methods or inject event data." />
+  <string key="Help: AutoRegister summary" value="Yalnızca belirtilen derlemeyi tarar ve desteklenen SDK sözleşmelerini kaydeder." />
+  <string key="Help: Gauntlet page summary" value="Forge'un katman olarak açabileceği bağımsız bir Gauntlet prefab'ı bildirir." />
+  <string key="Help: Gauntlet command summary" value="Parametresiz bir Gauntlet komut yöntemini ve gereken bağlamı bildirir." />
+  <string key="Help: Open page summary" value="Forge ana bilgisayarından kayıtlı uzantı sayfasını açmasını ister." />
+  <string key="Help: Assembly workbench summary" value="Seçilen DLL'yi yüklemeden veya çalıştırmadan PE/.NET meta verilerini arka planda sınırlandırılmış olarak okur. Sürüm değişikliği önizleme gerektirir ve yedek ile karma değerleri içeren doğrulanmış bir kopya oluşturur." />
+  <string key="Help: Safety summary" value="Öznitelikler meta verileri doğrular; üçüncü taraf kodunu yalıtmaz. Sayfa komutları mod yazarının kodudur ve Bannerlord ana iş parçacığı kurallarına uymalıdır." />
+  <string key="Assembly path or list index" value="Derleme yolu veya sıra" />
+  <string key="Version" value="Sürüm" />
+  <string key="List installed DLLs" value="Yüklü DLL'leri listele" />
+  <string key="Select DLL row" value="DLL satırını seç" />
+  <string key="Inspect metadata" value="Meta verileri incele" />
+  <string key="Preview version" value="Sürüm önizlemesi" />
+  <string key="Apply copy" value="Kopyaya uygula" />
+  <string key="Assembly workbench" value="Derleme çalışma alanı" />
+  <string key="Open extension page" value="Uzantı sayfasını aç" />
+  <string key="Context help" value="Bağlamsal yardım" />
+  <string key="Gauntlet extension pages" value="Gauntlet uzantı sayfaları" />
+  <string key="Type a page ID in the argument field, then use Open extension page." value="Argüman alanına bir sayfa kimliği yazıp Uzantı sayfasını aç'ı seçin." />
+  <string key="Use Context help for offline SDK guidance and the Assembly workbench." value="Çevrimdışı SDK rehberi ve Derleme çalışma alanı için Bağlamsal yardımı kullanın." />
+  <string key="Assembly workbench guidance" value="Derleme çalışma alanı yönergeleri" />
+  <string key="List installed DLLs, enter a row number, and select it. Inspection reads PE metadata only; it never loads or executes the file." value="Yüklü DLL'leri listeleyin, satır numarasını girip seçin. İnceleme yalnızca PE meta verilerini okur; dosyayı yüklemez veya çalıştırmaz." />
+  <string key="For a version change, enter a four-part version, preview first, then apply only to create a copy under LocalAppData/CalradiaForge/AssemblyWorkbench." value="Sürümü değiştirmek için dört bileşenli sürüm girin, önce önizleyin ve yalnızca LocalAppData/CalradiaForge/AssemblyWorkbench altında kopya oluşturmak için uygulayın." />
+  <string key="Strong-name signed and mixed-mode assemblies are rejected. The original is preserved; a source backup and SHA-256 evidence are written." value="Strong-name imzalı ve karma modlu derlemeler reddedilir. Özgün dosya korunur; kaynak yedeği ve SHA-256 kanıtı kaydedilir." />
+  <string key="In-game SDK help" value="Oyun içi SDK yardımı" />
+  <string key="0 matching lines found." value="Eşleşen satır bulunamadı." />
+  <string key="ADVANCED SDK" value="GELİŞMİŞ SDK" />
+  <string key="Audio manifest audit completed." value="Ses bildirimi denetimi tamamlandı." />
+  <string key="Audio test executed." value="Ses testi çalıştırıldı." />
+  <string key="Browse all 110+ Advanced SDK tools" value="110’dan fazla gelişmiş SDK aracına göz atın" />
+  <string key="COMMAND HISTORY" value="KOMUT GEÇMİŞİ" />
+  <string key="Casus Belli evaluation completed." value="Casus belli değerlendirmesi tamamlandı." />
+  <string key="Clear History" value="Geçmişi temizle" />
+  <string key="Clear all recorded command history." value="Kaydedilen tüm komut geçmişini temizler." />
+  <string key="Close the SDK catalog." value="SDK kataloğunu kapatır." />
+  <string key="Copied to clipboard." value="Panoya kopyalandı." />
+  <string key="Crime &amp; underworld simulation completed." value="Suç ve yeraltı dünyası simülasyonu tamamlandı." />
+  <string key="Ctrl+F: input · Ctrl+Enter: refresh output" value="Ctrl+F: giriş · Ctrl+Enter: çıktıyı yenile" />
+  <string key="Ctrl+K: help · Ctrl+W: watch · Tab: focus" value="Ctrl+K: yardım · Ctrl+W: izleme · Tab: odak" />
+  <string key="Dynasty &amp; succession evaluation completed." value="Hanedan ve veraset değerlendirmesi tamamlandı." />
+  <string key="Filter cleared. Showing all lines." value="Filtre temizlendi. Tüm satırlar gösteriliyor." />
+  <string key="Filtered to {0} matching lines." value="{0} eşleşen satıra filtre uygulandı." />
+  <string key="Heap trimmed: reclaimed {0:F1} MB" value="Yığın belleği temizlendi: {0:F1} MB geri kazanıldı" />
+  <string key="History ▾" value="Geçmiş ▾" />
+  <string key="Live Watch Activated (1s tick)" value="Canlı izleme etkinleştirildi (1 sn aralıkla)" />
+  <string key="Live Watch Deactivated" value="Canlı izleme devre dışı bırakıldı" />
+  <string key="Load next command from history (Down Arrow)." value="Geçmişteki sonraki komutu yükler (Aşağı Ok)." />
+  <string key="Load previous command from history (Up Arrow)." value="Geçmişteki önceki komutu yükler (Yukarı Ok)." />
+  <string key="Localization audit completed." value="Yerelleştirme denetimi tamamlandı." />
+  <string key="Open the searchable Advanced SDK tool catalog." value="Gelişmiş SDK araçlarının aranabilir kataloğunu açar." />
+  <string key="Output display cleared." value="Görüntülenen çıktı temizlendi." />
+  <string key="Party simulation completed." value="Birlik simülasyonu tamamlandı." />
+  <string key="SDK Catalog" value="SDK kataloğu" />
+  <string key="Save system health audit passed." value="Kayıt sistemi durumu denetimi başarılı." />
+  <string key="Scaffold generated. Use Copy to clipboard to save it." value="Başlangıç iskeleti oluşturuldu. Kaydetmek için Panoya kopyala seçeneğini kullanın." />
+  <string key="Siege tactics analysis completed." value="Kuşatma taktikleri analizi tamamlandı." />
+  <string key="Toggle recent command history dropdown." value="Son komut geçmişi açılır listesini gösterir veya gizler." />
+  <string key="Toggle tactical keyboard shortcuts guide (Ctrl+K)." value="Taktik klavye kısayolları kılavuzunu gösterir veya gizler (Ctrl+K)." />
+  <string key="Trade simulation completed." value="Ticaret simülasyonu tamamlandı." />
+  <string key="[ ⌨ Keys ]" value="[ ⌨ Tuşlar ]" />
+</strings>

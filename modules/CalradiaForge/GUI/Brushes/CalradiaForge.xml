@@ -1,0 +1,232 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Brushes>
+  <!-- Standard button with hover -->
+  <Brush Name="CalradiaForge.Button" TransitionDuration="0.1">
+    <Layers>
+      <BrushLayer Color="#29463AFF" Name="Default" Sprite="BlankWhiteSquare_9" />
+    </Layers>
+    <Styles>
+      <Style Name="Default">
+        <BrushLayer Color="#29463AFF" Name="Default" />
+      </Style>
+      <Style Name="Hovered">
+        <BrushLayer Color="#3E6252FF" Name="Default" />
+      </Style>
+      <Style Name="Pressed">
+        <BrushLayer Color="#1B3027FF" Name="Default" />
+      </Style>
+      <Style Name="Selected">
+        <BrushLayer Color="#4C765FFF" Name="Default" />
+      </Style>
+      <Style Name="Disabled">
+        <BrushLayer Color="#17261FFF" Name="Default" />
+      </Style>
+    </Styles>
+  </Brush>
+
+  <!-- Tactical flat button: thin border + dark fill, distinct hover glow -->
+  <Brush Name="CalradiaForge.TacticalButton" TransitionDuration="0.1">
+    <Layers>
+      <BrushLayer Name="Border" Sprite="BlankWhiteSquare_9" />
+      <BrushLayer Name="Fill" Sprite="BlankWhiteSquare_9" ExtendLeft="-1" ExtendRight="-1" ExtendTop="-1" ExtendBottom="-1" />
+    </Layers>
+    <Styles>
+      <Style Name="Default">
+        <BrushLayer Name="Border" Color="#455A4BFF" />
+        <BrushLayer Name="Fill"   Color="#101814FF" />
+      </Style>
+      <Style Name="Hovered">
+        <BrushLayer Name="Border" Color="#D4B66FFF" />
+        <BrushLayer Name="Fill"   Color="#1A2A20FF" />
+      </Style>
+      <Style Name="Pressed">
+        <BrushLayer Name="Border" Color="#A98748FF" />
+        <BrushLayer Name="Fill"   Color="#090D0AFF" />
+      </Style>
+      <Style Name="Selected">
+        <BrushLayer Name="Border" Color="#D4B66FFF" />
+        <BrushLayer Name="Fill"   Color="#284331FF" />
+      </Style>
+      <Style Name="Disabled">
+        <BrushLayer Name="Border" Color="#2D3A31FF" />
+        <BrushLayer Name="Fill"   Color="#0A100DFF" />
+      </Style>
+    </Styles>
+  </Brush>
+  <Brush Name="CalradiaForge.Primary" TransitionDuration="0">
+    <Layers>
+      <BrushLayer Color="#C7A45AFF" Name="Default" Sprite="BlankWhiteSquare_9" />
+    </Layers>
+    <Styles>
+      <Style Name="Default">
+        <BrushLayer Color="#C7A45AFF" Name="Default" />
+      </Style>
+      <Style Name="Hovered">
+        <BrushLayer Color="#E1C177FF" Name="Default" />
+      </Style>
+      <Style Name="Pressed">
+        <BrushLayer Color="#A98748FF" Name="Default" />
+      </Style>
+      <Style Name="Selected">
+        <BrushLayer Color="#6FB183FF" Name="Default" />
+      </Style>
+      <Style Name="Disabled">
+        <BrushLayer Color="#17261FFF" Name="Default" />
+      </Style>
+    </Styles>
+  </Brush>
+  <Brush Font="FiraSansExtraCondensed-Regular" Name="CalradiaForge.Text" TextHorizontalAlignment="Left" TextVerticalAlignment="Center">
+    <Styles>
+      <Style FontColor="#F0E5CBFF" FontSize="22" Name="Default" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#F0E5CBFF" FontSize="22" Name="Hovered" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#F0E5CBFF" FontSize="22" Name="Pressed" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#F0E5CBFF" FontSize="22" Name="Selected" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#7E887BFF" FontSize="22" Name="Disabled" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+    </Styles>
+  </Brush>
+  <Brush Font="FiraSansExtraCondensed-Regular" Name="CalradiaForge.Muted" TextHorizontalAlignment="Left" TextVerticalAlignment="Center">
+    <Styles>
+      <Style FontColor="#B7BAA8FF" FontSize="22" Name="Default" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#B7BAA8FF" FontSize="22" Name="Hovered" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#B7BAA8FF" FontSize="22" Name="Pressed" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#B7BAA8FF" FontSize="22" Name="Selected" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#7E887BFF" FontSize="22" Name="Disabled" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+    </Styles>
+  </Brush>
+  <Brush Font="FiraSansExtraCondensed-Regular" Name="CalradiaForge.Gold" TextHorizontalAlignment="Left" TextVerticalAlignment="Center">
+    <Styles>
+      <Style FontColor="#C7A45AFF" FontSize="22" Name="Default" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#C7A45AFF" FontSize="22" Name="Hovered" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#C7A45AFF" FontSize="22" Name="Pressed" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#C7A45AFF" FontSize="22" Name="Selected" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#7E887BFF" FontSize="22" Name="Disabled" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+    </Styles>
+  </Brush>
+  <Brush Font="FiraSansExtraCondensed-Regular" Name="CalradiaForge.ButtonText" TextHorizontalAlignment="Center" TextVerticalAlignment="Center" TransitionDuration="0.08">
+    <Styles>
+      <Style FontColor="#C7A45AFF" FontSize="22" Name="Default" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#E8C97FFF" FontSize="22" Name="Hovered" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#A98748FF" FontSize="22" Name="Pressed" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#F0E5CBFF" FontSize="22" Name="Selected" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#7E887BFF" FontSize="22" Name="Disabled" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+    </Styles>
+  </Brush>
+  <Brush Font="FiraSansExtraCondensed-Regular" Name="CalradiaForge.PrimaryText" TextHorizontalAlignment="Center" TextVerticalAlignment="Center">
+    <Styles>
+      <Style FontColor="#172219FF" FontSize="22" Name="Default" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#172219FF" FontSize="22" Name="Hovered" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#172219FF" FontSize="22" Name="Pressed" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#172219FF" FontSize="22" Name="Selected" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#7E887BFF" FontSize="22" Name="Disabled" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+    </Styles>
+  </Brush>
+  <Brush Name="CalradiaForge.DarkBackground" Font="Oswald">
+    <Styles>
+      <Style Name="Default" FontColor="#0B0F0DFF" />
+    </Styles>
+  </Brush>
+
+  <!-- Category Tab Brush: distinct highlighted tab with gold border when selected -->
+  <Brush Name="CalradiaForge.CategoryTab" TransitionDuration="0.08">
+    <Layers>
+      <BrushLayer Name="Border" Sprite="BlankWhiteSquare_9" />
+      <BrushLayer Name="Fill" Sprite="BlankWhiteSquare_9" ExtendLeft="-1" ExtendRight="-1" ExtendTop="-1" ExtendBottom="-1" />
+    </Layers>
+    <Styles>
+      <Style Name="Default">
+        <BrushLayer Name="Border" Color="#33483AFF" />
+        <BrushLayer Name="Fill"   Color="#111A15FF" />
+      </Style>
+      <Style Name="Hovered">
+        <BrushLayer Name="Border" Color="#84B992FF" />
+        <BrushLayer Name="Fill"   Color="#20392CFF" />
+      </Style>
+      <Style Name="Selected">
+        <BrushLayer Name="Border" Color="#F0D18AFF" />
+        <BrushLayer Name="Fill"   Color="#365744FF" />
+      </Style>
+      <Style Name="Pressed">
+        <BrushLayer Name="Border" Color="#D7BA73FF" />
+        <BrushLayer Name="Fill"   Color="#223A2DFF" />
+      </Style>
+      <Style Name="Disabled">
+        <BrushLayer Name="Border" Color="#26332AFF" />
+        <BrushLayer Name="Fill"   Color="#0B100DFF" />
+      </Style>
+    </Styles>
+  </Brush>
+
+  <Brush Font="FiraSansExtraCondensed-Regular" Name="CalradiaForge.CategoryTabText" TextHorizontalAlignment="Center" TextVerticalAlignment="Center" TransitionDuration="0.08">
+    <Styles>
+      <Style FontColor="#B7BAA8FF" FontSize="18" Name="Default" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#E8C97FFF" FontSize="18" Name="Hovered" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#F0E5CBFF" FontSize="18" Name="Selected" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#A98748FF" FontSize="18" Name="Pressed" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#556057FF" FontSize="18" Name="Disabled" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+    </Styles>
+  </Brush>
+
+  <!-- Quiet framed card surface; decorative textures stay outside the text area. -->
+  <Brush Name="CalradiaForge.BriefingCard">
+    <Layers>
+      <BrushLayer Name="Border" Sprite="BlankWhiteSquare_9" />
+      <BrushLayer Name="Fill" Sprite="BlankWhiteSquare_9" ExtendLeft="-1" ExtendRight="-1" ExtendTop="-1" ExtendBottom="-1" />
+    </Layers>
+    <Styles>
+      <Style Name="Default">
+        <BrushLayer Name="Border" Color="#B99A5B77" />
+        <BrushLayer Name="Fill" Color="#17241DFF" />
+      </Style>
+    </Styles>
+  </Brush>
+
+  <!-- Tactical War Frame with subtle brass border and deep pine fill -->
+  <Brush Name="CalradiaForge.PanelFrame">
+    <Layers>
+      <BrushLayer Name="Border" Sprite="BlankWhiteSquare_9" />
+      <BrushLayer Name="Fill" Sprite="BlankWhiteSquare_9" ExtendLeft="-1" ExtendRight="-1" ExtendTop="-1" ExtendBottom="-1" />
+    </Layers>
+    <Styles>
+      <Style Name="Default">
+        <BrushLayer Name="Border" Color="#C7A45A55" />
+        <BrushLayer Name="Fill"   Color="#0B0F0DF5" />
+      </Style>
+    </Styles>
+  </Brush>
+
+  <!-- Tactical Status Pill for Telemetry -->
+  <Brush Name="CalradiaForge.StatusPill">
+    <Layers>
+      <BrushLayer Name="Border" Sprite="BlankWhiteSquare_9" />
+      <BrushLayer Name="Fill" Sprite="BlankWhiteSquare_9" ExtendLeft="-1" ExtendRight="-1" ExtendTop="-1" ExtendBottom="-1" />
+    </Layers>
+    <Styles>
+      <Style Name="Default">
+        <BrushLayer Name="Border" Color="#2C3B3188" />
+        <BrushLayer Name="Fill"   Color="#0D120FCC" />
+      </Style>
+    </Styles>
+  </Brush>
+
+  <!-- Section Header in Bold Gold -->
+  <Brush Font="FiraSansExtraCondensed-Bold" Name="CalradiaForge.HeaderGold" TextHorizontalAlignment="Left" TextVerticalAlignment="Center">
+    <Styles>
+      <Style FontColor="#C7A45AFF" FontSize="26" Name="Default" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#E8C97FFF" FontSize="26" Name="Hovered" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#A98748FF" FontSize="26" Name="Pressed" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#C7A45AFF" FontSize="26" Name="Selected" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#7E887BFF" FontSize="26" Name="Disabled" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+    </Styles>
+  </Brush>
+
+  <!-- Terminal Body Text for High Legibility -->
+  <Brush Font="FiraSansExtraCondensed-Regular" Name="CalradiaForge.TerminalText" TextHorizontalAlignment="Left" TextVerticalAlignment="Top">
+    <Styles>
+      <Style FontColor="#D1D5DBFF" FontSize="22" Name="Default" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#D1D5DBFF" FontSize="22" Name="Hovered" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#D1D5DBFF" FontSize="22" Name="Pressed" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#D1D5DBFF" FontSize="22" Name="Selected" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+      <Style FontColor="#7E887BFF" FontSize="22" Name="Disabled" TextBlur="0" TextGlowRadius="0" TextOutlineAmount="0" />
+    </Styles>
+  </Brush>
+</Brushes>

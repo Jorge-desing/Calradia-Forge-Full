@@ -1,0 +1,7 @@
+TpacTool Max Version 1.0 — Iron Modding Notice
+
+This application license for the original TpacTool Max additions, original branding, and official distribution identity belongs to the Iron Modding M&B Bannerlord II team.
+
+Project page: https://www.patreon.com/cw/ironmoddingbannerlord
+
+The original upstream TpacTool LICENSE file and all third-party notices remain valid and must not be removed. This notice does not relicense or restrict upstream MIT code or any third-party component. The official TpacTool Max binary, name, branding, installer identity, and package metadata may not be presented as an official release after unauthorized modification or rebranding.

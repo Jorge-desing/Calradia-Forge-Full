@@ -1,0 +1,231 @@
+<?xml version='1.0' encoding='utf-8'?>
+<strings language="ko">
+  <string key="Assign unique IDs" value="Assign unique IDs" />
+  <string key="Build or reinstall module" value="Build or reinstall module" />
+  <string key="Calradia Forge" value="칼라디아의 대장간" />
+  <string key="Campaign copy confirmed" value="캠페인 복사본 확인됨" />
+  <string key="Check module folder" value="Check module folder" />
+  <string key="Close" value="닫기" />
+  <string key="Commands" value="명령" />
+  <string key="Compare" value="비교" />
+  <string key="Confirm campaign copy" value="캠페인 복사본 확인" />
+  <string key="Connect" value="연결" />
+  <string key="Connected" value="연결됨" />
+  <string key="Context" value="컨텍스트" />
+  <string key="Declared DLL missing" value="Declared DLL missing" />
+  <string key="Dependency cycle" value="Dependency cycle" />
+  <string key="Disable testing" value="테스트 비활성화" />
+  <string key="Disconnected" value="연결 끊김" />
+  <string key="Duplicate ID" value="중복 ID" />
+  <string key="Enable testing" value="테스트 활성화" />
+  <string key="Enable testing and confirm campaign copy" value="테스트를 활성화하고 캠페인 사본을 확인하세요" />
+  <string key="Enter the Bannerlord process ID" value="Enter the Bannerlord process ID" />
+  <string key="Exact object ID required" value="정확한 객체 ID가 필요합니다" />
+  <string key="Export report" value="보고서 내보내기" />
+  <string key="Extension diagnostics" value="Extension diagnostics" />
+  <string key="Fix XML" value="Fix XML" />
+  <string key="Fix manifest" value="Fix manifest" />
+  <string key="Import log" value="로그 가져오기" />
+  <string key="Inspector" value="검사기" />
+  <string key="Inspect framework" value="Inspect framework" />
+  <string key="Framework" value="프레임워크" />
+  <string key="ForgeWeave framework" value="ForgeWeave 프레임워크" />
+  <string key="ForgeWeave shows declared extension handlers, order, health and timing without applying patches." value="ForgeWeave는 패치를 적용하지 않고 선언된 확장 처리기, 순서, 상태 및 시간을 표시합니다." />
+  <string key="Handlers" value="처리기" />
+  <string key="Quarantined" value="격리됨" />
+  <string key="Dispatches" value="디스패치" />
+  <string key="Failures" value="실패" />
+  <string key="Mean" value="평균" />
+  <string key="Maximum" value="최대" />
+  <string key="Recent events" value="최근 이벤트" />
+  <string key="Framework findings" value="프레임워크 결과" />
+  <string key="Harmony" value="Harmony" />
+  <string key="Harmony patch atlas" value="Harmony 패치 목록" />
+  <string key="Optional read-only Harmony diagnostics. Shared targets are review candidates, not proven conflicts." value="읽기 전용 선택적 Harmony 진단입니다. 공유 대상은 검토 후보이며 확인된 충돌이 아닙니다." />
+  <string key="Patch preflight" value="패치 사전 검증" />
+  <string key="Patch blueprint preflight" value="패치 청사진 사전 검증" />
+  <string key="Providers" value="공급자" />
+  <string key="Resolved" value="해결됨" />
+  <string key="Review items" value="검토 항목" />
+  <string key="Preflight findings" value="사전 검증 결과" />
+  <string key="Check patch blueprints" value="Check patch blueprints" />
+  <string key="Patch blueprint declarations are read-only. This check does not apply a patch." value="Patch blueprint declarations are read-only. This check does not apply a patch." />
+  <string key="Install dependency" value="Install dependency" />
+  <string key="Invalid DLL path" value="Invalid DLL path" />
+  <string key="Inventory" value="Inventory" />
+  <string key="Logs" value="로그" />
+  <string key="Maximum 100 snapshots" value="스냅샷 최대 100개" />
+  <string key="Missing SubModule.xml" value="Missing SubModule.xml" />
+  <string key="Module folder" value="모듈 폴더" />
+  <string key="Module scan started. Refresh Modules to see results." value="모듈 검사를 시작했습니다. 결과를 보려면 모듈을 새로 고치세요." />
+  <string key="Modules" value="모듈" />
+  <string key="Next" value="다음" />
+  <string key="No changes" value="변경 사항 없음" />
+  <string key="Object no longer available" value="객체를 더 이상 사용할 수 없습니다" />
+  <string key="Open report" value="보고서 열기" />
+  <string key="Performance" value="성능" />
+  <string key="Pin" value="고정" />
+  <string key="Pin this object first" value="먼저 이 객체를 고정하세요" />
+  <string key="Previous" value="이전" />
+  <string key="Raw data" value="원시 데이터" />
+  <string key="Ready" value="준비됨" />
+  <string key="Refresh" value="새로 고침" />
+  <string key="Remove circular dependency" value="Remove circular dependency" />
+  <string key="Run command" value="Run command" />
+  <string key="Run test" value="테스트 실행" />
+  <string key="Scan modules" value="모듈 검사" />
+  <string key="Scanning…" value="Scanning…" />
+  <string key="Search / argument" value="검색 / 인수" />
+  <string key="Seed" value="시드" />
+  <string key="Session" value="세션" />
+  <string key="Session process ID" value="세션 프로세스 ID" />
+  <string key="Single-player only" value="싱글플레이어 전용" />
+  <string key="Start Bannerlord with Calradia Forge enabled, then connect. Offline module scanning is available without the game." value="Calradia Forge를 활성화하여 Bannerlord를 시작하고 연결하세요. 게임 없이도 모듈을 검사할 수 있습니다." />
+  <string key="Summary" value="개요" />
+  <string key="Table" value="표" />
+  <string key="Testing" value="테스트" />
+  <string key="Tests" value="테스트" />
+  <string key="Troops" value="Troops" />
+  <string key="Unknown test" value="알 수 없는 테스트" />
+  <string key="Use a copied campaign. This enables state-changing tests for this session." value="Use a copied campaign. This enables state-changing tests for this session." />
+  <string key="Use filename only" value="Use filename only" />
+  <string key="Wrong context" value="잘못된 컨텍스트" />
+  <string key="Capture report" value="보고서 캡처" />
+  <string key="Live session" value="라이브 세션" />
+  <string key="Snapshots" value="스냅샷" />
+  <string key="Dependencies" value="의존성" />
+  <string key="Remove snapshot" value="스냅샷 삭제" />
+  <string key="Run batch" value="일괄 실행" />
+  <string key="Find an object by type and ID. Pin a baseline before comparing." value="유형과 ID로 객체를 찾으세요. 비교하기 전에 기준선을 고정하세요." />
+  <string key="Run one test ID, or a comma-separated batch. Batches stop on the first failure." value="테스트 ID 하나 또는 쉼표로 구분한 일괄 작업을 실행하세요. 일괄 작업은 첫 실패에서 중지됩니다." />
+  <string key="Inspect installed modules without changing files or launcher settings." value="파일이나 실행기 설정을 바꾸지 않고 설치된 모듈을 검사합니다." />
+  <string key="Browse a live session or the current report. Export preserves the current report." value="라이브 세션 또는 현재 보고서를 확인합니다. 내보내기는 현재 보고서를 보존합니다." />
+  <string key="Enable Live session to use game actions." value="Enable Live session to use game actions." />
+  <string key="No records captured." value="No records captured." />
+  <string key="Scan modules, open a report, or connect to Bannerlord to begin." value="Scan modules, open a report, or connect to Bannerlord to begin." />
+  <string key="New report" value="새 보고서" />
+  <string key="Captured live session" value="Captured live session" />
+  <string key="Snapshot removed" value="스냅샷을 제거했습니다" />
+  <string key="Snapshot not found" value="스냅샷을 찾을 수 없습니다" />
+  <string key="Invalid extension context" value="잘못된 확장 컨텍스트" />
+  <string key="Select between 1 and 50 tests" value="1~50개의 테스트를 선택하세요" />
+  <string key="Native target" value="Native 버전" />
+  <string key="Yes" value="예" />
+  <string key="No" value="아니요" />
+  <string key="Any" value="모든 컨텍스트" />
+  <string key="Campaign" value="캠페인" />
+  <string key="Mission" value="미션" />
+  <string key="Complete" value="완료" />
+  <string key="Order" value="순서" />
+  <string key="Blocked" value="차단됨" />
+  <string key="Error" value="오류" />
+  <string key="No log entries match this search." value="이 검색과 일치하는 로그 항목이 없습니다." />
+  <string key="Clear Search / argument and press Ctrl+Enter to show all available logs." value="모든 로그를 표시하려면 검색 / 인수를 지우고 Ctrl+Enter를 누르세요." />
+  <string key="Keyboard focus" value="키보드 포커스" />
+  <string key="Sections" value="섹션" />
+  <string key="Workbench" value="작업 공간" />
+  <string key="Current source" value="Current source" />
+  <string key="Session and files" value="세션 및 파일" />
+  <string key="Section tools" value="섹션 도구" />
+  <string key="Results" value="결과" />
+  <string key="Language" value="언어" />
+  <string key="Text size" value="텍스트 크기" />
+  <string key="Developer workbench" value="개발자 작업 공간" />
+  <string key="Workbench sections" value="Workbench sections" />
+  <string key="Search or exact object/test ID" value="Search or exact object/test ID" />
+  <string key="Test seed" value="Test seed" />
+  <string key="Operation in progress" value="Operation in progress" />
+  <string key="Report details" value="Report details" />
+  <string key="Enabled" value="사용" />
+  <string key="Disabled" value="사용 안 함" />
+  <string key="Choose a tool" value="도구 선택" />
+  <string key="Modules: check dependencies.&#10;Inspector: capture object state.&#10;Tests: verify your extension." value="모듈: 종속성을 확인하세요.&#10;검사기: 객체 상태를 캡처하세요.&#10;테스트: 확장을 확인하세요." />
+  <string key="Browse safely. State-changing tests require test mode; campaign tests also require a working copy." value="안전하게 살펴보세요. 상태를 바꾸는 테스트에는 테스트 모드가 필요하며, 캠페인 테스트에는 작업 사본도 필요합니다." />
+  <string key="Your development session at a glance." value="개발 세션을 한눈에 확인하세요." />
+  <string key="Search the records captured in this session. Leave the search empty to show all." value="이 세션에서 캡처한 기록을 검색하세요. 모두 표시하려면 검색을 비워 두세요." />
+  <string key="Measurements cover instrumented operations, not the entire game." value="측정값은 계측된 작업만 다루며 게임 전체를 다루지 않습니다." />
+  <string key="Work order" value="Work order" />
+  <string key="Report state" value="보고서 상태" />
+  <string key="Evidence retained" value="보존된 증거" />
+  <string key="Attention" value="Attention" />
+  <string key="Replay lab" value="재생 실험실" />
+  <string key="Replay selected event" value="Replay selected event" />
+  <string key="Enter a retained event sequence, then run a guarded replay." value="보존된 이벤트 시퀀스를 입력한 뒤 보호된 재생을 실행하세요." />
+  <string key="Replay" value="재생" />
+  <string key="Replay source" value="재생 원본" />
+  <string key="Replay outcome" value="재생 결과" />
+  <string key="Replay mode" value="재생 모드" />
+  <string key="Replay rejected" value="재생 거부됨" />
+  <string key="Replay completed" value="재생 완료" />
+  <string key="Select a retained event sequence." value="보존된 이벤트 시퀀스를 선택하세요." />
+  <string key="No retained events are available." value="보존된 이벤트가 없습니다." />
+  <string key="Live replay reuses existing test and campaign-copy safeguards." value="실시간 재생은 기존 테스트 모드와 캠페인 복사본 보호를 재사용합니다." />
+  <string key="Test permission" value="테스트 권한" />
+  <string key="Selected evidence" value="선택한 증거" />
+  <string key="No evidence selected" value="선택한 증거 없음" />
+  <string key="Retained event sequence" value="Retained event sequence" />
+  <string key="Offline report" value="Offline report" />
+  <string key="{0} selected · {1} retained" value="선택 {0} · 보존 {1}" />
+  <string key="Connect to a live session to replay retained events." value="Connect to a live session to replay retained events." />
+  <string key="The connected game does not expose Replay Lab." value="The connected game does not expose Replay Lab." />
+  <string key="ForgeWeave Replay Lab reuses retained host events for controlled verification. It does not intercept methods or inject event data." value="ForgeWeave Replay Lab reuses retained host events for controlled verification. It does not intercept methods or inject event data." />
+  <string key="Help: AutoRegister summary" value="지정한 어셈블리만 검사하고 지원되는 SDK 계약을 등록합니다." />
+  <string key="Help: Gauntlet page summary" value="Forge가 별도 레이어로 열 수 있는 독립 Gauntlet 프리팹을 선언합니다." />
+  <string key="Help: Gauntlet command summary" value="매개변수가 없는 Gauntlet 명령 메서드와 필요한 컨텍스트를 선언합니다." />
+  <string key="Help: Open page summary" value="Forge 호스트에 등록된 확장 페이지를 열도록 요청합니다." />
+  <string key="Help: Assembly workbench summary" value="선택한 DLL을 로드하거나 실행하지 않고 제한된 PE/.NET 메타데이터를 백그라운드에서 읽습니다. 버전 변경은 미리보기 후 백업과 해시가 포함된 검증된 복사본을 만듭니다." />
+  <string key="Help: Safety summary" value="특성은 메타데이터를 검증할 뿐 타사 코드를 격리하지 않습니다. 페이지 명령은 확장 작성자의 코드이며 Bannerlord 주 스레드 규칙을 따라야 합니다." />
+  <string key="Assembly path or list index" value="어셈블리 경로 또는 번호" />
+  <string key="Version" value="버전" />
+  <string key="List installed DLLs" value="설치된 DLL 목록" />
+  <string key="Select DLL row" value="DLL 행 선택" />
+  <string key="Inspect metadata" value="메타데이터 검사" />
+  <string key="Preview version" value="버전 미리보기" />
+  <string key="Apply copy" value="복사본에 적용" />
+  <string key="Assembly workbench" value="어셈블리 작업대" />
+  <string key="Open extension page" value="확장 페이지 열기" />
+  <string key="Context help" value="상황별 도움말" />
+  <string key="Gauntlet extension pages" value="Gauntlet 확장 페이지" />
+  <string key="Type a page ID in the argument field, then use Open extension page." value="인수 칸에 페이지 ID를 입력한 뒤 확장 페이지 열기를 선택하세요." />
+  <string key="Use Context help for offline SDK guidance and the Assembly workbench." value="오프라인 SDK 안내와 어셈블리 작업대에는 상황별 도움말을 사용하세요." />
+  <string key="Assembly workbench guidance" value="어셈블리 작업대 안내" />
+  <string key="List installed DLLs, enter a row number, and select it. Inspection reads PE metadata only; it never loads or executes the file." value="설치된 DLL을 나열하고 행 번호를 입력해 선택하세요. 검사는 PE 메타데이터만 읽으며 파일을 로드하거나 실행하지 않습니다." />
+  <string key="For a version change, enter a four-part version, preview first, then apply only to create a copy under LocalAppData/CalradiaForge/AssemblyWorkbench." value="버전을 변경하려면 네 부분 버전을 입력하고 미리보기 후 적용하세요. LocalAppData/CalradiaForge/AssemblyWorkbench에 복사본을 만듭니다." />
+  <string key="Strong-name signed and mixed-mode assemblies are rejected. The original is preserved; a source backup and SHA-256 evidence are written." value="strong-name 서명 및 혼합 모드 어셈블리는 거부됩니다. 원본을 보존하고 소스 백업과 SHA-256 증거를 기록합니다." />
+  <string key="In-game SDK help" value="게임 내 SDK 도움말" />
+  <string key="0 matching lines found." value="일치하는 줄을 찾지 못했습니다." />
+  <string key="ADVANCED SDK" value="고급 SDK" />
+  <string key="Audio manifest audit completed." value="오디오 매니페스트 감사가 완료되었습니다." />
+  <string key="Audio test executed." value="오디오 테스트를 실행했습니다." />
+  <string key="Browse all 110+ Advanced SDK tools" value="110개가 넘는 고급 SDK 도구를 모두 살펴보세요" />
+  <string key="COMMAND HISTORY" value="명령 기록" />
+  <string key="Casus Belli evaluation completed." value="전쟁 명분 평가가 완료되었습니다." />
+  <string key="Clear History" value="기록 지우기" />
+  <string key="Clear all recorded command history." value="저장된 명령 기록을 모두 지웁니다." />
+  <string key="Close the SDK catalog." value="SDK 카탈로그를 닫습니다." />
+  <string key="Copied to clipboard." value="클립보드에 복사했습니다." />
+  <string key="Crime &amp; underworld simulation completed." value="범죄 및 지하 세계 시뮬레이션이 완료되었습니다." />
+  <string key="Ctrl+F: input · Ctrl+Enter: refresh output" value="Ctrl+F: 입력 · Ctrl+Enter: 출력 새로 고침" />
+  <string key="Ctrl+K: help · Ctrl+W: watch · Tab: focus" value="Ctrl+K: 도움말 · Ctrl+W: 모니터링 · Tab: 포커스" />
+  <string key="Dynasty &amp; succession evaluation completed." value="왕조 및 계승 평가가 완료되었습니다." />
+  <string key="Filter cleared. Showing all lines." value="필터를 지웠습니다. 모든 줄을 표시합니다." />
+  <string key="Filtered to {0} matching lines." value="일치하는 줄 {0}개로 필터링했습니다." />
+  <string key="Heap trimmed: reclaimed {0:F1} MB" value="힙을 정리했습니다: {0:F1}MB 회수" />
+  <string key="History ▾" value="기록 ▾" />
+  <string key="Live Watch Activated (1s tick)" value="실시간 모니터링을 켰습니다(1초 간격)" />
+  <string key="Live Watch Deactivated" value="실시간 모니터링을 껐습니다" />
+  <string key="Load next command from history (Down Arrow)." value="기록에서 다음 명령을 불러옵니다(아래쪽 화살표)." />
+  <string key="Load previous command from history (Up Arrow)." value="기록에서 이전 명령을 불러옵니다(위쪽 화살표)." />
+  <string key="Localization audit completed." value="현지화 감사를 완료했습니다." />
+  <string key="Open the searchable Advanced SDK tool catalog." value="검색 가능한 고급 SDK 도구 카탈로그를 엽니다." />
+  <string key="Output display cleared." value="표시된 출력을 지웠습니다." />
+  <string key="Party simulation completed." value="부대 시뮬레이션이 완료되었습니다." />
+  <string key="SDK Catalog" value="SDK 카탈로그" />
+  <string key="Save system health audit passed." value="저장 시스템 상태 감사를 통과했습니다." />
+  <string key="Scaffold generated. Use Copy to clipboard to save it." value="기본 틀을 생성했습니다. 클립보드에 복사하여 저장하세요." />
+  <string key="Siege tactics analysis completed." value="공성 전술 분석이 완료되었습니다." />
+  <string key="Toggle recent command history dropdown." value="최근 명령 기록 드롭다운을 표시하거나 숨깁니다." />
+  <string key="Toggle tactical keyboard shortcuts guide (Ctrl+K)." value="전술 키보드 단축키 안내를 표시하거나 숨깁니다(Ctrl+K)." />
+  <string key="Trade simulation completed." value="무역 시뮬레이션이 완료되었습니다." />
+  <string key="[ ⌨ Keys ]" value="[ ⌨ 키 ]" />
+</strings>

@@ -1,0 +1,10 @@
+<UserControl x:Class="CalradiaForge.Desktop.Presentation.WorkbenchFooterControl"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:services="clr-namespace:CalradiaForge.Desktop.Services"
+ xmlns:presentation="clr-namespace:CalradiaForge.Desktop.Presentation"
+ xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+ xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+ MinWidth="0" MinHeight="0">
+<TextBlock AutomationProperties.AutomationId="KeyboardShortcutHint" FontSize="{DynamicResource Token.LabelFont}" Foreground="{DynamicResource MutedTextBrush}" Margin="8,2,8,0" Text="{DynamicResource Ui.ShortcutHint}" TextAlignment="Center" TextWrapping="Wrap"/>
+</UserControl>

@@ -1,0 +1,7 @@
+# Calradia Forge icon source assets
+
+Generated PNG sprite parts live in `ui_calradiaforge/`. Their source SVGs and per-icon artist, URL, license, and modification records are in the Source-SDK archive at `src/CalradiaForge.Desktop/Resources/GameIcons/`.
+
+The `Config.xml` entry marks the sprite category as always loaded. The official SpriteSheetGenerator creates the atlas and sprite metadata; Bannerlord Resource Browser imports that atlas and creates `Assets/GauntletUI/ui_calradiaforge_1_tex.tpac`. TpacTool was removed after frequent reader errors; do not install it or use its legacy parser as an import, deployment, or packaging gate. File presence, hashes, and header/table checks do not decode texture payloads or prove rendering. Use Resource Browser's import/update flow, preserve and hash the imported Steam TPAC around code deployment, and verify the referenced sprites in the running game. Add `--installed` to inspect the Steam-installed module; set `BANNERLORD_GAME_DIR` first for a custom install location.
+
+This workflow is for Gauntlet sprite atlases. The installed Bannerlord managed assemblies and the official asset-import instructions inspected for this project do not expose a documented C# FBX batch-import API or a `.meta` sidecar format for driving Resource Browser imports. Do not use `.meta` conventions from another engine as if Bannerlord supported them; the official flow still requires importing the atlas in Resource Browser. No FBX importer or TPAC writer is claimed here.

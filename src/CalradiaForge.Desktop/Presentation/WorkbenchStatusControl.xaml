@@ -1,0 +1,72 @@
+<UserControl x:Class="CalradiaForge.Desktop.Presentation.WorkbenchStatusControl"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:services="clr-namespace:CalradiaForge.Desktop.Services"
+ xmlns:presentation="clr-namespace:CalradiaForge.Desktop.Presentation"
+ xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+ xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+ MinWidth="0" MinHeight="0">
+ <Border AutomationProperties.AutomationId="WorkOrderCards" Margin="0,6,0,8">
+  <UniformGrid Columns="5">
+   <Border AutomationProperties.AutomationId="WorkOrderContextStatus" Margin="0,0,6,0" MinWidth="0" Style="{StaticResource OrderCard}" ToolTip="{Binding WorkOrderContext}">
+    <Grid>
+     <Path Data="{StaticResource GameIcon.compass}" Fill="{DynamicResource BrassBrush}" Focusable="False" Height="14" HorizontalAlignment="Right" IsHitTestVisible="False" Opacity="{DynamicResource Token.StatusIconOpacity}" Stretch="Uniform" VerticalAlignment="Top" Width="14"/>
+     <StackPanel Margin="0,0,16,0">
+      <TextBlock Style="{StaticResource KickerText}" Text="{DynamicResource Ui.Context}"/>
+      <TextBlock Style="{StaticResource OrderValue}" Text="{Binding WorkOrderContext}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+     </StackPanel>
+    </Grid>
+   </Border>
+   <Border AutomationProperties.AutomationId="WorkOrderPermissionStatus" Margin="6,0" MinWidth="0" Style="{StaticResource OrderCard}" ToolTip="{Binding TestingPermission}">
+    <Grid>
+     <Path Data="{StaticResource GameIcon.eye_target}" Fill="{DynamicResource BrassBrush}" Focusable="False" Height="14" HorizontalAlignment="Right" IsHitTestVisible="False" Opacity="{DynamicResource Token.StatusIconOpacity}" Stretch="Uniform" VerticalAlignment="Top" Width="14"/>
+     <StackPanel Margin="0,0,16,0">
+      <TextBlock Style="{StaticResource KickerText}" Text="{DynamicResource Ui.TestPermission}"/>
+      <TextBlock Style="{StaticResource OrderValue}" Text="{Binding TestingPermission}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+     </StackPanel>
+    </Grid>
+   </Border>
+   <Border AutomationProperties.AutomationId="WorkOrderReportStatus" Margin="6,0" MinWidth="0" Style="{StaticResource OrderCard}" ToolTip="{Binding ReportState}">
+    <Grid>
+     <Path Data="{StaticResource GameIcon.histogram}" Fill="{DynamicResource BrassBrush}" Focusable="False" Height="14" HorizontalAlignment="Right" IsHitTestVisible="False" Opacity="{DynamicResource Token.StatusIconOpacity}" Stretch="Uniform" VerticalAlignment="Top" Width="14"/>
+     <StackPanel Margin="0,0,16,0">
+      <TextBlock Style="{StaticResource KickerText}" Text="{DynamicResource Ui.ReportState}"/>
+      <TextBlock Style="{StaticResource OrderValue}" Text="{Binding ReportState}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+     </StackPanel>
+    </Grid>
+   </Border>
+   <Border AutomationProperties.AutomationId="WorkOrderApplicationStatus" AutomationProperties.Name="{Binding Status}" Margin="6,0" MinWidth="0" Style="{StaticResource OrderCard}" ToolTip="{Binding Status}">
+    <Grid>
+     <Path Data="{StaticResource GameIcon.gears}" Fill="{DynamicResource BrassBrush}" Focusable="False" Height="14" HorizontalAlignment="Right" IsHitTestVisible="False" Opacity="{DynamicResource Token.StatusIconOpacity}" Stretch="Uniform" VerticalAlignment="Top" Width="14"/>
+     <StackPanel Margin="0,0,16,0">
+      <TextBlock Style="{StaticResource KickerText}" Text="{DynamicResource Ui.ActiveTool}"/>
+      <TextBlock MaxHeight="34" Style="{StaticResource OrderValue}" Text="{Binding Status}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap"/>
+      <TextBlock FontSize="9" Foreground="{DynamicResource WarningBrush}" Text="{Binding ThemeMessage}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
+       <TextBlock.Style>
+        <Style TargetType="TextBlock">
+         <Setter Property="Visibility" Value="Visible"/>
+         <Style.Triggers><DataTrigger Binding="{Binding ThemeMessage}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers>
+        </Style>
+       </TextBlock.Style>
+      </TextBlock>
+     </StackPanel>
+    </Grid>
+   </Border>
+   <Border AutomationProperties.AutomationId="RetainedEvidenceSummary" Margin="6,0,0,0" MinWidth="0" Style="{StaticResource OrderCard}">
+    <Grid>
+     <Path Data="{StaticResource GameIcon.files}" Fill="{DynamicResource BrassBrush}" Focusable="False" Height="14" HorizontalAlignment="Right" IsHitTestVisible="False" Opacity="{DynamicResource Token.StatusIconOpacity}" Stretch="Uniform" VerticalAlignment="Top" Width="14"/>
+     <StackPanel Margin="0,0,16,0">
+      <TextBlock Style="{StaticResource KickerText}" Text="{DynamicResource Ui.RetainedEvidence}"/>
+      <Grid Margin="0,2,0,0">
+       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+       <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="{Binding EvidenceSummary}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" ToolTip="{Binding EvidenceSummary}" VerticalAlignment="Center"/>
+       <Button AutomationProperties.AutomationId="ExportEvidenceButton" AutomationProperties.Name="{DynamicResource Ui.ExportEvidence}" Command="{Binding ExportEvidenceCommand}" Grid.Column="1" Height="30" Margin="3,0,0,0" MinHeight="30" Padding="6,4" Style="{StaticResource TacticalActionButton}" ToolTip="{DynamicResource Ui.ExportEvidence}" Width="36">
+        <Path Data="{StaticResource GameIcon.files}" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Focusable="False" Height="15" IsHitTestVisible="False" Stretch="Uniform" Width="15"/>
+       </Button>
+      </Grid>
+     </StackPanel>
+    </Grid>
+   </Border>
+  </UniformGrid>
+ </Border>
+</UserControl>

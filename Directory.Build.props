@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <Deterministic>true</Deterministic>
+    <!-- The release version is defined once here. Packaging and manifests verify it. -->
+    <CalradiaForgeVersion>25.2.0</CalradiaForgeVersion>
+    <Version>$(CalradiaForgeVersion)</Version>
+    <AssemblyVersion>25.2.0.0</AssemblyVersion>
+    <FileVersion>25.2.0.0</FileVersion>
+    <InformationalVersion>$(CalradiaForgeVersion)</InformationalVersion>
+    <Company>Calradia Forge Team</Company>
+    <Product>Calradia Forge</Product>
+    <Description>Developer workbench and modding framework for Mount and Blade II Bannerlord.</Description>
+    <Copyright>Copyright © 2026</Copyright>
+    <GamePath Condition="'$(GamePath)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Mount &amp; Blade II Bannerlord</GamePath>
+    <GameBin>$(GamePath)\bin\Win64_Shipping_Client</GameBin>
+  </PropertyGroup>
+</Project>
