@@ -337,5 +337,15 @@
 - [x] Ejecutar suites de verificación completas (`dotnet build`, `verify_stateless_behavior.ps1`, `Run-CalradiaForge-Tests.bat`, `run_forge_agents.py bughunt` y `verify`).
 - [x] Redactar Propuesta 21 en `learning_proposal.md`, sincronizar codemaps y generar paquetes de distribución con `tools/package.ps1`.
 
+## Compatibilidad Universal de Reglas de Antigravity con OpenAI Codex CLI (Rev061)
+- [x] Actualizar `.codex/config.json` a versión `25.2.0`, declarar `"rulesPath": ".agents/rules"` y `"rulesDirectory": ".agents/rules"`.
+- [x] Añadir Sección 5 "Cross-Tool Rule Discovery & Parity Protocol" en `.agents/rules/codex_compatibility.md`.
+- [x] Añadir Sección 7 "Rules Taxonomy & Domain Gateway Routing" en `AGENTS.md` (43 reglas en 7 clusters).
+- [x] Añadir Sección 5 "Antigravity Modular Rules Index & Compliance" en `CODEX.md`.
+- [x] Sincronizar documentación bilingüe en `docs/CODEX_COMPATIBILITY.md` y `docs/CODEX_COMPATIBILITY.es.md`.
+- [x] Redactar Propuesta 22 en `learning_proposal.md` y artefacto `codex_antigravity_rules_proposal.md`.
+- [x] Superar pruebas de verificación y compilar suite de pruebas.
+
+
 
 

@@ -32,10 +32,11 @@ Calradia Forge is engineered to be fully operable by diverse autonomous AI agent
 
 ## 2. Configuration Surfaces
 
-### 2.1 Instruction Manifests (`AGENTS.md` & `CODEX.md`)
-- **`AGENTS.md`**: Universal multi-agent specification defining architectural layers, anti-shadowing constraints, statelessness invariants, command playbooks, and skills routing.
-- **`CODEX.md`**: Direct entry point for OpenAI Codex CLI sessions.
-- **`.codex/config.json`**: Machine-readable project metadata, test runner commands, and target framework mapping.
+### 2.1 Instruction Manifests & Rules Interoperability (`AGENTS.md`, `CODEX.md`, `.codex/config.json`)
+- **`AGENTS.md`**: Universal multi-agent specification defining architectural layers, anti-shadowing constraints, statelessness invariants, command playbooks, skills taxonomy, and the 43-rules gateway taxonomy.
+- **`CODEX.md`**: Direct entry point for OpenAI Codex CLI sessions with quick-reference commands, skills routing, and modular rules index.
+- **`.codex/config.json`**: Machine-readable project metadata (version 25.2.0), test runner commands, target framework mapping, and `"rulesPath": ".agents/rules"`.
+- **Modular Rules Discovery Protocol**: While Google Antigravity discovers `.agents/rules/*.md` automatically, Codex CLI uses the shared taxonomy in `AGENTS.md` (Section 7) and `CODEX.md` (Section 5) to enforce identical architectural, gameplay, UI, documentation, and packaging invariants.
 
 ### 2.2 Invariant Rules Enforced
 - **Anti-Shadowing Constraint**: Never create any folder, namespace, or class named `Campaign` or `Localization` in game assemblies. Collisions with `TaleWorlds.CampaignSystem.Campaign` break `Campaign.Current`.

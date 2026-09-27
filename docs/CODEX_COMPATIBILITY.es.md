@@ -32,10 +32,11 @@ Calradia Forge está diseñado para ser totalmente operable por diversos agentes
 
 ## 2. Superficies de Configuración
 
-### 2.1 Manifiestos de Instrucciones (`AGENTS.md` y `CODEX.md`)
-- **`AGENTS.md`**: Especificación universal multi-agente que define capas arquitectónicas, restricciones de anti-shadowing, invariantes de ausencia de estado, manual de comandos y enrutamiento de skills.
-- **`CODEX.md`**: Punto de entrada directo para sesiones de OpenAI Codex CLI.
-- **`.codex/config.json`**: Metadatos del proyecto legibles por máquina, comandos de ejecución de pruebas y mapeo de target frameworks.
+### 2.1 Manifiestos de Instrucciones e Interoperabilidad de Reglas (`AGENTS.md`, `CODEX.md`, `.codex/config.json`)
+- **`AGENTS.md`**: Especificación universal multi-agente que define capas arquitectónicas, restricciones de anti-shadowing, invariantes de ausencia de estado, manual de comandos, taxonomía de skills y la taxonomía gateway de 43 reglas.
+- **`CODEX.md`**: Punto de entrada directo para sesiones de OpenAI Codex CLI con comandos de referencia rápida, enrutamiento de skills e índice de reglas modulares.
+- **`.codex/config.json`**: Metadatos del proyecto legibles por máquina (versión 25.2.0), comandos de ejecución de pruebas, mapeo de target frameworks y `"rulesPath": ".agents/rules"`.
+- **Protocolo de Descubrimiento de Reglas Modulares**: Mientras que Google Antigravity descubre `.agents/rules/*.md` automáticamente, Codex CLI utiliza la taxonomía compartida en `AGENTS.md` (Sección 7) y `CODEX.md` (Sección 5) para aplicar de forma idéntica los invariantes de arquitectura, gameplay, UI, documentación y empaquetado.
 
 ### 2.2 Reglas Invariantes Aplicadas
 - **Restricción de Anti-Shadowing**: Nunca crear carpetas, espacios de nombres o clases llamadas `Campaign` o `Localization` en los ensamblados del juego. Las colisiones con `TaleWorlds.CampaignSystem.Campaign` rompen `Campaign.Current`.

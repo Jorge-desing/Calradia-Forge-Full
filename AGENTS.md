@@ -138,3 +138,20 @@ The repository houses 45 specialized agent skills organized into 7 functional cl
   - `calradia-forge-dev-workflow`: First step for general task routing and QA.
 - **Protected Upstream Copies**:
   - `using-dotnet`, `superpowers`, and `docs-generator` are preserved local copies containing project adaptations. Never overwrite them with raw upstream updates.
+
+---
+
+## 7. Rules Taxonomy & Domain Gateway Routing
+
+In addition to root invariants, the repository maintains 43 modular rules in `.agents/rules/` automatically discovered by Antigravity and indexed for OpenAI Codex CLI across 7 functional clusters:
+
+| Cluster | Key Rule Files (`.agents/rules/`) | Primary Scope & Invariants |
+| :--- | :--- | :--- |
+| **Core Architecture & Engine** | `calradia_forge_architecture.md`<br>`bannerlord_architecture.md`<br>`calradia_forge_sdk.md`<br>`calradia_forge_forgeweave.md`<br>`modding_environment.md` | Target frameworks (net472 vs net8.0), assembly isolation, SubModule lifecycle, and ForgeWeave event pipelines. |
+| **Bannerlord Game Systems** | `bannerlord_campaign_behavior.md`<br>`bannerlord_save_system.md`<br>`bannerlord_shared_patterns.md`<br>`bannerlord_economy_trade_architecture.md`<br>`bannerlord_kingdom_diplomacy.md`<br>`bannerlord_settlement_rebellion.md`<br>`bannerlord_crime_underworld.md`<br>`bannerlord_character_development.md`<br>`bannerlord_clan_succession.md`<br>`bannerlord_quests_dialogues.md`<br>`bannerlord_audio_system.md`<br>`bannerlord_siege_mechanics.md`<br>`bannerlord_combat_ai_formations.md`<br>`bannerlord_mobileparty_spawner.md`<br>`bannerlord_map_visuals.md`<br>`bannerlord_missionview_hud.md`<br>`bannerlord_mission_lifecycle.md`<br>`bannerlord_inventory_barter.md`<br>`bannerlord_gamemodels_architecture.md`<br>`bannerlord_items_crafting_architecture.md`<br>`bannerlord_troop_character_architecture.md`<br>`bannerlord_xml_overrides.md`<br>`bannerlord_xml_schemas.md`<br>`bannerlord_localization.md` | Stateless behaviors, zero SaveableTypeDefiner, modulo-24 time slicing, decorator models, audio categories, XML merging rules, and localization encoding. |
+| **UI & Presentation** | `calradia_forge_ui.md`<br>`gauntlet_architecture.md`<br>`bannerlord_input_debug_agent.md` | Gauntlet UI XML layout, F10 hotkey polling with rising-edge fallback, Desktop WPF MVVM, theme dictionaries, and accessibility. |
+| **Documentation & Ledger** | `calradia_forge_docs.md`<br>`docs_generation_workflow.md` | Strict English/Spanish parity (`docs/<TOPIC>.md` $\leftrightarrow$ `.es.md`), DocFX compilation, and SHA-256 append-only ledger integrity. |
+| **Verification & Distribution** | `calradia_forge_verification.md`<br>`distribution_safety.md` | Build verification, 5-stage test suite, static source reflection contracts, and exclusion of game DLLs/scripts/zone streams. |
+| **Codex & Multi-Agent** | `codex_compatibility.md`<br>`development_workflow.md` | OpenAI Codex CLI cross-parity, Windows 10 Computer Use proxy (`CodexCaptureCompat`), and Antigravity subagent coordination. |
+| **Packaging & Git Workflow** | `auto_packaging.md`<br>`calradia_forge_packaging.md`<br>`packaging_version.md`<br>`git_sync_workflow.md` | Automated ZIP packaging (`FastPackageEngine`), version synchronization, pre-push verification gates, and GitHub synchronization. |
+

@@ -1,15 +1,18 @@
 {
   "$schema": "https://json.schemastore.org/partial-codex-config.json",
   "project": "CalradiaForge",
-  "version": "23.0.0",
+  "version": "25.2.0",
   "description": "Modular modding framework, live developer tooling, and standalone assembly workbench for Mount & Blade II: Bannerlord",
   "instructions": "AGENTS.md",
   "alternateInstructions": "CODEX.md",
+  "rulesPath": ".agents/rules",
+  "rulesDirectory": ".agents/rules",
   "commands": {
     "build": "dotnet build CalradiaForge.sln -c Release -v:minimal",
     "test": "cmd.exe /c \"tools\\Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul\"",
     "verify": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\verify_stateless_behavior.ps1",
     "package": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\package.ps1",
+    "gitSync": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\git_sync_workflow.ps1",
     "codexCompatStatus": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\Manage-CodexCaptureCompat.ps1 -Action Status",
     "codexCompatTest": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\\Manage-CodexCaptureCompat.ps1 -Action Test"
   },
@@ -17,7 +20,8 @@
     "Never name folders, namespaces, or classes Campaign or Localization",
     "Maintain zero SaveableTypeDefiner and stateless SyncData in CampaignBehaviors",
     "Enforce English and Spanish dual-language parity for all documentation in docs/",
-    "Preserve static source contracts in CalradiaForge.Desktop"
+    "Preserve static source contracts in CalradiaForge.Desktop",
+    "Enforce all 43 domain rules in .agents/rules/ before modifying code"
   ],
   "targetFrameworks": {
     "gameModule": "net472",

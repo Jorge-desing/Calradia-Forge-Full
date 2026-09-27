@@ -48,3 +48,17 @@ The workspace contains a dedicated native compatibility layer for Codex Computer
 For in-game codex and lore lookup mechanics:
 - Use `CalradiaForge.Core.SDK.UI.ForgeEncyclopediaExtender` to register custom encyclopedia entries, categories, tags, dynamic filters, and quick bookmarks.
 - All methods are thread-safe and allocation-bounded.
+
+---
+
+## 5. Cross-Tool Rule Discovery & Parity Protocol
+
+To guarantee that OpenAI Codex CLI enforces the same operational guardrails as Google Antigravity:
+1. **Rule Discovery Mirroring**:
+   - Google Antigravity discovers `.agents/rules/*.md` automatically via directory traversal.
+   - OpenAI Codex CLI accesses rules via `.codex/config.json` (`"rulesPath": ".agents/rules"`) and the canonical Rules Taxonomy in `AGENTS.md` (Section 7) and `CODEX.md` (Section 3).
+2. **Rule Modification Invariant**:
+   - Whenever a rule in `.agents/rules/` is added, renamed, or modified, its reference and gateway cluster in `AGENTS.md` and `CODEX.md` MUST be synchronized in the same changeset.
+3. **Mandatory Rule Consultation for Codex**:
+   - Codex sessions modifying C# code, XML data, UI assets, packaging scripts, or git synchronization MUST consult the domain-specific rule before proposing or applying changes.
+

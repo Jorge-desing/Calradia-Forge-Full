@@ -108,3 +108,20 @@ When working with skills in `.agents/skills/`:
 - Use `/calradia-forge-docs` for documentation tasks (governed by `.agents/rules/calradia_forge_docs.md`).
 - Use `calradia-forge-dev-workflow` for general engineering lifecycle.
 - Never overwrite protected skills `using-dotnet`, `superpowers`, and `docs-generator`.
+
+---
+
+## 5. Antigravity Modular Rules Index & Compliance
+
+While Google Antigravity discovers `.agents/rules/*.md` automatically via directory walking, OpenAI Codex CLI sessions MUST reference and comply with these 43 domain rules organized in 7 functional clusters:
+
+1. **Architecture & Core**: `calradia_forge_architecture.md`, `bannerlord_architecture.md`, `calradia_forge_sdk.md`, `calradia_forge_forgeweave.md`, `modding_environment.md`.
+2. **Bannerlord Gameplay Systems**: `bannerlord_campaign_behavior.md`, `bannerlord_save_system.md`, `bannerlord_shared_patterns.md`, `bannerlord_economy_trade_architecture.md`, `bannerlord_kingdom_diplomacy.md`, `bannerlord_settlement_rebellion.md`, `bannerlord_crime_underworld.md`, `bannerlord_character_development.md`, `bannerlord_clan_succession.md`, `bannerlord_quests_dialogues.md`, `bannerlord_audio_system.md`, `bannerlord_siege_mechanics.md`, `bannerlord_combat_ai_formations.md`, `bannerlord_mobileparty_spawner.md`, `bannerlord_map_visuals.md`, `bannerlord_missionview_hud.md`, `bannerlord_mission_lifecycle.md`, `bannerlord_inventory_barter.md`, `bannerlord_gamemodels_architecture.md`, `bannerlord_items_crafting_architecture.md`, `bannerlord_troop_character_architecture.md`, `bannerlord_xml_overrides.md`, `bannerlord_xml_schemas.md`, `bannerlord_localization.md`.
+3. **UI & User Experience**: `calradia_forge_ui.md`, `gauntlet_architecture.md`, `bannerlord_input_debug_agent.md`.
+4. **Documentation & Ledger**: `calradia_forge_docs.md`, `docs_generation_workflow.md`.
+5. **Verification & Distribution**: `calradia_forge_verification.md`, `distribution_safety.md`.
+6. **Codex & Multi-Agent Compatibility**: `codex_compatibility.md`, `development_workflow.md`.
+7. **Packaging & Git Sync**: `auto_packaging.md`, `calradia_forge_packaging.md`, `packaging_version.md`, `git_sync_workflow.md`.
+
+*Instruction for Codex:* Before editing C#, XML, WPF, or automation scripts, read the corresponding rule file from `.agents/rules/<rule>.md` to maintain full project compliance.
+
