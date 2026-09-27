@@ -296,10 +296,10 @@ internal static class Program
                 RefreshSelectorBindings(window);
                 var activeStrings = app.Resources.MergedDictionaries.Where(item => item.Source?.OriginalString.IndexOf("Strings.", StringComparison.OrdinalIgnoreCase) >= 0).ToArray();
                 Check(activeStrings.Length == (language == "en" ? 1 : 2), "Language selection accumulated duplicate Desktop dictionaries: " + language);
-                foreach (var scale in new[] { 1.0, 1.25, 1.5, 2.0 })
+                for (var layoutPass = 0; layoutPass < 4; layoutPass++)
                 {
-                SetRenderScale(window, scale);
-                var minimumWindowCase = language == "en" && Math.Abs(scale - 1.0) < 0.01;
+                PrepareFixedDipViewport(window);
+                var minimumWindowCase = language == "en" && layoutPass == 0;
                 if (minimumWindowCase)
                 {
                     window.Width = window.MinWidth;
@@ -309,24 +309,24 @@ internal static class Program
                 ClearEvidenceForEmptyRenderCase(shell);
                 Render(window);
                 if (minimumWindowCase) AssertApplicationStatusWrapsAtMinimum(window);
-                if (language == "en" && Math.Abs(scale - 1.0) < 0.01)
-                    SavePreview(window, Path.Combine(Path.GetDirectoryName(Path.GetFullPath(output)) ?? ".", "desktop-render-tests-en-minimum-current.png"), scale);
-                if (language == "en" && Math.Abs(scale - 2.0) < 0.01)
-                    SavePreview(window, Path.Combine(Path.GetDirectoryName(Path.GetFullPath(output)) ?? ".", "desktop-render-tests-en-200-current.png"), scale);
+                if (language == "en" && layoutPass == 0)
+                    SavePreview(window, Path.Combine(Path.GetDirectoryName(Path.GetFullPath(output)) ?? ".", "desktop-render-tests-en-minimum-current.png"), 1.0);
+                if (language == "en" && layoutPass == 3)
+                    SavePreview(window, Path.Combine(Path.GetDirectoryName(Path.GetFullPath(output)) ?? ".", "desktop-render-tests-en-200-current.png"), 2.0);
                 AssertTitleBarAccessibleNames(app, window, language);
                 AssertHeaderSealAccess(app, window, shell, language);
                 AssertDecorativeAccentsToggleAccess(app, window, shell, language);
                 AssertToolPageDecorationAccess(window, language);
                 AssertEmptyEvidenceState(app, window, shell, language);
-                if (Math.Abs(scale - 1.0) < 0.01)
+                if (layoutPass == 0)
                     AssertPinnedDeckFallbackLocalization(app, shell, language);
-                if (language == "en" && Math.Abs(scale - 1.0) < 0.01)
+                if (language == "en" && layoutPass == 0)
                 {
                     AssertEmptyLedgerFilledTransition(window, shell);
                     AssertEmptyLedgerOpenPaletteAction(window, shell);
                 }
-                AssertLongLocalizedTextLayout(app, window, language, scale);
-                AssertHeaderControlBounds(window, app, language, scale);
+                AssertLongLocalizedTextLayout(app, window, language);
+                AssertHeaderControlBounds(window, app, language);
                 if (minimumWindowCase)
                 {
                     Check(Math.Abs(window.ActualWidth - window.MinWidth) < 1 && Math.Abs(window.ActualHeight - window.MinHeight) < 1,
@@ -374,11 +374,13 @@ internal static class Program
                 }
                 records.Add(new
                 {
-                    test = "render-language-raster-scale",
+                    test = "render-language-fixed-dip-layout-repeat",
                     language,
-                    rasterScaleFactor = scale,
+                    layoutPass = layoutPass + 1,
                     logicalWidthDip = window.Width,
                     logicalHeightDip = window.Height,
+                    layoutScaleApplied = false,
+                    note = "Repeated responsive-layout assertions at the host's fixed WPF DPI; this pass does not emulate a Windows display-scale setting.",
                     layoutTransform = "identity",
                     windowsSystemDpiChanged = false,
                     emptyEvidence = true,
@@ -388,9 +390,9 @@ internal static class Program
                 });
                 }
             }
-            phaseTimings["localization-and-scale-matrix"] = phaseTimer.Elapsed.TotalMilliseconds;
+            phaseTimings["localization-and-fixed-dip-layout-repeats"] = phaseTimer.Elapsed.TotalMilliseconds;
             phaseTimer.Restart();
-            // Theme regression: representative routed pages remain renderable at every supported scale.
+            // Theme regression: representative routed pages remain renderable in the fixed-DIP host.
             var themeIds = new[] { "war-table", "parchment", "high-contrast" };
             var allDefinitions = toolArray.Cast<ToolDefinition>().ToArray();
             var representatives = allDefinitions.GroupBy(tool => tool.Kind).Select(group => group.First()).ToList();
@@ -405,20 +407,20 @@ internal static class Program
             {
                 SetPresentationForRender(app, shell, themeId, "en");
                 RefreshSelectorBindings(window);
-                foreach (var scale in new[] { 1.0, 1.25, 1.5, 2.0 })
+                for (var layoutPass = 0; layoutPass < 4; layoutPass++)
                 {
-                    SetRenderScale(window, scale);
-                    var checkSelectorTheme = Math.Abs(scale - 1.0) < 0.01;
+                    PrepareFixedDipViewport(window);
+                    var checkSelectorTheme = layoutPass == 0;
                     RenderTargetBitmap themePreview = null;
                     for (var index = 0; index < representative.Length; index++)
                     {
                         var tool = representative[index];
                         shellType.GetProperty("SelectedTool").SetValue(shell, tool);
                         Render(window);
-                        if (index == 0 && Math.Abs(scale - 1.0) < 0.01)
-                            themePreview = SavePreview(window, Path.Combine(Path.GetDirectoryName(Path.GetFullPath(output)) ?? ".", Path.GetFileNameWithoutExtension(output) + "-" + themeId + ".png"), scale);
+                        if (index == 0 && layoutPass == 0)
+                            themePreview = SavePreview(window, Path.Combine(Path.GetDirectoryName(Path.GetFullPath(output)) ?? ".", Path.GetFileNameWithoutExtension(output) + "-" + themeId + ".png"), 1.0);
                         if (ReferenceEquals(tool, longestTool))
-                            AssertLongPageLabels(window, (ToolDefinition)longestTool, themeId, scale);
+                            AssertLongPageLabels(window, (ToolDefinition)longestTool, themeId);
                         if (index == 0 && checkSelectorTheme)
                         {
                             AssertThemeBrushes(app, shell, themeId);
@@ -435,17 +437,25 @@ internal static class Program
                                 AssertHighContrastHeaderTextFitsAt1360(app, window, shell);
                             if (themeId == "war-table") AssertTitleBarWindowStateContract(window);
                         }
-                        if (themeId == "parchment" && Math.Abs(scale - 1.0) < 0.01 && index == 0)
+                        if (themeId == "parchment" && layoutPass == 0 && index == 0)
                             AssertHeaderLabelsFitAtNormalWidth(app, window);
                     }
                     if (checkSelectorTheme) AssertComboBoxStateContrast(app, themeId);
-                    records.Add(new { test = "render-theme-scale-layout", theme = themeId, scale, routes = representative.Length, toolKinds = representatives.Count, longLabels = true, selectorStates = checkSelectorTheme, passed = true });
+                    records.Add(new { test = "render-theme-fixed-dip-layout-repeat", theme = themeId, layoutPass = layoutPass + 1, layoutScaleApplied = false, routes = representative.Length, toolKinds = representatives.Count, longLabels = true, selectorStates = checkSelectorTheme, note = "Representative routes use the host's fixed WPF DPI; this pass does not emulate a Windows display-scale setting.", passed = true });
                 }
             }
-            phaseTimings["theme-and-scale-matrix"] = phaseTimer.Elapsed.TotalMilliseconds;
+            phaseTimings["theme-and-fixed-dip-layout-repeats"] = phaseTimer.Elapsed.TotalMilliseconds;
+            records.Add(new
+            {
+                test = "windows-system-dpi-layout-coverage",
+                status = "not-simulated",
+                appliedWindowsDpiScaleFactors = Array.Empty<double>(),
+                previewBitmapRasterFactors = new[] { 1.0, 2.0 },
+                note = "RenderTargetBitmap preview density does not change the host window's Windows DPI or WPF layout scale. The 100% and 200% values describe preview rasterization only; 125%, 150%, and 200% Windows-DPI layout remain untested."
+            });
             window.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
             SetPresentationForRender(app, shell, "war-table", "en");
-            SetRenderScale(window, 1.0);
+            PrepareFixedDipViewport(window);
             preferenceSnapshot.AssertUnchanged();
             records.Add(new { test = "render-test-does-not-write-desktop-preferences", passed = true });
             window.Close();
@@ -467,7 +477,7 @@ internal static class Program
                 phaseTimings,
                 foreground = foregroundWindowGuard.CreateDiagnosticSnapshot(),
                 isolatedDesktop = IsolatedRenderDesktop.Name,
-                scope = "Actual WPF template instantiation and layout. Not a visual clipping approval or game performance sample.",
+                scope = "Actual WPF template instantiation and layout at the isolated host's fixed DPI. Windows system-DPI layout scaling is not simulated; bitmap preview rasterization is reported separately. Not a visual clipping approval or game performance sample.",
                 records
             }, new JsonSerializerOptions { WriteIndented = true }));
             exitCode = 0;
@@ -565,11 +575,10 @@ internal static class Program
         }
     }
 
-    static void SetRenderScale(Window window, double scale)
+    static void PrepareFixedDipViewport(Window window)
     {
-        // Keep one realistic logical viewport. The scale matrix is applied only when rasterizing
-        // the WPF visual so geometry checks remain in DIPs and captured pixels match display DPI.
-        _ = Math.Clamp(scale, 1.0, 2.0);
+        // The isolated render host cannot emulate Windows system-DPI changes. Keep layout
+        // assertions explicitly at this fixed logical viewport; SavePreview tests bitmap DPI only.
         window.Width = 1360;
         window.Height = 820;
         var surface = (FrameworkElement)window.Content;
@@ -577,9 +586,9 @@ internal static class Program
         Check(window.MinWidth >= 980 && window.MinHeight >= 680,
             "The render matrix must preserve the Desktop window's 980x680 DIP minimum size.");
         Check(Math.Abs(window.Width - 1360) < 0.1 && Math.Abs(window.Height - 820) < 0.1,
-            "The render matrix must preserve its 1360x820 DIP logical viewport.");
+            "The fixed-DIP render host must preserve its 1360x820 logical viewport.");
         Check(surface.LayoutTransform == Transform.Identity,
-            "The render matrix must not scale WPF layout geometry with LayoutTransform.");
+            "The fixed-DIP render host must not claim scaled WPF layout geometry through LayoutTransform.");
     }
 
     static void AssertEmptyEvidenceState(Application app, Window window, object shell, string languageCode)
@@ -633,10 +642,13 @@ internal static class Program
         var cartographicBoard = Descendants(window).OfType<Grid>().SingleOrDefault(element =>
             string.Equals(AutomationProperties.GetAutomationId(element), "WorkbenchCartographicBoardDecoration", StringComparison.Ordinal));
         var boardHost = cartographicBoard == null ? null : VisualTreeHelper.GetParent(cartographicBoard) as Grid;
+        var compactArtwork = window.ActualWidth < 1120;
+        var expectedBoardWidth = compactArtwork ? 92d : 160d;
+        var expectedBoardHeight = compactArtwork ? 52d : 90d;
         Check(cartographicBoard != null && boardHost != null && boardHost.ColumnDefinitions.Count >= 3 &&
-              Math.Abs(cartographicBoard.ActualWidth - 92) < 1 && Math.Abs(cartographicBoard.ActualHeight - 52) < 1 &&
+              Math.Abs(cartographicBoard.ActualWidth - expectedBoardWidth) < 1 && Math.Abs(cartographicBoard.ActualHeight - expectedBoardHeight) < 1 &&
               boardHost.ColumnDefinitions[2].ActualWidth + 1 >= cartographicBoard.ActualWidth + cartographicBoard.Margin.Left + cartographicBoard.Margin.Right,
-            "The cartographic card ornament must fit its allocated summary column without clipping or intruding into adjacent content.");
+            $"The cartographic card ornament must adapt proportionally at the minimum width and retain its full illustration at normal width without clipping; expected={expectedBoardWidth:0.#}x{expectedBoardHeight:0.#}, actual={cartographicBoard?.ActualWidth:0.#}x{cartographicBoard?.ActualHeight:0.#}.");
         var ledgerCard = Descendants(window).OfType<Border>().SingleOrDefault(border =>
             string.Equals(AutomationProperties.GetAutomationId(border), "EvidenceLedgerCard", StringComparison.Ordinal));
         Check(ledgerCard != null && ledgerCard.ActualWidth > 0 && ledgerCard.ActualHeight > 0,
@@ -870,7 +882,7 @@ internal static class Program
             "The compact export icon must remain actionable and expose a localized accessible name and tooltip.");
     }
 
-    static void AssertCompactHeaderAtMinimum(Window window)
+    static void AssertCompactHeaderAtMinimum(Window window, string locale = "")
     {
         var header = Descendants(window).OfType<Border>().SingleOrDefault(item =>
             string.Equals(AutomationProperties.GetAutomationId(item), "MainCommandHeaderBand", StringComparison.Ordinal));
@@ -886,8 +898,20 @@ internal static class Program
         if (header == null || controls.Any(item => item == null)) return;
 
         var tops = controls.Select(item => Bounds(item, header).Top).ToArray();
-        Check(tops.Max() - tops.Min() <= 14 && header.ActualHeight <= 82,
-            $"The compact command header must remain a single balanced row at 980 DIP instead of wrapping isolated controls; rows={string.Join(",", tops.Select(top => top.ToString("0.#", CultureInfo.InvariantCulture)))}; height={header.ActualHeight:0.#}.");
+        var controlLayout = string.Join("; ", controls.Select((item, index) =>
+            automationIds[index] + "=" + Bounds(item, header) + ", actual=" + item.ActualWidth.ToString("0.#", CultureInfo.InvariantCulture) + "x" + item.ActualHeight.ToString("0.#", CultureInfo.InvariantCulture)));
+        var headerIsCompact = tops.Max() - tops.Min() <= 14 && header.ActualHeight <= 82;
+        if (!headerIsCompact)
+        {
+            var childLayout = string.Join("; ", Descendants(header).OfType<FrameworkElement>()
+                .Where(item => item.IsVisible && item.ActualHeight > 16)
+                .Take(24)
+                .Select(item => item.GetType().Name + "[" + AutomationProperties.GetAutomationId(item) + "]=" + Bounds(item, header) +
+                    (item is TextBlock block ? ", text=" + block.Text : string.Empty)));
+            Console.WriteLine($"HEADER_LAYOUT_DIAG locale={(string.IsNullOrEmpty(locale) ? "current" : locale)} controls={controlLayout} children={childLayout}");
+        }
+        Check(headerIsCompact,
+            $"The compact command header must remain a single balanced row at 980 DIP instead of wrapping isolated controls; locale={(string.IsNullOrEmpty(locale) ? "current" : locale)}; rows={string.Join(",", tops.Select(top => top.ToString("0.#", CultureInfo.InvariantCulture)))}; height={header.ActualHeight:0.#}; controls={controlLayout}.");
 
         var dossierToggle = controls[^1] as ToggleButton;
         var localizedDossierName = Application.Current.TryFindResource("Ui.DossierHeading") as string;
@@ -906,7 +930,7 @@ internal static class Program
             SetPresentationForRender(app, shell, "war-table", language);
             RefreshSelectorBindings(window);
             Render(window);
-            AssertCompactHeaderAtMinimum(window);
+            AssertCompactHeaderAtMinimum(window, language);
         }
 
         SetPresentationForRender(app, shell, "war-table", "en");
@@ -1447,7 +1471,7 @@ internal static class Program
         return condition();
     }
 
-    static void AssertLongLocalizedTextLayout(Application app, Window window, string languageCode, double scale)
+    static void AssertLongLocalizedTextLayout(Application app, Window window, string languageCode)
     {
         var longKeys = new[] { "Ui.Subtitle", "Ui.TestPermission", "Ui.RetainedEvidence", "Ui.EmptyEvidence" };
         // TechnicalEvidence belongs to the Evidence tab and must not be required in the
@@ -1493,14 +1517,14 @@ internal static class Program
             Check(matching.Length > 0, "Long localized label " + key + " is not present in the rendered layout for " + languageCode + ".");
             foreach (var block in matching)
             {
-                AssertTextFitsWrapsOrTrims(block, key, languageCode, scale);
+                AssertTextFitsWrapsOrTrims(block, key, languageCode);
                 checkedTexts++;
             }
         }
         Check(checkedTexts > 0, "No long localized labels were measured for " + languageCode + ".");
     }
 
-    static void AssertLongPageLabels(Window window, ToolDefinition tool, string themeId, double scale)
+    static void AssertLongPageLabels(Window window, ToolDefinition tool, string themeId)
     {
         var visibleText = Descendants(window).OfType<TextBlock>()
             .Where(block => block.Visibility == Visibility.Visible && block.IsVisible && block.ActualWidth > 0 && block.ActualHeight > 0)
@@ -1509,13 +1533,13 @@ internal static class Program
         {
             if (string.IsNullOrWhiteSpace(value) || value.Length < 20) continue;
             var matching = visibleText.Where(block => string.Equals(block.Text, value, StringComparison.Ordinal)).ToArray();
-            Check(matching.Length > 0, $"The {name} for {tool.Id} disappeared in theme {themeId} at {scale:P0}.");
+            Check(matching.Length > 0, $"The {name} for {tool.Id} disappeared from the fixed-DIP layout in theme {themeId}.");
             foreach (var block in matching)
-                AssertTextFitsWrapsOrTrims(block, name, themeId, scale);
+                AssertTextFitsWrapsOrTrims(block, name, themeId);
         }
     }
 
-    static void AssertTextFitsWrapsOrTrims(TextBlock block, string label, string context, double scale)
+    static void AssertTextFitsWrapsOrTrims(TextBlock block, string label, string context)
     {
         if (block.TextWrapping == TextWrapping.Wrap || block.TextTrimming != TextTrimming.None) return;
         var pixelsPerDip = VisualTreeHelper.GetDpi(block).PixelsPerDip;
@@ -1523,15 +1547,15 @@ internal static class Program
             new Typeface(block.FontFamily, block.FontStyle, block.FontWeight, block.FontStretch), block.FontSize,
             Brushes.Black, pixelsPerDip);
         Check(measured.WidthIncludingTrailingWhitespace <= block.ActualWidth + 1.0,
-            $"Long label '{label}' has no wrapping or trimming and exceeds its {block.ActualWidth:0.#} DIP layout width in {context} at {scale:P0}.");
+            $"Long label '{label}' has no wrapping or trimming and exceeds its {block.ActualWidth:0.#} DIP layout width in {context} at the host's fixed WPF DPI.");
     }
 
-    static void AssertHeaderControlBounds(Window window, Application app, string languageCode, double scale)
+    static void AssertHeaderControlBounds(Window window, Application app, string languageCode)
     {
         var surface = (FrameworkElement)window.Content;
         var bounds = Bounds(surface, window);
         Check(bounds.Left >= -1 && bounds.Top >= -1 && bounds.Right <= window.ActualWidth + 2 && bounds.Bottom <= window.ActualHeight + 2,
-            $"The scaled Desktop surface exceeds its host at language {languageCode}, scale {scale:P0}.");
+            $"The fixed-DIP Desktop surface exceeds its host at language {languageCode}.");
 
         var titleValue = app.TryFindResource("Ui.AppTitle") as string;
         var title = Descendants(window).OfType<TextBlock>().FirstOrDefault(block => string.Equals(block.Text, titleValue, StringComparison.Ordinal));
@@ -1549,16 +1573,16 @@ internal static class Program
         Check(headerSelectors.Length >= 2, "The language and theme selectors must remain in the adaptive header.");
         foreach (var selector in headerSelectors)
             Check(!titleBounds.IntersectsWith(Bounds(selector, window)),
-                $"The localized title overlaps a header selector at language {languageCode}, scale {scale:P0}.");
+                $"The localized title overlaps a header selector at language {languageCode}.");
         var accentsToggle = Descendants(window).OfType<CheckBox>().SingleOrDefault(control =>
             string.Equals(AutomationProperties.GetAutomationId(control), "DecorativeAccentsToggle", StringComparison.Ordinal));
         Check(accentsToggle != null && accentsToggle.IsVisible && accentsToggle.ActualWidth > 0 && accentsToggle.ActualHeight > 0,
-            $"The localized decorative accents toggle must retain visible space at language {languageCode}, scale {scale:P0}.");
+            $"The localized decorative accents toggle must retain visible space at language {languageCode}.");
         var toggleBounds = Bounds(accentsToggle, window);
         Check(!titleBounds.IntersectsWith(toggleBounds) && headerSelectors.All(selector => !toggleBounds.IntersectsWith(Bounds(selector, window))),
-            $"The localized application title or a header selector overlaps the decorative accents toggle at {languageCode}, {scale:P0}.");
+            $"The localized application title or a header selector overlaps the decorative accents toggle at {languageCode}.");
         Check(toggleBounds.Left >= -1 && toggleBounds.Top >= -1 && toggleBounds.Right <= window.ActualWidth + 2 && toggleBounds.Bottom <= window.ActualHeight + 2,
-            $"The decorative accents toggle extends outside the Desktop window at {languageCode}, {scale:P0}: {toggleBounds}.");
+            $"The decorative accents toggle extends outside the Desktop window at {languageCode}: {toggleBounds}.");
 
         var subtitleValue = app.TryFindResource("Ui.Subtitle") as string;
         var subtitle = Descendants(window).OfType<TextBlock>().SingleOrDefault(block =>
@@ -1567,11 +1591,11 @@ internal static class Program
             string.Equals(AutomationProperties.GetAutomationId(element), "HeaderBrandGroup", StringComparison.Ordinal));
         Check(subtitle != null && brandGroup != null && subtitle.TextWrapping == TextWrapping.NoWrap && subtitle.TextTrimming == TextTrimming.CharacterEllipsis &&
               string.Equals(subtitle.ToolTip as string, subtitleValue, StringComparison.Ordinal),
-            $"The localized subtitle must stay on one compact header line and expose its full text as a tooltip at {languageCode}, {scale:P0}.");
+            $"The localized subtitle must stay on one compact header line and expose its full text as a tooltip at {languageCode}.");
         var subtitleBounds = Bounds(subtitle, brandGroup);
         Check(subtitleBounds.Left >= -1 && subtitleBounds.Top >= -1 &&
               subtitleBounds.Right <= brandGroup.ActualWidth + 1 && subtitleBounds.Bottom <= brandGroup.ActualHeight + 1,
-            $"The localized subtitle is clipped outside the brand group at {languageCode}, {scale:P0}: {subtitleBounds} / {brandGroup.ActualWidth:0.#}x{brandGroup.ActualHeight:0.#}.");
+            $"The localized subtitle is clipped outside the brand group at {languageCode}: {subtitleBounds} / {brandGroup.ActualWidth:0.#}x{brandGroup.ActualHeight:0.#}.");
 
         var categorySelector = Descendants(window).OfType<ComboBox>().SingleOrDefault(control =>
             string.Equals(AutomationProperties.GetAutomationId(control), "CategorySelector", StringComparison.Ordinal));
@@ -1581,26 +1605,26 @@ internal static class Program
               string.Equals(categorySelector.SelectedItem as string, allAreasLabel, StringComparison.Ordinal) &&
               string.Equals(AutomationProperties.GetName(categorySelector), app.TryFindResource("Ui.Areas") as string, StringComparison.Ordinal) &&
               string.Equals(categorySelector.ToolTip as string, app.TryFindResource("Ui.Areas") as string, StringComparison.Ordinal),
-            $"The localized category filter must show its initial all-areas selection and accessible label at {languageCode}, {scale:P0}.");
+            $"The localized category filter must show its initial all-areas selection and accessible label at {languageCode}.");
 
         var mainSectionsViewport = Descendants(window).OfType<ListBox>().SingleOrDefault(viewport =>
             string.Equals(AutomationProperties.GetAutomationId(viewport), "OperationalRailToolViewport", StringComparison.Ordinal));
         Check(mainSectionsViewport != null && mainSectionsViewport.ActualWidth > 0 && mainSectionsViewport.ActualHeight > 0,
-            $"The operational rail's tool-list viewport (OperationalRailToolViewport) must retain a positive visible area at language {languageCode}, scale {scale:P0}; actual rect {mainSectionsViewport?.ActualWidth:0.#}x{mainSectionsViewport?.ActualHeight:0.#}.");
+            $"The operational rail's tool-list viewport (OperationalRailToolViewport) must retain a positive visible area at language {languageCode}; actual rect {mainSectionsViewport?.ActualWidth:0.#}x{mainSectionsViewport?.ActualHeight:0.#}.");
 
         foreach (var viewport in Descendants(window).OfType<ScrollViewer>().Where(item => item.Visibility == Visibility.Visible && item.IsVisible))
         {
             if (HasAncestor<ScrollViewer>(viewport, surface)) continue;
             var viewportBounds = Bounds(viewport, surface);
             Check(viewportBounds.Left >= -1 && viewportBounds.Top >= -1 && viewportBounds.Right <= surface.ActualWidth + 2 && viewportBounds.Bottom <= surface.ActualHeight + 2,
-                $"Visible scroll viewport {DescribeScrollViewer(viewport, surface)} extends outside the Desktop surface at language {languageCode}, scale {scale:P0}: {viewportBounds} / {surface.ActualWidth:0.#}x{surface.ActualHeight:0.#}; ancestors {DescribeVisualAncestors(viewport, surface)}.");
+                $"Visible scroll viewport {DescribeScrollViewer(viewport, surface)} extends outside the Desktop surface at language {languageCode}: {viewportBounds} / {surface.ActualWidth:0.#}x{surface.ActualHeight:0.#}; ancestors {DescribeVisualAncestors(viewport, surface)}.");
         }
         foreach (var block in Descendants(window).OfType<TextBlock>().Where(item => item.Visibility == Visibility.Visible && item.IsVisible))
         {
             if (block.ActualWidth <= 0 || block.ActualHeight <= 0 || HasAncestor<ScrollViewer>(block, surface)) continue;
             var blockBounds = Bounds(block, surface);
             Check(blockBounds.Left >= -1 && blockBounds.Top >= -1 && blockBounds.Right <= surface.ActualWidth + 2 && blockBounds.Bottom <= surface.ActualHeight + 2,
-                $"A visible label extends outside the Desktop surface at language {languageCode}, scale {scale:P0}: {block.Text}; bounds {blockBounds}, surface {surface.ActualWidth:0.#}x{surface.ActualHeight:0.#}.");
+                $"A visible label extends outside the Desktop surface at language {languageCode}: {block.Text}; bounds {blockBounds}, surface {surface.ActualWidth:0.#}x{surface.ActualHeight:0.#}.");
         }
     }
 
@@ -1990,18 +2014,18 @@ internal static class Program
         visualTreeNodesVisited
     };
 
-    static RenderTargetBitmap SavePreview(Window window, string path, double scale = 1.0)
+    static RenderTargetBitmap SavePreview(Window window, string path, double rasterScaleFactor = 1.0)
     {
         var surface = (FrameworkElement)window.Content;
-        var dpi = 96 * Math.Clamp(scale, 1.0, 2.0);
+        var dpi = 96 * Math.Clamp(rasterScaleFactor, 1.0, 2.0);
         var bitmap = new RenderTargetBitmap(
             (int)Math.Ceiling(surface.ActualWidth * dpi / 96),
             (int)Math.Ceiling(surface.ActualHeight * dpi / 96),
             dpi, dpi, PixelFormats.Pbgra32);
         bitmap.Render(surface);
-        Check(bitmap.PixelWidth >= Math.Ceiling(surface.ActualWidth * scale - 0.01) &&
-              bitmap.PixelHeight >= Math.Ceiling(surface.ActualHeight * scale - 0.01),
-            $"The {scale:P0} WPF preview did not rasterize the complete logical surface at its requested device scale.");
+        Check(bitmap.PixelWidth >= Math.Ceiling(surface.ActualWidth * rasterScaleFactor - 0.01) &&
+              bitmap.PixelHeight >= Math.Ceiling(surface.ActualHeight * rasterScaleFactor - 0.01),
+            $"The WPF preview did not rasterize the complete fixed-DIP surface at bitmap factor {rasterScaleFactor:P0}.");
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
         using (var stream = File.Create(path)) encoder.Save(stream);
@@ -2322,14 +2346,23 @@ internal static class Program
         var labelBounds = Bounds(label, toggle);
         Check(labelBounds.Left >= -1 && labelBounds.Top >= -1 && labelBounds.Right <= toggle.ActualWidth + 1 && labelBounds.Bottom <= toggle.ActualHeight + 1,
             $"The localized decorative accents label is clipped in {languageCode}: label {labelBounds}, toggle {toggle.ActualWidth:0.#}x{toggle.ActualHeight:0.#}.");
+        if (label is TextBlock labelText)
+        {
+            Check(labelText.TextWrapping == TextWrapping.NoWrap && labelText.TextTrimming == TextTrimming.CharacterEllipsis &&
+                  labelText.DesiredSize.Width <= labelText.ActualWidth + 1,
+                $"The compact decorative-accent label must remain single-line and fit its measured area in {languageCode}: desired={labelText.DesiredSize.Width:0.#}, actual={labelText.ActualWidth:0.#}.");
+        }
     }
 
     static void AssertToolPageDecorationAccess(Window window, string languageCode)
     {
         var overlay = FindImage(window, "dossier-corner-ornament-rev057.png");
-        Check(overlay != null && overlay.Width == 88 && overlay.Height == 59 && Math.Abs(overlay.Opacity - 0.14) < 0.001 &&
+        var compactArtwork = window.ActualWidth < 1120;
+        var expectedCornerWidth = compactArtwork ? 88d : 136d;
+        var expectedCornerHeight = compactArtwork ? 59d : 90d;
+        Check(overlay != null && Math.Abs(overlay.Width - expectedCornerWidth) < 1 && Math.Abs(overlay.Height - expectedCornerHeight) < 1 && Math.Abs(overlay.Opacity - 0.14) < 0.001 &&
               overlay.Stretch == Stretch.Uniform && !overlay.IsHitTestVisible && !overlay.Focusable,
-            "The illustrated ToolPage corner must retain its passive, aspect-preserving 88x59 compact layout contract.");
+            $"The illustrated ToolPage corner must retain its passive aspect ratio and responsive size at {languageCode}: expected={expectedCornerWidth:0.#}x{expectedCornerHeight:0.#}, actual={overlay?.Width:0.#}x{overlay?.Height:0.#}.");
         Check(overlay?.Source is BitmapSource cardBitmap &&
               cardBitmap.PixelWidth >= overlay.Width * 2 && cardBitmap.PixelHeight >= overlay.Height * 2 &&
               RenderOptions.GetBitmapScalingMode(overlay) == BitmapScalingMode.HighQuality,

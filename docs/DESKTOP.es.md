@@ -356,3 +356,19 @@ Los 13 diccionarios de idioma contienen `Ui.DecorativeAccentsShort`. Las regresi
 `cmd.exe /d /c "tools\Run-CalradiaForge-Tests.bat --desktop-only --no-pause --render-output artifacts\desktop-visual-rev068-final.json"` pasó la suite Desktop 59/59 y 285 casos de render WPF con 158 pases de layout y cero advertencias/errores de compilación. Esta ejecución única del render registró 13.135 ms totales y 3.072,1 ms en llamadas de layout; la línea base de una ejecución de la misma sesión registró 9.120 ms y 2.033,3 ms. Son tiempos del arnés y la corrida final fue más lenta; no se afirma una mejora de rendimiento. El host de render está fuera de pantalla, por lo que el comportamiento en ventana en vivo, el layout con DPI real del sistema y la entrada del sistema operativo siguen sin verificarse.
 
 Rev068 es el contador de documentación fuente; su anexo protegido del Registro de Mejoras es Rev048. No se inició Bannerlord, ninguna campaña ni batalla, y no se regeneró ni modificó ningún ZIP.
+
+### Ledger en ventana mínima y tratamiento adaptable de identidad (Rev069)
+
+La regresión de 980×680 DIP ahora comprueba que el mensaje localizado y la acción del ledger de evidencia vacío permanezcan dentro del viewport visible del área de trabajo; la acción conserva su altura mínima de activación. El distintivo de identidad de herramienta tiene un ancho acotado y ya no se extiende por toda la tarjeta de resumen: los nombres de categoría y lemas largos permanecen en una línea, se recortan con puntos suspensivos, muestran el valor completo en tooltips y quedan dentro del marco. También se comprueba que la cabecera compacta mantenga una sola fila en el ancho mínimo en los 13 idiomas admitidos. Estos límites mantienen legibles el estado vacío y el ornamento de categoría en un área de trabajo estrecha.
+
+El artefacto final proporcionado `artifacts/desktop-visual-rev069-final.json` pasó con Desktop 59/59, 286 casos de render WPF, 172 pases de layout y cero advertencias/errores de compilación. El JSON registra 11.719 ms de tiempo total del arnés y 3.106,8 ms en llamadas de layout. Son mediciones del arnés, no latencia de la aplicación abierta ni una afirmación de rendimiento. La prueba comprueba presentación local y límites renderizados; no se realizó UI Automation en ejecución ni validación de la app en vivo.
+
+Rev069 es el contador de documentación fuente; su anexo protegido del Registro de Mejoras es Rev049. La versión del producto sigue en 25.2.0, sin cambios en la API pública, las rutas, los comandos, los permisos, IPC, dependencias ni ZIPs.
+
+### Aclaración sobre la cobertura del DPI del sistema Windows (Rev070)
+
+El arnés de render WPF mantiene fijo el DPI de Windows y el layout DIP de la ventana aislada. Un factor de escala de vista previa solo cambia la densidad de salida de `RenderTargetBitmap`; las etiquetas 100 % y 200 % describen densidad raster, no ajustes de escala de pantalla de Windows. El arnés no simula layout con DPI del sistema Windows al 125 %, 150 % o 200 %.
+
+En `artifacts/desktop-visual-rev069-scale-audit.json`, `windows-system-dpi-layout-coverage` aparece explícitamente como `not-simulated`, sin factores de DPI de Windows aplicados y con factores raster de bitmap de vista previa `[1, 2]`. La ejecución proporcionada conserva las comprobaciones existentes de rutas, idiomas, temas e interacciones; no se retiraron casos funcionales. El artefacto registra Desktop 59/59 y 287 casos de render WPF con 172 pases de layout y cero advertencias/errores de compilación. Los 9.321 ms totales y 2.134,7 ms de llamadas de layout son tiempos del arnés, no latencia de la aplicación abierta. El comportamiento con el DPI real de Windows sigue sin verificarse.
+
+Rev070 es el contador de documentación fuente; su anexo protegido del Registro de Mejoras es Rev050. La versión sigue en 25.2.0; no cambiaron API, rutas, comandos, permisos, IPC, dependencias ni ZIPs.

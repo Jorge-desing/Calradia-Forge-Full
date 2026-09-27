@@ -339,3 +339,19 @@ All 13 locale dictionaries provide `Ui.DecorativeAccentsShort`. Render regressio
 `cmd.exe /d /c "tools\Run-CalradiaForge-Tests.bat --desktop-only --no-pause --render-output artifacts\desktop-visual-rev068-final.json"` passed the Desktop suite 59/59 and 285 WPF render cases with 158 layout passes and zero build warnings/errors. This single render run recorded 13,135 ms overall and 3,072.1 ms in layout calls; the same-session single-run baseline recorded 9,120 ms and 2,033.3 ms. These are harness timings, and the final run was slower; no performance improvement is claimed. The render host is off-screen, so live-window behavior, system-DPI layout, and operating-system input remain unverified.
 
 Rev068 is the source-documentation counter; its protected Register of Improvements appendix is Rev048. No Bannerlord session, campaign, or battle was started, and no ZIP was regenerated or modified.
+
+### Minimum-window ledger and responsive identity treatment (Rev069)
+
+The 980×680-DIP regression now checks that the empty evidence ledger's localized message and action both remain inside the visible work-area viewport; the action keeps its minimum activation height. The tool identity badge is bounded instead of stretching across the summary card: long category banners and mottos remain on one line, trim with an ellipsis, expose their full value in tooltips, and stay within the badge frame. The compact header is also checked as a single row at the minimum width in all 13 supported locales. These constraints keep the empty-state content and category ornament readable in a narrow work area.
+
+The supplied final render artifact `artifacts/desktop-visual-rev069-final.json` passed with Desktop 59/59, 286 WPF render cases, 172 layout passes, and zero build warnings/errors. Its JSON records 11,719 ms total harness time and 3,106.8 ms in layout calls. These are harness measurements, not open-app latency or a performance claim. The test checks local presentation and rendered bounds; no runtime UI Automation or live-app validation was performed.
+
+Rev069 is the source-documentation counter; its protected Register of Improvements appendix is Rev049. Product version remains 25.2.0, and no public API, routes, commands, permissions, IPC, dependencies, or ZIPs changed.
+
+### Windows system-DPI coverage clarification (Rev070)
+
+The WPF render harness keeps the isolated host window's Windows DPI and DIP layout fixed. A preview scale factor changes only the output density of `RenderTargetBitmap`; the 100% and 200% labels describe raster density, not Windows display-scale settings. The harness does not simulate 125%, 150%, or 200% Windows system-DPI layout.
+
+In `artifacts/desktop-visual-rev069-scale-audit.json`, `windows-system-dpi-layout-coverage` is explicitly `not-simulated`, with no applied Windows DPI factors and preview bitmap raster factors `[1, 2]`. Existing route, locale, theme, and interaction checks remain in the supplied run; no functional cases were removed. The artifact reports Desktop 59/59 and 287 WPF render cases with 172 layout passes and zero build warnings/errors. Its 9,321 ms total and 2,134.7 ms in layout calls are harness timings, not open-app latency. Actual Windows DPI behavior remains unverified.
+
+Rev070 is the source-documentation counter; its protected Register of Improvements appendix is Rev050. Product version remains 25.2.0; no API, routes, commands, permissions, IPC, dependencies, or ZIPs changed.

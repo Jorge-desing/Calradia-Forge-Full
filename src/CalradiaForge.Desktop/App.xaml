@@ -18,6 +18,7 @@
    <services:ThemeDisplayConverter x:Key="ThemeDisplayConverter"/>
     <services:ThemeDescriptionConverter x:Key="ThemeDescriptionConverter"/>
    <services:DecorativeAccentVisibilityConverter x:Key="DecorativeAccentVisibilityConverter"/>
+   <services:ResponsiveDecorationDimensionConverter x:Key="ResponsiveDecorationDimensionConverter"/>
    <services:GeometryKeyConverter x:Key="GeometryKeyConverter"/>
    <services:BrushKeyConverter x:Key="BrushKeyConverter"/>
    <ImageBrush x:Key="TitleBarCartographicBandBrush" ImageSource="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/titlebar-cartographic-panorama-rev057.png" Stretch="Fill" Viewbox="0,0,1,1" ViewboxUnits="RelativeToBoundingBox" Viewport="0,0,1,1" ViewportUnits="RelativeToBoundingBox" Opacity="0.18"/>

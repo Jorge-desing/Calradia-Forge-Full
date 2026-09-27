@@ -74,7 +74,7 @@
  <sys:String x:Key="Ui.BrowseFile">Browse files</sys:String>
  <sys:String x:Key="Ui.BrowseFolder">Browse folders</sys:String>
  <sys:String x:Key="Ui.DecorativeAccents">Decorative artwork</sys:String>
- <sys:String x:Key="Ui.DecorativeAccentsShort">Decor</sys:String>
+ <sys:String x:Key="Ui.DecorativeAccentsShort">Ornaments</sys:String>
  <sys:String x:Key="Ui.EmptyEvidence">No evidence retained yet.</sys:String>
  <sys:String x:Key="Ui.EmptyEvidenceAction">Open command palette</sys:String>
  <sys:String x:Key="Ui.HeaderSeal">Open command palette from the Forge seal</sys:String>

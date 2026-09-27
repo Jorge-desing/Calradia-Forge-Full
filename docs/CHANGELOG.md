@@ -747,3 +747,17 @@ Initial developer preview: Gauntlet panel, WPF client, local named pipes, diagno
 - Added render assertions for minimum-size header placement, summary visibility, compact export geometry, and dossier/decorative-toggle accessibility. All 13 locales contain `Ui.DecorativeAccentsShort`.
 - The Desktop BAT build completed with zero warnings/errors, Desktop 59/59, and WPF render 285/285 with 158 layout passes. The final single run recorded 13,135 ms total/3,072.1 ms in layout calls, versus 9,120 ms/2,033.3 ms in the single-run baseline. These are harness measurements; the final run was slower, so no performance improvement is claimed. Live WPF behavior and real system-DPI layout remain unverified.
 - Product version remains 25.2.0; no API, route, command, permission, dependency, or ZIP changed.
+
+### Minimum-window ledger and responsive identity layout (Rev069) — 2026-09-27
+
+- Added 980×680-DIP render coverage confirming the empty evidence ledger message and action remain in the visible work-area viewport, and the action retains its minimum activation height. The tool identity badge is bounded; long category banners and mottos remain single-line, trim with an ellipsis, expose the full value in tooltips, and stay within the badge frame.
+- Added a minimum-width, single-row header assertion across all 13 supported locales. Existing local illustrated-resource and passive-decoration checks remain in the render suite; this follow-up adds no runtime dependency or new asset.
+- The supplied final BAT artifact reports zero build warnings/errors, Desktop 59/59, and WPF render 286/286 with 172 layout passes. Its JSON records 11,719 ms total harness time and 3,106.8 ms in layout calls. These are harness measurements, not open-app latency or a performance claim. No runtime UI Automation or live-app validation was performed.
+- Product version remains 25.2.0; no public API, route, command, permission, IPC, dependency, or ZIP changed.
+
+### Windows system-DPI audit scope clarification (Rev070) — 2026-09-27
+
+- Clarified that the WPF render harness keeps the isolated host's Windows DPI/DIP layout fixed. The 100% and 200% preview values change `RenderTargetBitmap` output raster density only; they do not emulate Windows system-DPI layout at 125%, 150%, or 200%.
+- The supplied `artifacts/desktop-visual-rev069-scale-audit.json` marks `windows-system-dpi-layout-coverage` as `not-simulated`, with no Windows DPI factors applied and preview bitmap raster factors `[1, 2]`. Existing functional route, locale, theme, and interaction coverage was retained.
+- The supplied run reports Desktop 59/59, 287 WPF render cases, 172 layout passes, and zero build warnings/errors. JSON harness timings are 9,321 ms total and 2,134.7 ms in layout calls; these are not open-app latency. Actual Windows DPI behavior remains unverified. No tests were run during this documentation-only append.
+- Product version remains 25.2.0; no API, route, command, permission, IPC, dependency, or ZIP changed.

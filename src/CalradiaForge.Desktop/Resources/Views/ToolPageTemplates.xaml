@@ -729,9 +729,9 @@
       <Grid.ColumnDefinitions>
        <ColumnDefinition Width="*"/>
        <ColumnDefinition Width="Auto"/>
-       <ColumnDefinition Width="100"/>
+       <ColumnDefinition Width="Auto"/>
       </Grid.ColumnDefinitions>
-      <Image Focusable="False" Grid.Column="2" Height="59" HorizontalAlignment="Right" IsHitTestVisible="False" Opacity="0.14" RenderOptions.BitmapScalingMode="HighQuality" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/dossier-corner-ornament-rev057.png" Stretch="Uniform" VerticalAlignment="Center" Width="88">
+      <Image Focusable="False" Grid.Column="2" Height="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ResponsiveDecorationDimensionConverter}, ConverterParameter=corner-height}" HorizontalAlignment="Right" IsHitTestVisible="False" Opacity="0.14" RenderOptions.BitmapScalingMode="HighQuality" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/dossier-corner-ornament-rev057.png" Stretch="Uniform" VerticalAlignment="Center" Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ResponsiveDecorationDimensionConverter}, ConverterParameter=corner-width}">
        <Image.Visibility>
         <MultiBinding Converter="{StaticResource DecorativeAccentVisibilityConverter}" ConverterParameter="DecorativeTextureVisibility">
          <Binding Path="DataContext.DecorativeAccentsEnabled" RelativeSource="{RelativeSource AncestorType=Window}"/>
@@ -763,7 +763,7 @@
        <TextBlock FontWeight="Bold" Foreground="{Binding Tool.CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}" HorizontalAlignment="Right" Margin="0,5,0,0" Text="{Binding Tool.KindLabel}" TextAlignment="Right" TextWrapping="Wrap"/>
        <TextBlock FontSize="{DynamicResource Token.CodeFont}" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Right" Margin="0,3,0,0" Text="{Binding Tool.Id}" TextAlignment="Right" TextWrapping="Wrap"/>
       </StackPanel>
-      <Grid AutomationProperties.AutomationId="WorkbenchCartographicBoardDecoration" ClipToBounds="True" Focusable="False" Grid.Column="2" Height="52" IsHitTestVisible="False" Margin="8,0,0,0" VerticalAlignment="Center" Width="92">
+      <Grid AutomationProperties.AutomationId="WorkbenchCartographicBoardDecoration" ClipToBounds="True" Focusable="False" Grid.Column="2" Height="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ResponsiveDecorationDimensionConverter}, ConverterParameter=board-height}" IsHitTestVisible="False" Margin="8,0,0,0" VerticalAlignment="Center" Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ResponsiveDecorationDimensionConverter}, ConverterParameter=board-width}">
        <Image Focusable="False" IsHitTestVisible="False" Opacity="0.42" RenderOptions.BitmapScalingMode="HighQuality" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/workbench-cartographic-board-v1.png" Stretch="Uniform">
         <Image.Visibility>
        <MultiBinding Converter="{StaticResource DecorativeAccentVisibilityConverter}" ConverterParameter="DecorativeTextureVisibility">
@@ -772,7 +772,7 @@
          </MultiBinding>
         </Image.Visibility>
        </Image>
-       <Image Focusable="False" Height="16" HorizontalAlignment="Right" IsHitTestVisible="False" Margin="0,3,3,0" Opacity="0.78" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/workbench-heraldic-shield-v1.png" Stretch="Uniform" VerticalAlignment="Top" Width="16">
+       <Image Focusable="False" Height="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ResponsiveDecorationDimensionConverter}, ConverterParameter=shield-size}" HorizontalAlignment="Right" IsHitTestVisible="False" Margin="0,3,3,0" Opacity="0.78" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/workbench-heraldic-shield-v1.png" Stretch="Uniform" VerticalAlignment="Top" Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ResponsiveDecorationDimensionConverter}, ConverterParameter=shield-size}">
         <Image.Visibility>
          <MultiBinding Converter="{StaticResource DecorativeAccentVisibilityConverter}" ConverterParameter="DecorativeTextureVisibility">
           <Binding Path="DataContext.DecorativeAccentsEnabled" RelativeSource="{RelativeSource AncestorType=Window}"/>

@@ -51,6 +51,29 @@ namespace CalradiaForge.Desktop.Services
             throw new NotSupportedException();
     }
 
+    /// <summary>Keeps the summary artwork large on normal screens and proportionally compact at the minimum window width.</summary>
+    internal sealed class ResponsiveDecorationDimensionConverter : IValueConverter
+    {
+        const double CompactWindowBreakpoint = 1120;
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            var compact = value is double width && width > 0 && width < CompactWindowBreakpoint;
+            return parameter?.ToString() switch
+            {
+                "corner-width" => compact ? 88d : 136d,
+                "corner-height" => compact ? 59d : 90d,
+                "board-width" => compact ? 92d : 160d,
+                "board-height" => compact ? 52d : 90d,
+                "shield-size" => compact ? 16d : 20d,
+                _ => DependencyProperty.UnsetValue
+            };
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
+
     /// <summary>Renders a favorite state without mutating the visual tree or duplicating tool rows.</summary>
     internal sealed class PinnedGlyphConverter : IMultiValueConverter
     {

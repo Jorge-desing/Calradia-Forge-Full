@@ -538,3 +538,17 @@ Consulta VALIDATION.md para distinguir las pruebas automáticas, la ejecución d
 - Se agregaron aserciones de render para la posición de cabecera en tamaño mínimo, la visibilidad del resumen, la geometría compacta de exportación y la accesibilidad del dossier y del interruptor decorativo. `Ui.DecorativeAccentsShort` está en los 13 idiomas.
 - La compilación BAT Desktop terminó sin advertencias/errores; Desktop pasó 59/59 y el render WPF 285/285 con 158 pases de layout. La ejecución final única registró 13.135 ms totales/3.072,1 ms en llamadas de layout frente a 9.120 ms/2.033,3 ms de la línea base de una ejecución. Son mediciones del arnés; la corrida final fue más lenta y no se afirma una mejora de rendimiento. El comportamiento WPF en vivo y el layout con DPI real siguen sin verificarse.
 - La versión del producto sigue en 25.2.0; no cambiaron API, rutas, comandos, permisos, dependencias ni ZIPs.
+
+### Ledger en ventana mínima y disposición adaptable de identidad (Rev069) — 27/09/2026
+
+- Se agregó cobertura de render a 980×680 DIP que confirma que el mensaje y la acción del ledger de evidencia vacío permanecen en el viewport visible del área de trabajo, y que la acción conserva su altura mínima de activación. El distintivo de identidad de herramienta tiene ancho acotado; los nombres de categoría y lemas largos permanecen en una línea, se recortan con puntos suspensivos, muestran el valor completo en tooltips y quedan dentro del marco.
+- Se agregó una aserción para la cabecera de una sola fila y ancho mínimo en los 13 idiomas admitidos. La suite de render conserva las comprobaciones existentes de recursos ilustrados locales y adornos pasivos; este seguimiento no agrega recursos ni dependencias de ejecución.
+- El artefacto BAT final proporcionado registra cero advertencias/errores de compilación, Desktop 59/59 y render WPF 286/286 con 172 pases de layout. Su JSON registra 11.719 ms de tiempo total del arnés y 3.106,8 ms en llamadas de layout. Son mediciones del arnés, no latencia de la aplicación abierta ni una afirmación de rendimiento. No se realizó UI Automation en ejecución ni validación de la app en vivo.
+- La versión del producto sigue en 25.2.0; no cambiaron API pública, rutas, comandos, permisos, IPC, dependencias ni ZIPs.
+
+### Alcance de auditoría del DPI del sistema Windows (Rev070) — 27/09/2026
+
+- Se aclaró que el arnés de render WPF mantiene fijo el DPI/layout DIP de Windows del host aislado. Los valores de vista previa 100 % y 200 % solo cambian la densidad raster de salida de `RenderTargetBitmap`; no simulan layout con DPI del sistema Windows al 125 %, 150 % o 200 %.
+- El artefacto proporcionado `artifacts/desktop-visual-rev069-scale-audit.json` marca `windows-system-dpi-layout-coverage` como `not-simulated`, sin factores de DPI de Windows aplicados y con factores raster de bitmap de vista previa `[1, 2]`. Se conservó la cobertura funcional existente de rutas, idiomas, temas e interacciones.
+- La ejecución proporcionada registra Desktop 59/59, 287 casos de render WPF, 172 pases de layout y cero advertencias/errores de compilación. Los tiempos JSON del arnés son 9.321 ms totales y 2.134,7 ms en llamadas de layout; no representan latencia de la app abierta. El comportamiento con el DPI real de Windows sigue sin verificarse. No se ejecutaron pruebas en este añadido documental.
+- La versión sigue en 25.2.0; no cambiaron API, rutas, comandos, permisos, IPC, dependencias ni ZIPs.
