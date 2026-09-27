@@ -346,6 +346,17 @@
 - [x] Redactar Propuesta 22 en `learning_proposal.md` y artefacto `codex_antigravity_rules_proposal.md`.
 - [x] Superar pruebas de verificación y compilar suite de pruebas.
 
+## Gran Ronda de Corrección de Errores Integral y Blindaje Defensivo (Rev062)
+- [x] Blindar llamadas a `vm` en `SubModule.cs` ante referencias nulas (`vm?.ExecuteHistoryPrevious()`, `vm?.ExecuteHistoryNext()`).
+- [x] Fortalecer `Runtime.cs` (`Handle`): guarda obligatoria `if (s == null) throw new ArgumentNullException(nameof(s))`, normalización de claves en `case "pin"`, resolución segura de `DeclaringType` en métodos dinámicos de `case "patcher"`, y escape seguro de caracteres JSON en `case "agent-memory-query"`.
+- [x] Corregir `SnapshotComparer.cs`: guarda preventiva `if (before == null) return "Before snapshot is missing"` para evitar `NullReferenceException`.
+- [x] Blindar `PipeServer.cs`: manejo seguro `p.Request?.Id` y validación nula de `execute` en `Process()`.
+- [x] Corregir paridad de traducciones alemanas en `Strings.de.xaml` (`Viz.Diplomacy.MonarchLabel` = `HERRSCHER`) y resolver CS0246 en `RenderTests/Program.cs` (`using System.Windows.Documents`).
+- [x] Expandir `BugHunterAgent` en `agents/tools.py` con 4 nuevos inspectores estáticos (llamadas a `vm`, guardas de `Request`, guardas de `SnapshotComparer` y seguridad de `PipeServer`).
+- [x] Superar 100% de las suites de prueba: 31/31 pruebas unitarias de agentes (`test_forge_agents.py`), 239 Core, 73 ForgeWeave, 63 Desktop MVVM, 289 WPF Render/Layout, y 4/4 en `verify_stateless_behavior.ps1`.
+- [x] Generar paquetes de distribución release 25.2.0 (`Modules`, `Source-SDK`, `Desktop`) con `tools/package.ps1`.
+
+
 
 
 

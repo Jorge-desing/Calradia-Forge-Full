@@ -250,8 +250,8 @@ namespace CalradiaForge.Mod
                     else if (Input.IsKeyPressed(InputKey.L)) vm?.ExecuteClearOutput();
                     else if (Input.IsKeyPressed(InputKey.K)) vm?.ExecuteToggleKeyHelp();
                     else if (Input.IsKeyPressed(InputKey.W)) vm?.ExecuteToggleLiveWatch();
-                    else if (Input.IsKeyPressed(InputKey.Up)) vm.ExecuteHistoryPrevious();
-                    else if (Input.IsKeyPressed(InputKey.Down)) vm.ExecuteHistoryNext();
+                    else if (Input.IsKeyPressed(InputKey.Up)) vm?.ExecuteHistoryPrevious();
+                    else if (Input.IsKeyPressed(InputKey.Down)) vm?.ExecuteHistoryNext();
                     else if (Input.IsKeyPressed(InputKey.D1)) vm?.ExecuteCategoryOverview();
                     else if (Input.IsKeyPressed(InputKey.D2)) vm?.ExecuteCategoryInspector();
                     else if (Input.IsKeyPressed(InputKey.D3)) vm?.ExecuteCategoryToolkit();

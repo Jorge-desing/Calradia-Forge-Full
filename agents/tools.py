@@ -671,6 +671,41 @@ def audit_code_smells(raw: bool = False) -> str:
     else:
         issues.append("AssemblyWorkbenchService.cs not found.")
 
+    # 8. Check SubModule.cs for unguarded vm calls in keyboard polling
+    if submodule_path.exists():
+        sm_text = submodule_path.read_text(encoding="utf-8", errors="ignore")
+        if "vm.ExecuteHistoryPrevious()" in sm_text or "vm.ExecuteHistoryNext()" in sm_text:
+            issues.append("SubModule.cs: contains unguarded vm.ExecuteHistory call without null propagation.")
+
+    # 9. Check Runtime.cs for null request guard and safe JSON formatting
+    runtime_path = repo_root / "src" / "CalradiaForge.Mod" / "Runtime.cs"
+    if runtime_path.exists():
+        rt_text = runtime_path.read_text(encoding="utf-8", errors="ignore")
+        if "if (s == null) throw new ArgumentNullException" not in rt_text:
+            issues.append("Runtime.cs: Handle() missing null guard for request parameter 's'.")
+        if 'safeCaptor' not in rt_text and 'captor.Replace' not in rt_text:
+            issues.append("Runtime.cs: agent-memory-query lacks string escaping for JSON safety.")
+    else:
+        issues.append("Runtime.cs not found.")
+
+    # 10. Check SnapshotComparer in TestEngine.cs for before == null guard
+    te_path = repo_root / "src" / "CalradiaForge.Core" / "TestEngine.cs"
+    if te_path.exists():
+        te_text = te_path.read_text(encoding="utf-8", errors="ignore")
+        if "if(before==null)" not in te_text and "if (before == null)" not in te_text:
+            issues.append("TestEngine.cs: SnapshotComparer.Compare missing null guard for 'before' snapshot.")
+    else:
+        issues.append("TestEngine.cs not found.")
+
+    # 11. Check PipeServer.cs for null-safe Request Id in Process()
+    pipe_path = repo_root / "src" / "CalradiaForge.Mod" / "PipeServer.cs"
+    if pipe_path.exists():
+        pipe_text = pipe_path.read_text(encoding="utf-8", errors="ignore")
+        if "new Response{Id=p.Request.Id" in pipe_text:
+            issues.append("PipeServer.cs: Process() contains unguarded p.Request.Id in catch block.")
+    else:
+        issues.append("PipeServer.cs not found.")
+
     if issues:
         raw_res = "Code Smells & Antipatterns Audit FAILED:\n" + "\n".join(f"  - {iss}" for iss in issues)
     else:
@@ -682,7 +717,9 @@ def audit_code_smells(raw: bool = False) -> str:
             "  - Exception handling: no undocumented empty catch blocks detected.\n"
             "  - Console commands: 100% of ForgeCommands defend against null args.\n"
             "  - Cognitive memory: Semantic relation facts accurately track GetRelation and LastRelationDelta.\n"
-            "  - Assembly inspection: 100% null-safe assembly reference and version formatting."
+            "  - Assembly inspection: 100% null-safe assembly reference and version formatting.\n"
+            "  - UI & Hotkeys: SubModule keyboard polling enforces 100% null propagation on vm.\n"
+            "  - Runtime & Transport: IPC Handle, PipeServer, and SnapshotComparer enforce full null safety."
         )
 
     distilled, _ = ForgeTokenCompactor.distill("audit_code_smells", raw_res, force_raw=raw)

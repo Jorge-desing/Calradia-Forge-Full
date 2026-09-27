@@ -3,7 +3,6 @@ setlocal EnableExtensions
 
 set "WPT=C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit"
 set "OUT=%TEMP%\CodexCaptureCompat\process-profile"
-if /I "%~1"=="--stop-owned" goto stop_owned
 
 for /f %%I in ('powershell.exe -NoProfile -Command "[guid]::NewGuid().ToString('N')"') do set "STAMP=%%I"
 set "TRACE=%OUT%\cua-process-%STAMP%.etl"
@@ -64,9 +63,9 @@ if errorlevel 1 (
   exit /b 3
 )
 
-"%WPT%\wpr.exe" -start GeneralProfile -filemode
+"%WPT%\wpr.exe" -start CPU -filemode
 if errorlevel 1 (
-  echo WPR could not start GeneralProfile. No trace was collected.
+  echo WPR could not start the CPU profile. No trace was collected.
   exit /b 4
 )
 "%WPT%\wpr.exe" -status > "%STARTSTATUS%" 2>&1
@@ -82,14 +81,14 @@ if errorlevel 1 (
   exit /b 4
 )
 
-echo Recording a 15-second system CPU profile. Keep the normal workload unchanged.
+echo Recording a 10-second CPU profile. Keep the normal workload unchanged.
 rem PowerShell sleep avoids TIMEOUT's interactive-input requirement when this BAT is launched with redirected stdin.
-powershell.exe -NoProfile -Command "Start-Sleep -Seconds 15"
+powershell.exe -NoProfile -Command "Start-Sleep -Seconds 10"
 if errorlevel 1 (
   echo Wait failed. No automatic WPR stop or cancel was issued; inspect WPR status before recovery.
   exit /b 5
 )
-"%WPT%\wpr.exe" -stop "%TRACE%" "Codex Computer Use process profile"
+"%WPT%\wpr.exe" -stop "%TRACE%" "Codex Computer Use CPU profile"
 if errorlevel 1 (
   echo WPR could not save the trace. No automatic cancel was issued because ownership of an active recorder cannot be revalidated safely.
   "%WPT%\wpr.exe" -status
@@ -134,58 +133,3 @@ exit /b 0
 :cswitch_export_failed
   echo CPU profile exported; context-switch export failed. Raw trace: "%TRACE%"
   exit /b 7
-
-:stop_owned
-set "STAMP=%~2"
-if not defined STAMP (
-  echo Usage: %~nx0 --stop-owned <32-character-session-id>
-  exit /b 2
-)
-set "TRACE=%OUT%\cua-process-%STAMP%.etl"
-set "STARTSTATUS=%OUT%\wpr-start-status-%STAMP%.txt"
-set "RECOVERYSTATUS=%OUT%\wpr-recovery-status-%STAMP%.txt"
-if not exist "%STARTSTATUS%" (
-  echo No matching start-status record exists; WPR was left untouched.
-  exit /b 3
-)
-if exist "%RECOVERYSTATUS%" (
-  echo Recovery status path already exists; refusing to overwrite it.
-  exit /b 3
-)
-"%WPT%\wpr.exe" -status > "%RECOVERYSTATUS%" 2>&1
-if errorlevel 1 (
-  echo WPR status is uncertain; no stop or cancel was issued.
-  type "%RECOVERYSTATUS%"
-  exit /b 3
-)
-findstr /I /C:"WPR is recording" /C:"WPR recording is in progress" "%RECOVERYSTATUS%" >nul
-if errorlevel 1 (
-  echo WPR does not show an active recording; no stop or cancel was issued.
-  type "%RECOVERYSTATUS%"
-  exit /b 3
-)
-findstr /I /C:"WPR recording is in progress" "%STARTSTATUS%" >nul
-if errorlevel 1 (
-  echo The matching start record does not confirm this BAT started a recording; no stop or cancel was issued.
-  exit /b 3
-)
-if exist "%TRACE%" (
-  echo Trace target already exists; refusing to overwrite it.
-  exit /b 3
-)
-echo Stopping only the active GeneralProfile session paired with the matching unique start-status record.
-"%WPT%\wpr.exe" -stop "%TRACE%" "Codex Computer Use process profile recovery"
-if errorlevel 1 (
-  echo WPR stop failed. No cancel was issued; check elevated WPR status manually.
-  exit /b 5
-)
-if not exist "%TRACE%" (
-  echo WPR reported stop completion but did not create the trace file.
-  exit /b 5
-)
-for %%A in ("%TRACE%") do if %%~zA LEQ 0 (
-  echo WPR created an empty trace; it is not a valid profile.
-  exit /b 5
-)
-echo Recovered trace: "%TRACE%"
-exit /b 0

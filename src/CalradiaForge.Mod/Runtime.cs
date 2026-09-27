@@ -229,6 +229,7 @@ namespace CalradiaForge.Mod
             var stopwatch = Stopwatch.StartNew();
             try
             {
+                if (s == null) throw new ArgumentNullException(nameof(s));
                 if (s.Version != ForgeProtocol.Version) throw new InvalidOperationException("Protocol version mismatch: expected " + ForgeProtocol.Version);
                 if (GameNetwork.IsMultiplayer) throw new InvalidOperationException("Single-player only");
                 token.ThrowIfCancellationRequested(); string data;
@@ -246,7 +247,7 @@ namespace CalradiaForge.Mod
                     case "logs": data = Json.Serialize(Log.Deserialize(s.Argument)); break;
                     case "clear-logs": Log.Clear(); data = "Logs cleared"; break;
                     case "inspect": data = Json.Serialize(Inspector.Deserialize(s.Argument)); break;
-                    case "pin": { var parts = (s.Argument ?? "").Split('|'); var o = Inspector.Deserialize(s.Argument).FirstOrDefault(x => parts.Length > 1 && x.Id == parts[1]); if (o == null) throw new InvalidOperationException("Exact object ID required"); if (pins.Count >= 100 && !pins.ContainsKey(s.Argument)) throw new InvalidOperationException("Maximum 100 snapshots"); pins[s.Argument] = o; data = "Snapshot pinned: " + o.Id; break; }
+                    case "pin": { var key = s.Argument ?? ""; var parts = key.Split('|'); var o = Inspector.Deserialize(key).FirstOrDefault(x => parts.Length > 1 && x.Id == parts[1]); if (o == null) throw new InvalidOperationException("Exact object ID required"); if (pins.Count >= 100 && !pins.ContainsKey(key)) throw new InvalidOperationException("Maximum 100 snapshots"); pins[key] = o; data = "Snapshot pinned: " + o.Id; break; }
                     case "compare": { if (!pins.TryGetValue(s.Argument ?? "", out var before)) throw new InvalidOperationException("Pin this object first"); var after = Inspector.Deserialize(s.Argument).FirstOrDefault(o => o.Id == before.Id); data = SnapshotComparer.Compare(before, after); if (data == "") data = "No changes"; break; }
                     case "tests": data = Json.Serialize(TestEngine.Tests.ToList()); break;
                     case "snapshots": data = Json.Serialize(pins.Values.ToList()); break;
@@ -261,7 +262,11 @@ namespace CalradiaForge.Mod
                     case "patcher": 
                         var patchList = new System.Collections.Generic.List<object>();
                         foreach (var p in CalradiaForge.Sdk.Patcher.ForgePatcher.GetAppliedPatches()) {
-                            patchList.Add(new { Target = p.Original.DeclaringType.Name + "." + p.Original.Name, Replacement = p.Replacement.DeclaringType.Name + "." + p.Replacement.Name, Module = p.SourceModule });
+                            var origType = p.Original?.DeclaringType?.Name ?? "Global";
+                            var origName = p.Original?.Name ?? "Unknown";
+                            var replType = p.Replacement?.DeclaringType?.Name ?? "Global";
+                            var replName = p.Replacement?.Name ?? "Unknown";
+                            patchList.Add(new { Target = origType + "." + origName, Replacement = replType + "." + replName, Module = p.SourceModule ?? "Native" });
                         }
                         data = Json.Serialize(patchList); 
                         break;
@@ -276,7 +281,9 @@ namespace CalradiaForge.Mod
                             int prevKills = CalradiaForge.Sdk.ForgeAgentMemory.Semantic.Get<int>(targetAgent, "TotalSlainHeroes");
                             bool isImprisoned = CalradiaForge.Sdk.ForgeAgentMemory.Semantic.Get<bool>(targetAgent, "IsImprisoned");
                             string captor = CalradiaForge.Sdk.ForgeAgentMemory.Semantic.Get<string>(targetAgent, "CurrentCaptorId") ?? "none";
-                            data = "{\"agentId\":\"" + targetAgent + "\",\"isImprisoned\":" + (isImprisoned ? "true" : "false") + ",\"captorId\":\"" + captor + "\",\"slainHeroes\":" + prevKills + "}";
+                            string safeCaptor = captor.Replace("\\", "\\\\").Replace("\"", "\\\"");
+                            string safeAgent = targetAgent.Replace("\\", "\\\\").Replace("\"", "\\\"");
+                            data = "{\"agentId\":\"" + safeAgent + "\",\"isImprisoned\":" + (isImprisoned ? "true" : "false") + ",\"captorId\":\"" + safeCaptor + "\",\"slainHeroes\":" + prevKills + "}";
                             break;
                         }
                     case "framework": data = Json.Serialize(TestEngine.CaptureForgeWeave()); break;

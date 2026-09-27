@@ -427,6 +427,7 @@ namespace CalradiaForge.Core
     {
         public static string Compare(ObjectSnapshot before,ObjectSnapshot after)
         {
+            if(before==null) return "Before snapshot is missing";
             if(after==null) return "Object no longer available";
             if(before.Type!=after.Type || before.Id!=after.Id) throw new ArgumentException("Different objects");
             return string.Join(Environment.NewLine,before.Properties.Keys.Union(after.Properties.Keys).Where(k=>Value(before,k)!=Value(after,k)).Select(k=>k+": "+Value(before,k)+" → "+Value(after,k)));

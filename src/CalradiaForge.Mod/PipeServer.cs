@@ -78,10 +78,11 @@ namespace CalradiaForge.Mod
         }
         public void Process(Func<Request,CancellationToken,Response> execute)
         {
+            if (execute == null) return;
             // Process one queued request per frame without waiting for the client.
             if(!queue.TryDequeue(out var p)) return;
-            try { if(p.Cancellation.IsCancellationRequested) {p.Result.TrySetResult(new Response{Id=p.Request.Id,Error="Cancelled before execution"});return;} p.Result.TrySetResult(execute(p.Request,p.Cancellation.Token)); }
-            catch(Exception e){p.Result.TrySetResult(new Response{Id=p.Request.Id,Error=e.Message});}
+            try { if(p.Cancellation.IsCancellationRequested) {p.Result.TrySetResult(new Response{Id=p.Request?.Id,Error="Cancelled before execution"});return;} p.Result.TrySetResult(execute(p.Request,p.Cancellation.Token)); }
+            catch(Exception e){p.Result.TrySetResult(new Response{Id=p.Request?.Id,Error=e.Message});}
             finally { p.Release(); }
         }
         public void Dispose() {shutdown.Cancel(); active?.Dispose();while(queue.TryDequeue(out var pending)){pending.Cancellation.Cancel();pending.Result.TrySetCanceled();pending.Release();}}
