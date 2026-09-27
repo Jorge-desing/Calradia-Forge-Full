@@ -761,3 +761,13 @@ Initial developer preview: Gauntlet panel, WPF client, local named pipes, diagno
 - The supplied `artifacts/desktop-visual-rev069-scale-audit.json` marks `windows-system-dpi-layout-coverage` as `not-simulated`, with no Windows DPI factors applied and preview bitmap raster factors `[1, 2]`. Existing functional route, locale, theme, and interaction coverage was retained.
 - The supplied run reports Desktop 59/59, 287 WPF render cases, 172 layout passes, and zero build warnings/errors. JSON harness timings are 9,321 ms total and 2,134.7 ms in layout calls; these are not open-app latency. Actual Windows DPI behavior remains unverified. No tests were run during this documentation-only append.
 - Product version remains 25.2.0; no API, route, command, permission, IPC, dependency, or ZIP changed.
+
+### Desktop IPC, report export, and studio localization hardening (Rev071) — 2026-09-27
+
+- Bound newline-delimited IPC reads incrementally at the existing 32 Mi UTF-16-character limit; cancellation remains observable, and oversized responses disconnect before deserialization.
+- Moved report writes to asynchronous exclusive staging and unique no-overwrite publication, with cancellation/error status and temporary-file cleanup.
+- Added command-specific accessible names and localized copy feedback to the dossier; localized remaining static visualizer labels in all 13 catalogs while preserving sample values and technical identifiers.
+- The Desktop BAT build completed with zero warnings/errors; Desktop passed 63/63 and WPF render passed 289 cases with 182 layout passes. The artifact records 11,758 ms total harness time and 3,483.7 ms in layout calls; neither is an open-app latency measurement.
+- After wrapping translated stat lines and compact badges in narrow visualizer cards, a final BAT rerun passed the same coverage; its separate artifact records 10,939 ms total and 3,120.8 ms in layout calls, both harness-only measurements. The read-only UIA rerun passed 23/23 controls, including dossier copy buttons, and preserved the foreground window.
+- The read-only UIA BAT passed 23/23 controls and recorded ForegroundUnchanged=true; it did not exercise pickers, work execution, preference changes, or visual approval. No Bannerlord session was started.
+- Product version remains 25.2.0; no public API, route, command, permission, protocol, dependency, or ZIP changed.

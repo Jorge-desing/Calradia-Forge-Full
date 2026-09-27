@@ -76,6 +76,7 @@ internal static class Program
             ("Desktop exposes three reversible theme dictionaries", ThemeCatalogSurface),
             ("Desktop preferences use atomic fallback persistence", PreferenceSurface),
             ("Desktop resource dictionaries have 13-language key parity", DynamicResourceParity),
+            ("Desktop static visualizer labels are localized rather than embedded in XAML", VisualizerStaticLabelLocalization),
             ("Desktop package preserves all in-game language catalogs", UiCatalogCoverage),
             ("Desktop language changes do not traverse visual controls", ResourceOnlyLocalizationSurface),
             ("Desktop session transport measures connect and reconnect", SessionTransportSurface),
@@ -869,7 +870,19 @@ internal static class Program
             "Ui.CopyCommandAccessibleName", "Ui.CopyCommandAccessibleNameFormat", "Ui.CopyCliAccessibleName",
             "Ui.ClipboardCopyFailed", "Ui.ClipboardCopySucceeded", "Ui.ReportExported",
             "Ui.ReportExportFailed", "Ui.ReportExportCancelled", "Ui.ReportExportedShort", "Viz.Audio.Title",
-            "Viz.Audio.Equalizer", "Viz.Audio.Waveform", "Viz.Operation.Title", "Viz.Operation.ExecutionGuard"
+            "Viz.Audio.Equalizer", "Viz.Audio.Waveform", "Viz.Operation.Title", "Viz.Operation.ExecutionGuard",
+            "Viz.Troop.CountBadge", "Viz.Troop.TierI", "Viz.Troop.TierTwoThree", "Viz.Troop.TierFour",
+            "Viz.Troop.NobleLine", "Viz.Troop.CommonLevies", "Viz.Troop.LevelShort", "Viz.Troop.HpLabel",
+            "Viz.Troop.WageLabel", "Viz.Troop.CostLabel", "Viz.Troop.EquipmentLabel", "Viz.Troop.ArmorLabel",
+            "Viz.Troop.HeadLabel", "Viz.Troop.BodyLabel", "Viz.Troop.LegLabel", "Viz.Troop.Upgrades",
+            "Viz.Workshop.ScopeLabel", "Viz.Workshop.OptimalLabel", "Viz.Workshop.ProsperityLabel",
+            "Viz.Workshop.CivicLoyaltyLabel", "Viz.Workshop.SecurityScoreLabel", "Viz.Workshop.FoodStorageLabel",
+            "Viz.Workshop.GarrisonLabel", "Viz.Workshop.RebellionRiskLabel", "Viz.Workshop.StableLabel",
+            "Viz.Workshop.RiskThresholdLabel", "Viz.CodeSecurity.TargetAssemblyLabel", "Viz.CodeSecurity.RuntimeClrLabel",
+            "Viz.ModuleHierarchy.IdentifierLabel", "Viz.ModuleHierarchy.ReleaseTagLabel", "Viz.ModuleHierarchy.StageLabel",
+            "Viz.ModuleHierarchy.UpstreamDependenciesLabel", "Viz.Diplomacy.RealmLabel", "Viz.Diplomacy.MonarchLabel",
+            "Viz.Diplomacy.BorderConflictRiskLabel", "Viz.Component.IdentifierLabel", "Viz.Component.SchemaTargetLabel",
+            "Viz.Component.GeneratedMembersLabel"
         };
         var englishValues = LoadSourceXml(files.Single(file => file.EndsWith("Strings.en.xaml", StringComparison.OrdinalIgnoreCase))).Descendants()
             .Where(node => node.Attribute(XName.Get("Key", "http://schemas.microsoft.com/winfx/2006/xaml")) != null)
@@ -887,6 +900,42 @@ internal static class Program
         }
         string service = ReadSourceText(FindDesktopFile("Services/DesktopLocalizationService.cs"));
         Check(service.Contains("MergedDictionaries") && service.Contains("activeDictionary"), "Language changes must swap only the active Forge dictionary");
+        return Task.CompletedTask;
+    }
+
+    static Task VisualizerStaticLabelLocalization()
+    {
+        string templates = ReadSourceText(FindDesktopFile("Resources/Views/ToolPageTemplates.xaml"));
+        var localizedKeys = new[]
+        {
+            "Viz.Troop.CountBadge", "Viz.Troop.TierI", "Viz.Troop.TierTwoThree", "Viz.Troop.TierFour",
+            "Viz.Troop.NobleLine", "Viz.Troop.CommonLevies", "Viz.Troop.LevelShort", "Viz.Troop.HpLabel",
+            "Viz.Troop.WageLabel", "Viz.Troop.CostLabel", "Viz.Troop.EquipmentLabel", "Viz.Troop.ArmorLabel",
+            "Viz.Troop.HeadLabel", "Viz.Troop.BodyLabel", "Viz.Troop.LegLabel", "Viz.Troop.Upgrades",
+            "Viz.Workshop.ScopeLabel", "Viz.Workshop.OptimalLabel", "Viz.Workshop.ProsperityLabel",
+            "Viz.Workshop.CivicLoyaltyLabel", "Viz.Workshop.SecurityScoreLabel", "Viz.Workshop.FoodStorageLabel",
+            "Viz.Workshop.GarrisonLabel", "Viz.Workshop.RebellionRiskLabel", "Viz.Workshop.StableLabel",
+            "Viz.Workshop.RiskThresholdLabel", "Viz.CodeSecurity.TargetAssemblyLabel", "Viz.CodeSecurity.RuntimeClrLabel",
+            "Viz.ModuleHierarchy.IdentifierLabel", "Viz.ModuleHierarchy.ReleaseTagLabel", "Viz.ModuleHierarchy.StageLabel",
+            "Viz.ModuleHierarchy.UpstreamDependenciesLabel", "Viz.Diplomacy.RealmLabel", "Viz.Diplomacy.MonarchLabel",
+            "Viz.Diplomacy.BorderConflictRiskLabel", "Viz.Component.IdentifierLabel", "Viz.Component.SchemaTargetLabel",
+            "Viz.Component.GeneratedMembersLabel"
+        };
+        foreach (var key in localizedKeys)
+            Check(templates.Contains(key, StringComparison.Ordinal), "Visualizer templates do not reference localized label " + key);
+        foreach (var literal in new[]
+        {
+            "Text=\"12 ARCHETYPES · 0 CYCLES\"", "Text=\"TIER I · RECRUITS\"",
+            "Text=\"TIER II-III · INFANTRY &amp; ARCHERS\"", "Text=\"TIER IV · ELITE SPECIALISTS\"",
+            "Text=\"NOBLE LINE · CATAPHRACTS (T2-T6)\"", "Text=\"Scope: 30-Day Economic Amortization",
+            "Text=\"Prosperity: 5,420", "Text=\"Civic Loyalty: 64.0", "Text=\"Security Score: 72.0",
+            "Text=\"Food Storage: 184", "Text=\"Garrison: 165", "Text=\"REBELLION RISK: 8.6%\"",
+            "Text=\"Stable · Risk threshold: 45%\"", "StringFormat='TARGET ASSEMBLY: {0}'",
+            "StringFormat='RUNTIME CLR: {0}'", "StringFormat='MODULE IDENTIFIER: {0}'",
+            "StringFormat='RELEASE TAG: {0}'", "StringFormat='Border Conflict Risk: {0}%'",
+            "StringFormat='COMPONENT IDENTIFIER: {0}'", "StringFormat='SCHEMA TARGET: {0}'"
+        })
+            Check(!templates.Contains(literal, StringComparison.Ordinal), "A visualizer label is still embedded in XAML: " + literal);
         return Task.CompletedTask;
     }
 

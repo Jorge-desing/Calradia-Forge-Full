@@ -18,6 +18,7 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -1178,7 +1179,9 @@ internal static class Program
         var routes = new[]
         {
             (Id: "AudioFmodMixerInspector", Resource: "Viz.Audio.Title"),
-            (Id: "AssemblyInspector", Resource: "Viz.CodeSecurity.Title")
+            (Id: "AssemblyInspector", Resource: "Viz.CodeSecurity.Title"),
+            (Id: "TroopTreeVisualizer", Resource: "Viz.Troop.TierI"),
+            (Id: "WorkshopEnterpriseSimulator", Resource: "Viz.Workshop.ProsperityLabel")
         };
         try
         {
@@ -1191,8 +1194,9 @@ internal static class Program
                 shellType.GetProperty("SelectedTool").SetValue(shell, tool);
                 Render(window);
                 Check(Descendants(window).OfType<TextBlock>().Any(block => block.IsVisible && block.ActualWidth > 0 &&
-                        string.Equals(block.Text, expected, StringComparison.Ordinal)),
-                    "The " + languageCode + " title " + route.Resource + " did not render for " + route.Id + ".");
+                        (string.Equals(block.Text, expected, StringComparison.Ordinal) ||
+                         block.Inlines.OfType<Run>().Any(run => string.Equals(run.Text, expected, StringComparison.Ordinal)))),
+                    "The " + languageCode + " label " + route.Resource + " did not render for " + route.Id + ".");
             }
         }
         finally

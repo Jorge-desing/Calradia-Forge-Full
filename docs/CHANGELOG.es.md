@@ -552,3 +552,13 @@ Consulta VALIDATION.md para distinguir las pruebas automáticas, la ejecución d
 - El artefacto proporcionado `artifacts/desktop-visual-rev069-scale-audit.json` marca `windows-system-dpi-layout-coverage` como `not-simulated`, sin factores de DPI de Windows aplicados y con factores raster de bitmap de vista previa `[1, 2]`. Se conservó la cobertura funcional existente de rutas, idiomas, temas e interacciones.
 - La ejecución proporcionada registra Desktop 59/59, 287 casos de render WPF, 172 pases de layout y cero advertencias/errores de compilación. Los tiempos JSON del arnés son 9.321 ms totales y 2.134,7 ms en llamadas de layout; no representan latencia de la app abierta. El comportamiento con el DPI real de Windows sigue sin verificarse. No se ejecutaron pruebas en este añadido documental.
 - La versión sigue en 25.2.0; no cambiaron API, rutas, comandos, permisos, IPC, dependencias ni ZIPs.
+
+### Refuerzo de IPC, exportación de informes y localización de estudios Desktop (Rev071) — 27/09/2026
+
+- Se limitaron de forma incremental las lecturas IPC delimitadas por salto de línea al límite existente de 32 Mi caracteres UTF-16; se respeta la cancelación y las respuestas excesivas se desconectan antes de deserializar.
+- Las exportaciones ahora escriben de forma asíncrona a un temporal exclusivo y se publican con un nombre único sin sobrescritura, con estado de cancelación/error y limpieza del temporal.
+- Se añadieron nombres accesibles específicos por comando y feedback localizado al copiar desde el dossier; también se localizaron los rótulos estáticos restantes de visualizadores en los 13 catálogos, conservando valores de muestra e identificadores técnicos.
+- La compilación BAT de Desktop terminó con cero advertencias/errores; Desktop pasó 63/63 y el render WPF pasó 289 casos con 182 pases de layout. El artefacto registra 11.758 ms totales del arnés y 3.483,7 ms en llamadas de layout; ninguno representa la latencia de la app abierta.
+- Tras añadir ajuste de línea a las estadísticas traducidas y a los indicadores compactos de las tarjetas estrechas, la ejecución final del BAT volvió a pasar la misma cobertura; su artefacto separado registra 10.939 ms totales y 3.120,8 ms en llamadas de layout, mediciones exclusivas del arnés. La repetición de UIA en solo lectura pasó 23/23 controles, incluidos los botones de copia del dossier, y conservó la ventana en primer plano.
+- El BAT de UIA en solo lectura pasó 23/23 controles y registró ForegroundUnchanged=true; no ejercitó selectores, ejecución de trabajos, cambios de preferencias ni aprobación visual. No se inició una sesión de Bannerlord.
+- La versión sigue en 25.2.0; no cambiaron API pública, rutas, comandos, permisos, protocolo, dependencias ni ZIPs.
