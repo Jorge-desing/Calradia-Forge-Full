@@ -60,7 +60,7 @@ namespace CalradiaForge.Mod
                 methodCount += type.Methods.Count;
             }
             var references = module.AssemblyReferences.Take(512).Select(reference =>
-                "  " + reference.Name.ToString() + ", Version=" + reference.Version.ToString() + ", Culture=" + (reference.Culture?.ToString() ?? "neutral")).ToArray();
+                "  " + (reference.Name?.ToString() ?? "<unnamed>") + ", Version=" + (reference.Version?.ToString() ?? "0.0.0.0") + ", Culture=" + (reference.Culture?.ToString() ?? "neutral")).ToArray();
             var info = new FileInfo(input);
             return string.Join(Environment.NewLine, new string[]
             {
@@ -69,7 +69,7 @@ namespace CalradiaForge.Mod
                 "SHA-256: " + inputHash,
                 "Size: " + info.Length.ToString("N0") + " bytes",
                 "Assembly: " + (assembly.Name?.ToString() ?? "<unnamed>"),
-                "Version: " + assembly.Version.ToString(),
+                "Version: " + (assembly.Version?.ToString() ?? "0.0.0.0"),
                 "Module: " + (module.Name?.ToString() ?? "<unnamed>"),
                 "Runtime: " + (module.RuntimeVersion?.ToString() ?? "unknown"),
                 "IL-only: " + module.IsILOnly.ToString(),

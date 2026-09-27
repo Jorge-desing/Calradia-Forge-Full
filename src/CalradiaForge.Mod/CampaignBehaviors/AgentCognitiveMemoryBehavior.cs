@@ -235,9 +235,12 @@ namespace CalradiaForge.Mod.CampaignBehaviors
             }
 
             // Update semantic relation facts
-            ForgeAgentMemory.Semantic.TryUpsert(id1, "Relation_" + id2, relationChange);
-            ForgeAgentMemory.Semantic.TryUpsert(id2, "Relation_" + id1, relationChange);
-            Interlocked.Add(ref _semanticFactsUpdated, 2);
+            int currentRel = hero1.GetRelation(hero2);
+            ForgeAgentMemory.Semantic.TryUpsert(id1, "Relation_" + id2, currentRel);
+            ForgeAgentMemory.Semantic.TryUpsert(id2, "Relation_" + id1, currentRel);
+            ForgeAgentMemory.Semantic.TryUpsert(id1, "LastRelationDelta_" + id2, relationChange);
+            ForgeAgentMemory.Semantic.TryUpsert(id2, "LastRelationDelta_" + id1, relationChange);
+            Interlocked.Add(ref _semanticFactsUpdated, 4);
         }
 
         private void OnHeroGainedSkill(Hero hero, SkillObject skill, int changeAmount, bool shouldNotify)

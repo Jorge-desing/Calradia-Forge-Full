@@ -307,12 +307,35 @@
 - [x] Sincronizar codemaps de arquitectura y comportamientos (`CODEMAP_ARCHITECTURE.md`, `CODEMAP_CAMPAIGN_BEHAVIORS.md`) y redactar Propuesta 18 en `learning_proposal.md`.
 
 ## Gran Ronda de Compactación de Tokens Multi-Agente & Memoria CoALA (Rev058)
-- [ ] Implementar destiladores semánticos dedicados para `audit_code_smells`, `audit_concurrency_hazards` y `audit_section_playbooks` en `agents/compactor.py`.
-- [ ] Optimizar `_distill_generic` para no expandir tokens en textos cortos y registrar las 12 herramientas en `ForgeTokenCompactor._DISTILLERS`.
-- [ ] Configurar el preset `deep` (32,768 tokens) como predeterminado en `CompactionPreset`.
-- [ ] Implementar arquitectura de memoria cognitiva CoALA (`AgentMemoryContext`: Working, Episodic, Semantic) para historial de agentes en `agents/orchestrator.py`.
-- [ ] Implementar subcomando CLI `compact` en `tools/run_forge_agents.py` para benchmarking exhaustivo de compactación sobre las 12 herramientas.
-- [ ] Añadir suite de pruebas unitarias en `tests/test_forge_agents.py` para nuevos destiladores, memoria CoALA y subcomando `compact`.
-- [ ] Ejecutar `py -3.12 tools/run_forge_agents.py compact` y verificar telemetría de compresión sin pérdidas.
-- [ ] Ejecutar suites de verificación completas (`test_forge_agents.py`, `dotnet build`, `verify_stateless_behavior.ps1`).
-- [ ] Redactar Propuesta 19 en `learning_proposal.md` y sincronizar `docs/AUTONOMOUS_AGENTS.md` y `docs/AUTONOMOUS_AGENTS.es.md`.
+- [x] Implementar destiladores semánticos dedicados para `audit_code_smells`, `audit_concurrency_hazards` y `audit_section_playbooks` en `agents/compactor.py`.
+- [x] Optimizar `_distill_generic` para no expandir tokens en textos cortos y registrar las 12 herramientas en `ForgeTokenCompactor._DISTILLERS`.
+- [x] Configurar el preset `deep` (32,768 tokens) como predeterminado en `CompactionPreset`.
+- [x] Implementar arquitectura de memoria cognitiva CoALA (`AgentMemoryContext`: Working, Episodic, Semantic) para historial de agentes en `agents/orchestrator.py`.
+- [x] Implementar subcomando CLI `compact` en `tools/run_forge_agents.py` para benchmarking exhaustivo de compactación sobre las 12 herramientas.
+- [x] Añadir suite de pruebas unitarias en `tests/test_forge_agents.py` para nuevos destiladores, memoria CoALA y subcomando `compact`.
+- [x] Ejecutar `py -3.12 tools/run_forge_agents.py compact` y verificar telemetría de compresión sin pérdidas.
+- [x] Ejecutar suites de verificación completas (`test_forge_agents.py`, `dotnet build`, `verify_stateless_behavior.ps1`).
+- [x] Redactar Propuesta 19 en `learning_proposal.md` y sincronizar `docs/AUTONOMOUS_AGENTS.md` y `docs/AUTONOMOUS_AGENTS.es.md`.
+
+## Optimización de Empaquetado Multihilo y Compresión Concurrente (Rev059)
+- [x] Implementar clase compilada en C# `FastPackageEngine` en `tools/package.ps1` con `FastTreeCopy`, `CopyModuleDirectory` y `CompressParallel`.
+- [x] Poda de directorios en nivel superior (`bin`, `obj`, `__pycache__`, `api`), reduciendo tiempo de staging a 43 ms (>99% de reducción).
+- [x] Filtrado preventivo en memoria de residuos (`.bak.*`, `.cfcrash`, `.log`, `.backup`, `.pdb`, `.exe`) sin pasadas de borrado sobre disco.
+- [x] Compresión concurrente paralela de los 3 archivos ZIP (`Parallel.Invoke`) reduciendo tiempo al archivo más pesado.
+- [x] Compresión adaptativa (`Optimal` en release, `Fastest` con `-Quick`).
+- [x] Consolidación de build MSBuild (`dotnet build CalradiaForge.sln -c Release --no-restore -v:minimal` en un solo pase).
+- [x] Superar pruebas de integridad y empaquetado: 3 paquetes ZIP verificados con `audit_package.py`, `Test-ZipEntries` y hashes SHA-256.
+- [x] Redactar Propuesta 20 en `learning_proposal.md`.
+
+## Gran Ronda de Corrección de Errores al Mod y Expansión de BugHunterAgent (Rev060)
+- [x] Blindar todas las llamadas a `vm` en `SubModule.cs` (`OnApplicationTick`, `GetKeyboardFocusLabel`, `SyncNavigationPaletteFocus`) ante referencias nulas.
+- [x] Migrar la caché estática de `GameLocalization.cs` a `ConcurrentDictionary<string, string>` para concurrencia segura multihilo.
+- [x] Estandarizar la comprobación `args == null || args.Count < N` en todas las funciones de consola de `ForgeCommands.cs`.
+- [x] Corregir la actualización de hechos semánticos en `AgentCognitiveMemoryBehavior.cs` guardando la relación real (`hero1.GetRelation(hero2)`) y el delta en `LastRelationDelta`.
+- [x] Fortalecer `AssemblyWorkbenchService.cs` con salvaguardas nulas ante referencias de ensamblados ofuscadas o anómalas.
+- [x] Expandir `BugHunterAgent` en `agents/tools.py` (`audit_code_smells`, `audit_concurrency_hazards`) y añadir tests en `tests/test_forge_agents.py`.
+- [x] Ejecutar suites de verificación completas (`dotnet build`, `verify_stateless_behavior.ps1`, `Run-CalradiaForge-Tests.bat`, `run_forge_agents.py bughunt` y `verify`).
+- [x] Redactar Propuesta 21 en `learning_proposal.md`, sincronizar codemaps y generar paquetes de distribución con `tools/package.ps1`.
+
+
+

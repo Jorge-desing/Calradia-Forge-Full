@@ -641,7 +641,7 @@ Campaign Events (HeroPrisonerTaken, HeroKilled, HeroRelationChanged, etc.)
     ↓
 ForgeAgentMemory (Volatile, Bounded FIFO Quotas, StringId Indexed)
     ├── Episodic Memory (Experiences, Battles, Captivity, Feuds, Training)
-    └── Semantic Memory (Facts, Relations, Total Kills, Imprisonment state, TTL)
+    └── Semantic Memory (Absolute Relations Relation_<Id>, Deltas LastRelationDelta_<Id>, Total Kills, TTL)
     ↓
 Modulo-24 Time-Slicing (HourlyTick: 1/24th of active heroes per hour)
     ↓

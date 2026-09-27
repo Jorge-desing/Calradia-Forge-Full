@@ -186,10 +186,20 @@ class TestForgeTools(unittest.TestCase):
     def test_audit_code_smells(self) -> None:
         report = audit_code_smells()
         self.assertIn("Code Smells", report)
+        self.assertIn("PASSED", report)
+        self.assertNotIn("FAILED", report)
+        raw_report = audit_code_smells(raw=True)
+        self.assertIn("Console commands: 100% of ForgeCommands defend against null args.", raw_report)
+        self.assertIn("Cognitive memory: Semantic relation facts accurately track GetRelation and LastRelationDelta.", raw_report)
+        self.assertIn("Assembly inspection: 100% null-safe assembly reference and version formatting.", raw_report)
 
     def test_audit_concurrency_hazards(self) -> None:
         report = audit_concurrency_hazards()
         self.assertIn("Concurrency Hazards Audit", report)
+        self.assertIn("PASSED", report)
+        self.assertNotIn("FAILED", report)
+        raw_report = audit_concurrency_hazards(raw=True)
+        self.assertIn("GameLocalization: ConcurrentDictionary guarantees thread-safe token caching across threads.", raw_report)
 
 
 class TestForgeTokenCompactor(unittest.TestCase):

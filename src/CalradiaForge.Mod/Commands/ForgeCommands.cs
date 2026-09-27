@@ -112,7 +112,7 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("calc_war_score", "cf.diplomacy")]
         public static string CalcWarScore(List<string> args)
         {
-            if (args.Count < 5) return "Usage: cf.diplomacy.calc_war_score <military> <gold> <activeWars> <tributeRecv> <tributePaid>";
+            if (args == null || args.Count < 5) return "Usage: cf.diplomacy.calc_war_score <military> <gold> <activeWars> <tributeRecv> <tributePaid>";
             int.TryParse(args[0], out int mil);
             int.TryParse(args[1], out int gold);
             int.TryParse(args[2], out int wars);
@@ -126,7 +126,7 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("calc_peace_tribute", "cf.diplomacy")]
         public static string CalcPeaceTribute(List<string> args)
         {
-            if (args.Count < 4) return "Usage: cf.diplomacy.calc_peace_tribute <casInflicted> <casSuffered> <settleTaken> <settleLost>";
+            if (args == null || args.Count < 4) return "Usage: cf.diplomacy.calc_peace_tribute <casInflicted> <casSuffered> <settleTaken> <settleLost>";
             int.TryParse(args[0], out int casInf);
             int.TryParse(args[1], out int casSuf);
             int.TryParse(args[2], out int setTak);
@@ -139,7 +139,7 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("audit_rebellion", "cf.settlement")]
         public static string AuditRebellion(List<string> args)
         {
-            if (args.Count < 3) return "Usage: cf.settlement.audit_rebellion <loyalty> <militia> <garrison>";
+            if (args == null || args.Count < 3) return "Usage: cf.settlement.audit_rebellion <loyalty> <militia> <garrison>";
             float.TryParse(args[0], out float loyalty);
             int.TryParse(args[1], out int militia);
             int.TryParse(args[2], out int garrison);
@@ -151,7 +151,7 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("calc_alley", "cf.underworld")]
         public static string CalcAlley(List<string> args)
         {
-            if (args.Count < 3) return "Usage: cf.underworld.calc_alley <thugs> <prosperity> <security>";
+            if (args == null || args.Count < 3) return "Usage: cf.underworld.calc_alley <thugs> <prosperity> <security>";
             int.TryParse(args[0], out int thugs);
             int.TryParse(args[1], out int prosperity);
             float.TryParse(args[2], out float security);
@@ -163,7 +163,7 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("calc_learning_rate", "cf.character")]
         public static string CalcLearningRate(List<string> args)
         {
-            if (args.Count < 3) return "Usage: cf.character.calc_learning_rate <attr> <focus> <skill>";
+            if (args == null || args.Count < 3) return "Usage: cf.character.calc_learning_rate <attr> <focus> <skill>";
             int.TryParse(args[0], out int attr);
             int.TryParse(args[1], out int focus);
             int.TryParse(args[2], out int skill);
@@ -175,7 +175,7 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("calc_morale_shock", "cf.combat")]
         public static string CalcMoraleShock(List<string> args)
         {
-            if (args.Count < 4) return "Usage: cf.combat.calc_morale_shock <casualties> <total> <isFlanked> <isCommanderDead>";
+            if (args == null || args.Count < 4) return "Usage: cf.combat.calc_morale_shock <casualties> <total> <isFlanked> <isCommanderDead>";
             int.TryParse(args[0], out int cas);
             int.TryParse(args[1], out int total);
             bool.TryParse(args[2], out bool isFlanked);
@@ -188,7 +188,7 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("breach_chance", "cf.siege")]
         public static string BreachChance(List<string> args)
         {
-            if (args.Count < 3) return "Usage: cf.siege.breach_chance <trebuchet> <catapult> <wallTier>";
+            if (args == null || args.Count < 3) return "Usage: cf.siege.breach_chance <trebuchet> <catapult> <wallTier>";
             int.TryParse(args[0], out int treb);
             int.TryParse(args[1], out int cat);
             int.TryParse(args[2], out int tier);
@@ -200,7 +200,7 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("price", "cf.trade")]
         public static string Price(List<string> args)
         {
-            if (args.Count < 3) return "Usage: cf.trade.price <basePrice> <supply> <demand>";
+            if (args == null || args.Count < 3) return "Usage: cf.trade.price <basePrice> <supply> <demand>";
             int.TryParse(args[0], out int basePrice);
             int.TryParse(args[1], out int supply);
             int.TryParse(args[2], out int demand);
@@ -212,7 +212,7 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("verify_transfer", "cf.trade")]
         public static string VerifyTransfer(List<string> args)
         {
-            if (args.Count < 2) return "Usage: cf.trade.verify_transfer <currentCount> <requestedAmount>";
+            if (args == null || args.Count < 2) return "Usage: cf.trade.verify_transfer <currentCount> <requestedAmount>";
             int.TryParse(args[0], out int current);
             int.TryParse(args[1], out int req);
 
@@ -223,7 +223,7 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("audit", "cf.rules")]
         public static string AuditRules(List<string> args)
         {
-            string path = args.Count > 0 ? string.Join(" ", args) : ".";
+            string path = args != null && args.Count > 0 ? string.Join(" ", args) : ".";
             var result = ModRuleAuditor.Audit(path);
 
             string summary = $"Rule Audit Results for '{path}': Passed={result.Passed}, Total Findings={result.Findings.Count}\n";

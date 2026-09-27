@@ -165,7 +165,7 @@ namespace CalradiaForge.Mod
                     }
                     if (vm != null && vm.IsKeyHelpOpen)
                     {
-                        vm.ExecuteToggleKeyHelp();
+                        vm?.ExecuteToggleKeyHelp();
                         return;
                     }
                     if (vm != null && vm.IsSdkCatalogOpen)
@@ -184,12 +184,12 @@ namespace CalradiaForge.Mod
 
                 if (IsControlDown() && Input.IsKeyPressed(InputKey.P))
                 {
-                    vm.ToggleNavigationPalette();
+                    vm?.ToggleNavigationPalette();
                     SyncNavigationPaletteFocus();
                     return;
                 }
 
-                if (vm.IsNavigationPaletteOpen)
+                if (vm != null && vm.IsNavigationPaletteOpen)
                 {
                     if (IsControlDown() && Input.IsKeyPressed(InputKey.F))
                     {
@@ -230,14 +230,14 @@ namespace CalradiaForge.Mod
                     var id = keyboardControl.Id;
                     layer.UIContext.EventManager.ClearFocus();
                     ClearKeyboardFocus();
-                    vm.ExecuteKeyboardControl(id);
+                    vm?.ExecuteKeyboardControl(id);
                 }
 
                 var focusedId = layer.UIContext.EventManager.FocusedWidget?.Id;
                 if (focusedId == "ForgeArgument" || focusedId == "ForgeCommandArgument")
                 {
-                    if (Input.IsKeyPressed(InputKey.Up)) vm.ExecuteHistoryPrevious();
-                    else if (Input.IsKeyPressed(InputKey.Down)) vm.ExecuteHistoryNext();
+                    if (Input.IsKeyPressed(InputKey.Up)) vm?.ExecuteHistoryPrevious();
+                    else if (Input.IsKeyPressed(InputKey.Down)) vm?.ExecuteHistoryNext();
                 }
 
                 if (Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl))
@@ -246,23 +246,23 @@ namespace CalradiaForge.Mod
                     {
                         FocusMainSearch();
                     }
-                    else if (Input.IsKeyPressed(InputKey.Enter)) { layer.UIContext.EventManager.ClearFocus(); vm.ExecuteRefresh(); }
-                    else if (Input.IsKeyPressed(InputKey.L)) vm.ExecuteClearOutput();
-                    else if (Input.IsKeyPressed(InputKey.K)) vm.ExecuteToggleKeyHelp();
-                    else if (Input.IsKeyPressed(InputKey.W)) vm.ExecuteToggleLiveWatch();
+                    else if (Input.IsKeyPressed(InputKey.Enter)) { layer.UIContext.EventManager.ClearFocus(); vm?.ExecuteRefresh(); }
+                    else if (Input.IsKeyPressed(InputKey.L)) vm?.ExecuteClearOutput();
+                    else if (Input.IsKeyPressed(InputKey.K)) vm?.ExecuteToggleKeyHelp();
+                    else if (Input.IsKeyPressed(InputKey.W)) vm?.ExecuteToggleLiveWatch();
                     else if (Input.IsKeyPressed(InputKey.Up)) vm.ExecuteHistoryPrevious();
                     else if (Input.IsKeyPressed(InputKey.Down)) vm.ExecuteHistoryNext();
-                    else if (Input.IsKeyPressed(InputKey.D1)) vm.ExecuteCategoryOverview();
-                    else if (Input.IsKeyPressed(InputKey.D2)) vm.ExecuteCategoryInspector();
-                    else if (Input.IsKeyPressed(InputKey.D3)) vm.ExecuteCategoryToolkit();
-                    else if (Input.IsKeyPressed(InputKey.D4)) vm.ExecuteCategoryWeave();
-                    else if (Input.IsKeyPressed(InputKey.D5)) vm.ExecuteCategorySimulate();
-                    else if (Input.IsKeyPressed(InputKey.D6)) vm.ExecuteCategoryAudit();
-                    else if (Input.IsKeyPressed(InputKey.D7)) vm.ExecuteCategoryNovice();
-                    else if (Input.IsKeyPressed(InputKey.D8)) vm.ExecuteDependencies();
-                    else if (Input.IsKeyPressed(InputKey.D9)) vm.ExecuteExtensions();
-                    else if (Input.IsKeyPressed(InputKey.Left)) vm.ExecutePrevious();
-                    else if (Input.IsKeyPressed(InputKey.Right)) vm.ExecuteNext();
+                    else if (Input.IsKeyPressed(InputKey.D1)) vm?.ExecuteCategoryOverview();
+                    else if (Input.IsKeyPressed(InputKey.D2)) vm?.ExecuteCategoryInspector();
+                    else if (Input.IsKeyPressed(InputKey.D3)) vm?.ExecuteCategoryToolkit();
+                    else if (Input.IsKeyPressed(InputKey.D4)) vm?.ExecuteCategoryWeave();
+                    else if (Input.IsKeyPressed(InputKey.D5)) vm?.ExecuteCategorySimulate();
+                    else if (Input.IsKeyPressed(InputKey.D6)) vm?.ExecuteCategoryAudit();
+                    else if (Input.IsKeyPressed(InputKey.D7)) vm?.ExecuteCategoryNovice();
+                    else if (Input.IsKeyPressed(InputKey.D8)) vm?.ExecuteDependencies();
+                    else if (Input.IsKeyPressed(InputKey.D9)) vm?.ExecuteExtensions();
+                    else if (Input.IsKeyPressed(InputKey.Left)) vm?.ExecutePrevious();
+                    else if (Input.IsKeyPressed(InputKey.Right)) vm?.ExecuteNext();
                 }
             }
             catch (Exception e) { runtime.Register("CalradiaForge", "Error", e.ToString()); Close(); }
@@ -312,7 +312,7 @@ namespace CalradiaForge.Mod
         void FocusNavigationPaletteSearch() => FocusFirstWidget(IsNavigationPaletteSearchPredicate);
         void FocusMainSearch()
         {
-            var predicate = vm.IsSdkCatalogOpen ? IsSdkCatalogSearchPredicate : IsForgeArgumentPredicate;
+            var predicate = vm?.IsSdkCatalogOpen == true ? IsSdkCatalogSearchPredicate : IsForgeArgumentPredicate;
             FocusFirstWidget(predicate);
         }
         void FocusFirstWidget(Func<Widget, bool> predicate)
@@ -340,11 +340,11 @@ namespace CalradiaForge.Mod
             {
                 switch (field.Id)
                 {
-                    case "ForgeAssemblyPath": return vm.AssemblyPathLabel;
-                    case "ForgeAssemblyVersion": return vm.AssemblyVersionLabel;
-                    case "ForgeSdkCatalogSearch": return vm.SdkCatalogSearchPlaceholder;
-                    case "ForgeNavigationPaletteSearch": return vm.NavigationPaletteSearchPlaceholder;
-                    default: return vm.InputLabel;
+                    case "ForgeAssemblyPath": return vm?.AssemblyPathLabel ?? "";
+                    case "ForgeAssemblyVersion": return vm?.AssemblyVersionLabel ?? "";
+                    case "ForgeSdkCatalogSearch": return vm?.SdkCatalogSearchPlaceholder ?? "";
+                    case "ForgeNavigationPaletteSearch": return vm?.NavigationPaletteSearchPlaceholder ?? "";
+                    default: return vm?.InputLabel ?? "";
                 }
             }
             return "";
