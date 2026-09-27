@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -81,6 +82,21 @@ namespace CalradiaForge.Desktop.Presentation
         public WorkspaceEvidence[] Evidence { get; set; } = [];
     }
 
+    internal sealed class CopyableConsoleCommand
+    {
+        internal CopyableConsoleCommand(string text, int index, string accessibleNameFormat)
+        {
+            Text = text ?? string.Empty;
+            AutomationId = "CopyConsoleCommandButton" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            AccessibleName = string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                accessibleNameFormat ?? "Copy console command: {0}", Text);
+        }
+
+        public string Text { get; }
+        public string AutomationId { get; }
+        public string AccessibleName { get; }
+    }
+
     internal interface IWorkspacePage : IDisposable
     {
         ToolDefinition Tool { get; }
@@ -92,22 +108,36 @@ namespace CalradiaForge.Desktop.Presentation
     {
         readonly Func<ToolDefinition, string, CancellationToken, Task<WorkspaceExecutionResult>> execute;
         readonly Action<ToolPageViewModel> export;
+        readonly Func<ToolPageViewModel, CancellationToken, Task> exportAsync;
         readonly Func<ToolDefinition, bool, string> pickInput;
+        readonly Func<string, bool> clipboardWriter;
+        readonly Func<string, string> localize;
         string input = string.Empty;
         string status = "Not run";
         string rawResult = "Select a tool and run its declared command.";
         string disabledReason;
+        string copyFeedback = string.Empty;
         bool disposed;
 
         public ToolPageViewModel(ToolDefinition tool,
             Func<ToolDefinition, string, CancellationToken, Task<WorkspaceExecutionResult>> execute,
-            Action<ToolPageViewModel> export,
-            Func<ToolDefinition, bool, string> pickInput = null)
+            Action<ToolPageViewModel> export = null,
+            Func<ToolDefinition, bool, string> pickInput = null,
+            Func<ToolPageViewModel, CancellationToken, Task> exportAsync = null,
+            Func<string, bool> clipboardWriter = null,
+            Func<string, string> localize = null)
         {
             Tool = tool ?? throw new ArgumentNullException(nameof(tool));
             this.execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            this.export = export ?? throw new ArgumentNullException(nameof(export));
+            if (export == null && exportAsync == null) throw new ArgumentNullException(nameof(export));
+            this.export = export;
+            this.exportAsync = exportAsync;
             this.pickInput = pickInput;
+            this.clipboardWriter = clipboardWriter ?? (_ => false);
+            this.localize = localize ?? (key => key);
+            var copyNameFormat = this.localize("Ui.CopyCommandAccessibleNameFormat") ?? "Copy console command: {0}";
+            ConsoleCommandEntries = Array.AsReadOnly(Tool.ConsoleCommands
+                .Select((command, index) => new CopyableConsoleCommand(command, index, copyNameFormat)).ToArray());
             var studio = tool.Studio;
             IsTroopTreeVisualizer = studio == DesktopStudioKind.TroopTree;
             IsAudioMixerInspector = studio == DesktopStudioKind.AudioMixer;
@@ -120,7 +150,8 @@ namespace CalradiaForge.Desktop.Presentation
             HasVisualDashboard = studio != DesktopStudioKind.Generic;
             RunCommand = new AsyncRelayCommand(RunAsync, CanRun);
             CancelCommand = new RelayCommand(() => RunCommand.Cancel(), () => RunCommand.IsRunning);
-            ExportCommand = new RelayCommand(() => this.export(this), () => !string.IsNullOrWhiteSpace(RawResult));
+            ExportCommand = new AsyncRelayCommand(ExportAsync, () => !disposed && !string.IsNullOrWhiteSpace(RawResult));
+            CopyTextCommand = new RelayCommand(CopyText, value => value is string text && !string.IsNullOrWhiteSpace(text));
             BrowseFileCommand = new RelayCommand(() => SelectInput(false), CanSelectInput);
             BrowseFolderCommand = new RelayCommand(() => SelectInput(true), CanSelectInput);
             LoadPresetCommand = new RelayCommand(CyclePreset, () => HasPresetAction);
@@ -220,12 +251,15 @@ namespace CalradiaForge.Desktop.Presentation
         int presetCycleIndex;
 
         public ToolDefinition Tool { get; }
+        public IReadOnlyList<CopyableConsoleCommand> ConsoleCommandEntries { get; }
         [ForgeUiCommand("run", "Primary", cancellable: true)]
         public AsyncRelayCommand RunCommand { get; }
         [ForgeUiCommand("cancel", "Secondary", cancellable: false)]
         public RelayCommand CancelCommand { get; }
         [ForgeUiCommand("export", "Secondary", cancellable: false)]
-        public RelayCommand ExportCommand { get; }
+        public AsyncRelayCommand ExportCommand { get; }
+        public RelayCommand CopyTextCommand { get; }
+        public string CopyFeedback { get => copyFeedback; private set => Set(ref copyFeedback, value); }
         [ForgeUiCommand("browse-file", "Secondary", cancellable: false)]
         public RelayCommand BrowseFileCommand { get; }
         [ForgeUiCommand("browse-folder", "Secondary", cancellable: false)]
@@ -388,6 +422,25 @@ namespace CalradiaForge.Desktop.Presentation
             if (!string.IsNullOrWhiteSpace(selected)) Input = selected;
         }
 
+        async Task ExportAsync(CancellationToken cancellationToken)
+        {
+            if (exportAsync != null)
+                await exportAsync(this, cancellationToken).ConfigureAwait(true);
+            else
+                export?.Invoke(this);
+        }
+
+        void CopyText(object value)
+        {
+            if (value is not string text || string.IsNullOrWhiteSpace(text)) return;
+            bool copied;
+            try { copied = clipboardWriter(text); }
+            catch { copied = false; }
+            CopyFeedback = copied
+                ? localize("Ui.ClipboardCopySucceeded") ?? "Command copied to the clipboard."
+                : localize("Ui.ClipboardCopyFailed") ?? "Could not copy to the clipboard.";
+        }
+
         bool CanRun() => !disposed && string.IsNullOrEmpty(DisabledReason);
 
         async Task RunAsync(CancellationToken cancellation)
@@ -532,6 +585,7 @@ namespace CalradiaForge.Desktop.Presentation
             if (disposed) return;
             disposed = true;
             RunCommand.Cancel();
+            ExportCommand.Cancel();
             Evidence.Clear();
             Raise(nameof(DisabledReason));
             RunCommand.NotifyCanExecuteChanged();

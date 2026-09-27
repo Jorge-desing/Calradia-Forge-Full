@@ -308,6 +308,11 @@ internal static class Program
                 shellType.GetProperty("SelectedTool").SetValue(shell, toolArray[0]);
                 ClearEvidenceForEmptyRenderCase(shell);
                 Render(window);
+                if (layoutPass == 0 && (language == "es" || language == "ja"))
+                {
+                    AssertVisualizerLocalization(app, window, shell, toolArray.Cast<ToolDefinition>().ToArray(), language);
+                    records.Add(new { test = "localized-specialist-visualizer-headings", language, routes = 2, passed = true });
+                }
                 if (minimumWindowCase) AssertApplicationStatusWrapsAtMinimum(window);
                 if (language == "en" && layoutPass == 0)
                     SavePreview(window, Path.Combine(Path.GetDirectoryName(Path.GetFullPath(output)) ?? ".", "desktop-render-tests-en-minimum-current.png"), 1.0);
@@ -1108,6 +1113,24 @@ internal static class Program
             Check(dossier.IsVisible && dossier.ActualWidth > 0 && dossier.ActualHeight > 0 &&
                   ReferenceEquals(FocusManager.GetFocusedElement(window), toggle),
                 "Opening the contextual dossier must show its side panel without moving logical focus or activating the window.");
+            var consoleCopy = Descendants(dossier).OfType<Button>().SingleOrDefault(item =>
+                string.Equals(AutomationProperties.GetAutomationId(item), "CopyConsoleCommandButton0", StringComparison.Ordinal));
+            var cliCopy = Descendants(dossier).OfType<Button>().SingleOrDefault(item =>
+                string.Equals(AutomationProperties.GetAutomationId(item), "CopyCliSyntaxButton", StringComparison.Ordinal));
+            var copyFeedback = Descendants(dossier).OfType<TextBlock>().SingleOrDefault(item =>
+                string.Equals(AutomationProperties.GetAutomationId(item), "ClipboardCopyFeedback", StringComparison.Ordinal));
+            var page = shellType.GetProperty("CurrentPage").GetValue(shell);
+            var commandEntries = ((IEnumerable)page.GetType().GetProperty("ConsoleCommandEntries").GetValue(page)).Cast<object>().ToArray();
+            var commandText = commandEntries[0].GetType().GetProperty("Text").GetValue(commandEntries[0]) as string;
+            var localizedCommandName = Application.Current.TryFindResource("Ui.CopyCommandAccessibleNameFormat") as string;
+            Check(consoleCopy != null && cliCopy != null && copyFeedback != null && commandEntries.Length > 0 &&
+                  string.Equals(AutomationProperties.GetAutomationId(consoleCopy), "CopyConsoleCommandButton0", StringComparison.Ordinal) &&
+                  string.Equals(AutomationProperties.GetName(consoleCopy), string.Format(CultureInfo.CurrentCulture, localizedCommandName, commandText), StringComparison.Ordinal) &&
+                  consoleCopy.Command?.CanExecute(consoleCopy.CommandParameter) == true &&
+                  string.Equals(AutomationProperties.GetName(cliCopy), Application.Current.TryFindResource("Ui.CopyCliAccessibleName") as string, StringComparison.Ordinal) &&
+                  cliCopy.Command?.CanExecute(cliCopy.CommandParameter) == true &&
+                  AutomationProperties.GetLiveSetting(copyFeedback) == AutomationLiveSetting.Polite,
+                "The open dossier must expose distinct localized copy names, bound commands, and polite live feedback without invoking a copy action.");
             var frameBounds = Bounds(frame, window);
             var dossierBounds = Bounds(dossier, window);
             Check(!frameBounds.IntersectsWith(dossierBounds) && dossierBounds.Left >= frameBounds.Right - 1 &&
@@ -1144,6 +1167,37 @@ internal static class Program
             shellType.GetProperty("SelectedTool").SetValue(shell, originalTool);
             window.Width = originalWidth;
             window.Height = originalHeight;
+            Render(window);
+        }
+    }
+
+    static void AssertVisualizerLocalization(Application app, Window window, object shell, ToolDefinition[] tools, string languageCode)
+    {
+        var shellType = shell.GetType();
+        var originalTool = shellType.GetProperty("SelectedTool").GetValue(shell);
+        var routes = new[]
+        {
+            (Id: "AudioFmodMixerInspector", Resource: "Viz.Audio.Title"),
+            (Id: "AssemblyInspector", Resource: "Viz.CodeSecurity.Title")
+        };
+        try
+        {
+            foreach (var route in routes)
+            {
+                var tool = tools.SingleOrDefault(item => string.Equals(item.Id, route.Id, StringComparison.Ordinal));
+                Check(tool != null, "Localized visualizer coverage cannot find route " + route.Id + ".");
+                var expected = app.TryFindResource(route.Resource) as string;
+                Check(!string.IsNullOrWhiteSpace(expected), "The " + languageCode + " catalog has no visualizer title " + route.Resource + ".");
+                shellType.GetProperty("SelectedTool").SetValue(shell, tool);
+                Render(window);
+                Check(Descendants(window).OfType<TextBlock>().Any(block => block.IsVisible && block.ActualWidth > 0 &&
+                        string.Equals(block.Text, expected, StringComparison.Ordinal)),
+                    "The " + languageCode + " title " + route.Resource + " did not render for " + route.Id + ".");
+            }
+        }
+        finally
+        {
+            shellType.GetProperty("SelectedTool").SetValue(shell, originalTool);
             Render(window);
         }
     }

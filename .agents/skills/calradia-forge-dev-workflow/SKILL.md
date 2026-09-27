@@ -46,25 +46,35 @@ This isolated project skill contains Calradia Forge's required lifecycle and ver
 - Never add speculative abstractions, unrequested interfaces, or unused parameters.
 - Preserve 100% of existing public APIs and backward compatibility.
 
-### Stage 4: Rigorous Test Verification
-Execute the official non-interactive test suite without starting external game or test processes:
+### Stage 4: Rigorous Test & Multi-Agent Verification
+Execute the official non-interactive test suite and agent verification pipelines:
 ```powershell
 # 1. Statelessness & architectural constraints
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify_stateless_behavior.ps1
 
 # 2. Master test runner (Assets, Core 250 tests, ForgeWeave 37 tests, Desktop 51 tests, Render 274 tests)
 cmd.exe /c "tools\Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul"
+
+# 3. Google Antigravity Autonomous Agents verification suite
+py -3.12 tools/run_forge_agents.py verify
+py -3.12 -m unittest tests/test_forge_agents.py
 ```
 
-### Stage 5: Static Audit & Quality Review
+### Stage 5: Static Audit, Autonomous BugHunting & Quality Review
 - Run `ModRuleAuditor.Audit()` to check for architectural violations (`GEMINI_CAMPAIGN_SHADOWING`, `FORGEWEAVE_UNTHROTTLED_PULSE`, `FORGEWEAVE_UNSAFE_WRITER`, `DESKTOP_PATH_SHADOWING`, `WPF_CONVERTER_SIGNATURE`).
+- Run autonomous agent bug hunting and token compaction telemetry:
+  ```powershell
+  py -3.12 tools/run_forge_agents.py bughunt --compaction-preset balanced
+  ```
 - Use [`code-reviewer`](../code-reviewer/SKILL.md) to inspect pull requests for anti-patterns and performance smells.
 
-### Stage 6: Documentation & Release Packaging
-- Follow [`calradia-forge-docs`](../calradia-forge-docs/SKILL.md) for documentation and validation records.
-- Run the packaging script only when the user requests a release/package or the task explicitly includes release packaging:
+### Stage 6: Documentation, Fast Packaging & Git Synchronization
+- Follow [`calradia-forge-docs`](../calradia-forge-docs/SKILL.md) for documentation and validation records (`VALIDATION-<VERSION>.md`).
+- Run the packaging script when concluding milestones or upon user request (`auto_packaging.md`):
   ```powershell
   powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1 -Version "<version>"
   ```
-- Do not package archives for documentation-only, test-only, or ordinary implementation milestones.
-- Update canonical codemaps (`docs/CODEMAP_*.md`) if behaviors or models were modified.
+  *(Utiliza `FastPackageEngine`: poda de directorios raíz, staging cero-residuos en memoria y compresión paralela multihilo)*.
+- Sincronizar cambios y subir a GitHub siguiendo `RULE[git_sync_workflow.md]` (`git push origin main`) previa verificación de compresión e integridad de hashes SHA-256.
+- Update canonical codemaps (`docs/CODEMAP_*.md`) if behaviors, models, or memory facts were modified.
+

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,6 +28,8 @@ namespace CalradiaForge.Desktop.Presentation
         readonly DesktopLocalizationService localization;
         readonly DesktopThemeService theme;
         readonly DesktopPreferenceService preferences;
+        readonly DesktopReportExportService reportExport;
+        readonly Func<string, bool> clipboardWriter;
         readonly Func<ToolDefinition, bool, string> pickInput;
         readonly Dictionary<ToolDefinition, string> toolSearchText;
         readonly BatchObservableCollection<ToolDefinition> visibleTools;
@@ -66,7 +67,7 @@ namespace CalradiaForge.Desktop.Presentation
         bool disposed;
         ModderRolePreset activeModderRole = ModderRolePreset.All;
 
-        public DesktopShellViewModel(ToolCatalog catalog, DesktopWorkspaceService workspace, DesktopMetricsService metrics, DesktopLocalizationService localization, DesktopThemeService theme, DesktopPreferenceService preferences, Func<ToolDefinition, bool, string> pickInput = null)
+        public DesktopShellViewModel(ToolCatalog catalog, DesktopWorkspaceService workspace, DesktopMetricsService metrics, DesktopLocalizationService localization, DesktopThemeService theme, DesktopPreferenceService preferences, Func<ToolDefinition, bool, string> pickInput = null, DesktopReportExportService reportExport = null, Func<string, bool> clipboardWriter = null)
         {
             Catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             this.workspace = workspace ?? throw new ArgumentNullException(nameof(workspace));
@@ -75,6 +76,8 @@ namespace CalradiaForge.Desktop.Presentation
             this.theme = theme ?? throw new ArgumentNullException(nameof(theme));
             this.preferences = preferences ?? throw new ArgumentNullException(nameof(preferences));
             this.pickInput = pickInput;
+            this.reportExport = reportExport ?? new DesktopReportExportService();
+            this.clipboardWriter = clipboardWriter ?? (_ => false);
             using var startupMeasurement = this.metrics.Start(
                 "desktop-shell-initialize",
                 "Synchronous WPF shell construction only; does not include first paint or system startup.");
@@ -109,7 +112,7 @@ namespace CalradiaForge.Desktop.Presentation
             FocusSearchCommand = new(() => { SearchFocusRequest++; Status = "Search focused — type a title, identifier, or category."; });
             ClearFilterCommand = new(ClearFilter);
             RunPrimaryCommand = new(() => CurrentPage?.RunCommand.Execute(null), () => CurrentPage?.RunCommand.CanExecute(null) == true);
-            ExportEvidenceCommand = new(ExportRetainedEvidence, () => retainedEvidence.Count > 0);
+            ExportEvidenceCommand = new(ExportRetainedEvidenceAsync, () => !disposed && retainedEvidence.Count > 0);
             ApplyThemeCommand = new(ApplyTheme, value => value != null);
             ConnectCommand = new(ConnectAsync);
             ToggleSplitDeckCommand = new(ToggleSplitDeck);
@@ -141,7 +144,7 @@ namespace CalradiaForge.Desktop.Presentation
         public RelayCommand FocusSearchCommand { get; }
         public RelayCommand ClearFilterCommand { get; }
         public RelayCommand RunPrimaryCommand { get; }
-        public RelayCommand ExportEvidenceCommand { get; }
+        public AsyncRelayCommand ExportEvidenceCommand { get; }
         public RelayCommand ApplyThemeCommand { get; }
         public AsyncRelayCommand ConnectCommand { get; }
         public RelayCommand ToggleSplitDeckCommand { get; }
@@ -661,7 +664,14 @@ namespace CalradiaForge.Desktop.Presentation
             using (metrics.Start("tool-selection", "Short desktop navigation only; not a game-performance attribution."))
             {
                 (CurrentPage as IWorkspacePage)?.Dispose();
-                var page = DeclarativeUiCatalog.Create("tool-workbench", () => new WorkbenchPageViewModel(tool, ExecuteAsync, ExportPage, pickInput));
+                var page = DeclarativeUiCatalog.Create("tool-workbench", () => new WorkbenchPageViewModel(
+                    tool, ExecuteAsync, pickInput: pickInput, exportAsync: ExportPageAsync,
+                    clipboardWriter: clipboardWriter, localize: key => key switch
+                    {
+                        "Ui.CopyCommandAccessibleNameFormat" => localization.GetText(key, "Copy console command: {0}"),
+                        "Ui.ClipboardCopySucceeded" => localization.GetText(key, "Command copied to the clipboard."),
+                        _ => localization.GetText(key, "Could not copy to the clipboard.")
+                    }));
                 CurrentPage = page;
                 CurrentWorkbenchPage = page;
             }
@@ -692,24 +702,40 @@ namespace CalradiaForge.Desktop.Presentation
             return result;
         }
 
-        void ExportPage(ToolPageViewModel page)
+        async Task ExportPageAsync(ToolPageViewModel page, CancellationToken cancellationToken)
         {
             if (page == null) return;
             retainedEvidence.Clear(); retainedEvidence.AddRange(page.Evidence);
-            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CalradiaForge", "Reports");
-            Directory.CreateDirectory(folder);
-            var path = Path.Combine(folder, "desktop-work-order-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + ".txt");
-            File.WriteAllText(path, page.RawResult ?? string.Empty);
-            Status = "Exported " + path; Session.Report = "Exported"; Raise(nameof(EvidenceCount)); Raise(nameof(EvidenceSummary)); ExportEvidenceCommand.NotifyCanExecuteChanged();
+            Raise(nameof(EvidenceCount)); Raise(nameof(EvidenceSummary)); ExportEvidenceCommand.NotifyCanExecuteChanged();
+            var result = await reportExport.ExportTextAsync("desktop-work-order", page.RawResult, cancellationToken).ConfigureAwait(true);
+            ApplyExportResult(result);
         }
 
-        void ExportRetainedEvidence()
+        async Task ExportRetainedEvidenceAsync(CancellationToken cancellationToken)
         {
-            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CalradiaForge", "Reports");
-            Directory.CreateDirectory(folder);
-            var path = Path.Combine(folder, "desktop-evidence-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + ".txt");
-            File.WriteAllLines(path, retainedEvidence.Select(item => item.Source + " | " + item.Status + " | " + item.Detail));
-            Status = "Exported " + path; Session.Report = "Exported";
+            var snapshot = retainedEvidence.Select(item => item.Source + " | " + item.Status + " | " + item.Detail).ToArray();
+            var result = await reportExport.ExportLinesAsync("desktop-evidence", snapshot, cancellationToken).ConfigureAwait(true);
+            ApplyExportResult(result);
+        }
+
+        void ApplyExportResult(ReportExportResult result)
+        {
+            if (result?.Status == ReportExportStatus.Succeeded)
+            {
+                var template = localization.GetText("Ui.ReportExported", "Report exported: {0}");
+                Status = string.Format(System.Globalization.CultureInfo.CurrentCulture, template, result.Path);
+                Session.Report = localization.GetText("Ui.ReportExportedShort", "Exported");
+            }
+            else if (result?.Status == ReportExportStatus.Cancelled)
+            {
+                Status = localization.GetText("Ui.ReportExportCancelled", "Report export cancelled.");
+                Session.Report = Status;
+            }
+            else
+            {
+                Status = localization.GetText("Ui.ReportExportFailed", "Could not export the report. Check the reports folder and try again.");
+                Session.Report = Status;
+            }
         }
 
         void ToggleSplitDeck()
@@ -749,6 +775,7 @@ namespace CalradiaForge.Desktop.Presentation
         {
             if (disposed) return;
             disposed = true;
+            ExportEvidenceCommand.Cancel();
             (CurrentPage as IWorkspacePage)?.Dispose();
             workspace.Dispose(); retainedEvidence.Clear(); pinned.Clear(); recent.Clear(); pinnedEvidence.Clear();
         }

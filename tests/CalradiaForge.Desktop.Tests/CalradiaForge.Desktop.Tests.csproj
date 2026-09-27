@@ -3,6 +3,8 @@
   <ItemGroup>
     <ProjectReference Include="../../src/CalradiaForge.Core/CalradiaForge.Core.csproj" />
     <Compile Include="../../src/CalradiaForge.Desktop/PipeClient.cs" Link="PipeClient.cs" />
+    <Compile Include="../../src/CalradiaForge.Desktop/BoundedLineReader.cs" Link="BoundedLineReader.cs" />
+    <Compile Include="../../src/CalradiaForge.Desktop/Services/DesktopReportExportService.cs" Link="Services/DesktopReportExportService.cs" />
     <Compile Include="../../src/CalradiaForge.Desktop/Services/DesktopAnalysisService.cs" Link="Services/DesktopAnalysisService.cs" />
     <Compile Include="../../src/CalradiaForge.Desktop/Services/DesktopAssemblyService.cs" Link="Services/DesktopAssemblyService.cs" />
     <PackageReference Include="AsmResolver.DotNet" Version="6.0.1" />

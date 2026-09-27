@@ -28,6 +28,9 @@ internal static class Program
     {
         var cases = new (string Name, Func<Task> Run)[] {
             ("Desktop reconnects after server exit on a new process endpoint", Restart),
+            ("Desktop bounds newline-delimited IPC responses and honors cancellation", BoundedIpcResponses),
+            ("Desktop report exports are asynchronous, unique, and failure-safe", ReportExportSafety),
+            ("Desktop dossier copy commands report failures and expose accessible controls", DossierCopyAccessibilitySurface),
             ("Desktop serializes concurrent requests without mixing responses", ConcurrentRequests),
             ("Desktop rejects mismatched response IDs and reconnects", MismatchedId),
             ("Desktop rejects incompatible handshake versions", IncompatibleVersion),
@@ -861,6 +864,27 @@ internal static class Program
                 .Select(node => node.Attribute(XName.Get("Key", "http://schemas.microsoft.com/winfx/2006/xaml")).Value).ToHashSet(StringComparer.Ordinal);
             Check(keys.SetEquals(english), Path.GetFileName(file) + " lacks English resource-key parity");
         }
+        var requiredTranslations = new[]
+        {
+            "Ui.CopyCommandAccessibleName", "Ui.CopyCommandAccessibleNameFormat", "Ui.CopyCliAccessibleName",
+            "Ui.ClipboardCopyFailed", "Ui.ClipboardCopySucceeded", "Ui.ReportExported",
+            "Ui.ReportExportFailed", "Ui.ReportExportCancelled", "Ui.ReportExportedShort", "Viz.Audio.Title",
+            "Viz.Audio.Equalizer", "Viz.Audio.Waveform", "Viz.Operation.Title", "Viz.Operation.ExecutionGuard"
+        };
+        var englishValues = LoadSourceXml(files.Single(file => file.EndsWith("Strings.en.xaml", StringComparison.OrdinalIgnoreCase))).Descendants()
+            .Where(node => node.Attribute(XName.Get("Key", "http://schemas.microsoft.com/winfx/2006/xaml")) != null)
+            .ToDictionary(node => node.Attribute(XName.Get("Key", "http://schemas.microsoft.com/winfx/2006/xaml")).Value, node => node.Value, StringComparer.Ordinal);
+        foreach (var file in files)
+        {
+            var values = LoadSourceXml(file).Descendants()
+                .Where(node => node.Attribute(XName.Get("Key", "http://schemas.microsoft.com/winfx/2006/xaml")) != null)
+                .ToDictionary(node => node.Attribute(XName.Get("Key", "http://schemas.microsoft.com/winfx/2006/xaml")).Value, node => node.Value, StringComparer.Ordinal);
+            foreach (var key in requiredTranslations)
+                Check(values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value), Path.GetFileName(file) + " has no value for " + key);
+            if (!file.EndsWith("Strings.en.xaml", StringComparison.OrdinalIgnoreCase))
+                foreach (var key in requiredTranslations)
+                    Check(!string.Equals(values[key], englishValues[key], StringComparison.Ordinal), Path.GetFileName(file) + " leaves " + key + " untranslated.");
+        }
         string service = ReadSourceText(FindDesktopFile("Services/DesktopLocalizationService.cs"));
         Check(service.Contains("MergedDictionaries") && service.Contains("activeDictionary"), "Language changes must swap only the active Forge dictionary");
         return Task.CompletedTask;
@@ -1095,6 +1119,152 @@ internal static class Program
         Check(props.Contains("<CalradiaForgeVersion>25.2.0</CalradiaForgeVersion>"), "Release version must be centrally defined");
         Check(SuiteInfo.Version == "25.2.0", "SuiteInfo.Version must equal 25.2.0");
         await Task.CompletedTask;
+    }
+
+    static async Task BoundedIpcResponses()
+    {
+        var exact = new BoundedLineReader(new StringReader("1234\r\nnext\nlast\r"), 4, 2);
+        Check(await exact.ReadLineAsync(CancellationToken.None) == "1234", "A line exactly at the character cap was rejected.");
+        Check(await exact.ReadLineAsync(CancellationToken.None) == "next", "The buffered next frame was lost.");
+        Check(await exact.ReadLineAsync(CancellationToken.None) == "last", "A final CR-terminated frame was not returned.");
+        Check(await exact.ReadLineAsync(CancellationToken.None) == null, "EOF should return null after the final frame.");
+
+        var overLimitSource = new CountingTextReader("12345\nsecond-frame\n");
+        var bounded = new BoundedLineReader(overLimitSource, 4, 2);
+        try
+        {
+            await bounded.ReadLineAsync(CancellationToken.None);
+            throw new Exception("An oversized frame was accepted.");
+        }
+        catch (IOException) { }
+        Check(overLimitSource.CharactersRead <= 6, "The bounded reader consumed an unbounded response before rejecting it.");
+
+        using (var cancelled = new CancellationTokenSource())
+        {
+            cancelled.Cancel();
+            try
+            {
+                await new BoundedLineReader(new StringReader("response\n"), 64, 4).ReadLineAsync(cancelled.Token);
+                throw new Exception("A pre-cancelled read completed.");
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        await using var server = new Server(request => new Response
+        {
+            Id = request.Id,
+            Success = true,
+            Data = request.Action == "hello" ? HelloData() : new string('x', 8192)
+        });
+        using var client = new PipeClient(2048);
+        await client.Connect(server.Id);
+        try
+        {
+            await client.Send(new Request { Action = "oversized" });
+            throw new Exception("The oversized named-pipe response was accepted.");
+        }
+        catch (IOException) { }
+        Check(!client.Connected, "An oversized response must discard the now-unsynchronized connection.");
+    }
+
+    static async Task ReportExportSafety()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "CalradiaForge-Desktop-ExportTests-" + Guid.NewGuid().ToString("N"));
+        var timestamp = new DateTimeOffset(2026, 9, 27, 12, 34, 56, TimeSpan.Zero);
+        try
+        {
+            var service = new DesktopReportExportService(root, () => timestamp);
+            var reports = await Task.WhenAll(
+                service.ExportTextAsync("desktop-evidence", "first report", CancellationToken.None),
+                service.ExportTextAsync("desktop-evidence", "second report", CancellationToken.None));
+            var first = reports[0];
+            var second = reports[1];
+            Check(first.Status == ReportExportStatus.Succeeded && second.Status == ReportExportStatus.Succeeded, "Concurrent-timestamp reports did not export successfully.");
+            Check(first.Path != second.Path && File.ReadAllText(first.Path) == "first report" && File.ReadAllText(second.Path) == "second report", "Reports collided or an earlier report was overwritten.");
+
+            var preserved = Path.Combine(Path.GetTempPath(), "CalradiaForge-Desktop-ExportSentinel-" + Guid.NewGuid().ToString("N"));
+            File.WriteAllText(preserved, "keep-existing-file");
+            try
+            {
+                var failing = await new DesktopReportExportService(preserved, () => timestamp)
+                    .ExportTextAsync("desktop-evidence", "must not replace", CancellationToken.None);
+                Check(failing.Status == ReportExportStatus.Failed, "An invalid output destination was not reported as failure.");
+                Check(File.ReadAllText(preserved) == "keep-existing-file", "A pre-existing destination was changed after an export failure.");
+            }
+            finally { File.Delete(preserved); }
+
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            var cancelled = await service.ExportTextAsync("desktop-evidence", "cancelled", cancellation.Token);
+            Check(cancelled.Status == ReportExportStatus.Cancelled, "Export cancellation was not returned explicitly.");
+            Check(Directory.GetFiles(root, "*.tmp", SearchOption.TopDirectoryOnly).Length == 0, "An incomplete temporary report was left behind.");
+
+            using var midWriteCancellation = new CancellationTokenSource();
+            var cancelledDuringWrite = await service.ExportLinesAsync("desktop-partial", CancelAfterFirstLine(midWriteCancellation), midWriteCancellation.Token);
+            Check(cancelledDuringWrite.Status == ReportExportStatus.Cancelled, "Cancellation after a partial write was not returned explicitly.");
+            Check(Directory.GetFiles(root, "*.tmp", SearchOption.TopDirectoryOnly).Length == 0, "A cancelled partial report left its temporary file behind.");
+
+            var reportCountBeforeFailure = Directory.GetFiles(root, "*.txt", SearchOption.TopDirectoryOnly).Length;
+            var failedDuringWrite = await service.ExportLinesAsync("desktop-partial", FailAfterFirstLine(), CancellationToken.None);
+            Check(failedDuringWrite.Status == ReportExportStatus.Failed, "A write failure after partial output was not captured.");
+            Check(Directory.GetFiles(root, "*.tmp", SearchOption.TopDirectoryOnly).Length == 0 &&
+                  Directory.GetFiles(root, "*.txt", SearchOption.TopDirectoryOnly).Length == reportCountBeforeFailure,
+                "A failed partial report was not cleaned up or replaced a prior report.");
+
+            var lines = await service.ExportLinesAsync("desktop-ledger", new[] { "source | verified | evidence" }, CancellationToken.None);
+            Check(lines.Status == ReportExportStatus.Succeeded && File.ReadAllText(lines.Path).TrimEnd() == "source | verified | evidence", "Ledger export changed its established line format.");
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, true);
+        }
+    }
+
+    static IEnumerable<string> CancelAfterFirstLine(CancellationTokenSource cancellation)
+    {
+        yield return "partial data";
+        cancellation.Cancel();
+        yield return "must not be written";
+    }
+
+    static IEnumerable<string> FailAfterFirstLine()
+    {
+        yield return "partial data";
+        throw new IOException("synthetic write-stream failure");
+    }
+
+    static Task DossierCopyAccessibilitySurface()
+    {
+        var xaml = ReadSourceText(Desktop("Presentation/ToolDossierControl.xaml"));
+        var codeBehind = ReadSourceText(Desktop("Presentation/ToolDossierControl.xaml.cs"));
+        var pageSource = ReadSourceText(Desktop("Presentation/WorkspacePageViewModel.cs"));
+        Check(xaml.Contains("{Binding AutomationId}") && pageSource.Contains("CopyConsoleCommandButton") && xaml.Contains("CopyCliSyntaxButton") &&
+              xaml.Contains("{Binding AccessibleName}") && pageSource.Contains("Ui.CopyCommandAccessibleNameFormat") &&
+              xaml.Contains("Ui.CopyCliAccessibleName") &&
+              xaml.Contains("ClipboardCopyFeedback") && xaml.Contains("AutomationProperties.LiveSetting=\"Polite\""),
+            "Dossier copy controls need unique automation IDs, localized names, and accessible failure feedback.");
+        Check(xaml.Contains("DataContext.CopyTextCommand") && xaml.Contains("CommandParameter=\"{Binding Text}\"") &&
+              xaml.Contains("CommandParameter=\"{Binding CliSyntax}\"") && !xaml.Contains("Click=\"CopyCommandClick\"") &&
+              !codeBehind.Contains("Clipboard.SetText"), "Clipboard behavior must use a page command rather than a silent code-behind click.");
+        Check(pageSource.Contains("CopyFeedback") && pageSource.Contains("Ui.ClipboardCopyFailed") &&
+              pageSource.Contains("Ui.ClipboardCopySucceeded") && pageSource.Contains("CopyableConsoleCommand") &&
+              pageSource.Contains("Ui.CopyCommandAccessibleNameFormat") && pageSource.Contains("AccessibleName = string.Format") &&
+              pageSource.Contains("CopyFeedback = copied") && pageSource.Contains("clipboardWriter(text)"),
+            "The page ViewModel must expose localized clipboard feedback, failure handling, and command-specific copy identities.");
+        return Task.CompletedTask;
+    }
+
+    sealed class CountingTextReader : StringReader
+    {
+        internal CountingTextReader(string value) : base(value) { }
+        internal int CharactersRead { get; private set; }
+        public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var result = base.Read(buffer.Span);
+            CharactersRead += result;
+            return ValueTask.FromResult(result);
+        }
     }
 
     static async Task TacticalStudioEnrichmentAndRolePresets()

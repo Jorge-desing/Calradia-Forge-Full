@@ -376,6 +376,9 @@ function Get-WorkerInspectionStatus {
             @{ Id = "CommandPaletteButton"; Type = "ControlType.Button"; Required = $true },
             @{ Id = "ConnectButton"; Type = "ControlType.Button"; Required = $true },
             @{ Id = "ContextDossierToggleButton"; Type = "ControlType.Button"; Required = $true },
+            @{ Id = "CopyConsoleCommandButton0"; Type = "ControlType.Button"; Required = $true },
+            @{ Id = "CopyCliSyntaxButton"; Type = "ControlType.Button"; Required = $true },
+            @{ Id = "ClipboardCopyFeedback"; Type = "ControlType.Text"; Required = $true },
             @{ Id = "SplitDeckToggleButton"; Type = "ControlType.Button"; Required = $true },
             @{ Id = "LanguageSelector"; Type = "ControlType.ComboBox"; Required = $true },
             @{ Id = "ThemeSelector"; Type = "ControlType.ComboBox"; Required = $true },
@@ -395,7 +398,14 @@ function Get-WorkerInspectionStatus {
         foreach ($target in $targets) {
             $match = Find-UniqueControl -Parent $window -AutomationId $target.Id -ExpectedType $target.Type -TargetProcessId $ProcessId
             $isFound = $match.State -eq "Found"
-            $passed = $isFound -or (-not $target.Required -and $match.State -eq "Missing")
+            $accessibleNameValid = $true
+            if ($isFound -and $target.Id -in @("CopyConsoleCommandButton0", "CopyCliSyntaxButton")) {
+                $accessibleNameValid = -not [string]::IsNullOrWhiteSpace($match.Element.Current.Name)
+                if ($target.Id -eq "CopyConsoleCommandButton0") {
+                    $accessibleNameValid = $accessibleNameValid -and $match.Element.Current.Name.IndexOf("cf.audit_rules", [StringComparison]::Ordinal) -ge 0
+                }
+            }
+            $passed = ($isFound -and $accessibleNameValid) -or (-not $target.Required -and $match.State -eq "Missing")
             if (-not $passed -and $target.Required) { $failedRequired++ }
 
             $record = [PSCustomObject]@{
@@ -404,6 +414,7 @@ function Get-WorkerInspectionStatus {
                 State = $match.State
                 MatchCount = $match.Count
                 Required = $target.Required
+                AccessibleNameValid = $accessibleNameValid
                 Test = "read-only-shell-control"
                 Passed = $passed
             }

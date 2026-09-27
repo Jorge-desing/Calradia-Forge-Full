@@ -14,7 +14,7 @@
           <StackPanel Grid.Column="0">
            <StackPanel Orientation="Horizontal">
             <Path Data="{StaticResource GameIcon.crossed_swords}" Fill="{DynamicResource BrassBrush}" Height="16" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="16"/>
-            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="TACTICAL TROOP PROGRESSION HIERARCHY (6-TIER ACYCLIC DAG)" VerticalAlignment="Center"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Troop.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding TroopTreeDashboard.Culture}"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding TroopTreeDashboard.ArchetypeSummary}"/>
@@ -139,14 +139,14 @@
           <StackPanel Grid.Column="0">
            <StackPanel Orientation="Horizontal">
             <Path Data="{StaticResource GameIcon.gears}" Fill="{DynamicResource BrassBrush}" Height="16" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="16"/>
-            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="TACTICAL AUDIO STUDIO &amp; WAVEFORM ANALYZER" VerticalAlignment="Center"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Audio.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding AudioStudioDashboard.AudioFormat}"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding AudioStudioDashboard.DurationText}"/>
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding AudioStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Grid.Column="1" Padding="6,2" VerticalAlignment="Center">
-           <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="0 DIGITAL CLIPPING"/>
+           <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="{DynamicResource Viz.Audio.NoClipping}"/>
           </Border>
          </Grid>
         </Border>
@@ -160,7 +160,7 @@
          <!-- 5-Band Equalizer Spectrum -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,8,0" Padding="8">
           <StackPanel>
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,6" Text="SPECTRAL EQUALIZER"/>
+           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,6" Text="{DynamicResource Viz.Audio.Equalizer}"/>
            <ItemsControl ItemsSource="{Binding AudioStudioDashboard.Bands}">
             <ItemsControl.ItemTemplate>
              <DataTemplate>
@@ -185,8 +185,8 @@
          <Border Background="#060907" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,8,0" Padding="8">
           <DockPanel LastChildFill="True">
            <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
-            <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="ACOUSTIC WAVEFORM ENVELOPE (TIME DOMAIN)"/>
-            <TextBlock FontSize="9" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Right" Text="PEAK: -1.4 dBFS"/>
+            <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Audio.Waveform}"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Right"><Run Text="{DynamicResource Viz.Audio.PeakLabel}"/><Run Text=" -1.4 dBFS"/></TextBlock>
            </Grid>
            <TextBlock DockPanel.Dock="Bottom" FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="0.0s ──────────────────────── 1.42s"/>
            <Grid Height="90" VerticalAlignment="Center">
@@ -207,19 +207,19 @@
          <!-- VU Peak & Headroom Meters -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
           <StackPanel>
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,6" Text="OUTPUT VU METERS"/>
-           <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="LEFT CHANNEL (L)"/>
+           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,6" Text="{DynamicResource Viz.Audio.OutputMeters}"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="{DynamicResource Viz.Audio.LeftChannel}"/>
            <Border Background="{DynamicResource CoalBrush}" CornerRadius="2" Height="10" Margin="0,2,0,6">
             <Border Background="{DynamicResource VerdigrisBrush}" CornerRadius="2" Height="10" HorizontalAlignment="Left" Width="135"/>
            </Border>
-           <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="RIGHT CHANNEL (R)"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="{DynamicResource Viz.Audio.RightChannel}"/>
            <Border Background="{DynamicResource CoalBrush}" CornerRadius="2" Height="10" Margin="0,2,0,8">
             <Border Background="{DynamicResource VerdigrisBrush}" CornerRadius="2" Height="10" HorizontalAlignment="Left" Width="128"/>
            </Border>
            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Padding="4,3">
             <StackPanel>
-             <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="HEADROOM: +1.4 dB"/>
-             <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="SPATIAL: 3D Mission"/>
+             <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}"><Run Text="{DynamicResource Viz.Audio.HeadroomLabel}"/><Run Text=" +1.4 dB"/></TextBlock>
+             <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}"><Run Text="{DynamicResource Viz.Audio.SpatialLabel}"/><Run Text=" 3D Mission"/></TextBlock>
             </StackPanel>
            </Border>
           </StackPanel>
@@ -241,7 +241,7 @@
           <StackPanel Grid.Column="0">
            <StackPanel Orientation="Horizontal">
             <Path Data="{StaticResource GameIcon.gears}" Fill="{DynamicResource BrassBrush}" Height="16" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="16"/>
-            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="CALRADIA EQUILIBRIUM · WORKSHOP ENTERPRISE SIMULATOR" VerticalAlignment="Center"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Workshop.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding WorkshopDashboard.Settlement}"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="Scope: 30-Day Economic Amortization · 7 Enterprises Simulated"/>
@@ -289,7 +289,7 @@
          <!-- Civic Equilibrium KPI Card -->
          <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Padding="8">
           <StackPanel>
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,6" Text="CIVIC EQUILIBRIUM &amp; RISK"/>
+           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,6" Text="{DynamicResource Viz.Workshop.RiskHeading}"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource PaperBrush}" Text="Prosperity: 5,420 (+4.2/day)"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource PaperBrush}" Margin="0,2,0,0" Text="Civic Loyalty: 64.0 / 100"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource PaperBrush}" Margin="0,2,0,0" Text="Security Score: 72.0 / 100"/>
@@ -320,7 +320,7 @@
           <StackPanel Grid.Column="0">
            <StackPanel Orientation="Horizontal">
             <Path Data="{StaticResource GameIcon.scroll_unfurled}" Fill="{DynamicResource BrassBrush}" Height="16" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="16"/>
-            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="CoALA NPC COGNITIVE ARCHITECTURE INSPECTOR" VerticalAlignment="Center"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Memory.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding AgentMemoryDashboard.CapacitySummary}"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource VerdigrisBrush}" Margin="22,1,0,0" Text="{Binding AgentMemoryDashboard.ActiveClusterOverview}"/>
@@ -351,7 +351,7 @@
          <!-- Tier 1: Semantic Memory -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="8">
           <DockPanel LastChildFill="True">
-           <TextBlock DockPanel.Dock="Top" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,4" Text="TIER 1 · SEMANTIC MEMORY (FACTS &amp; TTL)"/>
+           <TextBlock DockPanel.Dock="Top" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,4" Text="{DynamicResource Viz.Memory.Semantic}"/>
            <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,4" Padding="4,2">
             <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="{Binding AgentMemoryDashboard.SelectedAgent.WorkingMemory}" TextWrapping="Wrap"/>
            </Border>
@@ -378,7 +378,7 @@
          <!-- Tier 2: Episodic Memory -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="8">
           <DockPanel LastChildFill="True">
-           <TextBlock DockPanel.Dock="Top" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,4" Text="TIER 2 · EPISODIC (BOUNDED FIFO EVENTS)"/>
+           <TextBlock DockPanel.Dock="Top" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,4" Text="{DynamicResource Viz.Memory.Episodic}"/>
            <ItemsControl ItemsSource="{Binding AgentMemoryDashboard.SelectedAgent.EpisodicEvents}">
             <ItemsControl.ItemTemplate>
              <DataTemplate>
@@ -393,7 +393,7 @@
          <!-- Tier 3: Procedural Memory -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
           <DockPanel LastChildFill="True">
-           <TextBlock DockPanel.Dock="Top" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,4" Text="TIER 3 · PROCEDURAL (TACTICAL DECISIONS)"/>
+           <TextBlock DockPanel.Dock="Top" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,4" Text="{DynamicResource Viz.Memory.Procedural}"/>
            <ItemsControl ItemsSource="{Binding AgentMemoryDashboard.SelectedAgent.ProceduralTactics}">
             <ItemsControl.ItemTemplate>
              <DataTemplate>
@@ -422,7 +422,7 @@
           <StackPanel Grid.Column="0">
            <StackPanel Orientation="Horizontal">
             <Path Data="{StaticResource Icon.Shield}" Height="15" Margin="0,0,6,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="15"/>
-            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="CLR METADATA &amp; ARCHITECTURAL INVARIANT RADAR" VerticalAlignment="Center"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.CodeSecurity.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0" Text="{Binding CodeSecurityDashboard.AuditTargetAssembly, StringFormat='TARGET ASSEMBLY: {0}'}"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0" Text="{Binding CodeSecurityDashboard.ClrTargetFramework, StringFormat='RUNTIME CLR: {0}'}"/>
@@ -498,7 +498,7 @@
           <StackPanel Grid.Column="0">
            <StackPanel Orientation="Horizontal">
             <Path Data="{StaticResource Icon.Flag}" Height="15" Margin="0,0,6,0" Stretch="Uniform" Stroke="{DynamicResource VerdigrisBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="15"/>
-            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="MODULE TOPOLOGY &amp; LOAD ORDER PIPELINE (DIRECTED ACYCLIC GRAPH)" VerticalAlignment="Center"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.ModuleHierarchy.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0" Text="{Binding ModuleHierarchyDashboard.TargetModuleId, StringFormat='MODULE IDENTIFIER: {0}'}"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0" Text="{Binding ModuleHierarchyDashboard.ModuleVersion, StringFormat='RELEASE TAG: {0}'}"/>
@@ -552,7 +552,7 @@
           <StackPanel Grid.Column="0">
            <StackPanel Orientation="Horizontal">
             <Path Data="{StaticResource GameIcon.knight_banner}" Fill="{DynamicResource BrassBrush}" Height="15" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="15"/>
-            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="GEOPOLITICAL DIPLOMACY &amp; SENATE DELIBERATION CHAMBER" VerticalAlignment="Center"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Diplomacy.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0" Text="{Binding KingdomDiplomacyDashboard.PlayerFaction, StringFormat='REALM: {0}'}"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0" Text="{Binding KingdomDiplomacyDashboard.PlayerRuler, StringFormat='MONARCH: {0}'}"/>
@@ -615,7 +615,7 @@
           <StackPanel Grid.Column="0">
            <StackPanel Orientation="Horizontal">
             <Path Data="{StaticResource GameIcon.gear_hammer}" Fill="{DynamicResource BrassBrush}" Height="15" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="15"/>
-            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="BLUEPRINT COMPONENT SYNTHESIS &amp; ARCHITECTURAL SCAFFOLDING" VerticalAlignment="Center"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Component.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0" Text="{Binding ComponentGeneratorDashboard.ComponentId, StringFormat='COMPONENT IDENTIFIER: {0}'}"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0" Text="{Binding ComponentGeneratorDashboard.TargetSchemaType, StringFormat='SCHEMA TARGET: {0}'}"/>
@@ -664,12 +664,12 @@
           <StackPanel Grid.Column="0">
            <StackPanel Orientation="Horizontal">
             <Path Data="{StaticResource Icon.Compass}" Height="15" Margin="0,0,6,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="15"/>
-            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="TACTICAL OPERATION FLIGHT DECK &amp; GUARDED RUNTIME TELEMETRY" VerticalAlignment="Center"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Operation.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0" Text="{Binding GenericOperationDashboard.SelectedToolSummary}" TextWrapping="Wrap"/>
           </StackPanel>
           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,4" VerticalAlignment="Center">
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="GUARDED OFFLINE ROUTE · READY"/>
+           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{DynamicResource Viz.Operation.Ready}"/>
           </Border>
          </Grid>
         </Border>
@@ -684,33 +684,33 @@
          <!-- Sensor 1: Ring Buffer -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="7">
           <StackPanel>
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="RING BUFFER CAPABILITY"/>
+           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Operation.RingBuffer}"/>
            <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Margin="0,3,0,0" Text="{Binding GenericOperationDashboard.BufferCapacityText}"/>
-           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0" Text="Bounded ring telemetry avoids LOH memory fragmentation." TextWrapping="Wrap"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0" Text="{DynamicResource Viz.Operation.RingDescription}" TextWrapping="Wrap"/>
           </StackPanel>
          </Border>
          <!-- Sensor 2: File Traversal -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="7">
           <StackPanel>
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="FILE SYSTEM BOUNDS"/>
+           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Operation.FileBounds}"/>
            <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Margin="0,3,0,0" Text="{Binding GenericOperationDashboard.FileTraversalText}"/>
-           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0" Text="Strictly read-only access. Zero file system mutations." TextWrapping="Wrap"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0" Text="{DynamicResource Viz.Operation.FileDescription}" TextWrapping="Wrap"/>
           </StackPanel>
          </Border>
          <!-- Sensor 3: Thread Isolation -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Margin="0,0,6,0" Padding="7">
           <StackPanel>
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="THREAD AFFINITY"/>
+           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Operation.ThreadAffinity}"/>
            <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Margin="0,3,0,0" Text="{Binding GenericOperationDashboard.ThreadIsolationText}"/>
-           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0" Text="Decoupled from WPF UI dispatch. No UI freezing." TextWrapping="Wrap"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0" Text="{DynamicResource Viz.Operation.ThreadDescription}" TextWrapping="Wrap"/>
           </StackPanel>
          </Border>
          <!-- Sensor 4: Execution Timeout Guard -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="3" Padding="7">
           <StackPanel>
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="EXECUTION GUARD"/>
+           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Operation.ExecutionGuard}"/>
            <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Margin="0,3,0,0" Text="{Binding GenericOperationDashboard.ExecutionBoundsText}"/>
-           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0" Text="Async CancellationToken pipeline cancels unresponsive work." TextWrapping="Wrap"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0" Text="{DynamicResource Viz.Operation.GuardDescription}" TextWrapping="Wrap"/>
           </StackPanel>
          </Border>
         </Grid>

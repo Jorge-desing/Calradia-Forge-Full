@@ -16,12 +16,23 @@ namespace CalradiaForge.Desktop
         const int DefaultResponseTimeoutMs = 20000;
         const int MaximumConnectTimeoutMs = 10000;
         const int MaximumReconnectTimeoutMs = 5000;
+        const int MaximumResponseCharacters = 32 * 1024 * 1024;
 
         NamedPipeClientStream pipe;
-        StreamReader reader;
+        StreamReader responseStreamReader;
+        BoundedLineReader responseReader;
         StreamWriter writer;
+        readonly int maximumResponseCharacters;
         readonly SemaphoreSlim gate = new(1);
         bool disposed;
+
+        public PipeClient() : this(MaximumResponseCharacters) { }
+
+        internal PipeClient(int maximumResponseCharacters)
+        {
+            if (maximumResponseCharacters <= 0) throw new ArgumentOutOfRangeException(nameof(maximumResponseCharacters));
+            this.maximumResponseCharacters = maximumResponseCharacters;
+        }
 
         public bool Connected => pipe?.IsConnected == true;
         public IReadOnlyCollection<string> Capabilities { get; private set; } = [];
@@ -85,7 +96,8 @@ namespace CalradiaForge.Desktop
                 }
             }
 
-            reader = new StreamReader(pipe, new UTF8Encoding(false), false, 4096, true);
+            responseStreamReader = new StreamReader(pipe, new UTF8Encoding(false), false, 4096, true);
+            responseReader = new BoundedLineReader(responseStreamReader, maximumResponseCharacters);
             writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, true) { AutoFlush = true };
             var response = await SendCore(new Request { Action = "hello" }, cancellationToken, timeoutMs).ConfigureAwait(false);
             if (!response.Success || response.Version != 1) throw new IOException("Incompatible server");
@@ -202,9 +214,8 @@ namespace CalradiaForge.Desktop
                 {
                     var payload = Json.Serialize(request);
                     await writer.WriteLineAsync(payload.AsMemory(), linked.Token).ConfigureAwait(false);
-                    var line = await reader.ReadLineAsync(linked.Token).ConfigureAwait(false);
+                    var line = await responseReader.ReadLineAsync(linked.Token).ConfigureAwait(false);
                     if (line == null) throw new EndOfStreamException();
-                    if (line.Length > 32 * 1024 * 1024) throw new IOException("Response too large");
                     var response = Json.Deserialize<Response>(line);
                     if (response.Id != request.Id || response.Version != 1) throw new IOException("Protocol mismatch");
                     return response;
@@ -236,7 +247,8 @@ namespace CalradiaForge.Desktop
         {
             pipe?.Dispose();
             pipe = null;
-            reader = null;
+            responseStreamReader = null;
+            responseReader = null;
             writer = null;
             Capabilities = [];
         }

@@ -43,6 +43,7 @@ Trigger this skill whenever:
 - **SubModule Lifecycle**: Maintain the ASCII call graph in `OnSubModuleLoad()`, `OnGameStart()`, `OnCampaignStart()`, `OnApplicationTick()`, and `OnSubModuleUnloaded()`.
 - **Core Framework Registry**: Document all components in `CalradiaForge.Core` (`ForgeBehaviorLoader`, `ModRuleAuditor`, `ForgeWeaveEngine`, `ForgeConfig`, `ForgeLogger`, `ForgeBootstrapper`).
 - **Anti-Shadowing Invariants**: Ensure zero classes, sub-namespaces, or folders are named `Campaign` or `Localization` (violating `GEMINI.md`).
+- **Codex & Rules Taxonomy Parity**: Ensure alignment with `.agents/rules/` index and OpenAI Codex CLI configuration in `.codex/config.json`.
 
 ### B. `docs/CODEMAP_CAMPAIGN_BEHAVIORS.md`
 - **Event Catalog**: Document every event hook registered via `CampaignEvents.*.AddNonSerializedListener(this, ...)`.
@@ -55,6 +56,9 @@ Trigger this skill whenever:
 - **Save System & Statelessness Contract**:
   - Ensure zero `SaveableTypeDefiner` inheritance and empty `SyncData` in stateless behaviors.
   - If stateful behaviors are documented, allocate a unique `SaveableTypeDefiner` base ID $\ge 2,500,000$.
+- **CoALA Cognitive Memory & Relations Schema**:
+  - Document the strict separation between absolute world facts (`Relation_<targetId>` storing `hero1.GetRelation(hero2)` in $[-100, 100]$) and transient delta facts (`LastRelationDelta_<targetId>`).
+
 
 ### C. `docs/CODEMAP_SDK_GAMEMODELS.md`
 - **Public SDK Contracts**: Document methods, thread models, and scopes for:
@@ -82,3 +86,5 @@ Before completing any codemap update:
    tools/verify_stateless_behavior.ps1
    ```
 4. **Test Alignment**: Run `tools/Run-CalradiaForge-Core-Tests.bat` to confirm all behavioral assertions pass.
+5. **Autonomous Agents Audit**: Run `py -3.12 tools/run_forge_agents.py verify` to check multi-agent architectural alignment.
+

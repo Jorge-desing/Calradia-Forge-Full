@@ -980,6 +980,28 @@ async def migrate_embeddings(old_model, new_model):
 # New collection: re-embedding in progress
 # Switch over when complete
 
+## Case Study: CoALA Cognitive Memory in Mount & Blade II: Bannerlord (`ForgeAgentMemory`)
+
+Calradia Forge implements the CoALA (Cognitive Architectures for Language Agents) memory model directly within a real-time C# game engine environment (`CalradiaForge.Sdk.ForgeAgentMemory`).
+
+### 1. Three-Tier Architectural Implementation
+- **Semantic Memory (Structured Knowledge & World Facts):**
+  - Key-value facts mapped to importance ratings $[0.0, 1.0]$, TTL expiration, and source attribution.
+  - Used for dynamic relational scores, personality profiles, and diplomatic status.
+  - *Engine Constraint:* Absolute relation scores (`hero1.GetRelation(hero2)`) must be stored under `"Relation_" + heroId` in $[-100, 100]$. Transient interaction deltas are separated into `"LastRelationDelta_" + heroId` to prevent corrupting semantic knowledge.
+- **Episodic Memory (Narrative Stream & Experiences):**
+  - Chronological event logs (`RecordEvent`) recording category, textual summary, and importance.
+  - Ring buffer / FIFO quota management (`maxEvents = 128`) preventing memory unbounded growth.
+  - Pre-allocated zero-LINQ iterations to avoid garbage collection spikes during high-frequency battle ticks.
+- **Procedural Memory (Action Rules & Heuristics):**
+  - Action templates and behavioral recipes (`RegisterProcedure`) providing executable steps for tactical AI decision trees.
+
+### 2. Game-Specific Invariants & Stateless Boundaries
+- **Stateless Campaign Behavior Rule:** Within Bannerlord mod assemblies (`src/CalradiaForge.Mod`), memory systems must NEVER inherit from `SaveableTypeDefiner` or serialize memory graphs in `SyncData`. Instead, working memories are transient, reconstructed on-demand from world queries, or persisted via the decoupled `ForgeSaveChunker` in the SDK layer.
+- **Garbage Collection Optimization:** Avoid LINQ `.Select().ToList()` or `.Sum()` in memory retrieval loops. Pre-allocate collections (`new List<T>(capacity)`) to maintain steady 60 FPS frame times during active combat and hourly campaign simulation ticks.
+
+---
+
 ## Validation Checks
 
 ### In-Memory Store in Production Code

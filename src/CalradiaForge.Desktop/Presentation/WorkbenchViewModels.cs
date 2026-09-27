@@ -123,8 +123,11 @@ namespace CalradiaForge.Desktop.Presentation
     {
         public WorkbenchPageViewModel(ToolDefinition tool,
             Func<ToolDefinition, string, System.Threading.CancellationToken, System.Threading.Tasks.Task<WorkspaceExecutionResult>> execute,
-            Action<ToolPageViewModel> export,
-            Func<ToolDefinition, bool, string> pickInput = null) : base(tool, execute, export, pickInput)
+            Action<ToolPageViewModel> export = null,
+            Func<ToolDefinition, bool, string> pickInput = null,
+            Func<ToolPageViewModel, System.Threading.CancellationToken, System.Threading.Tasks.Task> exportAsync = null,
+            Func<string, bool> clipboardWriter = null,
+            Func<string, string> localize = null) : base(tool, execute, export, pickInput, exportAsync, clipboardWriter, localize)
         {
             CommandDeck = new(this);
             EvidenceLedger = new(Evidence);

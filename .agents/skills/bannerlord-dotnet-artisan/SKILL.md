@@ -49,6 +49,16 @@ When translating .NET concepts into Bannerlord C#, you MUST enforce these non-ne
 ### E. Single-Threaded Engine Reality
 - Bannerlord's simulation state is strictly single-threaded. Never dispatch async `Task.Run()` or background thread pool work that reads or modifies `Hero`, `MobileParty`, `Settlement`, or `Clan` objects. Keep all engine operations on the main thread.
 
+### F. Thread-Safe Static Caching & Concurrency Discipline
+- Para cachés estáticas y diccionarios de resolución compartidos entre hilos (como `GameLocalization.cs` o índices de solo lectura del SDK): usar `ConcurrentDictionary<TKey, TValue>` con operaciones atómicas (`GetOrAdd`, `TryGetValue`) en lugar de `Dictionary<TKey, TValue>` mutable o locks manuales pesados.
+- Garantizar que las colecciones estáticas no retengan referencias duras a entidades del motor del juego para prevenir memory leaks entre recargas de partidas.
+
+### G. Defensive Validation in Developer Console Commands
+- Los comandos expuestos al motor mediante `[CommandLineFunctionality.CommandLineArgumentAttribute]` reciben `args == null` si el usuario no especifica argumentos en la consola de depuración.
+- Siempre implementar guardias defensivas explícitas: `if (args == null || args.Count < N) return "Usage: ...";` antes de acceder a cualquier índice de la lista.
+- Utilizar `TryParse` para todos los argumentos convertibles (números, booleanos, identificadores) con mensajes de error descriptivos.
+
+
 ---
 
 ## 3. Domain Skill Routing

@@ -42,7 +42,7 @@
          <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Grid.Column="0" Padding="7,5">
           <StackPanel>
            <TextBlock Margin="0,0,0,4" Style="{StaticResource KickerText}" Text="{DynamicResource Ui.ConsoleCommandsHeading}" TextWrapping="Wrap"/>
-           <ItemsControl ItemsSource="{Binding ConsoleCommands}">
+           <ItemsControl ItemsSource="{Binding ConsoleCommandEntries}">
             <ItemsControl.ItemTemplate>
              <DataTemplate>
               <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,1,0,2" Padding="5,2">
@@ -51,8 +51,8 @@
                  <ColumnDefinition Width="*"/>
                  <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock FontFamily="Consolas, monospace" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Grid.Column="0" Text="{Binding}" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                <Button Click="CopyCommandClick" Grid.Column="1" Height="18" Margin="4,0,0,0" Style="{StaticResource SearchClearButton}" Tag="{Binding}" ToolTip="{DynamicResource Ui.CopyCommandToolTip}" Width="18">
+                <TextBlock FontFamily="Consolas, monospace" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Grid.Column="0" Text="{Binding Text}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                <Button AutomationProperties.AutomationId="{Binding AutomationId}" AutomationProperties.Name="{Binding AccessibleName}" Command="{Binding DataContext.CopyTextCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Text}" Grid.Column="1" Height="18" Margin="4,0,0,0" Style="{StaticResource SearchClearButton}" ToolTip="{DynamicResource Ui.CopyCommandToolTip}" Width="18">
                  <Path Data="{StaticResource Icon.File}" Height="9" Stretch="Uniform" Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.2" Width="9"/>
                 </Button>
                </Grid>
@@ -88,7 +88,7 @@
               <ColumnDefinition Width="Auto"/>
              </Grid.ColumnDefinitions>
              <TextBlock FontFamily="Consolas, monospace" FontSize="9.5" Foreground="{DynamicResource BrassBrush}" Grid.Column="0" Text="{Binding CliSyntax}" TextWrapping="Wrap" VerticalAlignment="Center"/>
-             <Button Click="CopyCommandClick" Grid.Column="1" Height="18" Margin="4,0,0,0" Style="{StaticResource SearchClearButton}" Tag="{Binding CliSyntax}" ToolTip="{DynamicResource Ui.CopyCliToolTip}" Width="18">
+             <Button AutomationProperties.AutomationId="CopyCliSyntaxButton" AutomationProperties.Name="{DynamicResource Ui.CopyCliAccessibleName}" Command="{Binding CopyTextCommand}" CommandParameter="{Binding CliSyntax}" Grid.Column="1" Height="18" Margin="4,0,0,0" Style="{StaticResource SearchClearButton}" ToolTip="{DynamicResource Ui.CopyCliToolTip}" Width="18">
               <Path Data="{StaticResource Icon.File}" Height="9" Stretch="Uniform" Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.2" Width="9"/>
              </Button>
             </Grid>
@@ -96,6 +96,7 @@
           </StackPanel>
          </Border>
         </Grid>
+        <TextBlock AutomationProperties.AutomationId="ClipboardCopyFeedback" AutomationProperties.LiveSetting="Polite" FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="0,5,0,0" Text="{Binding CopyFeedback}" TextWrapping="Wrap"/>
        </StackPanel>
       </Border>
 </ScrollViewer>

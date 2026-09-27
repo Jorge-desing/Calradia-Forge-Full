@@ -223,6 +223,103 @@ namespace CalradiaForge.Core.CampaignBehaviors
 
 ---
 
+## Pattern 4 — Safe Developer Console Command Handlers (`CommandLineFunctionality`)
+
+Custom developer console commands provide live debugging and tooling interfaces inside Bannerlord. They must defensively guard against empty and null arguments passed by the engine.
+
+### Template
+
+```csharp
+using System;
+using System.Collections.Generic;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.Library;
+using TaleWorlds.ObjectSystem;
+
+namespace CalradiaForge.Mod
+{
+    public static class ForgeConsoleCommands
+    {
+        [CommandLineFunctionality.CommandLineArgumentAttribute("inspect_hero", "calradiaforge")]
+        public static string InspectHero(List<string> args)
+        {
+            // 1. Mandatory null and argument count check
+            if (args == null || args.Count < 1)
+            {
+                return "Usage: calradiaforge.inspect_hero <hero_string_id> [optional_verbosity_level]";
+            }
+
+            string heroId = args[0];
+            int verbosity = 1;
+
+            // 2. Defensive parsing of optional parameters
+            if (args.Count > 1 && !int.TryParse(args[1], out verbosity))
+            {
+                return $"Error: Invalid integer verbosity '{args[1]}'. Expected 1, 2, or 3.";
+            }
+
+            // 3. Game state verification
+            if (Campaign.Current == null)
+            {
+                return "Error: Campaign is not currently active.";
+            }
+
+            Hero target = MBObjectManager.Instance.GetObject<Hero>(heroId);
+            if (target == null)
+            {
+                return $"Error: Hero with ID '{heroId}' not found.";
+            }
+
+            return $"Hero '{target.Name}' (Level {target.Level}, Clan: {target.Clan?.Name?.ToString() ?? "None"}). Verbosity={verbosity}.";
+        }
+    }
+}
+```
+
+---
+
+## Pattern 5 — CoALA Semantic & Episodic Memory Facts (`ForgeAgentMemory`)
+
+When recording observations, relational scores, and state changes for AI decision-making or narrative agents via `ForgeAgentMemory`:
+
+### Template
+
+```csharp
+using TaleWorlds.CampaignSystem;
+using CalradiaForge.Sdk;
+
+namespace CalradiaForge.Core.CampaignBehaviors
+{
+    public class ForgeAgentMemorySync
+    {
+        public static void RecordHeroInteraction(ForgeAgentMemory memory, Hero observer, Hero target, int relationDelta)
+        {
+            if (memory == null || observer == null || target == null) return;
+
+            // 1. Semantic Memory: ALWAYS store the real absolute relation from the engine
+            int absoluteRelation = observer.GetRelation(target);
+            memory.Semantic.SetFact($"Relation_{target.StringId}", absoluteRelation, importance: 0.8f);
+
+            // 2. Episodic / Delta Memory: Store the transient delta separately for explainability
+            memory.Semantic.SetFact($"LastRelationDelta_{target.StringId}", relationDelta, importance: 0.4f);
+
+            // 3. Episodic Log: Register the event in short-term narrative memory
+            memory.Episodic.RecordEvent(
+                category: "Diplomacy",
+                summary: $"Relation with {target.Name} changed by {relationDelta:+#;-#;0} (New absolute: {absoluteRelation})",
+                importance: Math.Abs(relationDelta) >= 10 ? 0.9f : 0.5f
+            );
+        }
+    }
+}
+```
+
+### Cognitive Invariants:
+- **No Delta Shadowing:** Never store `relationDelta` as the value for `Relation_<targetId>`. Decisions require absolute affinity $[-100, 100]$.
+- **Stateless Persistence Rule:** In `src/CalradiaForge.Mod`, keep agent memory transient and rebuild it on-demand from world queries. Never register memory containers in `SaveableTypeDefiner` within the game module.
+
+---
+
 ## Universal Safety Rules
 
 1. **Never name a namespace, folder, or class `Campaign`** — it shadows `TaleWorlds.CampaignSystem.Campaign` and breaks compilation for `Campaign.Current.*` (`GEMINI.md`).

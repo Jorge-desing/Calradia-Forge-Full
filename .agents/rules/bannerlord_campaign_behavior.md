@@ -104,3 +104,15 @@ During midnight or hourly pulses, running unoptimized loops on 1,500+ heroes cre
 ## 6. Critical Project Rules
 1. **GEMINI.md Rule**: NEVER name a namespace, folder, or class `Campaign` (`TaleWorlds.CampaignSystem.Campaign` shadowing). Use `CampaignBehaviors` or `Behaviors`.
 2. **Main Thread Only**: Never invoke Campaign APIs or modify campaign state from background threads (`Task.Run`). TaleWorlds Campaign System is strictly single-threaded.
+
+---
+
+## 7. Memoria Cognitiva CoALA y Actualización Precisa de Relaciones
+Al integrar sistemas de memoria cognitiva (como `ForgeAgentMemory` o agentes basados en la arquitectura CoALA) dentro de un `CampaignBehavior`:
+- **Separación entre Relación Absoluta y Variación (Delta):**
+  - **Relación Absoluta (`Relation_<HeroId>`):** Debe reflejar siempre el valor real absoluto del motor (`hero1.GetRelation(hero2)` o `CharacterRelationManager.GetHeroRelation(hero1, hero2)`), en el rango estándar $[-100, 100]$.
+  - **Delta o Variación (`LastRelationDelta_<HeroId>`):** Registrar por separado el cambio puntual derivado de una acción (ej. $+5$, $-10$) para auditoría episódica o explicabilidad.
+  - *Anti-patrón Crítico:* Guardar el delta directamente en el hecho semántico de la relación (ej. asignar `5` a `Relation_hero_1` cuando la relación real con el héroe es `-40`) desvirtúa la memoria semántica y corrompe las decisiones de IA y los diálogos dinámicos.
+- **Seguridad Sin Estado en Modding In-Game:**
+  - Si la memoria de trabajo reside en un `CampaignBehavior` en `CalradiaForge.Mod`, respetar la Regla B de `AGENTS.md`: nunca heredar de `SaveableTypeDefiner` ni serializar grafos de memoria pesados en `SyncData`. La memoria transitoria de agentes debe reconstruirse reactivamente a partir de los hechos del mundo o gestionarse mediante el SDK desacoplado.
+

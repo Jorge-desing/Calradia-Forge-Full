@@ -49,3 +49,10 @@ This is the required entry point. Key formatting rules:
 - **Registering Events**: Override RegisterEvents() and use CampaignEvents.[EventName].AddNonSerializedListener(this, ...) to listen to ticks, destructions, owner changes, etc.
 - **SyncData**: Override SyncData(IDataStore dataStore) to save/load primitive fields or data dictionaries. Ensure the string ID is unique per behavior instance.
 - **Initialization**: Must be registered in MBSubModuleBase.OnGameStart by casting IGameStarter to CampaignGameStarter and calling AddBehavior(new MyBehavior()).
+
+## 7. Manejo Seguro de Comandos de Consola y Argumentos
+- **Guardia Obligatoria contra Argumentos Nulos:**
+  - Los métodos registrados con `[CommandLineFunctionality.CommandLineArgumentAttribute]` pueden recibir `args == null` si el usuario no especifica argumentos en la consola del juego.
+  - Toda validación de parámetros debe verificar explícitamente: `if (args == null || args.Count < N) return "Usage: ...";` antes de acceder a elementos por índice.
+  - Al procesar parámetros opcionales, verificar `args != null && args.Count > index` antes de evaluar o convertir tipos con `int.TryParse` o `bool.TryParse`.
+

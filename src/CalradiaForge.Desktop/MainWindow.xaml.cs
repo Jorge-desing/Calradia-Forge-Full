@@ -16,7 +16,9 @@ namespace CalradiaForge.Desktop
             var metrics = new DesktopMetricsService();
             var theme = new DesktopThemeService();
             var preferences = new DesktopPreferenceService();
-            shell = new DesktopShellViewModel(new ToolCatalog(), new DesktopWorkspaceService(metrics), metrics, new DesktopLocalizationService(), theme, preferences, new DesktopInputPickerService().Pick);
+            shell = new DesktopShellViewModel(new ToolCatalog(), new DesktopWorkspaceService(metrics), metrics, new DesktopLocalizationService(), theme, preferences, new DesktopInputPickerService().Pick, clipboardWriter: TryCopyText);
+            if (string.Equals(System.Environment.GetEnvironmentVariable("CALRADIA_FORGE_UIA_READ_ONLY"), "1", System.StringComparison.Ordinal))
+                shell.IsContextDossierOpen = true;
             DataContext = shell;
         }
 
@@ -27,6 +29,19 @@ namespace CalradiaForge.Desktop
         void Window_RestoreClick(object sender, RoutedEventArgs e) => SystemCommands.RestoreWindow(this);
 
         void Window_CloseClick(object sender, RoutedEventArgs e) => SystemCommands.CloseWindow(this);
+
+        static bool TryCopyText(string text)
+        {
+            try
+            {
+                Clipboard.SetText(text ?? string.Empty);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
