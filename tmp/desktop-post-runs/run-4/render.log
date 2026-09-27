@@ -1,4 +1,0 @@
-[Desktop Render] Running WPF render and resource tests via this batch launcher...
-PASS 274 WPF render cases; 5617 ms. No game session or tool execution.
-PERF 152 render/layout passes, 783.8 ms in those calls; visual-tree snapshots 91 builds / 1289 hits / 66258 visited nodes.
-PERF-PHASES {"nonvisual-fixtures-and-contracts":514.2062,"app-startup-and-first-render":1287.3054,"all-route-navigation-and-filter-checks":846.136,"localization-and-scale-matrix":1151.3463,"theme-and-scale-matrix":1743.1977}

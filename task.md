@@ -396,10 +396,12 @@
 - [x] Crear workflow de auditoría de documentación e integridad criptográfica (`.github/workflows/ledger-docs-integrity.yml`): verificación de cadena SHA-256 de 55 revisiones del Registro de Mejoras, paridad bilingüe EN/ES, playbooks de Gauntlet y detección de code smells.
 - [x] Sincronizar y pushear a GitHub (`main`) bajo la Regla E ajustada.
 
-
-
-
-
-
-
-
+## Purga de Archivos Residuales, Logs Temporales y Scripts Obsoletos (Rev067)
+- [x] Auditoría exhaustiva y preservación incondicional de los 176 archivos ZIP históricos de releases en `artifacts/`.
+- [x] Preservación de metadatos críticos de auditoría (`package-audit-*.json`, `package-sha256-*.txt`, `localization-audit-*.json`) y copias de seguridad de TPAC.
+- [x] Eliminación de 511 archivos y carpetas residuales (~145 MB) en `artifacts/` (directorios temporales de pruebas `desktop-focus-safe`, `visual-stage`, `agent-runs`, `docx-render`, `ui-restore`, logs huérfanos).
+- [x] Eliminación completa del directorio temporal obsoleto `tmp/` (129 archivos entre renders PNG antiguos, logs y volcados de prueba).
+- [x] Eliminación de scripts scratch, ejecutables de prueba temporales (`test_hash*.exe`, `test_hash*.cs`), volcados JSON sueltos y capturas de pantalla de recorte en la raíz del repositorio.
+- [x] Desvinculación de git y purga física de todos los directorios `__pycache__` y archivos de bytecode compilado `*.pyc`.
+- [x] Verificación de paso completo de los controles de calidad: compilación limpia en Release (0 errores / 0 advertencias), verificación de comportamiento sin estado (4/4), suite de pruebas de la solución (Core 338, ForgeWeave 73, Desktop 63, WPF Render 289) y pruebas de agentes de Antigravity (31/31).
+- [x] Sincronización y push a GitHub (`main`) bajo la Regla E.
