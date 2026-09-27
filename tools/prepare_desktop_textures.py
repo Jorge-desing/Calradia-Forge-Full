@@ -33,10 +33,10 @@ SPECS = {
     # WPF decodes the bitmap to avoid decoding millions of pixels that can never show.
     "titlebar-embroidered-cloth.png": ((2048, 768), (0, 338, 2048, 400), None, "RGB"),
     "titlebar-botanical-band-v1.png": ((2172, 724), (0, 246, 2172, 344), None, "RGBA"),
-    # Rev057 commissioned panoramic banner: crop to the titlebar's narrow
+    # Rev072 commissioned panoramic banner: crop to the titlebar's narrow
     # 32:1 viewport before WPF decodes it and preserve the complete horizontal
     # source width for crisp rendering on wide/high-DPI desktops.
-    "titlebar-cartographic-panorama-rev057.png": ((2172, 724), (0, 328, 2172, 395), None, "RGB"),
+    "titlebar-cartographic-panorama-rev072.png": ((2172, 724), (0, 328, 2172, 395), None, "RGB"),
     # Small ornaments are downsampled only as far as their rendered size permits.
     "titlebar-heraldic-corner.png": ((1254, 1254), None, (96, 96), "RGBA"),
     "header-heraldic-compass-v2.png": ((1254, 1254), None, (128, 128), "RGBA"),
@@ -65,6 +65,7 @@ RETIRED_VARIANTS = {
     "titlebar-cartographic-engraving-v2.png",
     "workbench-heraldic-rail-band-v1.png",
     "workbench-heraldic-rail-portrait-rev063.png",
+    "titlebar-cartographic-panorama-rev057.png",
 }
 
 

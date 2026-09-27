@@ -39,15 +39,16 @@ Before staging or committing changes, ensure that:
    ```powershell
    git status --porcelain
    ```
-   Verify exactly which files were modified and identify agent-authored files versus any external/unrelated changes.
-2. **Strict Selective Staging (PROHIBIDO `git add .` / `git add -A`):**
-   - **Agent-Authored Changes Only:** Stage ONLY the specific files that the agent has explicitly modified, added, or verified for the current task scope.
-   - **Zero External Spillover:** NEVER stage or commit external files, unrelated user edits, temporary artifacts, or files outside the explicit changeset.
-   - **Explicit Relative Paths:** Always stage files explicitly by their relative path:
-     ```powershell
-     git add path/to/file1 path/to/file2
-     ```
-   - **Blanket Prohibition:** Blanket staging commands (`git add .`, `git add -A`, `git add --all`, `git add *`) are strictly prohibited in all circumstances.
+   Verify all modified and untracked files. Distinguish intentional project changes (source, UI, tests, docs, assets, scripts) from external debris (build outputs, logs, pycache).
+2. **Comprehensive Project Staging & Exclusion of External Garbage:**
+   - **Full Project Changes Included:** Always stage all intentional project modifications, features, fixes, documentation, ledger DOCX/annexes, tests, and assets. Never arbitrarily exclude valid repository changes under the assumption they are "external".
+   - **Strict Exclusion of External Garbage (Zero External Spillover):** NEVER stage or commit:
+     1. Build artifacts, intermediate outputs, and caches (`bin/`, `obj/`, `artifacts/`, `.vs/`, `.idea/`, `__pycache__/`, `*.pyc`).
+     2. Temporary debug logs, crash dumps, and traces (`*.log`, `*.cfcrash`).
+     3. Game engine binaries (`TaleWorlds.*.dll`) or user game saves (`*.sav`).
+     4. Private credentials, secrets, or API keys (`.env`, tokens).
+     5. Operating system metadata (`Thumbs.db`, `desktop.ini`, `.DS_Store`).
+   - **Clean Staging:** Stage all verified project paths cleanly by path or pattern, confirming that no external garbage or cached binaries are included.
 3. **Structured Commit Message:**
    Write clear, semantic commit messages in Spanish or English matching repository conventions:
    - Concise imperative subject line (e.g. `feat: ...`, `fix: ...`, `refactor: ...`, `chore: ...`).

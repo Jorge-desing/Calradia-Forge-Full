@@ -95,7 +95,8 @@ namespace CalradiaForge.Tests
             {
                 "ForgeNavigationRail", "ForgeAreaNavigation", "ForgeEvidenceFrame", "ForgeEvidenceHeading",
                 "ForgeEvidencePage", "ForgeEmptyEvidence", "ForgeEvidenceContent", "ForgePrimaryCommandDeck", "ForgeSecondaryActionDeck",
-                "ForgeExtensionActionDeck", "ForgeAssemblyActionDeck", "ForgePaginationAndUtilityDeck"
+                "ForgeExtensionActionDeck", "ForgeAssemblyActionDeck", "ForgePaginationAndUtilityDeck",
+                "ForgePlaybookScroll", "ForgePlaybookScrollBar", "ForgePlaybookScrollBarHandle"
             };
             foreach (string id in requiredIds)
                 if (!ids.Contains(id)) throw new Exception("CalradiaForge.xml missing structural Gauntlet ID " + id + ".");
@@ -114,6 +115,79 @@ namespace CalradiaForge.Tests
                 (string)shell.Attribute("MaxWidth") != "1760" || (string)shell.Attribute("MaxHeight") != "1024" ||
                 new[] { "MarginLeft", "MarginRight", "MarginTop", "MarginBottom" }.Any(name => (string)shell.Attribute(name) != "24"))
                 throw new Exception("The Gauntlet workbench must adapt to its viewport, cap its size and preserve 24-DIP margins.");
+            XElement inputRow = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeInputRow");
+            XElement primaryHost = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgePrimaryCommandHost");
+            XElement playbook = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgePlaybookPanel");
+            if (inputRow == null || primaryHost == null || playbook == null ||
+                (string)inputRow.Attribute("MarginRight") != "@WorkspaceRightMargin" ||
+                (string)primaryHost.Attribute("MarginRight") != "@WorkspaceRightMargin" ||
+                (string)playbook.Attribute("IsVisible") != "@IsPlaybookVisible" ||
+                (string)playbook.Attribute("MarginTop") != "281" ||
+                (string)playbook.Attribute("HeightSizePolicy") != "StretchToParent" ||
+                (string)playbook.Attribute("MarginBottom") != "166" ||
+                (string)playbook.Attribute("MaxHeight") != "390")
+                throw new Exception("Detailed Playbook must start below briefing cards and reserve its right-side space from input and command rows.");
+            XElement playbookScroll = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgePlaybookScroll");
+            XElement playbookScrollBar = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgePlaybookScrollBar");
+            XElement playbookContent = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgePlaybookContent");
+            XElement playbookFlow = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgePlaybookFlow");
+            if (playbookScroll == null || playbookScroll.Name.LocalName != "ScrollablePanel" ||
+                playbookScrollBar == null || playbookScrollBar.Name.LocalName != "ScrollbarWidget" ||
+                document.Descendants().Any(element => element.Name.LocalName == "ScrollBarWidget"))
+                throw new Exception("Playbook must use the exact case-sensitive Gauntlet ScrollbarWidget type; ScrollBarWidget is invalid.");
+            if ((string)playbookScroll.Attribute("ClipRect") != "ForgePlaybookClip" ||
+                (string)playbookScroll.Attribute("InnerPanel") != "ForgePlaybookClip\\ForgePlaybookContent" ||
+                (string)playbookScroll.Attribute("MarginTop") != "42" ||
+                (string)playbookScroll.Attribute("MarginBottom") != "10" ||
+                (string)playbookScrollBar.Attribute("SuggestedWidth") != "8" ||
+                (string)playbookScrollBar.Attribute("MarginTop") != "42" ||
+                (string)playbookScrollBar.Attribute("MarginBottom") != "10" ||
+                (string)playbookScrollBar.Attribute("MarginRight") != "10" ||
+                playbookContent == null || (string)playbookContent.Attribute("HeightSizePolicy") != "CoverChildren" ||
+                playbookFlow == null || (string)playbookFlow.Attribute("HeightSizePolicy") != "CoverChildren" ||
+                (string)playbookFlow.Attribute("StackLayout.LayoutMethod") != "VerticalTopToBottom")
+                throw new Exception("Playbook text content and scrollbar must fill the clipped viewport and expose the bottom of the flow.");
+            string[] primaryActionIds = { "ForgeRefresh", "ForgeScan", "ForgePin", "ForgeCompare", "ForgeRun" };
+            foreach (string id in primaryActionIds)
+            {
+                XElement action = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == id);
+                if (action == null || (string)action.Attribute("SuggestedWidth") != "@PrimaryActionButtonWidth")
+                    throw new Exception(id + " must use the adaptive detailed-mode button width.");
+            }
+            string panelViewModelPath = Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.cs");
+            string panelViewModel = File.ReadAllText(panelViewModelPath);
+            if (!panelViewModel.Contains("[DataSourceProperty] public float PrimaryActionButtonWidth => _isDetailedMode && !evidenceFocused ? 100f : 164f;") ||
+                !panelViewModel.Contains("nameof(PrimaryActionButtonWidth)") ||
+                !panelViewModel.Contains("public bool IsPlaybookVisible => _isDetailedMode && !evidenceFocused && !_isKeyHelpOpen;") ||
+                !panelViewModel.Contains("OnPropertyChanged(nameof(IsPlaybookVisible));"))
+                throw new Exception("PanelViewModel must publish and notify the adaptive detailed-mode primary action width.");
+            string[] playbookWrapContracts =
+            {
+                "CategoryPlaybookTitle => WrapPlaybookText(GetCategoryPlaybookTitle(currentCategory), 30)",
+                "CategoryPlaybookStep1 => WrapPlaybookText(GetCategoryPlaybookStep1(currentCategory), 34)",
+                "CategoryPlaybookStep2 => WrapPlaybookText(GetCategoryPlaybookStep2(currentCategory), 34)",
+                "CategoryPlaybookStep3 => WrapPlaybookText(GetCategoryPlaybookStep3(currentCategory), 34)",
+                "CategoryTroubleshootingTitle => WrapPlaybookText(GetCategoryTroubleshootingTitle(currentCategory), 38)",
+                "CategoryTroubleshootingAdvice => WrapPlaybookText(GetCategoryTroubleshootingAdvice(currentCategory), 42)",
+                "CategoryRecommendedMacro => WrapPlaybookText(GetCategoryRecommendedMacro(currentCategory), 34)",
+                "wrapped.Append('\\n').Append(word);"
+            };
+            if (playbookWrapContracts.Any(contract => !panelViewModel.Contains(contract)))
+                throw new Exception("Playbook ViewModel must explicitly wrap every variable text field without changing its source literals.");
+            string[] playbookTextIds =
+            {
+                "ForgePlaybookTitle", "ForgePlaybookStep1", "ForgePlaybookStep2", "ForgePlaybookStep3",
+                "ForgeTroubleshootingTitle", "ForgeTroubleshootingAdvice", "ForgeRecommendedMacro"
+            };
+            foreach (string id in playbookTextIds)
+            {
+                XElement text = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == id);
+                if (text == null || text.Name.LocalName != "TextWidget" ||
+                    (string)text.Attribute("WidthSizePolicy") != "StretchToParent" ||
+                    (string)text.Attribute("HeightSizePolicy") != "CoverChildren" ||
+                    !playbookFlow.Descendants().Contains(text))
+                    throw new Exception(id + " must wrap within and grow the scrollable Playbook flow.");
+            }
             if (railButtons.Any(button => (string)button.Attribute("SuggestedHeight") != "42") ||
                 (string)navigation.Attribute("SuggestedHeight") != "384")
                 throw new Exception("The compact route rail must leave all eight destinations inside its clipped viewport.");
@@ -199,7 +273,8 @@ namespace CalradiaForge.Tests
                     throw new Exception("CalradiaForgeSpriteData.xml must register approved material sprite " + spriteName + " exactly once.");
             }
             XElement evidenceFrame = document.Descendants().Single(element => (string)element.Attribute("Id") == "ForgeEvidenceFrame");
-            if (evidenceFrame.Descendants("ImageWidget").Any())
+            if (evidenceFrame.Descendants("ImageWidget").Any(image => !image.Ancestors("ScrollbarWidget").Any()) ||
+                evidenceFrame.Descendants().Any(element => ((string)element.Attribute("Sprite"))?.StartsWith("forge_", StringComparison.Ordinal) == true))
                 throw new Exception("The evidence ledger must stay on an untextured high-contrast surface.");
             foreach (string retired in new[] { "forge_header_filigree", "forge_map_contours", "forge_heraldic_corner", "forge_woven_border", "forge_rosette_mark", "forge_stitch_rule", "forge_pine_grain", "forge_table_grain", "forge_brass_rule", "forge_dark_wood", "forge_inkwash" })
                 if (document.Descendants().Any(element => (string)element.Attribute("Sprite") == retired))

@@ -48,11 +48,15 @@ Calradia Forge is an advanced modding framework, live developer tooling suite, a
 - Never include batch scripts (`.bat`) or PowerShell scripts (`.ps1`) in user-facing distribution zips.
 - Strip NTFS `:Zone.Identifier` alternate data streams from assemblies before distribution.
 
-### Rule E: Selective Staging & Isolated Commits (PROHIBIDO `git add .` / `git add -A`)
-- **CRITICAL**: Stage ONLY files that the active agent has explicitly created, modified, or verified for the specific task at hand.
-- **Strictly Prohibited**: Never execute blanket staging commands such as `git add .`, `git add -A`, `git add --all`, or `git add *`.
-- **Zero External Spillover**: Never stage or commit files modified by external processes, unrelated user edits, or files outside the explicit task scope.
-- **Pre-commit Audit**: Always verify `git status --porcelain` and stage each path individually (e.g. `git add path/to/file1 path/to/file2`).
+### Rule E: Project Scope Staging & Zero External Garbage
+- **Full Project Scope**: When committing and pushing to the remote repository, always stage ALL intentional workspace modifications, features, tests, documentation, annexes, and assets. Never omit valid project changes under the mistaken assumption that they are "external".
+- **Strictly Prohibited (Zero External Garbage)**: Never stage or commit files external to the project:
+  1. Build artifacts and caches (`bin/`, `obj/`, `artifacts/`, `.vs/`, `.idea/`, `__pycache__/`, `*.pyc`).
+  2. Crash logs, dump files, and traces (`*.log`, `*.cfcrash`).
+  3. Proprietary game engine binaries (`TaleWorlds.*.dll`) or user game saves (`*.sav`).
+  4. Secrets, credentials, or environment files (`.env`, tokens).
+  5. OS metadata (`Thumbs.db`, `.DS_Store`, `desktop.ini`).
+- **Pre-commit Audit**: Always verify `git status --porcelain` to confirm that all staged items belong to the project and zero external garbage or caches are included.
 
 ---
 

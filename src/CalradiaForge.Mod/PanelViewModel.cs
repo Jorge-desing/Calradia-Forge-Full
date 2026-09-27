@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CalradiaForge.Core;
@@ -126,13 +127,13 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public bool HasQuickSlots => true;
 
         // ── CATEGORY PLAYBOOKS & TROUBLESHOOTING (Rev047) ──────────────────────────
-        [DataSourceProperty] public string CategoryPlaybookTitle => GetCategoryPlaybookTitle(currentCategory);
-        [DataSourceProperty] public string CategoryPlaybookStep1 => GetCategoryPlaybookStep1(currentCategory);
-        [DataSourceProperty] public string CategoryPlaybookStep2 => GetCategoryPlaybookStep2(currentCategory);
-        [DataSourceProperty] public string CategoryPlaybookStep3 => GetCategoryPlaybookStep3(currentCategory);
-        [DataSourceProperty] public string CategoryTroubleshootingTitle => GetCategoryTroubleshootingTitle(currentCategory);
-        [DataSourceProperty] public string CategoryTroubleshootingAdvice => GetCategoryTroubleshootingAdvice(currentCategory);
-        [DataSourceProperty] public string CategoryRecommendedMacro => GetCategoryRecommendedMacro(currentCategory);
+        [DataSourceProperty] public string CategoryPlaybookTitle => WrapPlaybookText(GetCategoryPlaybookTitle(currentCategory), 30);
+        [DataSourceProperty] public string CategoryPlaybookStep1 => WrapPlaybookText(GetCategoryPlaybookStep1(currentCategory), 34);
+        [DataSourceProperty] public string CategoryPlaybookStep2 => WrapPlaybookText(GetCategoryPlaybookStep2(currentCategory), 34);
+        [DataSourceProperty] public string CategoryPlaybookStep3 => WrapPlaybookText(GetCategoryPlaybookStep3(currentCategory), 34);
+        [DataSourceProperty] public string CategoryTroubleshootingTitle => WrapPlaybookText(GetCategoryTroubleshootingTitle(currentCategory), 38);
+        [DataSourceProperty] public string CategoryTroubleshootingAdvice => WrapPlaybookText(GetCategoryTroubleshootingAdvice(currentCategory), 42);
+        [DataSourceProperty] public string CategoryRecommendedMacro => WrapPlaybookText(GetCategoryRecommendedMacro(currentCategory), 34);
         [DataSourceProperty] public string MacroActionLabel => T("⚡ Run Macro");
         [DataSourceProperty] public string MacroActionHint => string.Format(T("Execute recommended procedural macro for {0}: {1}"), (currentCategory ?? "overview").ToUpperInvariant(), CategoryRecommendedMacro);
 
@@ -156,8 +157,9 @@ namespace CalradiaForge.Mod
         }
         [DataSourceProperty] public string DetailModeLabel => _isDetailedMode ? T("Detail: [EXTENDED]") : T("Detail: [COMPACT]");
         [DataSourceProperty] public string DetailModeHint => T("Toggle between compact quick-slot bar and extended engineering playbook with troubleshooting rules.");
-        [DataSourceProperty] public bool IsPlaybookVisible => _isDetailedMode && !evidenceFocused;
+        [DataSourceProperty] public bool IsPlaybookVisible => _isDetailedMode && !evidenceFocused && !_isKeyHelpOpen;
         [DataSourceProperty] public float WorkspaceRightMargin => _isDetailedMode && !evidenceFocused ? 344f : 24f;
+        [DataSourceProperty] public float PrimaryActionButtonWidth => _isDetailedMode && !evidenceFocused ? 100f : 164f;
 
         private bool _isCategoryCommandsOpen;
         [DataSourceProperty]
@@ -225,6 +227,7 @@ namespace CalradiaForge.Mod
             {
                 _isKeyHelpOpen = false;
                 OnPropertyChanged(nameof(IsKeyHelpOpen));
+                OnPropertyChanged(nameof(IsPlaybookVisible));
             }
             CloseSdkCatalog();
             NavigationPaletteSearchText = "";
@@ -1307,7 +1310,7 @@ namespace CalradiaForge.Mod
             nameof(CategoryPlaybookTitle), nameof(CategoryPlaybookStep1), nameof(CategoryPlaybookStep2), nameof(CategoryPlaybookStep3),
             nameof(CategoryTroubleshootingTitle), nameof(CategoryTroubleshootingAdvice),
             nameof(CategoryRecommendedMacro), nameof(IsDetailedMode), nameof(DetailModeLabel), nameof(DetailModeHint),
-            nameof(IsPlaybookVisible), nameof(WorkspaceRightMargin), nameof(ShowCommandDeck), nameof(EvidenceTop),
+            nameof(IsPlaybookVisible), nameof(WorkspaceRightMargin), nameof(PrimaryActionButtonWidth), nameof(ShowCommandDeck), nameof(EvidenceTop),
             nameof(MacroActionLabel), nameof(MacroActionHint)
         };
 
@@ -1999,6 +2002,7 @@ namespace CalradiaForge.Mod
         {
             _isKeyHelpOpen = !_isKeyHelpOpen;
             OnPropertyChanged(nameof(IsKeyHelpOpen));
+            OnPropertyChanged(nameof(IsPlaybookVisible));
         }
         public void ExecuteFilterLines()
         {
@@ -4020,6 +4024,38 @@ namespace CalradiaForge.Mod
                 default:
                     return T("Adhere to Calradia Forge architectural constraints and TaleWorlds engine threading rules at all times.");
             }
+        }
+
+        static string WrapPlaybookText(string text, int maxLineLength)
+        {
+            if (string.IsNullOrEmpty(text)) return text ?? string.Empty;
+            if (maxLineLength < 1) throw new ArgumentOutOfRangeException(nameof(maxLineLength));
+
+            string[] words = text.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 0) return string.Empty;
+
+            var wrapped = new StringBuilder(text.Length + words.Length);
+            int lineLength = 0;
+            foreach (string word in words)
+            {
+                if (lineLength == 0)
+                {
+                    wrapped.Append(word);
+                    lineLength = word.Length;
+                }
+                else if (lineLength + 1 + word.Length <= maxLineLength)
+                {
+                    wrapped.Append(' ').Append(word);
+                    lineLength += 1 + word.Length;
+                }
+                else
+                {
+                    wrapped.Append('\n').Append(word);
+                    lineLength = word.Length;
+                }
+            }
+
+            return wrapped.ToString();
         }
 
         string GetCategoryPlaybookTitle(string cat)

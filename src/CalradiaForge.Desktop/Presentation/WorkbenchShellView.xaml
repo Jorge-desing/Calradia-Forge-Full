@@ -4,7 +4,7 @@
  xmlns:presentation="clr-namespace:CalradiaForge.Desktop.Presentation"
  MinWidth="0" MinHeight="0">
  <Grid Margin="14,8,14,12">
-  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*" MinHeight="320"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto" MinHeight="24"/></Grid.RowDefinitions>
   <presentation:WorkbenchHeaderControl Grid.Row="0"/>
   <presentation:WorkbenchStatusControl Grid.Row="1"/>
   <Grid Grid.Row="2">

@@ -562,3 +562,37 @@ Consulta VALIDATION.md para distinguir las pruebas automáticas, la ejecución d
 - Tras añadir ajuste de línea a las estadísticas traducidas y a los indicadores compactos de las tarjetas estrechas, la ejecución final del BAT volvió a pasar la misma cobertura; su artefacto separado registra 10.939 ms totales y 3.120,8 ms en llamadas de layout, mediciones exclusivas del arnés. La repetición de UIA en solo lectura pasó 23/23 controles, incluidos los botones de copia del dossier, y conservó la ventana en primer plano.
 - El BAT de UIA en solo lectura pasó 23/23 controles y registró ForegroundUnchanged=true; no ejercitó selectores, ejecución de trabajos, cambios de preferencias ni aprobación visual. No se inició una sesión de Bannerlord.
 - La versión sigue en 25.2.0; no cambiaron API pública, rutas, comandos, permisos, protocolo, dependencias ni ZIPs.
+
+### Pie Desktop adaptable y ajuste del panel Gauntlet (Rev072) — 27/09/2026
+
+- El pie de atajos WPF ahora permanece dentro del viewport mínimo de 980×680 DIP, con un margen inferior acotado y comprobaciones de ajuste del texto en los 13 idiomas. Se sustituyó el recorte de cabecera empaquetado Rev057 por el panorama cartográfico determinista Rev072 de mayor resolución; el original de alta resolución no se incluye en el ensamblado.
+- Se ajustaron el espaciado de la cabecera Gauntlet, la disposición al enfocar evidencia y la reserva del Playbook. El Playbook libera el margen derecho del espacio de trabajo y se oculta al enfocar la evidencia. Las ocho áreas usan sprites semánticos; se conservan las 194 rutas de herramientas y los 56 bindings de comando.
+- El auditor visual ahora modela anchos de 1220/1280/1600/1920, estados de evidencia normal/detallado/enfocado y la oclusión comprobada por el panel opaco. Se actualizó la lista de iconos para reflejar el prefab, manteniendo requeridos los 17 iconos generados y el inventario de atlas de 30 sprites.
+- El render Desktop conservó 289 casos y 182 pases de layout en cada una de cinco corridas anteriores y cinco posteriores. Las medianas del arnés fueron 10.953 ms antes y 11.474 ms después (+4,8 %); las medianas de llamadas de layout fueron 3.220,1 ms y 3.095,3 ms (-3,9 %). Son mediciones del arnés de render, no latencia de la aplicación abierta; no se afirma una mejora de rendimiento global. La comprobación `--check` de texturas fue determinista y el paquete permaneció dentro de sus presupuestos.
+- `tools/Run-CalradiaForge-Tests.bat --no-pause` terminó sin advertencias ni errores de compilación: Assets 8/8, Core 338/338, ForgeWeave 73/73, Desktop 63/63 y render WPF con 289 casos/182 pases de layout. `tools/Run-CalradiaForge-Gauntlet-Visual-Checks.bat --no-pause` también pasó. UIA Desktop de solo lectura pasó 23/23 comprobaciones.
+- Los perfiles Client y Modding Kit se compilaron y desplegaron con respaldos de archivos verificados. Se conservó el TPAC instalado con SHA-256 `69513B5617F026E1F106F6CA6D47CF5C5CE0B5869FFA472E9166B037CA8EDEA6`. El inicio del Modding Kit se detuvo en un cuadro `RGL WARNING`, que se dejó abierto; por ello el renderizado en vivo del panel sigue sin verificarse. No se cargó campaña ni batalla.
+- La versión sigue en 25.2.0; no cambiaron API pública, rutas, comandos, permisos, dependencias ni ZIPs.
+
+### Corrección del bloqueo F10 por la barra de Gauntlet (Rev073) — 27/09/2026
+
+- Se corrigió la estructura generada de `ForgeEvidenceScroll` después de que la ruta F10 del menú principal produjera una aserción de widget de barra integrado de TaleWorlds y una violación de acceso en `ScrollablePanel.UpdateScrollablePanel`. El panel ahora resuelve su referencia relativa a un `ScrollbarWidget` vertical hermano con un control identificado correspondiente.
+- Se amplió la auditoría estructural para exigir el contrato de barra en los cinco paneles desplazables y se ajustó la regresión de la superficie de evidencia para permitir únicamente la imagen del control de la barra.
+- Las comprobaciones BAT de Core/ForgeWeave pasaron 333/333 y 73/73 sin advertencias ni errores de compilación; el BAT visual de Gauntlet pasó sin errores ni advertencias de auditoría y Core 338/338. Los perfiles Client y Modding Kit se compilaron y desplegaron con respaldos verificados; se conservó el TPAC existente.
+- La validación en vivo en el menú principal para un jugador, iniciado desde Steam, confirmó que F10 abre el panel de ocho áreas y una segunda pulsación lo cierra sin la aserción ni el fallo. No se cargó campaña ni batalla. Esta comprobación no valida el comportamiento del Modding Kit en ejecución.
+- La versión sigue en 25.2.0; no cambiaron API pública, rutas, comandos, permisos, dependencias, TPAC ni ZIPs.
+
+### Playbook detallado adaptable y disposición desplazable (Rev074) — 27/09/2026
+
+- Se movió el Playbook detallado debajo de las tarjetas de contexto y se reservó una columna derecha para que no cubra controles ni filas activas. En modo detallado, los botones de acción se reducen a 100 DIP y el contenido del Playbook ahora usa desplazamiento con altura adaptable.
+- Se hizo que Ayuda de teclas y Playbook sean excluyentes y se extendió a seis superficies desplazables la auditoría de barras Gauntlet.
+- Pasó el BAT completo de pruebas, incluidas Desktop 63/63 y 289 casos del render WPF; el BAT de comprobaciones visuales Gauntlet pasó con cero errores y cero advertencias de auditoría visual.
+- La validación en vivo de esta disposición y desplazamiento adicional sigue pendiente de confirmación; las comprobaciones BAT no demuestran el comportamiento renderizado dentro de Bannerlord.
+- La versión sigue en 25.2.0; no cambiaron API pública, rutas, comandos, permisos, dependencias ni ZIPs.
+
+### Ajuste de texto del Playbook y validación exacta de la barra (Rev075) — 27/09/2026
+
+- Se añadió ajuste en límites de palabra para el texto traducido del Playbook detallado y de solución de problemas, conservando los textos fuente, rutas y comandos. El Playbook generado usa un flujo vertical recortado con `CoverChildren` y deja la acción de macro como último elemento desplazable y alcanzable.
+- La auditoría Gauntlet ahora distingue el tipo nativo `ScrollbarWidget` por coincidencia exacta y rechaza explícitamente la escritura inválida `ScrollBarWidget`; también comprueba la cadena de ancestros del flujo y el orden del contenido del Playbook.
+- Tras corregir una expectativa obsoleta de la auditoría decorativa sobre `CoverChildren`, sin relajar los límites de disposición, `tools/Run-CalradiaForge-Gauntlet-Visual-Checks.bat --no-pause` terminó con código 0 e informó 338 aprobadas y 0 fallidas.
+- El registro de la sesión F10 indicó alternancia de apertura y cierre, pero la captura asociada no mostró el overlay. La aprobación visual en vivo de este seguimiento del Playbook sigue pendiente.
+- La versión sigue en 25.2.0; no cambiaron API pública, rutas, comandos, permisos, dependencias ni ZIPs.

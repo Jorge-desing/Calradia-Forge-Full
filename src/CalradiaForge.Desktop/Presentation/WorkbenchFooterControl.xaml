@@ -6,5 +6,7 @@
  xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
  xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
  MinWidth="0" MinHeight="0">
-<TextBlock AutomationProperties.AutomationId="KeyboardShortcutHint" FontSize="{DynamicResource Token.LabelFont}" Foreground="{DynamicResource MutedTextBrush}" Margin="8,2,8,0" Text="{DynamicResource Ui.ShortcutHint}" TextAlignment="Center" TextWrapping="Wrap"/>
+<Border MinHeight="28" Padding="0,0,0,6">
+ <TextBlock AutomationProperties.AutomationId="KeyboardShortcutHint" FontSize="{DynamicResource Token.LabelFont}" Foreground="{DynamicResource MutedTextBrush}" Margin="8,2,8,2" MinHeight="18" Text="{DynamicResource Ui.ShortcutHint}" TextAlignment="Center" TextWrapping="Wrap"/>
+</Border>
 </UserControl>

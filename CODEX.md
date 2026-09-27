@@ -30,10 +30,9 @@ See [AGENTS.md](AGENTS.md) for the complete multi-agent specification.
 5. **Dual-Language Documentation Parity**:
    - Every file under `docs/` must have both English (`<TOPIC>.md`) and Spanish (`<TOPIC>.es.md`) versions.
 
-6. **Selective Staging & Isolated Commits (PROHIBIDO `git add .` / `git add -A`)**:
-   - Stage ONLY files explicitly created or modified for the task.
-   - Never use blanket staging (`git add .`, `git add -A`, `git add *`).
-   - Never commit external files or unrelated modifications.
+6. **Project Scope Staging & Zero External Garbage**:
+   - Always stage ALL intentional project changes (code, UI, tests, docs, assets).
+   - Strictly exclude external debris: caches (`bin/`, `obj/`, `artifacts/`, `__pycache__/`, `*.pyc`), logs (`*.log`), game saves (`*.sav`), secrets (`.env`), and OS metadata.
 
 ---
 

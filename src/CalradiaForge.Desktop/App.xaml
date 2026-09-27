@@ -21,7 +21,7 @@
    <services:ResponsiveDecorationDimensionConverter x:Key="ResponsiveDecorationDimensionConverter"/>
    <services:GeometryKeyConverter x:Key="GeometryKeyConverter"/>
    <services:BrushKeyConverter x:Key="BrushKeyConverter"/>
-   <ImageBrush x:Key="TitleBarCartographicBandBrush" ImageSource="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/titlebar-cartographic-panorama-rev057.png" Stretch="Fill" Viewbox="0,0,1,1" ViewboxUnits="RelativeToBoundingBox" Viewport="0,0,1,1" ViewportUnits="RelativeToBoundingBox" Opacity="0.18"/>
+   <ImageBrush x:Key="TitleBarCartographicBandBrush" ImageSource="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/titlebar-cartographic-panorama-rev072.png" Stretch="Fill" Viewbox="0,0,1,1" ViewboxUnits="RelativeToBoundingBox" Viewport="0,0,1,1" ViewportUnits="RelativeToBoundingBox" Opacity="0.18"/>
    <ImageBrush x:Key="TitleBarBotanicalRuleBrush" ImageSource="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/titlebar-botanical-band-v1.png" Stretch="UniformToFill" Viewbox="0,0.74,1,0.259" ViewboxUnits="RelativeToBoundingBox" Viewport="0,0,1,1" ViewportUnits="RelativeToBoundingBox" Opacity="0.28"/>
     <Style TargetType="TextBlock">
      <Setter Property="FontSize" Value="{DynamicResource Token.BodyFont}"/>

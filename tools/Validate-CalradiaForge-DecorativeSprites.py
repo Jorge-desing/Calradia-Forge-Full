@@ -40,7 +40,7 @@ DECORATION_SIZES = {
     "forge_header_extensions_v1": (128, 64),
 }
 DECORATIONS = tuple(DECORATION_SIZES)
-OCCLUDING_PANEL_IDS = {"ForgeKeyHelpPanel", "ForgeSdkCatalogPanel", "NavigationPalettePanel"}
+OCCLUDING_PANEL_IDS = {"ForgeKeyHelpPanel", "ForgeSdkCatalogPanel", "NavigationPalettePanel", "ForgePlaybookPanel"}
 MAX_ALPHA = {
     "forge_war_table_cloth_v2": 24,
     "forge_rail_cartographic_field_v1": 36,
@@ -157,7 +157,20 @@ EXPECTED_DECORATIVE_PLACEMENTS = {
     "ForgeBriefingTestingPatinaRule": ("forge_patina_brass", "BriefingTestingValue", None),
     "ForgeBriefingEvidencePatinaRule": ("forge_patina_brass", "BriefingEvidenceCountValue", None),
     "ForgeBriefingTestsPatinaRule": ("forge_patina_brass", "BriefingTestCountValue", None),
+    "ForgePlaybookBrassRule1": ("forge_patina_brass", "ForgePlaybookFlow", None),
+    "ForgePlaybookFeltRule": ("forge_pine_felt", "ForgePlaybookFlow", None),
+    "ForgePlaybookBrassRule2": ("forge_patina_brass", "ForgePlaybookFlow", None),
 }
+
+PLAYBOOK_FLOW_RULE_IDS = {
+    "ForgePlaybookBrassRule1", "ForgePlaybookFeltRule", "ForgePlaybookBrassRule2",
+}
+PLAYBOOK_FLOW_ORDER = (
+    "ForgePlaybookTitle", "ForgePlaybookBrassRule1", "ForgePlaybookStep1",
+    "ForgePlaybookStep2", "ForgePlaybookStep3", "ForgePlaybookFeltRule",
+    "ForgeTroubleshootingTitle", "ForgeTroubleshootingAdvice", "ForgePlaybookBrassRule2",
+    "ForgeRecommendedMacro", "ForgeRunMacro",
+)
 
 ROUTE_HEADER_ORNAMENT_BINDINGS = {
     "ForgeHeaderOrnamentSummary": ("forge_header_summary_v1", "@IsSummaryActive"),
@@ -182,6 +195,18 @@ DECORATIVE_LAYOUT_CONTRACTS = {
         "WidthSizePolicy": "Fixed", "HeightSizePolicy": "StretchToParent",
         "SuggestedWidth": 228, "MaxHeight": 256,
         "MarginLeft": 1, "MarginTop": 425, "MarginBottom": 5,
+    },
+    "ForgePlaybookBrassRule1": {
+        "WidthSizePolicy": "StretchToParent", "SuggestedHeight": 3,
+        "MarginLeft": 12, "MarginRight": 12, "MarginTop": 6,
+    },
+    "ForgePlaybookFeltRule": {
+        "WidthSizePolicy": "StretchToParent", "SuggestedHeight": 3,
+        "MarginLeft": 12, "MarginRight": 12, "MarginTop": 8,
+    },
+    "ForgePlaybookBrassRule2": {
+        "WidthSizePolicy": "StretchToParent", "SuggestedHeight": 3,
+        "MarginLeft": 12, "MarginRight": 12, "MarginTop": 8,
     },
 }
 
@@ -521,12 +546,17 @@ def number(node: ET.Element, key: str, default: Optional[float] = None) -> Optio
 
 
 def rect_for(node: ET.Element, parent: Rect, stack_x: Optional[float] = None,
-             stack_y: Optional[float] = None) -> Optional[Rect]:
-    ml, mr = number(node, "MarginLeft", 0.0), number(node, "MarginRight", 0.0)
+             stack_y: Optional[float] = None, workspace_right_margin: float = 24.0,
+             primary_action_button_width: float = 164.0) -> Optional[Rect]:
+    ml = number(node, "MarginLeft", 0.0)
+    raw_mr = node.get("MarginRight", "0")
+    mr = workspace_right_margin if raw_mr == "@WorkspaceRightMargin" else number(node, "MarginRight", 0.0)
     mt, mb = number(node, "MarginTop", 0.0), number(node, "MarginBottom", 0.0)
     if None in (ml, mr, mt, mb):
         return None
-    w, h = number(node, "SuggestedWidth"), number(node, "SuggestedHeight")
+    raw_width = node.get("SuggestedWidth", "")
+    w = primary_action_button_width if raw_width == "@PrimaryActionButtonWidth" else number(node, "SuggestedWidth")
+    h = number(node, "SuggestedHeight")
     if node.get("WidthSizePolicy") == "StretchToParent":
         w = max(0.0, parent.width - ml - mr)
     if node.get("HeightSizePolicy") == "StretchToParent":
@@ -583,7 +613,8 @@ def layout_items(node: ET.Element):
 
 
 def layout(parent_node: ET.Element, parent_rect: Rect, path: str = "Shell",
-           in_dynamic_list: bool = False) -> List[Tuple[ET.Element, Optional[Rect], str, bool]]:
+           in_dynamic_list: bool = False, workspace_right_margin: float = 24.0,
+           primary_action_button_width: float = 164.0) -> List[Tuple[ET.Element, Optional[Rect], str, bool]]:
     rows: List[Tuple[ET.Element, Optional[Rect], str, bool]] = []
     stack = local_name(parent_node.tag) == "ListPanel" or parent_node.get("StackLayout.LayoutMethod") is not None
     dynamic_list = in_dynamic_list or is_dynamic_list(parent_node)
@@ -594,11 +625,13 @@ def layout(parent_node: ET.Element, parent_rect: Rect, path: str = "Shell",
     for item in layout_items(parent_node):
         current = rect_for(item, parent_rect,
                            flow_x if stack and not vertical_stack else None,
-                           flow_y if stack and vertical_stack else None)
+                           flow_y if stack and vertical_stack else None,
+                           workspace_right_margin, primary_action_button_width)
         item_path = path + "/{}[{}]".format(local_name(item.tag), item.get("Id", ""))
         rows.append((item, current, item_path, dynamic_list))
         if current is not None:
-            rows.extend(layout(item, current, item_path, dynamic_list))
+            rows.extend(layout(item, current, item_path, dynamic_list, workspace_right_margin,
+                               primary_action_button_width))
         if stack and current is not None and vertical_stack:
             flow_y = current.y + current.height + (number(item, "MarginBottom", 0.0) or 0.0)
         elif stack and current is not None:
@@ -664,7 +697,7 @@ def later_sibling_in_paint_order(earlier: ET.Element, later: ET.Element,
         return False
 
 
-def evidence_rectangles(shell: ET.Element, errors: List[str], workbench_rect: Rect) -> List[Rect]:
+def evidence_rectangles(shell: ET.Element, errors: List[str], workbench_rect: Rect) -> List[Tuple[Rect, bool, bool]]:
     """Resolve the evidence ledger in both VM presentation states.
 
     The frame's top is bound to PanelViewModel, while its stretched height and
@@ -679,11 +712,15 @@ def evidence_rectangles(shell: ET.Element, errors: List[str], workbench_rect: Re
         errors.append("expected one ForgeEvidenceFrame for decorative overlap checks")
         return []
     frame = frames[0]
-    ml, mr = number(frame, "MarginLeft", 0.0), number(frame, "MarginRight", 0.0)
+    ml = number(frame, "MarginLeft", 0.0)
+    raw_mr = frame.get("MarginRight", "0")
+    base_mr = number(frame, "MarginRight", 0.0)
+    if raw_mr == "@WorkspaceRightMargin":
+        base_mr = 24.0
     bottom_margin = number(frame, "MarginBottom")
     width = number(frame, "SuggestedWidth")
-    if width is None and frame.get("WidthSizePolicy") == "StretchToParent":
-        width = max(0.0, workbench_rect.width - ml - mr)
+    if width is None and frame.get("WidthSizePolicy") == "StretchToParent" and base_mr is not None:
+        width = max(0.0, workbench_rect.width - ml - base_mr)
     max_width = number(frame, "MaxWidth")
     if width is not None and max_width is not None:
         width = min(width, max_width)
@@ -691,12 +728,9 @@ def evidence_rectangles(shell: ET.Element, errors: List[str], workbench_rect: Re
         errors.append("ForgeEvidenceFrame must stretch from its VM top binding to a numeric prefab bottom margin")
         return []
     align = frame.get("HorizontalAlignment", "Left")
-    if align == "Center":
-        x = workbench_rect.x + ml + (workbench_rect.width - ml - mr - width) / 2
-    elif align == "Right":
-        x = workbench_rect.x + workbench_rect.width - mr - width
-    else:
-        x = workbench_rect.x + ml
+    if base_mr is None:
+        errors.append("ForgeEvidenceFrame MarginRight must be numeric or bind WorkspaceRightMargin")
+        return []
     try:
         source = PANEL_VIEW_MODEL.read_text(encoding="utf-8")
     except OSError as exc:
@@ -711,20 +745,47 @@ def evidence_rectangles(shell: ET.Element, errors: List[str], workbench_rect: Re
         errors.append("cannot resolve literal states for ForgeEvidenceFrame MarginTop binding")
         return []
     tops = (float(match.group(1)), float(match.group(2)))
-    heights = [max(0.0, workbench_rect.height - top - bottom_margin) for top in tops]
     max_height = number(frame, "MaxHeight")
-    if max_height is not None:
-        heights = [min(height, max_height) for height in heights]
-    rectangles = [Rect(x, workbench_rect.y + top, width, height)
-                  for top, height in zip(tops, heights)]
+    right_margin_match = re.search(
+        r"\bWorkspaceRightMargin\s*=>\s*_isDetailedMode\s*&&\s*!evidenceFocused\s*\?\s*"
+        r"([0-9]+(?:\.[0-9]+)?)f\s*:\s*([0-9]+(?:\.[0-9]+)?)f", source)
+    if raw_mr == "@WorkspaceRightMargin" and right_margin_match is None:
+        errors.append("cannot resolve WorkspaceRightMargin states for the evidence frame")
+        return []
+    detail_margin = float(right_margin_match.group(1)) if right_margin_match is not None else base_mr
+    compact_margin = float(right_margin_match.group(2)) if right_margin_match is not None else base_mr
+    rectangles: List[Tuple[Rect, bool, bool]] = []
+    for focused, top in ((True, tops[0]), (False, tops[1])):
+        for detailed in (False, True):
+            mr = detail_margin if detailed and not focused else compact_margin
+            if frame.get("WidthSizePolicy") == "StretchToParent":
+                current_width = max(0.0, workbench_rect.width - ml - mr)
+            else:
+                current_width = width
+            if current_width is None:
+                continue
+            if max_width is not None:
+                current_width = min(current_width, max_width)
+            current_height = max(0.0, workbench_rect.height - top - bottom_margin)
+            if max_height is not None:
+                current_height = min(current_height, max_height)
+            if align == "Center":
+                x = workbench_rect.x + ml + (workbench_rect.width - ml - mr - current_width) / 2
+            elif align == "Right":
+                x = workbench_rect.x + workbench_rect.width - mr - current_width
+            else:
+                x = workbench_rect.x + ml
+            rect = Rect(x, workbench_rect.y + top, current_width, current_height)
+            rectangles.append((rect, focused, detailed))
     if any(rect.width <= 0 or rect.height <= 0 or rect.x < workbench_rect.x or rect.y < workbench_rect.y
            or rect.x + rect.width > workbench_rect.x + workbench_rect.width
-           or rect.y + rect.height > workbench_rect.y + workbench_rect.height for rect in rectangles):
+           or rect.y + rect.height > workbench_rect.y + workbench_rect.height
+           for rect, _focused, _detailed in rectangles):
         errors.append("PanelViewModel evidence bounds extend outside the responsive workbench")
         return []
-    # The first rectangle is the focused-evidence state. In that state the
-    # command deck and its briefing cards are hidden by ShowCommandDeck=false.
-    return [(rectangles[0], True), (rectangles[1], False)]
+    # Detailed non-focused evidence reserves the playbook width; focused evidence
+    # hides the playbook and returns to the wider compact evidence frame.
+    return rectangles
 
 
 def validate_prefab(errors: List[str]) -> None:
@@ -822,6 +883,33 @@ def validate_prefab(errors: List[str]) -> None:
         if not parent_matches:
             errors.append("{} must be a direct child of {}".format(element_id, expected_parent_id))
             continue
+        if element_id in PLAYBOOK_FLOW_RULE_IDS:
+            # A vertical ListPanel deliberately has no fixed height: text rows
+            # use CoverChildren and scroll as one content tree. Their rules are
+            # still bounded by the flow contract and ordered between complete
+            # measured siblings, so static absolute coordinates are inapplicable.
+            children = next((item for item in parent if local_name(item.tag) == "Children"), None)
+            flow_ids = [item.get("Id", "") for item in list(children)] if children is not None else []
+            if flow_ids != list(PLAYBOOK_FLOW_ORDER):
+                errors.append("Playbook flow must keep wrapped text, separators, and the macro action in vertical order")
+            if node.get("WidthSizePolicy") != "StretchToParent" or node.get("HeightSizePolicy") != "Fixed" \
+                    or number(node, "SuggestedHeight") != 3:
+                errors.append("{} must remain a fixed-height, width-bounded passive rule in the Playbook flow".format(
+                    element_id))
+            for attribute, expected_value in DECORATIVE_LAYOUT_CONTRACTS.get(element_id, {}).items():
+                numeric_attributes = {
+                    "SuggestedHeight", "SuggestedWidth", "MaxWidth", "MaxHeight",
+                    "MarginLeft", "MarginRight", "MarginTop", "MarginBottom",
+                }
+                actual_value = number(node, attribute) if attribute in numeric_attributes else node.get(attribute)
+                if actual_value != expected_value:
+                    errors.append("{} must keep {}={} (found {})".format(
+                        element_id, attribute, expected_value, actual_value))
+            if (node.get("DoNotAcceptEvents") or "").lower() != "true" or \
+                    (node.get("DoNotPassEventsToChildren") or "").lower() != "true":
+                errors.append("{} must remain passive in the Playbook text flow".format(element_id))
+            print("PASS structural scroll-flow placement: {} follows complete CoverChildren rows".format(element_id))
+            continue
         node_placement = placed.get(id(node))
         parent_placement = placed.get(id(parent)) if parent is not shell else None
         parent_rect = workbench_rect if parent is shell else (
@@ -842,7 +930,7 @@ def validate_prefab(errors: List[str]) -> None:
         for attribute, expected_value in DECORATIVE_LAYOUT_CONTRACTS.get(element_id, {}).items():
             numeric_attributes = {
                 "SuggestedHeight", "SuggestedWidth", "MaxWidth", "MaxHeight",
-                "MarginLeft", "MarginTop", "MarginBottom",
+                "MarginLeft", "MarginRight", "MarginTop", "MarginBottom",
             }
             actual_value = number(node, attribute) if attribute in numeric_attributes else node.get(attribute)
             if actual_value != expected_value:
@@ -856,6 +944,26 @@ def validate_prefab(errors: List[str]) -> None:
             children = next((item for item in parent if local_name(item.tag) == "Children"), None)
             if children is None or not list(children) or list(children)[-1] is not node:
                 errors.append("{} must be the last direct child of its briefing card".format(element_id))
+
+    parent_by_node = {child: parent for parent in root.iter() for child in parent}
+    for rule_id, card_id in zip(
+            ("ForgeBriefingContextPatinaRule", "ForgeBriefingTestingPatinaRule",
+             "ForgeBriefingEvidencePatinaRule", "ForgeBriefingTestsPatinaRule"),
+            ("BriefingContextValue", "BriefingTestingValue",
+             "BriefingEvidenceCountValue", "BriefingTestCountValue")):
+        rule = nodes_by_id.get(rule_id, [None])[0]
+        card = nodes_by_id.get(card_id, [None])[0]
+        rule_rect = placed.get(id(rule), (None, "", False))[0] if rule is not None else None
+        if rule is None or card is None or rule_rect is None:
+            errors.append("cannot verify that {} stays below its briefing text".format(rule_id))
+            continue
+        text_bottoms = [candidate_rect.y + candidate_rect.height
+                        for candidate, candidate_rect, _path, _dynamic in rows
+                        if candidate_rect is not None
+                        and local_name(candidate.tag) in ("TextWidget", "RichTextWidget")
+                        and is_descendant(candidate, card, parent_by_node)]
+        if not text_bottoms or max(text_bottoms) > rule_rect.y:
+            errors.append("{} must start at or below the bottom edge of its briefing text".format(rule_id))
 
     expected_ids_by_sprite = {
         sprite_name: {
@@ -878,6 +986,23 @@ def validate_prefab(errors: List[str]) -> None:
     for index, element_id in enumerate(route_ornament_ids):
         for other_id in route_ornament_ids[index + 1:]:
             allowed_new_overlap_pairs.add(frozenset((element_id, other_id)))
+    parent_by_node = {child: parent for parent in root.iter() for child in parent}
+
+    def clipped_visible_rect(node: ET.Element, node_rect: Rect) -> Optional[Rect]:
+        """Clip a node's visible bounds to every ClipContents ancestor."""
+        visible_rect: Optional[Rect] = node_rect
+        current = node
+        while visible_rect is not None:
+            current = parent_by_node.get(current)
+            if current is None:
+                break
+            if (current.get("ClipContents") or "").lower() == "true":
+                clip_rect = placed.get(id(current), (None, "", False))[0]
+                if clip_rect is None:
+                    return None
+                visible_rect = rect_intersection(visible_rect, clip_rect)
+        return visible_rect
+
     decorative_image_rows = [
         (node, node.get("Id", ""), placed.get(id(node), (None, "", False))[0])
         for node in shell.iter()
@@ -886,14 +1011,19 @@ def validate_prefab(errors: List[str]) -> None:
     for node, element_id, rect in decorative_image_rows:
         if element_id not in EXPECTED_DECORATIVE_PLACEMENTS or rect is None:
             continue
+        visible_rect = clipped_visible_rect(node, rect)
+        if visible_rect is None:
+            continue
         for other_node, other_id, other_rect in decorative_image_rows:
-            if node is other_node or other_rect is None or not rect.intersects(other_rect):
+            if node is other_node or other_rect is None:
+                continue
+            visible_other_rect = clipped_visible_rect(other_node, other_rect)
+            if visible_other_rect is None or not visible_rect.intersects(visible_other_rect):
                 continue
             pair = frozenset((element_id, other_id))
             if pair not in allowed_new_overlap_pairs:
                 errors.append("new decoration {} overlaps unapproved decoration {}".format(element_id, other_id))
 
-    parent_by_node = {child: parent for parent in root.iter() for child in parent}
     button_rows = [(node, rect, path) for node, rect, path, _stack in rows
                    if local_name(node.tag) == "ButtonWidget"]
     if any(rect is None for _node, rect, _path in button_rows):
@@ -973,23 +1103,49 @@ def validate_prefab(errors: List[str]) -> None:
             visible_binding = overlay.get("IsVisible", "")
         else:
             visible_binding = panel.get("IsVisible", "")
+            if panel_id == "ForgePlaybookPanel":
+                if visible_binding != "@IsPlaybookVisible":
+                    errors.append("ForgePlaybookPanel occlusion requires the @IsPlaybookVisible state")
+                    continue
+                if direct_widget_parent(root, panel) is not shell:
+                    errors.append("ForgePlaybookPanel must remain a direct child of ForgeWorkbenchShell")
+                    continue
         if (local_name(panel.tag) != "Widget" or panel.get("Sprite") != "BlankWhiteSquare_9"
                 or not opaque_color or not visible_binding.startswith("@") or panel_rect is None):
             continue
         overlay_panels.append((panel, panel_rect, panel_id, visible_binding))
 
     def unoccluded_overlaps(decoration_node: ET.Element, decoration_name: str,
-                            targets, collision_kind: str):
+                            targets, collision_kind: str, detailed_mode: bool = True,
+                            evidence_focused: bool = False):
         uncovered = []
+        visible_decoration_rect = clipped_visible_rect(decoration_node, rect)
+        if visible_decoration_rect is None:
+            return uncovered
         for target_node, target_rect, target_path in targets:
-            overlap = rect_intersection(rect, target_rect)
+            visible_target_rect = clipped_visible_rect(target_node, target_rect)
+            if visible_target_rect is None:
+                continue
+            overlap = rect_intersection(visible_decoration_rect, visible_target_rect)
             if overlap is None:
                 continue
             covering_panel = None
             for panel, panel_rect, panel_id, visible_binding in overlay_panels:
-                if not is_descendant(target_node, panel, parent_by_node):
+                if panel_id == "ForgePlaybookPanel" and (not detailed_mode or evidence_focused):
                     continue
-                if not later_sibling_in_paint_order(decoration_node, panel, parent_by_node):
+                target_is_inside = is_descendant(target_node, panel, parent_by_node)
+                decoration_is_inside = is_descendant(decoration_node, panel, parent_by_node)
+                if target_is_inside and not decoration_is_inside:
+                    if not later_sibling_in_paint_order(decoration_node, panel, parent_by_node):
+                        continue
+                elif decoration_is_inside and not target_is_inside:
+                    # ForgePlaybookPanel is an opaque later-painted surface. It
+                    # masks both its own children and the background content it
+                    # covers; the inner decorations cannot collide visually with
+                    # text beneath that surface.
+                    if not later_sibling_in_paint_order(target_node, panel, parent_by_node):
+                        continue
+                else:
                     continue
                 if panel_rect.contains(overlap):
                     covering_panel = (panel_id, panel_rect, visible_binding)
@@ -1019,6 +1175,10 @@ def validate_prefab(errors: List[str]) -> None:
                 errors.append("'{}' ImageWidget must set DoNotPassEventsToChildren=true".format(name))
             placement = placed.get(id(node))
             if placement is None or placement[0] is None or placement[0].width <= 0 or placement[0].height <= 0:
+                if element_id in PLAYBOOK_FLOW_RULE_IDS \
+                        and direct_widget_parent(shell, node) is not None \
+                        and direct_widget_parent(shell, node).get("Id") == "ForgePlaybookFlow":
+                    continue
                 errors.append("'{}' has no statically bounded decorative placement".format(name))
                 continue
             rect, path, in_dynamic_list = placement
@@ -1070,8 +1230,9 @@ def validate_prefab(errors: List[str]) -> None:
             if briefing_card and (parent_widget is None or parent_widget.get("IsVisible") != "@ShowCommandDeck"):
                 errors.append("{} must follow the command-deck visibility state before ledger overlap can be waived".format(
                     element_id))
-            active_ledger_states = [ledger for ledger, focused in ledger_states
-                                    if not (hidden_while_focused and focused)]
+            active_ledger_states = [ledger for ledger, focused, detailed in ledger_states
+                                    if not (hidden_while_focused and focused)
+                                    and not (element_id.startswith("ForgePlaybook") and (not detailed or focused))]
             if any(rect.intersects(ledger) for ledger in active_ledger_states):
                 errors.append("'{}' overlaps the evidence ledger in at least one VM layout state".format(name))
 

@@ -191,7 +191,7 @@ namespace CalradiaForge.UI.ViewModels
                 </ListPanel>
               </Children>
             </Widget>
-            <ScrollBarWidget Id="ScrollBar" WidthSizePolicy="Fixed" SuggestedWidth="10"
+            <ScrollbarWidget Id="ScrollBar" WidthSizePolicy="Fixed" SuggestedWidth="10"
                              HeightSizePolicy="StretchToParent" HorizontalAlignment="Right" />
           </Children>
         </ScrollablePanel>

@@ -279,6 +279,7 @@ def widget_rect(
     state: bool,
     flow_x: float | None = None,
     flow_y: float | None = None,
+    detailed_mode: bool = False,
 ) -> Rect | None:
     """Resolve one prefab widget into shell coordinates, including stack flow."""
     margins = []
@@ -288,7 +289,10 @@ def widget_rect(
         if raw_margin.startswith("@"):
             binding = raw_margin[1:]
             alternatives = conditional_numeric_values(vm_source, binding)
-            margin = alternatives[0 if state else 1] if alternatives else None
+            if alternatives and binding == "WorkspaceRightMargin":
+                margin = alternatives[0] if detailed_mode and not state else alternatives[1]
+            else:
+                margin = alternatives[0 if state else 1] if alternatives else None
         margins.append(margin)
     if any(value is None for value in margins):
         return None
@@ -302,6 +306,9 @@ def widget_rect(
             if binding == "EvidenceHeight":
                 alternatives = conditional_numeric_values(vm_source, binding)
                 value = alternatives[0 if state else 1] if alternatives else None
+            elif binding == "PrimaryActionButtonWidth":
+                alternatives = conditional_numeric_values(vm_source, binding)
+                value = alternatives[0] if detailed_mode and not state and alternatives else alternatives[1] if alternatives else None
             else:
                 value = None
         if node.attrib.get(policy_key) == "StretchToParent":
@@ -353,6 +360,7 @@ def shell_layout(
     vm_source: str,
     state: bool,
     viewport: tuple[int, int] | None = None,
+    detailed_mode: bool = False,
 ) -> dict[ET.Element, Rect]:
     """Return rectangles for deterministic controls and content at one viewport."""
     if viewport is None:
@@ -380,6 +388,7 @@ def shell_layout(
                     child, parent_rect, vm_source, state,
                     flow_x if horizontal_stack else None,
                     flow_y if vertical_stack else None,
+                    detailed_mode,
                 )
                 if rect is None:
                     continue
@@ -411,6 +420,7 @@ def visible_in_evidence_state(
     parents: dict[ET.Element, ET.Element],
     state: bool,
     active_route: str | None = None,
+    detailed_mode: bool = False,
 ) -> bool:
     """Resolve the visibility contract relevant to the normal/focused layout audit.
 
@@ -432,9 +442,12 @@ def visible_in_evidence_state(
             route = ROUTE_CANONICAL_ROUTE_BY_BINDING.get(visibility[1:])
             if route is not None and route != active_route:
                 return False
-        if visibility in {
+        if visibility == "@IsPlaybookVisible":
+            if not detailed_mode or state:
+                return False
+        elif visibility in {
             "@IsSdkCatalogOpen", "@IsHistoryVisible", "@IsKeyHelpOpen",
-            "@IsToastVisible", "@IsNavigationPaletteOpen",
+            "@IsToastVisible", "@IsNavigationPaletteOpen", "@IsCategoryCommandsOpen",
         }:
             return False
         current = parents.get(current)
@@ -461,6 +474,272 @@ def custom_sprite_name(name: str) -> bool:
     return name.startswith("calradiaforge_") or name.startswith("forge_")
 
 
+EXPECTED_SCROLL_PANELS = {
+    "ForgeEvidenceScroll": "ForgeEvidenceScrollBar",
+    "ForgeSdkCatalogScroll": "ForgeSdkCatalogScrollBar",
+    "ForgeCommandHistoryScroll": "ForgeCommandHistoryScrollBar",
+    "ForgeCategoryCommandsScroll": "ForgeCategoryCommandsScrollBar",
+    "ForgePlaybookScroll": "ForgePlaybookScrollBar",
+    "NavigationPaletteScroll": "NavigationPaletteScrollBar",
+}
+
+PLAYBOOK_TEXT_LAYOUT = {
+    "CategoryPlaybookTitle": ("GetCategoryPlaybookTitle", 30),
+    "CategoryPlaybookStep1": ("GetCategoryPlaybookStep1", 34),
+    "CategoryPlaybookStep2": ("GetCategoryPlaybookStep2", 34),
+    "CategoryPlaybookStep3": ("GetCategoryPlaybookStep3", 34),
+    "CategoryTroubleshootingTitle": ("GetCategoryTroubleshootingTitle", 38),
+    "CategoryTroubleshootingAdvice": ("GetCategoryTroubleshootingAdvice", 42),
+    "CategoryRecommendedMacro": ("GetCategoryRecommendedMacro", 34),
+}
+PLAYBOOK_FLOW_ORDER = (
+    "ForgePlaybookTitle", "ForgePlaybookBrassRule1", "ForgePlaybookStep1",
+    "ForgePlaybookStep2", "ForgePlaybookStep3", "ForgePlaybookFeltRule",
+    "ForgeTroubleshootingTitle", "ForgeTroubleshootingAdvice", "ForgePlaybookBrassRule2",
+    "ForgeRecommendedMacro", "ForgeRunMacro",
+)
+
+
+def is_scrollbar_widget(node: ET.Element) -> bool:
+    # Gauntlet's widget type is case-sensitive. In particular, ScrollBarWidget
+    # (capital B) is not the engine's ScrollbarWidget and triggers an assertion.
+    return local_name(node.tag) == "ScrollbarWidget"
+
+
+def validate_scrollbar_contracts(audit: Audit, prefab: ET.Element) -> None:
+    """Ensure each supported scrolling surface has a wired sibling scrollbar.
+
+    Gauntlet uses a path relative to the ScrollablePanel for its scrollbar
+    reference. The scrollbar itself must sit beside the panel, while its handle
+    is an identified child of that ScrollbarWidget. A bar nested in the panel's
+    content would scroll with the content and is therefore rejected.
+    """
+    if not is_scrollbar_widget(ET.Element("ScrollbarWidget")) \
+            or is_scrollbar_widget(ET.Element("ScrollBarWidget")):
+        audit.error("Scrollbar widget audit must accept only the exact engine tag ScrollbarWidget")
+
+    parents = descendant_map(prefab)
+    scroll_panels = [node for node in prefab.iter() if local_name(node.tag) == "ScrollablePanel"]
+    panel_ids = {node.attrib.get("Id", "<none>") for node in scroll_panels}
+    expected_panel_ids = set(EXPECTED_SCROLL_PANELS)
+    if panel_ids != expected_panel_ids:
+        missing = sorted(expected_panel_ids - panel_ids)
+        unexpected = sorted(panel_ids - expected_panel_ids)
+        details = []
+        if missing:
+            details.append(f"missing {missing}")
+        if unexpected:
+            details.append(f"unexpected {unexpected}")
+        audit.error("ScrollablePanel inventory must match the six supported surfaces: " + "; ".join(details))
+
+    for panel_id, expected_bar_id in EXPECTED_SCROLL_PANELS.items():
+        panel = find_by_id(prefab, panel_id)
+        if panel is None or local_name(panel.tag) != "ScrollablePanel":
+            audit.error(f"Expected ScrollablePanel Id={panel_id}")
+            continue
+
+        expected_reference = "..\\" + expected_bar_id
+        actual_reference = panel.attrib.get("VerticalScrollbar", "").strip()
+        if actual_reference != expected_reference:
+            audit.error(
+                f"{panel_id} VerticalScrollbar must point to {expected_reference!r}; "
+                f"found {actual_reference!r}"
+            )
+
+        scrollbar = find_by_id(prefab, expected_bar_id)
+        if scrollbar is None or not is_scrollbar_widget(scrollbar):
+            audit.error(f"{panel_id} requires sibling ScrollbarWidget Id={expected_bar_id}")
+            continue
+
+        panel_wrapper = parents.get(panel)
+        scrollbar_wrapper = parents.get(scrollbar)
+        if (panel_wrapper is None or local_name(panel_wrapper.tag) != "Children"
+                or scrollbar_wrapper is not panel_wrapper):
+            audit.error(f"{expected_bar_id} must be a direct sibling of {panel_id}")
+
+        if scrollbar.attrib.get("AlignmentAxis") != "Vertical":
+            audit.error(f"{expected_bar_id} must set AlignmentAxis=Vertical")
+
+        handle_id = scrollbar.attrib.get("Handle", "").strip()
+        handle = find_by_id(scrollbar, handle_id) if handle_id else None
+        if not handle_id or handle is None or handle is scrollbar:
+            audit.error(f"{expected_bar_id} Handle must reference an identified child widget")
+        else:
+            handle_wrapper = parents.get(handle)
+            if (handle_wrapper is None or local_name(handle_wrapper.tag) != "Children"
+                    or parents.get(handle_wrapper) is not scrollbar):
+                audit.error(f"{expected_bar_id} Handle={handle_id} must be a child of the scrollbar")
+
+        nested_bars = [node for node in panel.iter()
+                       if node is not panel and is_scrollbar_widget(node)]
+        if nested_bars:
+            nested_ids = [node.attrib.get("Id", "<none>") for node in nested_bars]
+            audit.error(f"{panel_id} must not contain nested ScrollbarWidget controls: {nested_ids}")
+
+
+def _method_localized_literals(source: str, method_name: str) -> list[str]:
+    """Read fixed T(...) or literal examples from one ViewModel playbook selector."""
+    start = re.search(rf"^\s*string\s+{re.escape(method_name)}\s*\(", source, re.MULTILINE)
+    if start is None:
+        return []
+    following = re.search(r"^\s*string\s+\w+\s*\(", source[start.end():], re.MULTILINE)
+    end = start.end() + following.start() if following is not None else len(source)
+    body = source[start.start():end]
+    return re.findall(r'return\s+(?:T\()?"([^"\\]*(?:\\.[^"\\]*)*)"\)?\s*;', body)
+
+
+def _wrap_playbook_sample(text: str, max_line_length: int) -> list[str]:
+    """Mirror WrapPlaybookText's word-boundary wrapping for source regressions."""
+    text = text.replace(r"\n", " ").replace(r"\r", " ").replace(r"\t", " ").replace(r"\\", "\\")
+    words = text.split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = word if not current else current + " " + word
+        if current and len(candidate) > max_line_length:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return lines
+
+
+def validate_playbook_text_contracts(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
+    """Require the responsive Playbook text tree to grow and scroll with its content."""
+    parents = descendant_map(prefab)
+    required_bindings = {
+        "ForgePlaybookTitle": "CategoryPlaybookTitle",
+        "ForgePlaybookStep1": "CategoryPlaybookStep1",
+        "ForgePlaybookStep2": "CategoryPlaybookStep2",
+        "ForgePlaybookStep3": "CategoryPlaybookStep3",
+        "ForgeTroubleshootingTitle": "CategoryTroubleshootingTitle",
+        "ForgeTroubleshootingAdvice": "CategoryTroubleshootingAdvice",
+        "ForgeRecommendedMacro": "CategoryRecommendedMacro",
+    }
+    content = find_by_id(prefab, "ForgePlaybookContent")
+    flow = find_by_id(prefab, "ForgePlaybookFlow")
+    clip = find_by_id(prefab, "ForgePlaybookClip")
+    scroll = find_by_id(prefab, "ForgePlaybookScroll")
+    if content is None or local_name(content.tag) != "Widget" \
+            or content.attrib.get("WidthSizePolicy") != "StretchToParent" \
+            or content.attrib.get("HeightSizePolicy") != "CoverChildren" \
+            or content.attrib.get("ClipContents") != "true":
+        audit.error("ForgePlaybookContent must grow to cover its children inside the clipped scroll viewport")
+    if flow is None or local_name(flow.tag) != "ListPanel" \
+            or flow.attrib.get("WidthSizePolicy") != "StretchToParent" \
+            or flow.attrib.get("HeightSizePolicy") != "CoverChildren" \
+            or flow.attrib.get("StackLayout.LayoutMethod") != "VerticalTopToBottom" \
+            or content is None or parents.get(flow) is None \
+            or parents.get(parents.get(flow)) is not content:
+        audit.error("ForgePlaybookFlow must vertically stack variable-height text inside ForgePlaybookContent")
+    flow_children = next((child for child in flow if local_name(child.tag) == "Children"), None) if flow is not None else None
+    flow_child_ids = tuple(child.attrib.get("Id", "") for child in list(flow_children)) if flow_children is not None else ()
+    if flow_child_ids != PLAYBOOK_FLOW_ORDER:
+        audit.error("ForgePlaybookFlow must retain the ordered text, passive separators, and final macro action")
+    if clip is None or clip.attrib.get("ClipContents") != "true" or scroll is None \
+            or scroll.attrib.get("ClipRect") != "ForgePlaybookClip" \
+            or scroll.attrib.get("InnerPanel") != "ForgePlaybookClip\\ForgePlaybookContent":
+        audit.error("ForgePlaybookScroll must clip and scroll the complete cover-children Playbook content")
+    if scroll is not None and (
+        scroll.attrib.get("MarginLeft") != "10"
+        or scroll.attrib.get("MarginTop") != "42"
+        or scroll.attrib.get("MarginRight") != "18"
+        or scroll.attrib.get("MarginBottom") != "10"
+    ):
+        audit.error("ForgePlaybookScroll must preserve the measured viewport inset and bottom reachability")
+
+    scrollbar = find_by_id(prefab, "ForgePlaybookScrollBar")
+    if scrollbar is None or not is_scrollbar_widget(scrollbar) \
+            or scrollbar.attrib.get("WidthSizePolicy") != "Fixed" \
+            or scrollbar.attrib.get("SuggestedWidth") != "8" \
+            or scrollbar.attrib.get("MarginRight") != "10" \
+            or scrollbar.attrib.get("MarginTop") != "42" \
+            or scrollbar.attrib.get("MarginBottom") != "10":
+        audit.error("ForgePlaybookScrollBar must stay adjacent to the viewport and within its top/bottom bounds")
+
+    for element_id, property_name in required_bindings.items():
+        node = find_by_id(prefab, element_id)
+        if node is None or local_name(node.tag) != "TextWidget":
+            audit.error(f"Playbook text {element_id} must remain a TextWidget")
+            continue
+        expected = "@" + property_name
+        if node.attrib.get("Text") != expected:
+            audit.error(f"Playbook text {element_id} must retain binding Text={expected}")
+        if node.attrib.get("WidthSizePolicy") != "StretchToParent" \
+                or node.attrib.get("HeightSizePolicy") != "CoverChildren":
+            audit.error(f"Playbook text {element_id} must wrap within the viewport and cover its measured height")
+        ancestor = node
+        inside_flow = False
+        while ancestor is not None:
+            if ancestor is flow:
+                inside_flow = True
+                break
+            ancestor = parents.get(ancestor)
+        if not inside_flow:
+            audit.error(f"Playbook text {element_id} must participate in the vertically scrolling content flow")
+
+    # CoverChildren alone only measures vertical growth; require actual newline
+    # generation at word boundaries and keep every source token within the
+    # measured viewport's readable line budget (about 266 DIP at 320-DIP width).
+    for property_name, (method_name, max_chars) in PLAYBOOK_TEXT_LAYOUT.items():
+        getter = re.search(
+            rf"\bpublic\s+string\s+{re.escape(property_name)}\s*=>\s*"
+            rf"WrapPlaybookText\(\s*{re.escape(method_name)}\(currentCategory\)\s*,\s*{max_chars}\s*\)\s*;",
+            vm_source,
+        )
+        if getter is None:
+            audit.error(f"{property_name} must wrap {method_name} at the audited {max_chars}-character line budget")
+            continue
+        samples = _method_localized_literals(vm_source, method_name)
+        if not samples:
+            audit.error(f"{method_name} must keep source strings for Playbook wrapping regressions")
+            continue
+        for sample in samples:
+            words = sample.replace(r"\n", " ").replace(r"\\", "\\").split()
+            if any(len(word) > max_chars for word in words):
+                audit.error(f"{method_name} has a token wider than its {max_chars}-character wrapping budget")
+                break
+            lines = _wrap_playbook_sample(sample, max_chars)
+            if not lines or max(map(len, lines)) > max_chars:
+                audit.error(f"{method_name} does not wrap source text within {max_chars} characters per line")
+                break
+            if len(sample) > max_chars and len(lines) < 2:
+                audit.error(f"{method_name} long sample must produce explicit wrapped lines")
+                break
+
+    wrapper_match = re.search(r"static\s+string\s+WrapPlaybookText\s*\([^)]*\)\s*\{", vm_source)
+    wrapper_body = ""
+    if wrapper_match is not None:
+        body_start = wrapper_match.end()
+        depth = 1
+        cursor = body_start
+        while cursor < len(vm_source) and depth:
+            if vm_source[cursor] == "{":
+                depth += 1
+            elif vm_source[cursor] == "}":
+                depth -= 1
+            cursor += 1
+        if depth == 0:
+            wrapper_body = vm_source[body_start:cursor - 1]
+    if not wrapper_body or re.search(r"Append\(\s*'\\n'\s*\)", wrapper_body) is None:
+        audit.error("WrapPlaybookText must insert explicit newline characters rather than relying on cover sizing")
+
+    playbook_close = find_by_id(prefab, "ForgePlaybookClose")
+    macro_button = find_by_id(prefab, "ForgeRunMacro")
+    if playbook_close is None or playbook_close.attrib.get("Command.Click") != "ExecuteToggleDetailMode":
+        audit.error("Playbook close action must preserve ExecuteToggleDetailMode")
+    if macro_button is None or macro_button.attrib.get("Command.Click") != "ExecuteRunMacro" \
+            or macro_button.attrib.get("Hint.HintText") != "@MacroActionHint":
+        audit.error("Playbook macro action must preserve ExecuteRunMacro and its hint binding")
+    if macro_button is None or parents.get(parents.get(macro_button)) is not flow \
+            or macro_button.attrib.get("HeightSizePolicy") != "Fixed" \
+            or macro_button.attrib.get("SuggestedHeight") != "36" \
+            or macro_button.attrib.get("MarginBottom") != "12":
+        audit.error("ForgeRunMacro must remain the final bounded control inside the scrollable Playbook flow")
+
+
 def validate_contracts(
     audit: Audit,
     prefab: ET.Element,
@@ -469,6 +748,8 @@ def validate_contracts(
     brush_root: ET.Element,
     sprite_root: ET.Element,
 ) -> None:
+    validate_scrollbar_contracts(audit, prefab)
+    validate_playbook_text_contracts(audit, prefab, viewmodel_source)
     props = data_source_properties(viewmodel_source)
     methods = public_command_methods(viewmodel_source)
     list_types = item_list_types(viewmodel_source)
@@ -798,6 +1079,62 @@ def validate_decorative_layers(
                 f"found {None if local is None else (local.left, local.top, local.width, local.height)}"
             )
 
+    def is_bounded_scroll_flow_item(node: ET.Element) -> bool:
+        """Allow content-relative bounds only for the validated clipped Playbook flow."""
+        flow = find_by_id(prefab, "ForgePlaybookFlow")
+        content = find_by_id(prefab, "ForgePlaybookContent")
+        clip = find_by_id(prefab, "ForgePlaybookClip")
+        scroll = find_by_id(prefab, "ForgePlaybookScroll")
+        scrollbar = find_by_id(prefab, "ForgePlaybookScrollBar")
+        if None in (flow, content, clip, scroll, scrollbar):
+            return False
+        flow_children = next((child for child in flow if local_name(child.tag) == "Children"), None)
+        flow_order = tuple(child.get("Id", "") for child in list(flow_children)) if flow_children is not None else ()
+        expected_order = (
+            "ForgePlaybookTitle", "ForgePlaybookBrassRule1", "ForgePlaybookStep1",
+            "ForgePlaybookStep2", "ForgePlaybookStep3", "ForgePlaybookFeltRule",
+            "ForgeTroubleshootingTitle", "ForgeTroubleshootingAdvice", "ForgePlaybookBrassRule2",
+            "ForgeRecommendedMacro", "ForgeRunMacro",
+        )
+        scroll_parent = direct_parent(scroll, parents)
+        if not (
+            local_name(scrollbar.tag) == "ScrollbarWidget"
+            and direct_parent(scrollbar, parents) is scroll_parent
+            and scroll.get("ClipRect") == "ForgePlaybookClip"
+            and scroll.get("InnerPanel") == "ForgePlaybookClip\\ForgePlaybookContent"
+            and scroll.get("VerticalScrollbar") == "..\\ForgePlaybookScrollBar"
+            and (scroll.get("AutoHideScrollBars") or "").lower() == "true"
+            and [scroll.get(key) for key in ("MarginLeft", "MarginTop", "MarginRight", "MarginBottom")] == ["10", "42", "18", "10"]
+            and [scrollbar.get(key) for key in ("SuggestedWidth", "MarginRight", "MarginTop", "MarginBottom")] == ["8", "10", "42", "10"]
+            and clip.get("ClipContents") == "true"
+            and content.get("ClipContents") == "true"
+            and content.get("WidthSizePolicy") == "StretchToParent"
+            and content.get("HeightSizePolicy") == "CoverChildren"
+            and flow.get("WidthSizePolicy") == "StretchToParent"
+            and flow.get("HeightSizePolicy") == "CoverChildren"
+            and flow.get("StackLayout.LayoutMethod") == "VerticalTopToBottom"
+            and direct_parent(content, parents) is clip
+            and direct_parent(flow, parents) is content
+            and direct_parent(node, parents) is flow
+            and flow_order == expected_order
+        ):
+            return False
+
+        if node.get("Id") == "ForgeRunMacro":
+            return (local_name(node.tag) == "ButtonWidget"
+                    and node.get("Command.Click") == "ExecuteRunMacro"
+                    and node.get("WidthSizePolicy") == "StretchToParent"
+                    and node.get("HeightSizePolicy") == "Fixed"
+                    and node.get("SuggestedHeight") == "36"
+                    and node.get("MarginBottom") == "12")
+        return (node.get("Id") in {"ForgePlaybookBrassRule1", "ForgePlaybookFeltRule", "ForgePlaybookBrassRule2"}
+                and local_name(node.tag) == "ImageWidget"
+                and node.get("WidthSizePolicy") == "StretchToParent"
+                and node.get("HeightSizePolicy") == "Fixed"
+                and number(node, "SuggestedHeight") == 3
+                and node.get("DoNotAcceptEvents", "").lower() == "true"
+                and node.get("DoNotPassEventsToChildren", "").lower() == "true")
+
     layout_names = re.search(
         r"LayoutStatePropertyNames\s*=\s*new\[\]\s*\{(?P<items>.*?)\};",
         vm_source,
@@ -933,6 +1270,8 @@ def validate_decorative_layers(
         "ForgeTopBrassFrameRule",
         "ForgeEvidenceActionBrassRule",
         "ForgeBottomBrassFrameRule",
+        "ForgePlaybookBrassRule1",
+        "ForgePlaybookBrassRule2",
     }
     if brass_ids != expected_brass_ids:
         audit.error(f"forge_patina_brass placements must be exactly {sorted(expected_brass_ids)}; found {sorted(brass_ids)}")
@@ -969,6 +1308,8 @@ def validate_decorative_layers(
                     if item_template_for(node, parents) is not None:
                         continue
                     if node not in rectangles:
+                        if is_bounded_scroll_flow_item(node):
+                            continue
                         audit.error(f"Cannot resolve protected control geometry in {profile_name}: "
                                     f"{node.attrib.get('Id', local_name(node.tag))}")
                     elif rectangles[node].width <= 0 or rectangles[node].height <= 0:
@@ -979,6 +1320,8 @@ def validate_decorative_layers(
     
                 for element_id, node in decorations.items():
                     if node not in rectangles:
+                        if is_bounded_scroll_flow_item(node):
+                            continue
                         audit.error(f"Cannot resolve {element_id} geometry in {profile_name}")
                         continue
                     deco_rect = rectangles[node]
@@ -1142,9 +1485,11 @@ def validate_navigation_palette_geometry(
 
     route_list = nodes["NavigationPaletteItems"]
     template = route_list.find("ItemTemplate")
-    row = next((child for child in template or () if local_name(child.tag) == "ListPanel"), None)
+    template_children = template if template is not None else ()
+    row = next((child for child in template_children if local_name(child.tag) == "ListPanel"), None)
     row_children = row.find("Children") if row is not None else None
-    buttons = [child for child in row_children or () if local_name(child.tag) == "ButtonWidget"]
+    row_items = row_children if row_children is not None else ()
+    buttons = [child for child in row_items if local_name(child.tag) == "ButtonWidget"]
     if route_list.attrib.get("DataSource") != "{NavigationPaletteResults}":
         audit.error("NavigationPaletteItems must bind to {NavigationPaletteResults}")
     if (template is None or row is None
@@ -1276,6 +1621,21 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
     narrow_layout = shell_layout(shell, vm_source, False, VIEWPORT_PROFILES[0])
     wide_layout = shell_layout(shell, vm_source, False, VIEWPORT_PROFILES[-1])
     parents = descendant_map(prefab)
+    playbook_flow = find_by_id(prefab, "ForgePlaybookFlow")
+
+    def is_measured_playbook_macro(node: ET.Element) -> bool:
+        wrapper = parents.get(node)
+        return (
+            node.attrib.get("Id") == "ForgeRunMacro"
+            and playbook_flow is not None
+            and wrapper is not None
+            and parents.get(wrapper) is playbook_flow
+            and node.attrib.get("WidthSizePolicy") == "StretchToParent"
+            and node.attrib.get("HeightSizePolicy") == "Fixed"
+            and node.attrib.get("SuggestedHeight") == "36"
+            and node.attrib.get("MarginBottom") == "12"
+        )
+
     for element_id in sorted(stretch_width_ids):
         node = top_nodes.get(element_id)
         if node in narrow_layout and node in wide_layout and wide_layout[node].width <= narrow_layout[node].width:
@@ -1283,14 +1643,26 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
     evidence_top = conditional_numeric_values(vm_source, "EvidenceTop")
     if evidence_top is None:
         audit.error("Cannot resolve evidence-focus and normal placement from PanelViewModel")
+    if re.search(
+        r"\bIsPlaybookVisible\s*=>\s*_isDetailedMode\s*&&\s*!evidenceFocused\s*&&\s*!_isKeyHelpOpen",
+        vm_source,
+    ) is None:
+        audit.error("PanelViewModel must hide the detailed Playbook while the right-column Key Help panel is open")
+    playbook_panel = top_nodes.get("ForgePlaybookPanel")
+    if playbook_panel is None or playbook_panel.attrib.get("HeightSizePolicy") != "StretchToParent" \
+            or playbook_panel.attrib.get("MarginTop") != "281" \
+            or playbook_panel.attrib.get("MarginBottom") != "166" \
+            or playbook_panel.attrib.get("MaxHeight") != "390":
+        audit.error("ForgePlaybookPanel must stretch within the space below inputs and above the bottom action slot")
 
     # Each viewport derives the shell from the centered inset and maximum size.
     # Normal/focused evidence and all action-deck profiles are checked at each size.
     layout_profiles = {
-        "regular": (False, ["ForgeHeader", "ForgeTopBrassFrameRule", "ForgeNavigationRail", "ForgeCurrentSection", "ForgeSectionHelp", "ForgeEvidenceToggle", "ForgeBriefingDeck", "ForgeInputRow", "ForgePrimaryCommandHost", "ForgeEvidenceFrame", "ForgeEvidenceActionBrassRule", "ForgeSecondaryActionDeck", "ForgePaginationAndUtilityDeck", "ForgeNavigationFooter", "ForgeStatusToast", "ForgeBottomBrassFrameRule"]),
-        "extensions": (False, ["ForgeHeader", "ForgeTopBrassFrameRule", "ForgeNavigationRail", "ForgeCurrentSection", "ForgeSectionHelp", "ForgeEvidenceToggle", "ForgeBriefingDeck", "ForgeInputRow", "ForgeEvidenceFrame", "ForgeEvidenceActionBrassRule", "ForgeExtensionActionDeck", "ForgePaginationAndUtilityDeck", "ForgeNavigationFooter", "ForgeStatusToast", "ForgeBottomBrassFrameRule"]),
-        "assembly workbench": (False, ["ForgeHeader", "ForgeTopBrassFrameRule", "ForgeNavigationRail", "ForgeCurrentSection", "ForgeSectionHelp", "ForgeEvidenceToggle", "ForgeBriefingDeck", "ForgeInputRow", "ForgeEvidenceFrame", "ForgeEvidenceActionBrassRule", "ForgeAssemblyActionDeck", "ForgePaginationAndUtilityDeck", "ForgeNavigationFooter", "ForgeStatusToast", "ForgeBottomBrassFrameRule"]),
-        "focused evidence": (True, ["ForgeHeader", "ForgeTopBrassFrameRule", "ForgeNavigationRail", "ForgeCurrentSection", "ForgeSectionHelp", "ForgeEvidenceToggle", "ForgeEvidenceFrame", "ForgeEvidenceActionBrassRule", "ForgeSecondaryActionDeck", "ForgePaginationAndUtilityDeck", "ForgeNavigationFooter", "ForgeStatusToast", "ForgeBottomBrassFrameRule"]),
+        "regular": (False, False, ["ForgeHeader", "ForgeTopBrassFrameRule", "ForgeNavigationRail", "ForgeCurrentSection", "ForgeSectionHelp", "ForgeEvidenceToggle", "ForgeBriefingDeck", "ForgeInputRow", "ForgePrimaryCommandHost", "ForgeEvidenceFrame", "ForgeEvidenceActionBrassRule", "ForgeSecondaryActionDeck", "ForgePaginationAndUtilityDeck", "ForgeNavigationFooter", "ForgeStatusToast", "ForgeBottomBrassFrameRule"]),
+        "extensions": (False, False, ["ForgeHeader", "ForgeTopBrassFrameRule", "ForgeNavigationRail", "ForgeCurrentSection", "ForgeSectionHelp", "ForgeEvidenceToggle", "ForgeBriefingDeck", "ForgeInputRow", "ForgeEvidenceFrame", "ForgeEvidenceActionBrassRule", "ForgeExtensionActionDeck", "ForgePaginationAndUtilityDeck", "ForgeNavigationFooter", "ForgeStatusToast", "ForgeBottomBrassFrameRule"]),
+        "assembly workbench": (False, False, ["ForgeHeader", "ForgeTopBrassFrameRule", "ForgeNavigationRail", "ForgeCurrentSection", "ForgeSectionHelp", "ForgeEvidenceToggle", "ForgeBriefingDeck", "ForgeInputRow", "ForgeEvidenceFrame", "ForgeEvidenceActionBrassRule", "ForgeAssemblyActionDeck", "ForgePaginationAndUtilityDeck", "ForgeNavigationFooter", "ForgeStatusToast", "ForgeBottomBrassFrameRule"]),
+        "focused evidence": (True, False, ["ForgeHeader", "ForgeTopBrassFrameRule", "ForgeNavigationRail", "ForgeCurrentSection", "ForgeSectionHelp", "ForgeEvidenceToggle", "ForgeEvidenceFrame", "ForgeEvidenceActionBrassRule", "ForgeSecondaryActionDeck", "ForgePaginationAndUtilityDeck", "ForgeNavigationFooter", "ForgeStatusToast", "ForgeBottomBrassFrameRule"]),
+        "detailed": (False, True, ["ForgeHeader", "ForgeTopBrassFrameRule", "ForgeNavigationRail", "ForgeCurrentSection", "ForgeSectionHelp", "ForgeEvidenceToggle", "ForgeBriefingDeck", "ForgeInputRow", "ForgePrimaryCommandHost", "ForgePlaybookPanel", "ForgeEvidenceFrame", "ForgeEvidenceActionBrassRule", "ForgeSecondaryActionDeck", "ForgePaginationAndUtilityDeck", "ForgeNavigationFooter", "ForgeStatusToast", "ForgeBottomBrassFrameRule"]),
     }
     for viewport in VIEWPORT_PROFILES:
         shell_rect = effective_shell_rect(viewport)
@@ -1311,8 +1683,8 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
         elif intersects(key_help_rect, sdk_catalog_rect):
             audit.error(f"SDK Catalog and Key Help overlap in {viewport[0]}x{viewport[1]}")
 
-        for profile_name, (state, region_ids) in layout_profiles.items():
-            rectangles = shell_layout(shell, vm_source, state, viewport)
+        for profile_name, (state, detailed_mode, region_ids) in layout_profiles.items():
+            rectangles = shell_layout(shell, vm_source, state, viewport, detailed_mode)
             shell_bounds = rectangles[shell]
             regions: list[tuple[str, Rect]] = []
             for element_id in region_ids:
@@ -1337,6 +1709,36 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
                     if intersects(first, second):
                         audit.error(f"Top-level regions overlap in {profile_name}/{viewport[0]}x{viewport[1]}: {first_id} and {second_id}")
 
+            if detailed_mode:
+                playbook = top_nodes.get("ForgePlaybookPanel")
+                playbook_rect = rectangles.get(playbook) if playbook is not None else None
+                if playbook_rect is None:
+                    audit.error(f"Cannot resolve visible ForgePlaybookPanel in detailed/{viewport[0]}x{viewport[1]}")
+                else:
+                    for control in prefab.iter():
+                        if local_name(control.tag) not in {"ButtonWidget", "EditableTextWidget"}:
+                            continue
+                        if item_template_for(control, parents) is not None:
+                            continue
+                        ancestor = control
+                        inside_playbook = False
+                        while ancestor is not None:
+                            if ancestor is playbook:
+                                inside_playbook = True
+                                break
+                            ancestor = parents.get(ancestor)
+                        if inside_playbook or not visible_in_evidence_state(
+                            control, parents, state, detailed_mode=detailed_mode
+                        ):
+                            continue
+                        control_rect = rectangles.get(control)
+                        if control_rect is not None and intersects(playbook_rect, control_rect):
+                            audit.error(
+                                f"ForgePlaybookPanel overlaps actionable control "
+                                f"{control.attrib.get('Id', local_name(control.tag))} "
+                                f"in detailed/{viewport[0]}x{viewport[1]}"
+                            )
+
             for node in prefab.iter():
                 if local_name(node.tag) not in {"ButtonWidget", "EditableTextWidget"}:
                     continue
@@ -1344,6 +1746,12 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
                     continue
                 rect = rectangles.get(node)
                 if rect is None:
+                    # This is the final child of the fixed-height action row in
+                    # the already-audited clipped CoverChildren Playbook flow.
+                    # Its vertical position is content-relative and reachable
+                    # through the sibling scrollbar, not an absolute shell rect.
+                    if is_measured_playbook_macro(node):
+                        continue
                     audit.error(f"Cannot resolve actionable geometry for {node.attrib.get('Id', local_name(node.tag))} in {viewport[0]}x{viewport[1]}")
                 elif rect.width <= 0 or rect.height <= 0 or not contained(shell_bounds, rect):
                     audit.error(f"Actionable control {node.attrib.get('Id', local_name(node.tag))} is clipped in {viewport[0]}x{viewport[1]}")

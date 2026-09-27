@@ -771,3 +771,37 @@ Initial developer preview: Gauntlet panel, WPF client, local named pipes, diagno
 - After wrapping translated stat lines and compact badges in narrow visualizer cards, a final BAT rerun passed the same coverage; its separate artifact records 10,939 ms total and 3,120.8 ms in layout calls, both harness-only measurements. The read-only UIA rerun passed 23/23 controls, including dossier copy buttons, and preserved the foreground window.
 - The read-only UIA BAT passed 23/23 controls and recorded ForegroundUnchanged=true; it did not exercise pickers, work execution, preference changes, or visual approval. No Bannerlord session was started.
 - Product version remains 25.2.0; no public API, route, command, permission, protocol, dependency, or ZIP changed.
+
+### Responsive Desktop footer and Gauntlet panel fit (Rev072) — 2026-09-27
+
+- Kept the WPF shortcut footer fully inside the 980×680-DIP minimum viewport with a bounded bottom inset and text-fit coverage in all 13 locales. Replaced the packaged Rev057 titlebar crop with the deterministic, higher-resolution Rev072 cartographic panorama; the full-resolution master stays out of the assembly.
+- Refined the Gauntlet header spacing, evidence focus layout, and Playbook reservation. The Playbook now yields its right-side workspace margin and hides while evidence is focused. Eight navigation areas use their semantic sprites; all 194 tool routes and 56 command bindings remain intact.
+- Updated the visual auditor to model 1220/1280/1600/1920 viewport widths, normal/detailed/focused evidence states, and verified opaque panel occlusion. Updated the icon allowlist to current prefab use while keeping all 17 generated icon assets and the 30-sprite atlas inventory required.
+- Desktop render coverage remained 289 cases and 182 layout passes in each of five baseline and five after runs. Harness medians were 10,953 ms before and 11,474 ms after (+4.8%), while layout-call medians were 3,220.1 ms and 3,095.3 ms (-3.9%). These are render-harness measurements, not open-application latency; no overall performance improvement is claimed. Texture `--check` was deterministic and the package stayed within its resource budgets.
+- `tools/Run-CalradiaForge-Tests.bat --no-pause` completed with zero build warnings/errors: Assets 8/8, Core 338/338, ForgeWeave 73/73, Desktop 63/63, and WPF render 289 cases/182 layout passes. `tools/Run-CalradiaForge-Gauntlet-Visual-Checks.bat --no-pause` passed. Read-only Desktop UIA passed 23/23 checks.
+- The Client and Modding Kit profiles built and were deployed with verified file backups. The installed TPAC was preserved with SHA-256 `69513B5617F026E1F106F6CA6D47CF5C5CE0B5869FFA472E9166B037CA8EDEA6`. Modding Kit startup stopped at an `RGL WARNING` dialog, which was left open; therefore live panel rendering remains unverified. No campaign or battle was loaded.
+- Product version remains 25.2.0; no public API, route, command, permission, dependency, or ZIP changed.
+
+### Gauntlet F10 scrollbar crash correction (Rev073) — 2026-09-27
+
+- Corrected the generated `ForgeEvidenceScroll` prefab structure after the main-menu F10 path produced a TaleWorlds built-in scrollbar assertion and a `ScrollablePanel.UpdateScrollablePanel` access violation. The panel now resolves its relative reference to a sibling vertical `ScrollbarWidget` with a matching identified handle.
+- Extended the structural audit to enforce the scrollbar contract across all five scrollable panels and adjusted the evidence-surface regression to allow only the scrollbar handle image.
+- Core/ForgeWeave BAT checks passed 333/333 and 73/73 with zero build warnings/errors; the Gauntlet visual-check BAT passed with zero audit errors/warnings and Core 338/338. Client and Modding Kit profiles built and deployed with verified backups; the existing TPAC was preserved.
+- Live validation in the Steam-launched singleplayer main menu confirmed F10 opens the eight-area panel and a second F10 closes it without the assert or crash. No campaign or battle was loaded. This does not validate Modding Kit runtime behavior.
+- Product version remains 25.2.0; no public API, route, command, permission, dependency, TPAC replacement, or ZIP changed.
+
+### Responsive detailed Playbook and scroll layout (Rev074) — 2026-09-27
+
+- Moved the detailed Playbook below the context cards and reserved a right-side column so it no longer covers active controls or rows. Detailed-mode action buttons contract to 100 DIPs, and the Playbook content now uses adaptive-height scrolling.
+- Made Key Help and Playbook mutually exclusive and extended the Gauntlet scrollbar audit to six scrollable surfaces.
+- The full test BAT passed, including Desktop 63/63 and WPF render 289 cases; the Gauntlet visual-check BAT passed with zero visual-audit errors and zero warnings.
+- Live in-game validation of this additional placement/scroll adjustment remains pending confirmation; the BAT checks do not establish its rendered behavior in Bannerlord.
+- Product version remains 25.2.0; no public API, route, command, permission, dependency, or ZIP changed.
+
+### Playbook text wrapping and scrollbar type guard (Rev075) — 2026-09-27
+
+- Added word-boundary wrapping for localized detailed Playbook and troubleshooting text while preserving source strings, routes, and commands. The generated Playbook uses a clipped vertical `CoverChildren` flow with the macro action as its reachable final item.
+- Made the Gauntlet audit case-sensitive for the native `ScrollbarWidget` type and explicitly reject the invalid `ScrollBarWidget` spelling; added checks for Playbook flow ancestry and content order.
+- After correcting an outdated `CoverChildren` decorative-audit assumption without relaxing layout limits, `tools/Run-CalradiaForge-Gauntlet-Visual-Checks.bat --no-pause` exited 0 and reported 338 passed, 0 failed.
+- The F10 session log recorded toggles, but the associated capture did not show the overlay. Live visual approval for this Playbook follow-up remains pending.
+- Product version remains 25.2.0; no public API, route, command, permission, dependency, or ZIP changed.

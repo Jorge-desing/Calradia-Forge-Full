@@ -382,6 +382,14 @@
 - [x] Redacción de Propuesta 25 en `learning_proposal.md` y formalización de la regla de Staging Selectivo en `.agents/rules/git_sync_workflow.md`, `AGENTS.md` y `CODEX.md`.
 - [x] Sincronización selectiva y push a GitHub (`main`) siguiendo la nueva regla estricta de staging aislado.
 
+## Ajuste de Reglas de Staging y Sincronización Completa del Proyecto (Rev065)
+- [x] Ajustar la definición de la Regla E (`AGENTS.md`), Regla 6 (`CODEX.md`) y `.agents/rules/git_sync_workflow.md` para garantizar que todos los cambios intencionales del proyecto se suban a GitHub, definiendo con precisión "no externos" como exclusión estricta de residuos temporales, cachés (`__pycache__`, `*.pyc`), volcados de depuración y secretos.
+- [x] Actualizar `.gitignore` con exclusiones automáticas de `__pycache__/` y `*.pyc`.
+- [x] Preparar (staging) y comitear todas las mejoras del proyecto pendientes: actualización de Desktop WPF (panorama rev072, footer y shell), anexos y registros inmutables DOCX del changelog (Rev052 a Rev055), pruebas de contratos Gauntlet (`AdvancedToolsTests.cs`), herramientas de auditoría y assets.
+- [x] Validar 100% de la suite de pruebas: compilación limpia en Release, 4/4 comportamientos sin estado, 338 Core, 73 ForgeWeave, 63 Desktop, 289 WPF Render y 31/31 agentes.
+- [x] Sincronizar y pushear a GitHub (`main`).
+
+
 
 
 

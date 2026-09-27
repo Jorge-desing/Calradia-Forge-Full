@@ -12,7 +12,7 @@ This manifest records the original ImageGen artwork and the compact local varian
 
 ## Full-resolution artwork inputs
 
-SHA-256 values below identify the retained full-resolution local copies as of 2026-09-24. These files are authoring inputs and are not embedded in the WPF assembly. Dimensions, PNG color mode and alpha extrema were checked by decoding the complete images; alpha is `255..255` for opaque RGB images.
+SHA-256 values below identify the retained full-resolution local copies. This manifest was refreshed for Rev072 on 2026-09-27; earlier authoring inputs remain unchanged. These files are not embedded in the WPF assembly. Dimensions, PNG color mode and alpha extrema were checked by decoding the complete images; alpha is `255..255` for opaque RGB images.
 
 | Artwork input | ImageGen source master | Dimensions / mode / alpha | SHA-256 | Safe placement |
 | --- | --- | --- | --- | --- |
@@ -20,6 +20,7 @@ SHA-256 values below identify the retained full-resolution local copies as of 20
 | `parchment-cartographic-paper.png` | `assets/gauntlet-imagegen/parchment_cartographic_paper_v1.png` | 1254×1254, RGB, 255..255 | `2B86FAA914103519A949399FBDECB92AD4073132C72B7E9E8C76BB30BD2DB80F` | Parchment Light surface and titlebar material, behind content |
 | `parchment-field-journal-ornament-v1.png` | `C:/Users/Alex/.codex/generated_images/01a0d35e-2407-7e62-8804-96ea1c46bcb5/exec-f2121764-99e5-4783-a1b9-d94f3395e682.png` | 1254×1254, RGBA, 0..255 | `B6EBC6EECA36266E53B53DE9BB372C07A655DF946B42B9D570714E417B163AD3` | Passive Parchment Light titlebar mark; hidden in High Contrast and when accents are disabled |
 | `titlebar-embroidered-cloth.png` | `assets/gauntlet-imagegen/titlebar_embroidered_cloth_v1.png` | 2048×768, RGB, 255..255 | `722B23CE06322F2E7E2746BDFA539678E65F245B4E385F76F639E69D2DA3B155` | War Table titlebar background; keep the caption area readable |
+| `titlebar-cartographic-panorama-rev072.png` | `C:/Users/Alex/.codex/generated_images/01a0729a-9f57-7173-9f44-d03d3737b50f/exec-13bfc66b-bcd3-420e-b208-de49237cb57b.png` | 2172×724, RGB, 255..255 | `F8FBAB956D5F9E18C4D2B99E4AA6DACD96EEFF76AA80AA4D294E58A059884A98` | Crop to the titlebar's 32:1 band; keep cartographic detail at the ends and quiet center under the title |
 | `titlebar-heraldic-corner.png` | `assets/gauntlet-imagegen/titlebar_heraldic_compass_v1.png` | 1254×1254, RGBA, 0..255 | `BEF2AAE01BD0D95B10D8E87884D1E4E7B8110B25A5D4A2045BD984569F44A0BC` | Small isolated titlebar corner mark, clear of title and caption buttons |
 | `header-heraldic-compass-v2.png` | `C:/Users/Alex/.codex/generated_images/01a0729a-9f57-7173-9f44-d03d3737b50f/exec-dff31f7b-dc18-41c2-9e98-14bcbe2939dd.png` | 1254×1254, RGBA, 0..255 | `29D8F76FF79367405BE95E5CA1468190AC01E484A8B5F172ACC59D03EB9F1836` | Standalone header seal inside its accessible command button |
 | `header-corner-engraving-v1.png` | `C:/Users/Alex/.codex/generated_images/01a0729a-9f57-7173-9f44-d03d3737b50f/exec-00d1814a-8d25-4297-94c4-414ca04dba56.png` | 2172×724, RGBA, 0..255 | `D61A91D9E9B0186E464E6CD451CACDD4F3EEB5239C3E1798048594495A9550CF` | Low-opacity header corner frame behind empty margins only |

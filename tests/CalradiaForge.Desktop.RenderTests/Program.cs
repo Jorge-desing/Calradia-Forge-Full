@@ -938,6 +938,7 @@ internal static class Program
             RefreshSelectorBindings(window);
             Render(window);
             AssertCompactHeaderAtMinimum(window, language);
+            AssertFooterFitsShellViewport(window);
         }
 
         SetPresentationForRender(app, shell, "war-table", "en");
@@ -1489,11 +1490,10 @@ internal static class Program
         if (layout == null || footer == null) return;
 
         var bounds = Bounds(footer, layout);
-        Console.WriteLine($"FOOTER_LAYOUT_DIAG bounds={bounds} viewport={layout.ActualWidth:0.#}x{layout.ActualHeight:0.#} inset={layout.ActualHeight - bounds.Bottom:0.#}");
         Check(bounds.Left >= -1 && bounds.Top >= -1 && bounds.Right <= layout.ActualWidth + 1 && bounds.Bottom <= layout.ActualHeight + 1,
             $"The keyboard-shortcut footer must fit inside the shell's content viewport at 980x680 DIP: {bounds} / {layout.ActualWidth:0.#}x{layout.ActualHeight:0.#} DIP.");
-        Check(layout.ActualHeight - bounds.Bottom >= 4,
-            $"The localized shortcut footer must preserve a 4-DIP bottom inset instead of sitting on the clipped shell edge: inset={layout.ActualHeight - bounds.Bottom:0.#} DIP.");
+        Check(layout.ActualHeight - bounds.Bottom >= 8 && footer.Margin.Bottom >= 2 && footer.MinHeight >= 18,
+            $"The localized shortcut footer must preserve its lower inset instead of sitting on the clipped shell edge: inset={layout.ActualHeight - bounds.Bottom:0.#} DIP, margin={footer.Margin.Bottom:0.#}, minHeight={footer.MinHeight:0.#}.");
 
         var pixelsPerDip = VisualTreeHelper.GetDpi(footer).PixelsPerDip;
         var measuredText = new FormattedText(footer.Text ?? string.Empty, CultureInfo.CurrentUICulture, footer.FlowDirection,
@@ -2502,7 +2502,7 @@ internal static class Program
         var captionStack = captionButton == null ? null : FindAncestor<StackPanel>(captionButton, titleGrid);
         var cartographicBand = Descendants(titleBar).OfType<Border>().SingleOrDefault(border =>
             border.Background is ImageBrush brush &&
-            brush.ImageSource?.ToString().IndexOf("titlebar-cartographic-panorama-rev057.png", StringComparison.OrdinalIgnoreCase) >= 0);
+            brush.ImageSource?.ToString().IndexOf("titlebar-cartographic-panorama-rev072.png", StringComparison.OrdinalIgnoreCase) >= 0);
 
         var duplicateFrame = Descendants(titleBar).OfType<Border>().Any(border =>
             string.Equals(AutomationProperties.GetAutomationId(border), "TitleBarHeraldicFrameDecoration", StringComparison.Ordinal));
@@ -2646,10 +2646,10 @@ internal static class Program
         var titleGrid = titleBar.Child as Grid;
         var titleArtLayers = Descendants(window).OfType<Border>().Where(border =>
             border.Background is ImageBrush brush &&
-            (brush.ImageSource?.ToString().IndexOf("titlebar-cartographic-panorama-rev057.png", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            (brush.ImageSource?.ToString().IndexOf("titlebar-cartographic-panorama-rev072.png", StringComparison.OrdinalIgnoreCase) >= 0 ||
              brush.ImageSource?.ToString().IndexOf("titlebar-botanical-band-v1.png", StringComparison.OrdinalIgnoreCase) >= 0)).ToArray();
         var cartographicBand = titleArtLayers.SingleOrDefault(border =>
-            border.Background is ImageBrush brush && brush.ImageSource?.ToString().IndexOf("titlebar-cartographic-panorama-rev057.png", StringComparison.OrdinalIgnoreCase) >= 0);
+            border.Background is ImageBrush brush && brush.ImageSource?.ToString().IndexOf("titlebar-cartographic-panorama-rev072.png", StringComparison.OrdinalIgnoreCase) >= 0);
         var botanicalRule = titleArtLayers.SingleOrDefault(border =>
             border.Background is ImageBrush brush && brush.ImageSource?.ToString().IndexOf("titlebar-botanical-band-v1.png", StringComparison.OrdinalIgnoreCase) >= 0);
         var cartographicBandDataContext = cartographicBand?.DataContext;
@@ -2725,7 +2725,7 @@ internal static class Program
             $"Theme {themeId} must show only the fitted, passive portrait rail artwork when accents are enabled and avoid a duplicate title-bar compass frame.");
         var cartographicBandBrush = cartographicBand?.Background as ImageBrush;
         var botanicalRuleBrush = botanicalRule?.Background as ImageBrush;
-        var expectedCartographicUri = "titlebar-cartographic-panorama-rev057.png";
+        var expectedCartographicUri = "titlebar-cartographic-panorama-rev072.png";
         var expectedBotanicalRuleUri = "titlebar-botanical-band-v1.png";
         Check(titleArtLayers.Length == 2 && cartographicBand != null && botanicalRule != null &&
               cartographicBand.IsHitTestVisible == false && botanicalRule.IsHitTestVisible == false &&
@@ -2811,7 +2811,7 @@ internal static class Program
             "parchment-cartographic-paper.png",
             "titlebar-embroidered-cloth.png",
             "titlebar-botanical-band-v1.png",
-            "titlebar-cartographic-panorama-rev057.png",
+            "titlebar-cartographic-panorama-rev072.png",
             "titlebar-heraldic-corner.png",
             "header-heraldic-compass-v2.png",
             "header-corner-engraving-v1.png",
@@ -2869,14 +2869,14 @@ internal static class Program
                 Check(Convert.ToHexString(SHA256.HashData(bytes)).Equals("6FACCBB7CCAF9D9687F408AA9C5B3C20F78933D7F4E91C2B20F0AE528B4E9A84", StringComparison.OrdinalIgnoreCase),
                     "Title-bar botanical strip changed from its deterministic output.");
             }
-            if (asset == "titlebar-cartographic-panorama-rev057.png")
+            if (asset == "titlebar-cartographic-panorama-rev072.png")
             {
                 Check(width == 2172 && height == 67 && bytes[25] == 2,
-                    "The illustrated title-bar panorama must preserve its native width and use the declared 2172x67 RGB crop.");
-                Check(Convert.ToHexString(SHA256.HashData(bytes)).Equals("4EEFF153127B7CF2D268271D2EE2A6312B20370E76377F6BF7B90F8F2C58F87B", StringComparison.OrdinalIgnoreCase),
-                    "The illustrated title-bar panorama changed from its deterministic output.");
+                    "The Rev072 illustrated title-bar panorama must preserve its native width and use the declared 2172x67 RGB crop.");
+                Check(Convert.ToHexString(SHA256.HashData(bytes)).Equals("084F72940EACB8FFD9FB8639C5EF4E53CA8E598A8BDCD5B59EC96D53D8FE4099", StringComparison.OrdinalIgnoreCase),
+                    "The Rev072 illustrated title-bar panorama changed from its deterministic output.");
                 Check(bytes.Length < 1_000_000 && (long)width * height * 4 < 1_000_000,
-                    "The illustrated title-bar panorama must remain below the approved texture budget.");
+                    "The Rev072 illustrated title-bar panorama must remain below the approved texture budget.");
             }
             if (asset == "rail-field-compass-v1.png")
             {
@@ -2952,7 +2952,7 @@ internal static class Program
                     "The evidence-ledger derivative changed from its deterministic output.");
             }
         }
-        foreach (var retired in new[] { "tool-card-top-corners-v1.png", "desktop-titlebar-heraldic-frame-v1.png", "desktop-rail-etched-field-v1.png", "desktop-card-corners-botanical-v1.png", "titlebar-cartographic-engraving-v2.png", "workbench-heraldic-rail-band-v1.png" })
+        foreach (var retired in new[] { "tool-card-top-corners-v1.png", "desktop-titlebar-heraldic-frame-v1.png", "desktop-rail-etched-field-v1.png", "desktop-card-corners-botanical-v1.png", "titlebar-cartographic-engraving-v2.png", "workbench-heraldic-rail-band-v1.png", "titlebar-cartographic-panorama-rev057.png" })
         {
             var retiredUri = new Uri("pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/" + retired, UriKind.Absolute);
             StreamResourceInfo retiredResource = null;
@@ -3015,7 +3015,7 @@ internal static class Program
     {
         var band = Descendants(window).OfType<Border>().SingleOrDefault(border =>
             border.Background is ImageBrush brush &&
-            brush.ImageSource?.ToString().IndexOf("titlebar-cartographic-panorama-rev057.png", StringComparison.OrdinalIgnoreCase) >= 0);
+            brush.ImageSource?.ToString().IndexOf("titlebar-cartographic-panorama-rev072.png", StringComparison.OrdinalIgnoreCase) >= 0);
         var imageBrush = band?.Background as ImageBrush;
         var title = Descendants(window).OfType<TextBlock>().FirstOrDefault(block =>
             string.Equals(block.Text, app.TryFindResource("Ui.AppTitle") as string, StringComparison.Ordinal));
@@ -3025,7 +3025,7 @@ internal static class Program
               foreground != null && IsLocalTextureUri(imageBrush.ImageSource),
             "High Contrast must show only the passive local cartographic strip at the approved low opacity behind its title.");
 
-        var resourceUri = new Uri("pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/titlebar-cartographic-panorama-rev057.png", UriKind.Absolute);
+        var resourceUri = new Uri("pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/titlebar-cartographic-panorama-rev072.png", UriKind.Absolute);
         var resource = Application.GetResourceStream(resourceUri);
         Check(resource?.Stream != null, "High Contrast title-art contrast check could not read its packaged cartographic strip.");
         using (resource.Stream)

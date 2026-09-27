@@ -285,7 +285,7 @@ namespace CalradiaForge.UI.ViewModels
                 </ListPanel>
               </Children>
             </Widget>
-            <ScrollBarWidget Id="ScrollBar" WidthSizePolicy="Fixed" SuggestedWidth="8"
+            <ScrollbarWidget Id="ScrollBar" WidthSizePolicy="Fixed" SuggestedWidth="8"
                              HeightSizePolicy="StretchToParent" HorizontalAlignment="Right" />
           </Children>
         </ScrollablePanel>
@@ -590,7 +590,7 @@ namespace CalradiaForge.UI.ViewModels
                 </ListPanel>
               </Children>
             </Widget>
-            <ScrollBarWidget Id="ScrollBar" WidthSizePolicy="Fixed" SuggestedWidth="8"
+            <ScrollbarWidget Id="ScrollBar" WidthSizePolicy="Fixed" SuggestedWidth="8"
                              HeightSizePolicy="StretchToParent" HorizontalAlignment="Right" />
           </Children>
         </ScrollablePanel>
