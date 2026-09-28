@@ -1666,6 +1666,14 @@ namespace CalradiaForge.Desktop.Presentation
             Subtitle = subtitle;
             BadgeText = badgeText;
         }
+
+        public ForgeStepItem(string title, string? subtitle, ForgeStepStatus status, string? badgeText = null)
+        {
+            Title = title;
+            Subtitle = subtitle;
+            Status = status;
+            BadgeText = badgeText;
+        }
     }
 
     public sealed class ForgeStepProgress : FrameworkElement
@@ -2011,6 +2019,269 @@ namespace CalradiaForge.Desktop.Presentation
             }
         }
     }
+
+    /// <summary>
+    /// Tactical graduated timeline and phase ruler control rendered directly via DrawingContext.
+    /// Provides calibrated millimetric tick marks, major/minor divisions, time labels, and active marker indicators.
+    /// </summary>
+    public sealed class ForgeTimelineRuler : FrameworkElement
+    {
+        public static readonly DependencyProperty TotalDurationProperty =
+            DependencyProperty.Register(nameof(TotalDuration), typeof(double), typeof(ForgeTimelineRuler),
+                new FrameworkPropertyMetadata(100.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty CurrentTimeProperty =
+            DependencyProperty.Register(nameof(CurrentTime), typeof(double), typeof(ForgeTimelineRuler),
+                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty MajorIntervalProperty =
+            DependencyProperty.Register(nameof(MajorInterval), typeof(double), typeof(ForgeTimelineRuler),
+                new FrameworkPropertyMetadata(20.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty MinorIntervalProperty =
+            DependencyProperty.Register(nameof(MinorInterval), typeof(double), typeof(ForgeTimelineRuler),
+                new FrameworkPropertyMetadata(5.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty UnitLabelProperty =
+            DependencyProperty.Register(nameof(UnitLabel), typeof(string), typeof(ForgeTimelineRuler),
+                new FrameworkPropertyMetadata("ms", FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ShowLabelsProperty =
+            DependencyProperty.Register(nameof(ShowLabels), typeof(bool), typeof(ForgeTimelineRuler),
+                new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty RulerBrushProperty =
+            DependencyProperty.Register(nameof(RulerBrush), typeof(Brush), typeof(ForgeTimelineRuler),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty TickBrushProperty =
+            DependencyProperty.Register(nameof(TickBrush), typeof(Brush), typeof(ForgeTimelineRuler),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty MarkerBrushProperty =
+            DependencyProperty.Register(nameof(MarkerBrush), typeof(Brush), typeof(ForgeTimelineRuler),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty LabelBrushProperty =
+            DependencyProperty.Register(nameof(LabelBrush), typeof(Brush), typeof(ForgeTimelineRuler),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty MarkerLabelProperty =
+            DependencyProperty.Register(nameof(MarkerLabel), typeof(string), typeof(ForgeTimelineRuler),
+                new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        static readonly Typeface RulerTypeface = new("Segoe UI");
+        static readonly Typeface MarkerTypeface = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+
+        static readonly SolidColorBrush DefaultRuler = new(Color.FromRgb(0x42, 0x4B, 0x48));
+        static readonly SolidColorBrush DefaultTick = new(Color.FromRgb(0xC5, 0xA0, 0x59));
+        static readonly SolidColorBrush DefaultMarker = new(Color.FromRgb(0x4E, 0x9A, 0x78));
+        static readonly SolidColorBrush DefaultLabel = new(Color.FromRgb(0xD0, 0xC8, 0xB8));
+
+        static ForgeTimelineRuler()
+        {
+            DefaultRuler.Freeze();
+            DefaultTick.Freeze();
+            DefaultMarker.Freeze();
+            DefaultLabel.Freeze();
+        }
+
+        public double TotalDuration
+        {
+            get => (double)GetValue(TotalDurationProperty);
+            set => SetValue(TotalDurationProperty, value);
+        }
+
+        public double CurrentTime
+        {
+            get => (double)GetValue(CurrentTimeProperty);
+            set => SetValue(CurrentTimeProperty, value);
+        }
+
+        public double MajorInterval
+        {
+            get => (double)GetValue(MajorIntervalProperty);
+            set => SetValue(MajorIntervalProperty, value);
+        }
+
+        public double MinorInterval
+        {
+            get => (double)GetValue(MinorIntervalProperty);
+            set => SetValue(MinorIntervalProperty, value);
+        }
+
+        public string UnitLabel
+        {
+            get => (string)GetValue(UnitLabelProperty);
+            set => SetValue(UnitLabelProperty, value);
+        }
+
+        public bool ShowLabels
+        {
+            get => (bool)GetValue(ShowLabelsProperty);
+            set => SetValue(ShowLabelsProperty, value);
+        }
+
+        public Brush RulerBrush
+        {
+            get => (Brush)GetValue(RulerBrushProperty);
+            set => SetValue(RulerBrushProperty, value);
+        }
+
+        public Brush TickBrush
+        {
+            get => (Brush)GetValue(TickBrushProperty);
+            set => SetValue(TickBrushProperty, value);
+        }
+
+        public Brush MarkerBrush
+        {
+            get => (Brush)GetValue(MarkerBrushProperty);
+            set => SetValue(MarkerBrushProperty, value);
+        }
+
+        public Brush LabelBrush
+        {
+            get => (Brush)GetValue(LabelBrushProperty);
+            set => SetValue(LabelBrushProperty, value);
+        }
+
+        public string MarkerLabel
+        {
+            get => (string)GetValue(MarkerLabelProperty);
+            set => SetValue(MarkerLabelProperty, value);
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            var w = ActualWidth;
+            var maxD = Math.Max(1.0, TotalDuration);
+            var padX = 14.0;
+            var rulerW = w - padX * 2.0;
+
+            if (rulerW <= 10.0)
+            {
+                ToolTip = null;
+                return;
+            }
+
+            var pos = e.GetPosition(this);
+            var ratio = Math.Max(0.0, Math.Min(1.0, (pos.X - padX) / rulerW));
+            var hoverVal = ratio * maxD;
+            var unit = UnitLabel ?? "ms";
+            ToolTip = $"Timeline: {hoverVal:F1}{unit} (Current: {CurrentTime:F1}{unit} / {maxD:F0}{unit})";
+        }
+
+        protected override void OnMouseLeave(MouseEventArgs e)
+        {
+            base.OnMouseLeave(e);
+            ToolTip = null;
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            base.OnRender(dc);
+
+            var w = ActualWidth;
+            var h = ActualHeight;
+            if (w < 20.0 || h < 12.0)
+                return;
+
+            var padX = 14.0;
+            var rulerW = w - padX * 2.0;
+            if (rulerW <= 10.0)
+                return;
+
+            var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            var maxD = Math.Max(1.0, TotalDuration);
+            var major = Math.Max(0.1, MajorInterval);
+            var minor = Math.Max(0.05, MinorInterval);
+
+            var effRulerBrush = RulerBrush ?? DefaultRuler;
+            var effTickBrush = TickBrush ?? DefaultTick;
+            var effMarkerBrush = MarkerBrush ?? DefaultMarker;
+            var effLabelBrush = LabelBrush ?? DefaultLabel;
+
+            var baselineY = ShowLabels ? Math.Max(8.0, h - 14.0) : h * 0.7;
+
+            // Draw horizontal baseline
+            var baselinePen = new Pen(effRulerBrush, 1.4);
+            baselinePen.Freeze();
+            dc.DrawLine(baselinePen, new Point(padX, baselineY), new Point(padX + rulerW, baselineY));
+
+            // Draw tick marks
+            var majorTickPen = new Pen(effTickBrush, 1.2);
+            majorTickPen.Freeze();
+            var minorTickPen = new Pen(effTickBrush, 0.7);
+            minorTickPen.Freeze();
+
+            var steps = (int)Math.Floor(maxD / minor);
+            for (var i = 0; i <= steps; i++)
+            {
+                var val = i * minor;
+                if (val > maxD + 0.001)
+                    break;
+
+                var ratio = val / maxD;
+                var x = padX + ratio * rulerW;
+                var isMajor = Math.Abs(val % major) < 0.001 || Math.Abs(val - maxD) < 0.001 || Math.Abs((val % major) - major) < 0.001;
+
+                if (isMajor)
+                {
+                    dc.DrawLine(majorTickPen, new Point(x, baselineY - 7.0), new Point(x, baselineY + 2.0));
+                    if (ShowLabels)
+                    {
+                        var text = val.ToString("0");
+                        if (Math.Abs(val - maxD) < 0.001 && !string.IsNullOrEmpty(UnitLabel))
+                            text += UnitLabel;
+
+                        var ft = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                            RulerTypeface, 7.5, effLabelBrush, dpi);
+                        dc.DrawText(ft, new Point(x - ft.Width / 2.0, baselineY + 3.0));
+                    }
+                }
+                else
+                {
+                    dc.DrawLine(minorTickPen, new Point(x, baselineY - 4.0), new Point(x, baselineY));
+                }
+            }
+
+            // Draw current marker indicator
+            if (CurrentTime >= 0.0)
+            {
+                var clampedTime = Math.Max(0.0, Math.Min(maxD, CurrentTime));
+                var markerX = padX + (clampedTime / maxD) * rulerW;
+
+                var markerPen = new Pen(effMarkerBrush, 1.8);
+                markerPen.Freeze();
+                dc.DrawLine(markerPen, new Point(markerX, 4.0), new Point(markerX, baselineY + 2.0));
+
+                // Top pointer (downward pointing triangle)
+                var pointerGeom = new StreamGeometry();
+                using (var ctx = pointerGeom.Open())
+                {
+                    ctx.BeginFigure(new Point(markerX - 4.5, 0.0), true, true);
+                    ctx.LineTo(new Point(markerX + 4.5, 0.0), true, false);
+                    ctx.LineTo(new Point(markerX, 5.5), true, false);
+                }
+                pointerGeom.Freeze();
+                dc.DrawGeometry(effMarkerBrush, null, pointerGeom);
+
+                // Optional text label above or alongside pointer
+                var labelText = !string.IsNullOrEmpty(MarkerLabel)
+                    ? MarkerLabel
+                    : $"{clampedTime:F0}{UnitLabel}";
+
+                var ftMarker = new FormattedText(labelText, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                    MarkerTypeface, 8.0, effMarkerBrush, dpi);
+
+                var labelX = Math.Max(padX, Math.Min(w - padX - ftMarker.Width, markerX - ftMarker.Width / 2.0));
+                dc.DrawText(ftMarker, new Point(labelX, 0.0));
+            }
+        }
+    }
 }
+
 
 

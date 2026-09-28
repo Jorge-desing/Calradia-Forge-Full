@@ -38,6 +38,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation computes vector chart trajectories and radar axes");
         VectorBarChartAndHeatmapTelemetry();
         Console.WriteLine("PASS Desktop simulation verifies vector bar charts and tactical correlation heatmaps (Rev083)");
+        Rev086StudioEnrichmentAndTimelineTelemetry();
+        Console.WriteLine("PASS Desktop simulation verifies Rev086 pipeline steps, timeline ruler, and studio trajectories");
     }
 
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
@@ -550,5 +552,53 @@ internal static class DesktopSimulationServiceTests
         Check(tradeVm.SeasonalTradeLiquidityHeatmap != null && tradeVm.SeasonalTradeLiquidityHeatmap.Count == 4 && tradeVm.SeasonalTradeLiquidityHeatmap.All(r => r.Count == 4), "Caravan trade liquidity heatmap must be 4x4 matrix.");
         Check(tradeVm.TradeHeatmapRows != null && tradeVm.TradeHeatmapRows.Count == 4, "Caravan trade heatmap must have 4 row headers.");
         Check(tradeVm.TradeHeatmapCols != null && tradeVm.TradeHeatmapCols.Count == 4, "Caravan trade heatmap must have 4 col headers.");
+    }
+
+    static void Rev086StudioEnrichmentAndTimelineTelemetry()
+    {
+        // 1. CodeSecurityDashboardViewModel
+        var securityVm = new CodeSecurityDashboardViewModel();
+        Check(securityVm.SecurityAuditPipelineSteps != null && securityVm.SecurityAuditPipelineSteps.Count == 4,
+            "CodeSecurity dashboard must expose 4 audit pipeline steps.");
+        Check(securityVm.SecurityRiskDensityTrajectory != null && securityVm.SecurityRiskDensityTrajectory.Count == 16,
+            "CodeSecurity dashboard must expose 16-point risk density trajectory.");
+
+        // 2. ModuleHierarchyDashboardViewModel
+        var hierarchyVm = new ModuleHierarchyDashboardViewModel();
+        Check(hierarchyVm.ModuleResolutionPipelineSteps != null && hierarchyVm.ModuleResolutionPipelineSteps.Count == 4,
+            "ModuleHierarchy dashboard must expose 4 resolution pipeline steps.");
+        Check(hierarchyVm.ModuleLoadLatencyTrajectory != null && hierarchyVm.ModuleLoadLatencyTrajectory.Count == 16,
+            "ModuleHierarchy dashboard must expose 16-point load latency trajectory.");
+
+        // 3. ComponentGeneratorDashboardViewModel
+        var generatorVm = new ComponentGeneratorDashboardViewModel();
+        Check(generatorVm.BlueprintSynthesisPipelineSteps != null && generatorVm.BlueprintSynthesisPipelineSteps.Count == 4,
+            "ComponentGenerator dashboard must expose 4 synthesis pipeline steps.");
+        Check(generatorVm.SynthesisThroughputTrajectory != null && generatorVm.SynthesisThroughputTrajectory.Count == 16,
+            "ComponentGenerator dashboard must expose 16-point synthesis throughput trajectory.");
+
+        // 4. LiveSessionDashboardViewModel
+        var sessionVm = new LiveSessionDashboardViewModel();
+        Check(sessionVm.PipeConnectionPipelineSteps != null && sessionVm.PipeConnectionPipelineSteps.Count == 4,
+            "LiveSession dashboard must expose 4 pipe connection pipeline steps.");
+        Check(sessionVm.PipeEventThroughputTrajectory != null && sessionVm.PipeEventThroughputTrajectory.Count == 16,
+            "LiveSession dashboard must expose 16-point event throughput trajectory.");
+        Check(sessionVm.CurrentPacketTimestamp > 0.0,
+            "LiveSession dashboard must expose non-zero current packet timestamp.");
+
+        // 5. ForgeTimelineRuler
+        var ruler = new ForgeTimelineRuler
+        {
+            TotalDuration = 60,
+            CurrentTime = 42.5,
+            MajorInterval = 10,
+            MinorInterval = 2,
+            UnitLabel = "s",
+            MarkerLabel = "TEST_PACKET"
+        };
+        Check(ruler.TotalDuration == 60, "Timeline ruler TotalDuration must be 60.");
+        Check(ruler.CurrentTime == 42.5, "Timeline ruler CurrentTime must be 42.5.");
+        Check(ruler.MajorInterval == 10, "Timeline ruler MajorInterval must be 10.");
+        Check(ruler.MinorInterval == 2, "Timeline ruler MinorInterval must be 2.");
     }
 }

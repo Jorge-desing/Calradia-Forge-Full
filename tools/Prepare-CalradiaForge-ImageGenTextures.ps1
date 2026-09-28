@@ -64,11 +64,12 @@ $textures = @(
     },
     [pscustomobject]@{
         Name = 'forge_heraldic_header_v2.png'; Master = Resolve-InputPath $HeraldicHeaderV2Master 'forge_heraldic_header_v3_master.png'
-        Width = 256; Height = 48; MaxAlpha = 88; PreserveArtworkBounds = $false; RequireTransparency = $true
+        Width = 512; Height = 100; MaxAlpha = 88; PreserveArtworkBounds = $false
+        CropToAlphaBounds = $true; AlphaBoundsThreshold = 8; AlphaBoundsPadding = 4; RequireTransparency = $true
     },
     [pscustomobject]@{
         Name = 'forge_heraldic_rail_v2.png'; Master = Resolve-InputPath $HeraldicRailV2Master 'forge_heraldic_rail_v4_master.png'
-        Width = 128; Height = 256; MaxAlpha = 64; PreserveArtworkBounds = $false; RequireTransparency = $false
+        Width = 256; Height = 504; MaxAlpha = 64; PreserveArtworkBounds = $true; RequireTransparency = $false
     }
 )
 
@@ -182,10 +183,15 @@ namespace CalradiaForge
 
     public static class ImageGenTextureProcessor
     {
-        public static TextureReport Prepare(string sourcePath, string outputPath, int targetWidth, int targetHeight, int maxAlpha, bool preserveArtworkBounds)
+        public static TextureReport Prepare(string sourcePath, string outputPath, int targetWidth, int targetHeight,
+            int maxAlpha, bool preserveArtworkBounds, bool cropToAlphaBounds,
+            int alphaBoundsThreshold, int alphaBoundsPadding)
         {
-            if (targetWidth <= 0 || targetHeight <= 0 || maxAlpha < 1 || maxAlpha > 255)
+            if (targetWidth <= 0 || targetHeight <= 0 || maxAlpha < 1 || maxAlpha > 255 ||
+                alphaBoundsThreshold < 0 || alphaBoundsThreshold > 254 || alphaBoundsPadding < 0)
                 throw new ArgumentOutOfRangeException("Texture dimensions and alpha cap must be positive and valid.");
+            if (preserveArtworkBounds && cropToAlphaBounds)
+                throw new ArgumentException("Full-canvas preservation and alpha-bound cropping are mutually exclusive.");
 
             Bitmap source = null;
             Bitmap output = null;
@@ -214,6 +220,45 @@ namespace CalradiaForge
                 int cropY = (source.Height - cropHeight) / 2;
                 Rectangle crop = new Rectangle(cropX, cropY, cropWidth, cropHeight);
                 Rectangle destination = new Rectangle(0, 0, targetWidth, targetHeight);
+                if (cropToAlphaBounds)
+                {
+                    int minX = source.Width;
+                    int minY = source.Height;
+                    int maxX = -1;
+                    int maxY = -1;
+                    for (int y = 0; y < source.Height; y++)
+                    {
+                        for (int x = 0; x < source.Width; x++)
+                        {
+                            if (source.GetPixel(x, y).A <= alphaBoundsThreshold) continue;
+                            minX = Math.Min(minX, x);
+                            minY = Math.Min(minY, y);
+                            maxX = Math.Max(maxX, x);
+                            maxY = Math.Max(maxY, y);
+                        }
+                    }
+                    if (maxX < minX || maxY < minY)
+                        throw new InvalidOperationException("Alpha-bound crop requires visible artwork in the source master.");
+
+                    cropX = Math.Max(0, minX - alphaBoundsPadding);
+                    cropY = Math.Max(0, minY - alphaBoundsPadding);
+                    int cropRight = Math.Min(source.Width, maxX + 1 + alphaBoundsPadding);
+                    int cropBottom = Math.Min(source.Height, maxY + 1 + alphaBoundsPadding);
+                    crop = new Rectangle(cropX, cropY, cropRight - cropX, cropBottom - cropY);
+                    double cropAspect = (double)crop.Width / crop.Height;
+                    if (cropAspect <= targetAspect)
+                    {
+                        int fittedWidth = Math.Max(1, Math.Min(targetWidth,
+                            (int)Math.Round(targetHeight * cropAspect, MidpointRounding.AwayFromZero)));
+                        destination = new Rectangle((targetWidth - fittedWidth) / 2, 0, fittedWidth, targetHeight);
+                    }
+                    else
+                    {
+                        int fittedHeight = Math.Max(1, Math.Min(targetHeight,
+                            (int)Math.Round(targetWidth / cropAspect, MidpointRounding.AwayFromZero)));
+                        destination = new Rectangle(0, (targetHeight - fittedHeight) / 2, targetWidth, fittedHeight);
+                    }
+                }
                 if (preserveArtworkBounds)
                 {
                     crop = new Rectangle(0, 0, source.Width, source.Height);
@@ -293,9 +338,21 @@ function New-OutputSet([object[]]$TextureSpecs, [string]$OutputDirectory) {
     $reports = @()
     foreach ($texture in $TextureSpecs) {
         $outputPath = Join-Path $OutputDirectory $texture.Name
+        $cropToAlphaBounds = $false
+        $alphaBoundsThreshold = 0
+        $alphaBoundsPadding = 0
+        if ($texture.PSObject.Properties.Name -contains 'CropToAlphaBounds') {
+            $cropToAlphaBounds = [bool]$texture.CropToAlphaBounds
+        }
+        if ($texture.PSObject.Properties.Name -contains 'AlphaBoundsPadding') {
+            $alphaBoundsPadding = [int]$texture.AlphaBoundsPadding
+        }
+        if ($texture.PSObject.Properties.Name -contains 'AlphaBoundsThreshold') {
+            $alphaBoundsThreshold = [int]$texture.AlphaBoundsThreshold
+        }
         $facts = [CalradiaForge.ImageGenTextureProcessor]::Prepare(
             $texture.Master, $outputPath, $texture.Width, $texture.Height, $texture.MaxAlpha,
-            $texture.PreserveArtworkBounds)
+            $texture.PreserveArtworkBounds, $cropToAlphaBounds, $alphaBoundsThreshold, $alphaBoundsPadding)
         if ($facts.Width -ne $texture.Width -or $facts.Height -ne $texture.Height) {
             throw "Generated '$($texture.Name)' has unexpected dimensions $($facts.Width)x$($facts.Height)."
         }

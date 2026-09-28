@@ -21,8 +21,8 @@ TEXTURES = {
     "forge_war_table_cloth_v2.png": ((1024, 128), 24, False, False),
     "forge_rail_cartographic_field_v1.png": ((256, 256), 36, False, False),
     "forge_heraldic_overlay.png": ((256, 48), 112, True, True),
-    "forge_heraldic_header_v2.png": ((256, 48), 88, True, True),
-    "forge_heraldic_rail_v2.png": ((128, 256), 64, False, False),
+    "forge_heraldic_header_v2.png": ((512, 100), 88, True, True),
+    "forge_heraldic_rail_v2.png": ((256, 504), 64, False, False),
     "forge_patina_brass.png": ((128, 16), 88, False, False),
     "forge_pine_felt.png": ((128, 32), 40, False, False),
 }
@@ -89,6 +89,16 @@ def verify_retired_route_archive(root: Path) -> None:
         for name in RETIRED_TEXTURES
         if name.startswith("forge_header_")
     }
+    # Keep verified prior crops for the current heraldic pair beside the
+    # historical route ornaments, while still rejecting untracked archive data.
+    expected.update({
+        "spriteparts-forge_heraldic_header_v2-pre-hires.png",
+        "spriteparts-forge_heraldic_rail_v2-pre-hires.png",
+        "prepared-forge_heraldic_header_v2-512x96-center-crop.png",
+        "spriteparts-forge_heraldic_header_v2-512x96-center-crop.png",
+        "prepared-forge_heraldic_rail_v2-256x512-atlas-overflow.png",
+        "spriteparts-forge_heraldic_rail_v2-256x512-atlas-overflow.png",
+    })
     observed: set[str] = set()
     for line in manifest.read_text(encoding="utf-8").splitlines():
         if not line.strip():
@@ -141,7 +151,9 @@ def main() -> int:
             raise AssertionError(
                 f"{name} has dimensions {observed_dimensions}; expected {dimensions}."
             )
-        facts = validator.inspect_png(path)
+        facts = validator.inspect_png(
+            path, bounds_alpha_threshold=3 if name == "forge_heraldic_header_v2.png" else 1
+        )
         if facts.color_type != 6 or facts.bit_depth != 8:
             raise AssertionError(f"{name} must use RGBA8 pixels.")
         if facts.alpha_max == 0 or facts.alpha_max > max_alpha:
@@ -152,6 +164,25 @@ def main() -> int:
             facts.left_edge_visible_pixels == 0 or facts.right_edge_visible_pixels == 0
         ):
             raise AssertionError(f"{name} must preserve visible artwork at both horizontal ends.")
+        if name == "forge_heraldic_header_v2.png":
+            master = root / "assets/gauntlet-imagegen/forge_heraldic_header_v3_master.png"
+            master_facts = validator.inspect_png(master, bounds_alpha_threshold=9)
+            master_bounds = master_facts.alpha_bounds
+            prepared_bounds = facts.alpha_bounds
+            # The prepared header must preserve the master artwork's visible aspect.
+            # A centered 512x96 crop changes it from about 5.16:1 to 5.33:1 and
+            # clips the top leaves; the alpha-trimmed, padded crop stays within 2%.
+            source_aspect = (master_bounds[2] - master_bounds[0] + 1 + 8) / (
+                master_bounds[3] - master_bounds[1] + 1 + 8
+            )
+            prepared_aspect = (prepared_bounds[2] - prepared_bounds[0] + 1) / (
+                prepared_bounds[3] - prepared_bounds[1] + 1
+            )
+            if abs(prepared_aspect / source_aspect - 1.0) > 0.02:
+                raise AssertionError(
+                    "forge_heraldic_header_v2.png crop changed the heraldic artwork aspect "
+                    f"from {source_aspect:.3f} to {prepared_aspect:.3f}; likely clipped or stretched."
+                )
         originals[name] = content
 
         sprite_path = sprite_directory / name

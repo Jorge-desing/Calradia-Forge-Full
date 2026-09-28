@@ -1354,6 +1354,30 @@ namespace CalradiaForge.Desktop.Presentation
         public string RiskScoreBrushKey { get => RiskBrushKey; set => RiskBrushKey = value; }
         public double StatelessSecurityScoreGauge => 100.0;
 
+        IReadOnlyList<ForgeStepItem> securityAuditPipelineSteps = new List<ForgeStepItem>
+        {
+            new("Metadata Preflight", "PE Assembly Headers", ForgeStepStatus.Completed, "100%"),
+            new("Anti-Shadowing", "Rule A Verification", ForgeStepStatus.Completed, "PASS"),
+            new("Stateless SyncData", "Rule B Save Guard", ForgeStepStatus.Completed, "PASS"),
+            new("Distribution Clearance", "Rule D & PE Meta", ForgeStepStatus.Active, "VERIFIED")
+        };
+        IReadOnlyList<double> securityRiskDensityTrajectory = new List<double>
+        {
+            98.5, 99.0, 99.2, 99.5, 99.8, 100.0, 100.0, 100.0, 99.9, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0
+        };
+
+        public IReadOnlyList<ForgeStepItem> SecurityAuditPipelineSteps
+        {
+            get => securityAuditPipelineSteps;
+            set => Set(ref securityAuditPipelineSteps, value);
+        }
+
+        public IReadOnlyList<double> SecurityRiskDensityTrajectory
+        {
+            get => securityRiskDensityTrajectory;
+            set => Set(ref securityRiskDensityTrajectory, value);
+        }
+
         public SecurityRuleCheckViewModel RuleACheck { get; private set; }
         public SecurityRuleCheckViewModel RuleBCheck { get; private set; }
         public SecurityRuleCheckViewModel RuleCCheck { get; private set; }
@@ -1581,6 +1605,30 @@ namespace CalradiaForge.Desktop.Presentation
         public string LoadOrderWarning { get => loadOrderWarning; private set => Set(ref loadOrderWarning, value); }
         public string WarningBrushKey { get => warningBrushKey; private set => Set(ref warningBrushKey, value); }
         public double ModuleIntegrityScoreGauge => 98.5;
+
+        IReadOnlyList<ForgeStepItem> moduleResolutionPipelineSteps = new List<ForgeStepItem>
+        {
+            new("Discovery", "SubModule.xml Parser", ForgeStepStatus.Completed, "FOUND"),
+            new("Dependencies", "Native & SandBox Graph", ForgeStepStatus.Completed, "VERIFIED"),
+            new("Topological Sort", "Cycle-Free Ordering", ForgeStepStatus.Completed, "OPTIMAL"),
+            new("Assembly Link", "MBSubModuleBase Load", ForgeStepStatus.Active, "LOADED")
+        };
+        IReadOnlyList<double> moduleLoadLatencyTrajectory = new List<double>
+        {
+            12.4, 14.8, 15.2, 13.5, 16.0, 15.8, 18.2, 22.4, 21.0, 24.5, 23.8, 25.1, 26.0, 28.4, 27.5, 29.0
+        };
+
+        public IReadOnlyList<ForgeStepItem> ModuleResolutionPipelineSteps
+        {
+            get => moduleResolutionPipelineSteps;
+            set => Set(ref moduleResolutionPipelineSteps, value);
+        }
+
+        public IReadOnlyList<double> ModuleLoadLatencyTrajectory
+        {
+            get => moduleLoadLatencyTrajectory;
+            set => Set(ref moduleLoadLatencyTrajectory, value);
+        }
 
         public ModulePipelineNodeViewModel SelectedModule
         {
@@ -2088,6 +2136,30 @@ namespace CalradiaForge.Desktop.Presentation
 
         public ObservableCollection<BlueprintNodeViewModel> BlueprintNodes => blueprintNodes;
         public double TemplateValidationScoreGauge => 96.8;
+
+        IReadOnlyList<ForgeStepItem> blueprintSynthesisPipelineSteps = new List<ForgeStepItem>
+        {
+            new("Schema Resolve", "XSD Definition", ForgeStepStatus.Completed, "FOUND"),
+            new("Type Mapping", "C# Model Entities", ForgeStepStatus.Completed, "VALID"),
+            new("Attribute Synthesis", "XML Tags & Nodes", ForgeStepStatus.Active, "ACTIVE"),
+            new("Output Validation", "Compiler Cleanliness", ForgeStepStatus.Pending, "QUEUED")
+        };
+        IReadOnlyList<double> synthesisThroughputTrajectory = new List<double>
+        {
+            18.0, 22.5, 25.0, 28.4, 30.2, 35.0, 42.0, 45.8, 50.2, 54.0, 60.5, 62.0, 68.4, 72.0, 75.5, 80.0
+        };
+
+        public IReadOnlyList<ForgeStepItem> BlueprintSynthesisPipelineSteps
+        {
+            get => blueprintSynthesisPipelineSteps;
+            set => Set(ref blueprintSynthesisPipelineSteps, value);
+        }
+
+        public IReadOnlyList<double> SynthesisThroughputTrajectory
+        {
+            get => synthesisThroughputTrajectory;
+            set => Set(ref synthesisThroughputTrajectory, value);
+        }
 
         public string MixerCategoryStatus => "Mixer Buses: ui (2D Interface), mission_combat (3D Combat) & ambient";
         public string FormatCompliance => "Vorbis .OGG / 16-bit 44.1kHz PCM Zero-Latency Decoding";
@@ -3009,6 +3081,37 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<double> HighConcurrencyRadarValues { get; }
         public IReadOnlyList<double> PipeLatencyTrajectory { get; }
         public IReadOnlyList<LivePipeTelemetryEventViewModel> Events { get; }
+
+        IReadOnlyList<ForgeStepItem> pipeConnectionPipelineSteps = new List<ForgeStepItem>
+        {
+            new("Named Pipe Init", @"\\.\pipe\CalradiaForge.Live", ForgeStepStatus.Completed, "READY"),
+            new("Handshake", "Protocol v2 Negotiation", ForgeStepStatus.Completed, "BOUND"),
+            new("Ring Buffer", "2,048 Slot Allocated", ForgeStepStatus.Completed, "ACTIVE"),
+            new("APM Stream", "Live Event Dispatch", ForgeStepStatus.Active, "STREAMING")
+        };
+        IReadOnlyList<double> pipeEventThroughputTrajectory = new List<double>
+        {
+            120.0, 145.0, 138.0, 160.0, 175.0, 190.0, 210.0, 205.0, 240.0, 260.0, 280.0, 295.0, 310.0, 330.0, 350.0, 375.0
+        };
+        double currentPacketTimestamp = 42.5;
+
+        public IReadOnlyList<ForgeStepItem> PipeConnectionPipelineSteps
+        {
+            get => pipeConnectionPipelineSteps;
+            set => Set(ref pipeConnectionPipelineSteps, value);
+        }
+
+        public IReadOnlyList<double> PipeEventThroughputTrajectory
+        {
+            get => pipeEventThroughputTrajectory;
+            set => Set(ref pipeEventThroughputTrajectory, value);
+        }
+
+        public double CurrentPacketTimestamp
+        {
+            get => currentPacketTimestamp;
+            set => Set(ref currentPacketTimestamp, value);
+        }
 
         public double MemoryGaugeValue { get => memoryGaugeValue; private set => Set(ref memoryGaugeValue, value); }
         public double RingBufferGaugeValue { get => ringBufferGaugeValue; private set => Set(ref ringBufferGaugeValue, value); }

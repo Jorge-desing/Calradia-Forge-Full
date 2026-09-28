@@ -49,8 +49,8 @@ CANONICAL_DECORATION_SIZES = {
     "forge_war_table_cloth_v2": (1024, 128),
     "forge_rail_cartographic_field_v1": (256, 256),
     "forge_heraldic_overlay": (256, 48),
-    "forge_heraldic_header_v2": (256, 48),
-    "forge_heraldic_rail_v2": (128, 256),
+    "forge_heraldic_header_v2": (512, 100),
+    "forge_heraldic_rail_v2": (256, 504),
     "forge_patina_brass": (128, 16),
     "forge_pine_felt": (128, 32),
 }

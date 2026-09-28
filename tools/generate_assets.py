@@ -36,8 +36,8 @@ IMAGEGEN_TEXTURES = {
     'forge_war_table_cloth_v2.png': ((1024, 128), 24, False),
     'forge_rail_cartographic_field_v1.png': ((256, 256), 36, False),
     'forge_heraldic_overlay.png': ((256, 48), 112, True),
-    'forge_heraldic_header_v2.png': ((256, 48), 88, True),
-    'forge_heraldic_rail_v2.png': ((128, 256), 64, False),
+    'forge_heraldic_header_v2.png': ((512, 100), 88, True),
+    'forge_heraldic_rail_v2.png': ((256, 504), 64, False),
     'forge_patina_brass.png': ((128, 16), 88, False),
     'forge_pine_felt.png': ((128, 32), 40, False),
 }

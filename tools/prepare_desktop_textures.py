@@ -80,6 +80,7 @@ PRESERVED_UNPACKAGED_VARIANTS = {
     "parchment-tactical-map-rev083.png",
     "tactical-dial-plate-rev084.png",
     "imperial-wax-seal-rev085.png",
+    "calradia-astrolabe-dial-rev086.png",
 }
 
 

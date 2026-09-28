@@ -28,8 +28,8 @@ DECORATION_SIZES = {
     "forge_war_table_cloth_v2": (1024, 128),
     "forge_rail_cartographic_field_v1": (256, 256),
     "forge_heraldic_overlay": (256, 48),
-    "forge_heraldic_header_v2": (256, 48),
-    "forge_heraldic_rail_v2": (128, 256),
+    "forge_heraldic_header_v2": (512, 100),
+    "forge_heraldic_rail_v2": (256, 504),
     "forge_patina_brass": (128, 16),
     "forge_pine_felt": (128, 32),
 }
@@ -105,6 +105,7 @@ class PngFacts:
     distinct_visible_colors: int
     left_edge_visible_pixels: int
     right_edge_visible_pixels: int
+    alpha_bounds: Tuple[int, int, int, int]
 
 
 @dataclass(frozen=True)
@@ -263,9 +264,11 @@ def scale(value: int, depth: int) -> int:
     return (value * 255 + maximum // 2) // maximum
 
 
-def inspect_png(path: Path) -> PngFacts:
+def inspect_png(path: Path, bounds_alpha_threshold: int = 1) -> PngFacts:
     if not path.is_file():
         raise ValidationError("source PNG is missing")
+    if not 1 <= bounds_alpha_threshold <= 255:
+        raise ValidationError("alpha-bounds threshold must be between 1 and 255")
     if not (57 <= path.stat().st_size <= MAX_PNG_BYTES):
         raise ValidationError("PNG size is outside the accepted validation bounds")
     data = path.read_bytes()
@@ -339,11 +342,12 @@ def inspect_png(path: Path) -> PngFacts:
     palette_count = len(palette or b"") // 3
     alpha_min, alpha_max, visible = 255, 0, 0
     left_edge_visible = right_edge_visible = 0
+    min_x, min_y, max_x, max_y = width, height, -1, -1
     colors = set()
     previous = b""
     cursor = 0
     bpp = max(1, (channels * depth + 7) // 8)
-    for _ in range(height):
+    for y in range(height):
         filter_type = decoded[cursor]
         cursor += 1
         row = unfilter(filter_type, decoded[cursor:cursor + row_bytes], previous, bpp)
@@ -375,6 +379,10 @@ def inspect_png(path: Path) -> PngFacts:
             alpha_min, alpha_max = min(alpha_min, alpha), max(alpha_max, alpha)
             if alpha:
                 visible += 1
+            if alpha >= bounds_alpha_threshold:
+                min_x, max_x = min(min_x, x), max(max_x, x)
+                min_y, max_y = min(min_y, y), max(max_y, y)
+            if alpha:
                 if len(colors) < 3:
                     colors.add(rgb)
                 if x < width // 4:
@@ -384,7 +392,7 @@ def inspect_png(path: Path) -> PngFacts:
     if not visible:
         raise ValidationError("PNG has no visible pixels")
     return PngFacts(width, height, color_type, depth, alpha_min, alpha_max, visible, len(colors),
-                    left_edge_visible, right_edge_visible)
+                    left_edge_visible, right_edge_visible, (min_x, min_y, max_x, max_y))
 
 
 def decode_rgba8(path: Path) -> Tuple[int, int, List[bytes]]:

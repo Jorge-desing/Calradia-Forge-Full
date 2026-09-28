@@ -52,10 +52,14 @@ Superseded source artwork and prepared/runtime PNGs are retained under `archive/
 | `forge_war_table_cloth_v2.png` | 1024×128 | 24/255 | Panoramic header background |
 | `forge_rail_cartographic_field_v1.png` | 256×256 | 36/255 | Navigation-rail material field |
 | `forge_heraldic_overlay.png` | 256×48 | 112/255 | Passive header ornament with authored transparent margins |
+| `forge_heraldic_header_v2.png` | 512×100 | 88/255 | High-resolution transparent compass-and-leaf header ornament |
+| `forge_heraldic_rail_v2.png` | 256×504 | 64/255 | High-resolution illustrated navigation-rail field |
 | `forge_patina_brass.png` | 128×16 | 88/255 | Divider gaps outside controls and evidence |
 | `forge_pine_felt.png` | 128×32 | 40/255 | Rail and briefing-card edge strips |
 
 The masters are not used at runtime. Only the RGBA8 prepared sprites are registered in `SpriteParts/Config.xml` and packed by the official generator. The current registration count and atlas rectangles must be read from generated `CalradiaForgeSpriteData.xml`; do not hand-edit either generated file. Previous `forge_dark_wood`, `forge_inkwash`, and `forge_war_table_cloth` prepared sources are historical and must not reappear in the live sprite set.
+
+The current heraldic header crop uses the master's alpha bounds above alpha 8 plus four source pixels of padding, then fits that crop into 512×100 without cutting the compass leaves or lower rule. This avoids the earlier centered 512×96 crop, which clipped the upper leaf tips. The rail is prepared at 256×504 for its 128×256 DIP slot, retaining its full artwork and staying within the 4096×512 atlas budget including SpriteSheetGenerator padding. Both are source crops only until the official SpriteSheetGenerator rebuilds the atlas and `SpriteData`; their dimensions in the generated metadata must match the registered PNGs.
 
 ## Desktop WPF companion textures
 

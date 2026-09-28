@@ -636,3 +636,10 @@ Consulta VALIDATION.md para distinguir las pruebas automáticas, la ejecución d
 - El `ui_calradiaforge_1_tex.tpac` instalado cambió del SHA-256 `69513B5617F026E1F106F6CA6D47CF5C5CE0B5869FFA472E9166B037CA8EDEA6` a `131E623077708032C76790324F31EDC7862BDC6D5ACA79350B4A03C241A0529E`. Se volvieron a comprobar y conservar los respaldos previos del TPAC instalado y fuente.
 - El TPAC fuente del espacio de trabajo conserva su hash anterior porque la herramienta de recopilación depende del lector obsoleto de TpacTool; no se usó TpacTool. La importación de Resource Browser está verificada; el render del panel Gauntlet en vivo sigue sin verificarse.
 - La versión del producto sigue en 25.2.0; no cambian API, rutas, comandos, permisos ni ZIPs.
+
+### Corrección de importación del atlas en Resource Browser y verificación Gauntlet en vivo (Rev084) — 28/09/2026
+
+- Se corrigió la evidencia de Rev083: **Save** en el inspector de texturas guarda los ajustes de importación; la importación se realizó al seleccionar el atlas y confirmar **Update** en Resource Browser. El navegador volvió a cargar `ui_calradiaforge_1` como textura de 4096×512 (DXT5 en ejecución, 13 niveles mip).
+- El TPAC importado y el TPAC fuente recopilado tienen 539 bytes y SHA-256 `1506C5EAECD4BFC752678C6E6CDB3FA87C4A7A51D8B3B7846B15715276D571EF`. Se conservaron y verificaron por hash los respaldos anteriores de instalación y fuente. El valor intermedio `131E6230...` de Rev083 no probaba la importación completada; no se usó TpacTool.
+- Tras compilar Client y Modding Kit sin advertencias ni errores, una observación con F10 en el menú principal de Bannerlord mostró el panel y los adornos de textura de cabecera y rail. No apareció una aserción ni un marcador de textura ausente. No se inició campaña, batalla ni prueba.
+- Se corrige la referencia de Rev083 a Escape: el usuario cerró Computer Use para reducir consumo de recursos. La versión 25.2.0, API, rutas, comandos, permisos y ZIPs siguen sin cambios.
