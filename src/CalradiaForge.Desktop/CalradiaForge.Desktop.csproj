@@ -24,8 +24,8 @@
     <Resource Include="Resources/Textures/Optimized/evidence-ledger-empty-v1.png" />
     <Resource Include="Resources/Textures/Optimized/rail-field-compass-v1.png" />
     <Resource Include="Resources/Textures/Optimized/parchment-field-journal-ornament-v1.png" />
-    <Resource Include="Resources/Textures/Optimized/dossier-corner-ornament-rev057.png" />
-    <Resource Include="Resources/Textures/Optimized/workbench-cartographic-board-v1.png" />
+    <Resource Include="Resources/Textures/Optimized/dossier-corner-ornament-hq-rev083.png" />
+    <Resource Include="Resources/Textures/Optimized/workbench-cartographic-board-hq-rev083.png" />
     <Resource Include="Resources/Textures/Optimized/workbench-heraldic-rail-portrait-rev064.png" />
     <Resource Include="Resources/Textures/Optimized/workbench-heraldic-shield-v1.png" />
   </ItemGroup>

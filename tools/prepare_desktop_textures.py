@@ -44,14 +44,16 @@ SPECS = {
     "evidence-ledger-empty-v1.png": ((1254, 1254), None, (96, 96), "RGBA"),
     "rail-field-compass-v1.png": ((1254, 1254), None, (96, 96), "RGBA"),
     "parchment-field-journal-ornament-v1.png": ((1254, 1254), None, (96, 96), "RGBA"),
-    "workbench-cartographic-board-v1.png": ((1672, 941), None, (448, 252), "RGB"),
+    # Rev083 high-resolution, text-free illustration sized for the right-hand
+    # workbench slot at up to 200% scaling without decoding a full master image.
+    "workbench-cartographic-board-hq-rev083.png": ((1860, 845), None, (640, 290), "RGB"),
     # Rev064 raises edge-engraving contrast for the rail while retaining the
     # transparent center and 1:2 frame composition at the 320x640 display size.
     "workbench-heraldic-rail-portrait-rev064.png": ((887, 1774), None, (320, 640), "RGBA"),
     "workbench-heraldic-shield-v1.png": ((1254, 1254), None, (80, 80), "RGBA"),
-    # The transparent corner master is displayed only inside the optional
-    # reference drawer; 384x256 retains crisp 2x detail for its 192x128 DIP slot.
-    "dossier-corner-ornament-rev057.png": ((1536, 1024), None, (384, 256), "RGBA"),
+    # The Rev083 transparent compass corner is shown only in the dossier art
+    # well; its compact 320x315 derivative retains crisp detail at 160% scale.
+    "dossier-corner-ornament-hq-rev083.png": ((1265, 1243), None, (320, 315), "RGBA"),
 }
 
 # These authoring masters remain available, but their old derivatives are no
@@ -66,6 +68,16 @@ RETIRED_VARIANTS = {
     "workbench-heraldic-rail-band-v1.png",
     "workbench-heraldic-rail-portrait-rev063.png",
     "titlebar-cartographic-panorama-rev057.png",
+    "workbench-cartographic-board-v1.png",
+    "dossier-corner-ornament-rev057.png",
+}
+
+# Antigravity's local Rev083 image candidates contain malformed pseudo-text.
+# Keep these antecedent files available for review but exclude them from the
+# deterministic pipeline and runtime package until an explicit future review.
+PRESERVED_UNPACKAGED_VARIANTS = {
+    "calradia-heraldic-crest-rev083.png",
+    "parchment-tactical-map-rev083.png",
 }
 
 
@@ -116,7 +128,7 @@ def main() -> int:
             actual = {path.name for path in OUTPUT_DIR.glob("*.png")}
             expected = set(SPECS)
             missing = expected - actual
-            unexpected = actual - expected - RETIRED_VARIANTS
+            unexpected = actual - expected - RETIRED_VARIANTS - PRESERVED_UNPACKAGED_VARIANTS
             if missing or unexpected:
                 raise ValueError(
                     "optimized resource inventory differs from the runtime manifest: "

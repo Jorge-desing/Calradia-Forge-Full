@@ -222,6 +222,27 @@ namespace CalradiaForge.Desktop.Presentation
 
             Raise(nameof(SimulatedFrontlineCohesion));
             Raise(nameof(SimulatedArmyCostEstimate));
+            Raise(nameof(TroopStatDistributionBars));
+        }
+
+        public IReadOnlyList<ForgeBarDataPoint> TroopStatDistributionBars
+        {
+            get
+            {
+                var t = SelectedTroop ?? CanonicalDefaultSelected;
+                var isCav = t.Archetype.Equals("Cavalry", StringComparison.OrdinalIgnoreCase);
+                var isRanged = t.Archetype.Equals("Ranged", StringComparison.OrdinalIgnoreCase);
+                var armorEst = (t.Tier * 14.0) + (isCav ? 24.0 : isRanged ? 12.0 : 28.0);
+                var skillEst = (t.Tier * 26.0) + (isRanged ? 40.0 : 30.0);
+                return
+                [
+                    new("Armor Est.", armorEst, null, "Protection rating"),
+                    new("Proficiency", skillEst, null, "Weapon proficiency"),
+                    new("Vitality", t.Hp, null, "Agent HP vitality"),
+                    new("Tier Index", t.Tier * 20.0, null, $"Tier {t.Tier} power index"),
+                    new("Wage Eff.", Math.Clamp(150.0 - t.Wage * 4.0, 20.0, 140.0), null, $"{t.Wage}d weekly upkeep")
+                ];
+            }
         }
 
         public void SetDynasticNobleScenario()
@@ -580,6 +601,23 @@ namespace CalradiaForge.Desktop.Presentation
             Raise(nameof(CalculatedNetProfit));
             Raise(nameof(CalculatedPaybackPeriod));
             Raise(nameof(SimulationSummary));
+            Raise(nameof(WorkshopEconomicBreakdownBars));
+        }
+
+        public IReadOnlyList<ForgeBarDataPoint> WorkshopEconomicBreakdownBars
+        {
+            get
+            {
+                var mult = costMultiplier;
+                return
+                [
+                    new("Gross Sales", 340.0, null, "Optimal enterprise daily turnover"),
+                    new("Raw Insumos", 120.0 * mult, null, "Ore & grain commodity input"),
+                    new("Guild Wages", 85.0 * mult, null, "Master artisan wages"),
+                    new("Overhead", 25.0, null, "Facility upkeep & security"),
+                    new("Net Daily", Math.Max(0.0, 340.0 - (120.0 * mult + 85.0 * mult + 25.0)), null, "Operating profit margin")
+                ];
+            }
         }
 
         public void SetEpicroteaScenario()
@@ -1772,6 +1810,16 @@ namespace CalradiaForge.Desktop.Presentation
         public string SenateVoteOutcome { get => senateVoteOutcome; private set => Set(ref senateVoteOutcome, value); }
         public string SenateVoteBrushKey { get => senateVoteBrushKey; private set => Set(ref senateVoteBrushKey, value); }
 
+        public IReadOnlyList<ForgeBarDataPoint> KingdomPowerComparisonBars { get; } =
+        [
+            new("Vlandia", 8200.0, null, "Western Kingdom · 38 Clans"),
+            new("W. Empire", 7400.0, null, "Garios Legions · 32 Clans"),
+            new("S. Empire", 6800.0, null, "Rhagaea Crown · 29 Clans"),
+            new("Aserai", 6200.0, null, "Sultanate · 26 Clans"),
+            new("Battania", 5100.0, null, "High King Caladog · 22 Clans"),
+            new("Sturgia", 4900.0, null, "Grand Prince Raganvad · 21 Clans")
+        ];
+
         public FactionStanceViewModel SelectedStance
         {
             get => selectedStance;
@@ -2242,6 +2290,15 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<double> ExecutionLatencyTrajectory { get => executionLatencyTrajectory; private set => Set(ref executionLatencyTrajectory, value); }
         public double BufferUtilizationGaugeValue { get => bufferUtilizationGaugeValue; private set => Set(ref bufferUtilizationGaugeValue, value); }
 
+        public IReadOnlyList<ForgeBarDataPoint> OperationThroughputBars { get; } =
+        [
+            new("Memory Audit", 128.0, null, "CoALA cognitive slots scanned"),
+            new("XML Diff", 84.0, null, "Troop & item XML entities analyzed"),
+            new("Rule Auditor", 64.0, null, "PE metadata & CLR checks passed"),
+            new("Acoustic FFT", 42.0, null, "Waveform & spectral analysis"),
+            new("Save Chunker", 28.0, null, "Payloads chunked >30KB")
+        ];
+
         public RelayCommand RunDiagnosticScanCommand { get; }
         public RelayCommand ClearFindingsCommand { get; }
 
@@ -2450,10 +2507,28 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<double> DoctrineRadarValues { get; }
         public IReadOnlyList<double> CounterDoctrineRadarValues { get; }
         public IReadOnlyList<double> LossesTrajectory { get; }
-        public IReadOnlyList<CombatContingentViewModel> Contingents { get; }
-
         public double MoraleCohesionGaugeValue { get => moraleCohesionGaugeValue; private set => Set(ref moraleCohesionGaugeValue, value); }
         public double SiegeBreachGaugeValue { get => siegeBreachGaugeValue; private set => Set(ref siegeBreachGaugeValue, value); }
+
+        public IReadOnlyList<ForgeBarDataPoint> WeaponDamageBreakdownBars { get; } =
+        [
+            new("Cut (Spatha)", 84.0, null, "Primary slash damage"),
+            new("Pierce (Kontos)", 96.0, null, "High-momentum cavalry thrust"),
+            new("Blunt (Mace)", 52.0, null, "Armor-crushing impact"),
+            new("Shield DMG", 68.0, null, "Heavy axe / pick cleave"),
+            new("Armor Penetration", 74.0, null, "Bodkin arrow penetrator")
+        ];
+
+        public IReadOnlyList<IReadOnlyList<double>> FormationCombatHeatmap { get; } =
+        [
+            new double[] { 0.95, 0.88, 0.92, 0.85, 0.90 },
+            new double[] { 0.70, 0.75, 0.82, 0.78, 0.68 },
+            new double[] { 0.35, 0.50, 0.62, 0.48, 0.40 }
+        ];
+
+        public IReadOnlyList<string> FormationHeatmapRows { get; } = ["Rank I (Front)", "Rank II (Middle)", "Rank III (Reserve)"];
+        public IReadOnlyList<string> FormationHeatmapCols { get; } = ["L-Flank", "Left", "Center", "Right", "R-Flank"];
+        public IReadOnlyList<CombatContingentViewModel> Contingents { get; }
 
         public string StudioDocumentation => "TaleWorlds Combat AI & Formation Architecture: Manages tactical agent components, formation orders (Wedge, Shieldwall, Square), casualty pipelines, morale shock thresholds, and siege weapon detachment algorithms.";
         public string ArchitecturalInvariants => "1. Agent components must not instantiate heavy physics or mesh operations in OnInit(); defer to first OnTick().\n2. Unanimity vs First-Wins: IsAgentInteractionAllowed() requires all logics to agree.\n3. Keep casualty and damage pipeline calculations strictly on game thread.\n4. Siege weapon detachments must preserve navmesh connectivity.";
@@ -2559,6 +2634,27 @@ namespace CalradiaForge.Desktop.Presentation
 
         public double CaravanSurvivalGaugeValue { get => caravanSurvivalGaugeValue; private set => Set(ref caravanSurvivalGaugeValue, value); }
         public double TariffFrictionGaugeValue { get => tariffFrictionGaugeValue; private set => Set(ref tariffFrictionGaugeValue, value); }
+
+        public IReadOnlyList<ForgeBarDataPoint> CommodityProfitMarginBars { get; } =
+        [
+            new("Velvet", 135.0, null, "Pravend -> Lycaron spread"),
+            new("Raw Silk", 98.0, null, "Chaikand -> Marunath luxury"),
+            new("Spices", 82.0, null, "Askar -> Ocs Hall desert imports"),
+            new("Fine Wine", 56.0, null, "Vlandian vintage barrels"),
+            new("Wrought Iron", 44.0, null, "Seonon mining district smelters"),
+            new("Grain", 18.0, null, "Bulk agricultural staple")
+        ];
+
+        public IReadOnlyList<IReadOnlyList<double>> SeasonalTradeLiquidityHeatmap { get; } =
+        [
+            new double[] { 0.85, 0.92, 0.78, 0.60 },
+            new double[] { 0.70, 0.80, 0.88, 0.65 },
+            new double[] { 0.62, 0.74, 0.85, 0.72 },
+            new double[] { 0.88, 0.95, 0.90, 0.78 }
+        ];
+
+        public IReadOnlyList<string> TradeHeatmapRows { get; } = ["Pravend", "Sargot", "Marunath", "Lycaron"];
+        public IReadOnlyList<string> TradeHeatmapCols { get; } = ["Spring", "Summer", "Autumn", "Winter"];
 
         public string StudioDocumentation => "Bannerlord Dynamic Market & Caravan Trade Architecture: Models regional supply/demand elasticity, caravan movement AI, commodity price arbitrage, tariff rates, and underworld smuggling routes.";
         public string ArchitecturalInvariants => "1. Never manipulate settlement ItemRoster without inventory bounds checking to prevent underflow.\n2. Caravan AI routes must check MobileParty navigation validity and avoids pathing through impassable terrain.\n3. Decorator GameModels (TradeModel, TariffModel) must wrap _previousModel.\n4. Keep trade transactions and economic calculations stateless across save cycles.";

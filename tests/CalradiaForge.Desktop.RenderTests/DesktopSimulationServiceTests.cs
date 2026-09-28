@@ -36,6 +36,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation validates generic operation flight deck diagnostic scans");
         VectorChartControlsTelemetry();
         Console.WriteLine("PASS Desktop simulation computes vector chart trajectories and radar axes");
+        VectorBarChartAndHeatmapTelemetry();
+        Console.WriteLine("PASS Desktop simulation verifies vector bar charts and tactical correlation heatmaps (Rev083)");
     }
 
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
@@ -504,5 +506,43 @@ internal static class DesktopSimulationServiceTests
         Check(diagVm.ActiveProfileLabel == "Strict Production Audit", "Cycling scenario back to 0/2 must switch to Strict profile.");
         Check(diagVm.ComplianceScoreGaugeValue == 98.5, "Strict compliance score must be 98.5.");
         Check(diagVm.FaultRiskGaugeValue == 8.0, "Strict fault risk must be 8.0.");
+    }
+
+    static void VectorBarChartAndHeatmapTelemetry()
+    {
+        // 1. Troop tree stat distribution bars
+        var troopVm = new TroopTreeDashboardViewModel();
+        Check(troopVm.TroopStatDistributionBars != null && troopVm.TroopStatDistributionBars.Count == 5, "Troop tree must expose 5 stat distribution bars.");
+        Check(troopVm.TroopStatDistributionBars.All(b => b.Value > 0), "Troop stat distribution bars must have positive values.");
+        Check(troopVm.TroopStatDistributionBars.Any(b => b.Label == "Vitality"), "Troop stat distribution bars must include Vitality.");
+
+        // 2. Workshop economic breakdown bars
+        var workshopVm = new WorkshopDashboardViewModel();
+        Check(workshopVm.WorkshopEconomicBreakdownBars != null && workshopVm.WorkshopEconomicBreakdownBars.Count == 5, "Workshop must expose 5 economic breakdown bars.");
+        Check(workshopVm.WorkshopEconomicBreakdownBars.Any(b => b.Label == "Net Daily"), "Workshop breakdown must include Net Daily.");
+
+        // 3. Kingdom power comparison bars
+        var kingdomVm = new KingdomDiplomacyDashboardViewModel();
+        Check(kingdomVm.KingdomPowerComparisonBars != null && kingdomVm.KingdomPowerComparisonBars.Count == 6, "Kingdom diplomacy must expose 6 power comparison bars.");
+        Check(kingdomVm.KingdomPowerComparisonBars.Any(b => b.Label == "Vlandia"), "Kingdom power bars must include Vlandia.");
+
+        // 4. Operation throughput bars
+        var genericVm = new GenericOperationDashboardViewModel();
+        Check(genericVm.OperationThroughputBars != null && genericVm.OperationThroughputBars.Count == 5, "Generic operation must expose 5 throughput bars.");
+        Check(genericVm.OperationThroughputBars.Any(b => b.Label == "Memory Audit"), "Generic operation bars must include Memory Audit.");
+
+        // 5. Combat studio weapon breakdown & formation heatmap
+        var combatVm = new CombatStudioDashboardViewModel();
+        Check(combatVm.WeaponDamageBreakdownBars != null && combatVm.WeaponDamageBreakdownBars.Count == 5, "Combat studio must expose 5 weapon damage breakdown bars.");
+        Check(combatVm.FormationCombatHeatmap != null && combatVm.FormationCombatHeatmap.Count == 3 && combatVm.FormationCombatHeatmap.All(r => r.Count == 5), "Combat studio formation heatmap must be 3x5 matrix.");
+        Check(combatVm.FormationHeatmapRows != null && combatVm.FormationHeatmapRows.Count == 3, "Combat studio formation heatmap must have 3 row headers.");
+        Check(combatVm.FormationHeatmapCols != null && combatVm.FormationHeatmapCols.Count == 5, "Combat studio formation heatmap must have 5 col headers.");
+
+        // 6. Caravan trade commodity margins & seasonal heatmap
+        var tradeVm = new CaravanTradeDashboardViewModel();
+        Check(tradeVm.CommodityProfitMarginBars != null && tradeVm.CommodityProfitMarginBars.Count == 6, "Caravan trade must expose 6 commodity margin bars.");
+        Check(tradeVm.SeasonalTradeLiquidityHeatmap != null && tradeVm.SeasonalTradeLiquidityHeatmap.Count == 4 && tradeVm.SeasonalTradeLiquidityHeatmap.All(r => r.Count == 4), "Caravan trade liquidity heatmap must be 4x4 matrix.");
+        Check(tradeVm.TradeHeatmapRows != null && tradeVm.TradeHeatmapRows.Count == 4, "Caravan trade heatmap must have 4 row headers.");
+        Check(tradeVm.TradeHeatmapCols != null && tradeVm.TradeHeatmapCols.Count == 4, "Caravan trade heatmap must have 4 col headers.");
     }
 }

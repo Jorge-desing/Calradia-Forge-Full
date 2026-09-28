@@ -89,7 +89,6 @@
   <SolidColorBrush x:Key="ParchmentBrush" Color="{StaticResource Palette.Input}"/>
   <SolidColorBrush x:Key="TextBrush" Color="{StaticResource Palette.Paper}"/>
   <SolidColorBrush x:Key="SteelBorderBrush" Color="{StaticResource Palette.Border}"/>
-  <!-- Keep the paper grain as a quiet material cue so it does not compete with long labels or fine text. -->
   <ImageBrush x:Key="Surface.MaterialTexture" ImageSource="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/parchment-cartographic-paper.png" Stretch="UniformToFill" Opacity="0.11"/>
   <ImageBrush x:Key="TitleBarMaterialTexture" ImageSource="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/parchment-cartographic-paper.png" Stretch="UniformToFill" Viewbox="0,0.4,1,0.12" ViewboxUnits="RelativeToBoundingBox" Opacity="0.12"/>
   <DrawingBrush x:Key="TitleBarSurfaceBrush" Viewbox="0,0,1,1" ViewboxUnits="Absolute" Viewport="0,0,1,1" ViewportUnits="RelativeToBoundingBox" Stretch="Fill">

@@ -435,6 +435,8 @@ internal static class Program
                             AssertTitleBarThemeContrast(app, window, themeId);
                             AssertTitleBarDecorationsStayOutOfCaptionButtons(window, themeId);
                             AssertHeaderSealTheme(app, window, shell, themeId);
+                            AssertConnectionIndicatorVisualStates(app, window, shell, themeId);
+                            records.Add(new { test = "session-connection-indicator-matches-state", theme = themeId, states = 3, passed = true });
                             AssertDecorativeAccentsTheme(app, window, shell, themeId);
                             AssertStatusIconOpacity(app, window, themeId);
                             records.Add(new { test = "status-icons-remain-legible-by-theme", theme = themeId, passed = true });
@@ -1532,6 +1534,50 @@ internal static class Program
             $"The disconnected session status is clipped at normal width: actual {sessionStatus?.ActualWidth:0.#} DIP, required {(sessionStatus == null ? 0 : RequiredTextWidth(sessionStatus)):0.#} DIP.");
     }
 
+    static void AssertConnectionIndicatorVisualStates(Application app, Window window, object shell, string themeId)
+    {
+        var indicators = Descendants(window).OfType<System.Windows.Shapes.Ellipse>()
+            .Where(indicator => string.Equals(AutomationProperties.GetAutomationId(indicator), "SessionConnectionIndicator", StringComparison.Ordinal))
+            .ToArray();
+        Check(indicators.Length == 1,
+            $"Theme {themeId} must expose exactly one SessionConnectionIndicator in the header.");
+
+        var indicator = indicators[0];
+        var session = shell.GetType().GetProperty("Session")?.GetValue(shell);
+        var connection = session?.GetType().GetProperty("Connection");
+        Check(session != null && connection?.CanRead == true && connection.CanWrite,
+            "The connection indicator test needs the existing session presentation state without changing its contract.");
+        Check(!indicator.Focusable && !indicator.IsHitTestVisible && indicator.ActualWidth > 0 && indicator.ActualHeight > 0,
+            "The connection status indicator must remain visible and passive.");
+
+        var originalState = connection.GetValue(session) as string;
+        var states = new[]
+        {
+            (Name: "Disconnected", BrushKey: "EmberBrush"),
+            (Name: "Connecting", BrushKey: "BrassBrush"),
+            (Name: "Connected", BrushKey: "VerdigrisBrush")
+        };
+
+        try
+        {
+            foreach (var state in states)
+            {
+                connection.SetValue(session, state.Name);
+                window.Dispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
+
+                var expected = app.TryFindResource(state.BrushKey) as SolidColorBrush;
+                var actual = indicator.Fill as SolidColorBrush;
+                Check(expected != null && actual != null && actual.Color == expected.Color,
+                    $"Theme {themeId} must render {state.Name} with {state.BrushKey}; actual fill was {indicator.Fill}.");
+            }
+        }
+        finally
+        {
+            connection.SetValue(session, originalState);
+            window.Dispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
+        }
+    }
+
     static bool PumpDispatcherUntil(Dispatcher dispatcher, Func<bool> condition, TimeSpan timeout)
     {
         var elapsed = Stopwatch.StartNew();
@@ -1678,9 +1724,9 @@ internal static class Program
             string.Equals(block.Text, subtitleValue, StringComparison.Ordinal));
         var brandGroup = Descendants(window).OfType<FrameworkElement>().SingleOrDefault(element =>
             string.Equals(AutomationProperties.GetAutomationId(element), "HeaderBrandGroup", StringComparison.Ordinal));
-        Check(subtitle != null && brandGroup != null && subtitle.TextWrapping == TextWrapping.NoWrap && subtitle.TextTrimming == TextTrimming.CharacterEllipsis &&
+        Check(subtitle != null && brandGroup != null && subtitle.TextWrapping == TextWrapping.Wrap && subtitle.TextTrimming == TextTrimming.None &&
               string.Equals(subtitle.ToolTip as string, subtitleValue, StringComparison.Ordinal),
-            $"The localized subtitle must stay on one compact header line and expose its full text as a tooltip at {languageCode}.");
+            $"The localized subtitle must wrap without trimming and expose its full text as a tooltip at {languageCode}.");
         var subtitleBounds = Bounds(subtitle, brandGroup);
         Check(subtitleBounds.Left >= -1 && subtitleBounds.Top >= -1 &&
               subtitleBounds.Right <= brandGroup.ActualWidth + 1 && subtitleBounds.Bottom <= brandGroup.ActualHeight + 1,
@@ -2445,7 +2491,7 @@ internal static class Program
 
     static void AssertToolPageDecorationAccess(Window window, string languageCode)
     {
-        var overlay = FindImage(window, "dossier-corner-ornament-rev057.png");
+        var overlay = FindImage(window, "dossier-corner-ornament-hq-rev083.png");
         var compactArtwork = window.ActualWidth < 1120;
         var expectedCornerWidth = compactArtwork ? 88d : 136d;
         var expectedCornerHeight = compactArtwork ? 59d : 90d;
@@ -2662,7 +2708,7 @@ internal static class Program
         var sealImages = Descendants(seal).OfType<Image>().ToArray();
         var compass = sealImages.Single(image => image.Source?.ToString().IndexOf("header-heraldic-compass-v2.png", StringComparison.OrdinalIgnoreCase) >= 0);
         var headerCorner = sealImages.Single(image => image.Source?.ToString().IndexOf("header-corner-engraving-v1.png", StringComparison.OrdinalIgnoreCase) >= 0);
-        var toolOverlay = FindImage(window, "dossier-corner-ornament-rev057.png");
+        var toolOverlay = FindImage(window, "dossier-corner-ornament-hq-rev083.png");
         var emptyState = Descendants(window).OfType<FrameworkElement>().Single(element =>
             string.Equals(AutomationProperties.GetAutomationId(element), "EvidenceLedgerEmptyState", StringComparison.Ordinal));
         var evidenceImage = FindImage(emptyState, "evidence-ledger-empty-v1.png");
@@ -2683,7 +2729,7 @@ internal static class Program
             .ToArray();
         var workbenchArtNames = new[]
         {
-            "workbench-cartographic-board-v1.png",
+            "workbench-cartographic-board-hq-rev083.png",
             "workbench-heraldic-rail-portrait-rev064.png",
             "workbench-heraldic-shield-v1.png"
         };
@@ -2818,8 +2864,8 @@ internal static class Program
             "evidence-ledger-empty-v1.png",
             "rail-field-compass-v1.png",
             "parchment-field-journal-ornament-v1.png",
-            "dossier-corner-ornament-rev057.png",
-            "workbench-cartographic-board-v1.png",
+            "dossier-corner-ornament-hq-rev083.png",
+            "workbench-cartographic-board-hq-rev083.png",
             "workbench-heraldic-rail-portrait-rev064.png",
             "workbench-heraldic-shield-v1.png"
         };
@@ -2904,16 +2950,20 @@ internal static class Program
             if (asset == "header-corner-engraving-v1.png")
                 Check(width == 192 && height == 64 && bytes[25] == 6,
                     "The header corner engraving must be a compact 192x64 RGBA derivative.");
-            if (asset == "dossier-corner-ornament-rev057.png")
+            if (asset == "dossier-corner-ornament-hq-rev083.png")
             {
-                Check(width == 384 && height == 256 && bytes[25] == 6,
-                    "The original dossier corner must be a transparent 384x256 RGBA illustration for 200% DPI.");
-                Check(Convert.ToHexString(SHA256.HashData(bytes)).Equals("7D0D3193355990FC8192C2964BDA89716C463C18C31573B4F6AD1DB70FAA8F84", StringComparison.OrdinalIgnoreCase),
-                    $"The original dossier corner changed from its deterministic output. Got: {Convert.ToHexString(SHA256.HashData(bytes))}");
+                Check(width == 320 && height == 315 && bytes[25] == 6,
+                    "The Rev083 cartographer corner must be a compact transparent 320x315 RGBA illustration.");
+                Check(Convert.ToHexString(SHA256.HashData(bytes)).Equals("F66ABA74BE06DCF89796D91F6466D3006201BA0F4022FB30D4340FAF3FB125B5", StringComparison.OrdinalIgnoreCase),
+                    "The Rev083 dossier corner changed from its deterministic output.");
             }
-            if (asset == "workbench-cartographic-board-v1.png")
-                Check(width == 448 && height == 252 && bytes[25] == 2,
-                    "The workbench cartographic board must be a 448x252 RGB illustration.");
+            if (asset == "workbench-cartographic-board-hq-rev083.png")
+            {
+                Check(width == 640 && height == 290 && bytes[25] == 2,
+                    "The Rev083 high-resolution workbench cartography must be a 640x290 RGB illustration.");
+                Check(Convert.ToHexString(SHA256.HashData(bytes)).Equals("51D1A374F9623D03A2B7C4CE01B1CCC16090848C9F8D5107859935A177AADFF5", StringComparison.OrdinalIgnoreCase),
+                    "The Rev083 workbench cartography changed from its deterministic output.");
+            }
             if (asset == "workbench-heraldic-rail-portrait-rev064.png")
                 Check(width == 320 && height == 640 && bytes[25] == 6,
                     "The portrait workbench rail illustration must be a 320x640 RGBA overlay.");
@@ -2923,7 +2973,7 @@ internal static class Program
             if (asset is "titlebar-botanical-band-v1.png" or "rail-field-compass-v1.png" or
                 "titlebar-heraldic-corner.png" or "header-corner-engraving-v1.png" or
                 "evidence-ledger-empty-v1.png" or "parchment-field-journal-ornament-v1.png" or
-                "dossier-corner-ornament-rev057.png" or
+                "dossier-corner-ornament-hq-rev083.png" or
                 "workbench-heraldic-rail-portrait-rev064.png" or
                 "workbench-heraldic-shield-v1.png")
             {
@@ -2952,7 +3002,7 @@ internal static class Program
                     "The evidence-ledger derivative changed from its deterministic output.");
             }
         }
-        foreach (var retired in new[] { "tool-card-top-corners-v1.png", "desktop-titlebar-heraldic-frame-v1.png", "desktop-rail-etched-field-v1.png", "desktop-card-corners-botanical-v1.png", "titlebar-cartographic-engraving-v2.png", "workbench-heraldic-rail-band-v1.png", "titlebar-cartographic-panorama-rev057.png" })
+        foreach (var retired in new[] { "tool-card-top-corners-v1.png", "desktop-titlebar-heraldic-frame-v1.png", "desktop-rail-etched-field-v1.png", "desktop-card-corners-botanical-v1.png", "titlebar-cartographic-engraving-v2.png", "workbench-heraldic-rail-band-v1.png", "titlebar-cartographic-panorama-rev057.png", "dossier-corner-ornament-rev057.png", "workbench-cartographic-board-v1.png", "calradia-heraldic-crest-rev083.png", "parchment-tactical-map-rev083.png" })
         {
             var retiredUri = new Uri("pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/" + retired, UriKind.Absolute);
             StreamResourceInfo retiredResource = null;

@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -660,4 +661,392 @@ namespace CalradiaForge.Desktop.Presentation
             }
         }
     }
+
+    // =========================================================================
+    // FORGE BAR DATA POINT & BAR CHART CONTROL (HIGH-DENSITY TACTICAL BARS)
+    // =========================================================================
+
+    public sealed class ForgeBarDataPoint
+    {
+        public string Label { get; set; } = string.Empty;
+        public double Value { get; set; }
+        public Brush? CustomBrush { get; set; }
+        public string? DetailText { get; set; }
+
+        public ForgeBarDataPoint() { }
+        public ForgeBarDataPoint(string label, double value, Brush? customBrush = null, string? detailText = null)
+        {
+            Label = label;
+            Value = value;
+            CustomBrush = customBrush;
+            DetailText = detailText;
+        }
+    }
+
+    public sealed class ForgeBarChart : FrameworkElement
+    {
+        public static readonly DependencyProperty BarsProperty =
+            DependencyProperty.Register(nameof(Bars), typeof(IReadOnlyList<ForgeBarDataPoint>), typeof(ForgeBarChart),
+                new FrameworkPropertyMetadata(Array.Empty<ForgeBarDataPoint>(), FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty BarBrushProperty =
+            DependencyProperty.Register(nameof(BarBrush), typeof(Brush), typeof(ForgeBarChart),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty BackgroundBarBrushProperty =
+            DependencyProperty.Register(nameof(BackgroundBarBrush), typeof(Brush), typeof(ForgeBarChart),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty LabelBrushProperty =
+            DependencyProperty.Register(nameof(LabelBrush), typeof(Brush), typeof(ForgeBarChart),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ValueBrushProperty =
+            DependencyProperty.Register(nameof(ValueBrush), typeof(Brush), typeof(ForgeBarChart),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty MaximumProperty =
+            DependencyProperty.Register(nameof(Maximum), typeof(double), typeof(ForgeBarChart),
+                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty BarThicknessProperty =
+            DependencyProperty.Register(nameof(BarThickness), typeof(double), typeof(ForgeBarChart),
+                new FrameworkPropertyMetadata(12.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ValueUnitProperty =
+            DependencyProperty.Register(nameof(ValueUnit), typeof(string), typeof(ForgeBarChart),
+                new PropertyMetadata(string.Empty));
+
+        public static readonly DependencyProperty FormatStringProperty =
+            DependencyProperty.Register(nameof(FormatString), typeof(string), typeof(ForgeBarChart),
+                new PropertyMetadata("N0"));
+
+        static readonly Typeface LabelTypeface = new("Segoe UI");
+        static readonly Typeface ValueTypeface = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
+
+        public IReadOnlyList<ForgeBarDataPoint> Bars
+        {
+            get => (IReadOnlyList<ForgeBarDataPoint>)GetValue(BarsProperty);
+            set => SetValue(BarsProperty, value);
+        }
+
+        public Brush BarBrush
+        {
+            get => (Brush)GetValue(BarBrushProperty);
+            set => SetValue(BarBrushProperty, value);
+        }
+
+        public Brush BackgroundBarBrush
+        {
+            get => (Brush)GetValue(BackgroundBarBrushProperty);
+            set => SetValue(BackgroundBarBrushProperty, value);
+        }
+
+        public Brush LabelBrush
+        {
+            get => (Brush)GetValue(LabelBrushProperty);
+            set => SetValue(LabelBrushProperty, value);
+        }
+
+        public Brush ValueBrush
+        {
+            get => (Brush)GetValue(ValueBrushProperty);
+            set => SetValue(ValueBrushProperty, value);
+        }
+
+        public double Maximum
+        {
+            get => (double)GetValue(MaximumProperty);
+            set => SetValue(MaximumProperty, value);
+        }
+
+        public double BarThickness
+        {
+            get => (double)GetValue(BarThicknessProperty);
+            set => SetValue(BarThicknessProperty, value);
+        }
+
+        public string ValueUnit
+        {
+            get => (string)GetValue(ValueUnitProperty);
+            set => SetValue(ValueUnitProperty, value);
+        }
+
+        public string FormatString
+        {
+            get => (string)GetValue(FormatStringProperty);
+            set => SetValue(FormatStringProperty, value);
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            var bars = Bars;
+            if (bars == null || bars.Count == 0 || ActualHeight <= 8)
+            {
+                ToolTip = null;
+                return;
+            }
+
+            var pos = e.GetPosition(this);
+            var rowH = ActualHeight / bars.Count;
+            var idx = (int)Math.Clamp(Math.Floor(pos.Y / rowH), 0, bars.Count - 1);
+            var b = bars[idx];
+            var unit = string.IsNullOrEmpty(ValueUnit) ? string.Empty : " " + ValueUnit;
+            var detail = string.IsNullOrEmpty(b.DetailText) ? string.Empty : $" ({b.DetailText})";
+            ToolTip = $"{b.Label}: {b.Value.ToString(FormatString, CultureInfo.InvariantCulture)}{unit}{detail}";
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            base.OnRender(dc);
+            var w = ActualWidth;
+            var h = ActualHeight;
+            if (w <= 16 || h <= 8) return;
+
+            var bars = Bars;
+            if (bars == null || bars.Count == 0) return;
+
+            var effectiveBar = BarBrush ?? Brushes.Goldenrod;
+            var effectiveBg = BackgroundBarBrush ?? new SolidColorBrush(Color.FromArgb(35, 140, 140, 140));
+            var effectiveLabel = LabelBrush ?? new SolidColorBrush(Color.FromArgb(220, 230, 230, 230));
+            var effectiveVal = ValueBrush ?? Brushes.Goldenrod;
+
+            double max = Maximum;
+            if (max <= 0.0)
+            {
+                for (int i = 0; i < bars.Count; i++)
+                {
+                    if (bars[i].Value > max) max = bars[i].Value;
+                }
+                if (max <= 0.0) max = 1.0;
+            }
+
+            var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            const double labelColWidth = 64.0;
+            const double valueColWidth = 44.0;
+            var barTrackWidth = Math.Max(10.0, w - labelColWidth - valueColWidth - 8.0);
+            var rowH = h / bars.Count;
+            var barH = Math.Clamp(BarThickness, 4.0, rowH - 4.0);
+
+            for (int i = 0; i < bars.Count; i++)
+            {
+                var pt = bars[i];
+                var y = i * rowH;
+                var barY = y + (rowH - barH) / 2.0;
+
+                // Category Label
+                var lblFt = new FormattedText(pt.Label ?? string.Empty, CultureInfo.InvariantCulture,
+                    FlowDirection.LeftToRight, LabelTypeface, 8.0, effectiveLabel, dpi)
+                {
+                    MaxTextWidth = labelColWidth - 4.0,
+                    MaxTextHeight = rowH,
+                    Trimming = TextTrimming.CharacterEllipsis
+                };
+                dc.DrawText(lblFt, new Point(2.0, y + (rowH - lblFt.Height) / 2.0));
+
+                // Background Track
+                var trackRect = new Rect(labelColWidth, barY, barTrackWidth, barH);
+                dc.DrawRoundedRectangle(effectiveBg, null, trackRect, 2.0, 2.0);
+
+                // Active Bar
+                var fillRatio = Math.Clamp(pt.Value / max, 0.0, 1.0);
+                if (fillRatio > 0.001)
+                {
+                    var fillW = Math.Max(2.0, barTrackWidth * fillRatio);
+                    var fillBrush = pt.CustomBrush ?? effectiveBar;
+                    var fillRect = new Rect(labelColWidth, barY, fillW, barH);
+                    dc.DrawRoundedRectangle(fillBrush, null, fillRect, 2.0, 2.0);
+                }
+
+                // Value Label
+                var valStr = pt.Value.ToString(FormatString, CultureInfo.InvariantCulture);
+                if (!string.IsNullOrEmpty(ValueUnit)) valStr += ValueUnit;
+                var valFt = new FormattedText(valStr, CultureInfo.InvariantCulture,
+                    FlowDirection.LeftToRight, ValueTypeface, 8.0, effectiveVal, dpi);
+                dc.DrawText(valFt, new Point(labelColWidth + barTrackWidth + 4.0, y + (rowH - valFt.Height) / 2.0));
+            }
+        }
+    }
+
+    // =========================================================================
+    // FORGE HEATMAP GRID CONTROL (TACTICAL MATRIX & TIME CORRELATION MAP)
+    // =========================================================================
+
+    public sealed class ForgeHeatmapGrid : FrameworkElement
+    {
+        public static readonly DependencyProperty MatrixProperty =
+            DependencyProperty.Register(nameof(Matrix), typeof(IReadOnlyList<IReadOnlyList<double>>), typeof(ForgeHeatmapGrid),
+                new FrameworkPropertyMetadata(Array.Empty<IReadOnlyList<double>>(), FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty RowHeadersProperty =
+            DependencyProperty.Register(nameof(RowHeaders), typeof(IReadOnlyList<string>), typeof(ForgeHeatmapGrid),
+                new FrameworkPropertyMetadata(Array.Empty<string>(), FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ColumnHeadersProperty =
+            DependencyProperty.Register(nameof(ColumnHeaders), typeof(IReadOnlyList<string>), typeof(ForgeHeatmapGrid),
+                new FrameworkPropertyMetadata(Array.Empty<string>(), FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty BaseBrushProperty =
+            DependencyProperty.Register(nameof(BaseBrush), typeof(Brush), typeof(ForgeHeatmapGrid),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty HotBrushProperty =
+            DependencyProperty.Register(nameof(HotBrush), typeof(Brush), typeof(ForgeHeatmapGrid),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty CellRadiusProperty =
+            DependencyProperty.Register(nameof(CellRadius), typeof(double), typeof(ForgeHeatmapGrid),
+                new FrameworkPropertyMetadata(2.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        static readonly Typeface HeaderTypeface = new("Segoe UI");
+
+        public IReadOnlyList<IReadOnlyList<double>> Matrix
+        {
+            get => (IReadOnlyList<IReadOnlyList<double>>)GetValue(MatrixProperty);
+            set => SetValue(MatrixProperty, value);
+        }
+
+        public IReadOnlyList<string> RowHeaders
+        {
+            get => (IReadOnlyList<string>)GetValue(RowHeadersProperty);
+            set => SetValue(RowHeadersProperty, value);
+        }
+
+        public IReadOnlyList<string> ColumnHeaders
+        {
+            get => (IReadOnlyList<string>)GetValue(ColumnHeadersProperty);
+            set => SetValue(ColumnHeadersProperty, value);
+        }
+
+        public Brush BaseBrush
+        {
+            get => (Brush)GetValue(BaseBrushProperty);
+            set => SetValue(BaseBrushProperty, value);
+        }
+
+        public Brush HotBrush
+        {
+            get => (Brush)GetValue(HotBrushProperty);
+            set => SetValue(HotBrushProperty, value);
+        }
+
+        public double CellRadius
+        {
+            get => (double)GetValue(CellRadiusProperty);
+            set => SetValue(CellRadiusProperty, value);
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            var m = Matrix;
+            if (m == null || m.Count == 0 || m[0].Count == 0)
+            {
+                ToolTip = null;
+                return;
+            }
+
+            var rows = m.Count;
+            var cols = m[0].Count;
+            const double rowHeaderW = 38.0;
+            const double colHeaderH = 14.0;
+
+            var pos = e.GetPosition(this);
+            if (pos.X < rowHeaderW || pos.Y < colHeaderH)
+            {
+                ToolTip = null;
+                return;
+            }
+
+            var gridW = Math.Max(1.0, ActualWidth - rowHeaderW);
+            var gridH = Math.Max(1.0, ActualHeight - colHeaderH);
+            var cW = gridW / cols;
+            var cH = gridH / rows;
+
+            var c = (int)Math.Clamp(Math.Floor((pos.X - rowHeaderW) / cW), 0, cols - 1);
+            var r = (int)Math.Clamp(Math.Floor((pos.Y - colHeaderH) / cH), 0, rows - 1);
+
+            var val = m[r][c];
+            var rName = RowHeaders != null && r < RowHeaders.Count ? RowHeaders[r] : $"R{r + 1}";
+            var cName = ColumnHeaders != null && c < ColumnHeaders.Count ? ColumnHeaders[c] : $"C{c + 1}";
+            ToolTip = $"{rName} · {cName}: {(val * 100.0):0.0}%";
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            base.OnRender(dc);
+            var w = ActualWidth;
+            var h = ActualHeight;
+            if (w <= 20 || h <= 20) return;
+
+            var m = Matrix;
+            if (m == null || m.Count == 0 || m[0].Count == 0) return;
+
+            var rows = m.Count;
+            var cols = m[0].Count;
+            const double rowHeaderW = 38.0;
+            const double colHeaderH = 14.0;
+
+            var gridW = Math.Max(1.0, w - rowHeaderW);
+            var gridH = Math.Max(1.0, h - colHeaderH);
+            var cW = gridW / cols;
+            var cH = gridH / rows;
+
+            var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            var headerBrush = new SolidColorBrush(Color.FromArgb(170, 200, 200, 200));
+            headerBrush.Freeze();
+
+            // Column Headers
+            var colHdrs = ColumnHeaders;
+            if (colHdrs != null)
+            {
+                for (int c = 0; c < Math.Min(cols, colHdrs.Count); c++)
+                {
+                    var ft = new FormattedText(colHdrs[c], CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                        HeaderTypeface, 7.0, headerBrush, dpi);
+                    var x = rowHeaderW + c * cW + (cW - ft.Width) / 2.0;
+                    dc.DrawText(ft, new Point(x, 1.0));
+                }
+            }
+
+            // Row Headers & Matrix Cells
+            var baseCol = (BaseBrush as SolidColorBrush)?.Color ?? Color.FromArgb(40, 45, 55, 72);
+            var hotCol = (HotBrush as SolidColorBrush)?.Color ?? Color.FromArgb(255, 212, 175, 55);
+            var rowHdrs = RowHeaders;
+
+            for (int r = 0; r < rows; r++)
+            {
+                var y = colHeaderH + r * cH;
+                if (rowHdrs != null && r < rowHdrs.Count)
+                {
+                    var ft = new FormattedText(rowHdrs[r], CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                        HeaderTypeface, 7.0, headerBrush, dpi)
+                    {
+                        MaxTextWidth = rowHeaderW - 4.0,
+                        Trimming = TextTrimming.CharacterEllipsis
+                    };
+                    dc.DrawText(ft, new Point(2.0, y + (cH - ft.Height) / 2.0));
+                }
+
+                for (int c = 0; c < cols; c++)
+                {
+                    var x = rowHeaderW + c * cW;
+                    var val = Math.Clamp(m[r][c], 0.0, 1.0);
+
+                    var cellR = (byte)(baseCol.R + (hotCol.R - baseCol.R) * val);
+                    var cellG = (byte)(baseCol.G + (hotCol.G - baseCol.G) * val);
+                    var cellB = (byte)(baseCol.B + (hotCol.B - baseCol.B) * val);
+                    var cellA = (byte)(baseCol.A + (hotCol.A - baseCol.A) * val);
+
+                    var brush = new SolidColorBrush(Color.FromArgb(cellA, cellR, cellG, cellB));
+                    brush.Freeze();
+
+                    var cellRect = new Rect(x + 1.0, y + 1.0, Math.Max(1.0, cW - 2.0), Math.Max(1.0, cH - 2.0));
+                    dc.DrawRoundedRectangle(brush, null, cellRect, CellRadius, CellRadius);
+                }
+            }
+        }
+    }
 }
+

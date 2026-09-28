@@ -539,3 +539,30 @@
   - Ejecución de pruebas unitarias del pipeline de imágenes (`test_high_quality_image_pipeline.py`): 5/5 pruebas superadas al 100%.
 - [x] Fase 6: Empaquetado Automático con `FastPackageEngine` (`package.ps1`): 3 archivos ZIP generados en `artifacts/` (`CalradiaForge-Modules-25.2.0.zip`, `CalradiaForge-Source-SDK-25.2.0.zip`, `CalradiaForge-Desktop-25.2.0.zip`).
 - [x] Fase 7: Sincronización y Push a GitHub (`main`) bajo la Regla E.
+
+## Gran Ronda de Mejoras Gráficas y Visuales a la App Desktop WPF (Rev083)
+- [x] Fase 1: Generación y Procesamiento de Activos Tácticos de Alta Fidelidad con `high-quality-image-generation`
+  - [x] Generar imagen de escudo heráldico medieval con `generate_image` (Arquetipo 2).
+  - [x] Generar textura de pergamino y mapa cartográfico con `generate_image` (Arquetipo 3).
+  - [x] Procesar activos con `tools/process_high_quality_asset.py` (POT 512/1024, alfa, sangrado de color, metadatos JSON).
+  - [x] Integrar texturas en `src/CalradiaForge.Desktop/Resources/Textures/` y pinceles en `TacticalPalette.xaml` / `TacticalPalette.Parchment.xaml`.
+- [x] Fase 2: Expansión del Motor Vectorial Directo en `ForgeChartControls.cs`
+  - [x] Implementar `ForgeBarChart` con soporte de barras horizontales/verticales, etiquetas, valores, tooltips y geometrías congeladas.
+  - [x] Implementar `ForgeHeatmapGrid` con interpolación de color cálido táctico y tooltips dinámicos.
+- [x] Fase 3: Enriquecimiento de Modelos de Vista en `DesktopSimulationViewModels.cs`
+  - [x] Exponer datos de barras para combate (`WeaponDamageBreakdownBars`), comercio (`CommodityProfitMarginBars`), tropas (`TroopStatDistributionBars`), talleres (`WorkshopEconomicBreakdownBars`), diplomacia (`KingdomPowerComparisonBars`) y flight deck (`OperationThroughputBars`).
+  - [x] Cablear comandos reactivos de refresco.
+- [x] Fase 4: Integración y Cableado XAML en `ToolPageTemplates.xaml`
+  - [x] Insertar nuevos gráficos vectoriales en paneles manteniendo exactamente 9 `*DashboardTemplate`.
+  - [x] Garantizar disposición fluida a 980x680 DIP sin recortes y `Mode=OneWay` en elementos `<Run>`.
+- [x] Fase 5: Sincronización de Localización Multilingüe
+  - [x] Verificar conformidad con `VisualizerStaticLabelLocalization` y paridad de 13 idiomas en diccionarios de recursos.
+- [x] Fase 6: Pruebas y Verificación Integral de 6 Capas
+  - [x] Añadir pruebas en `DesktopSimulationServiceTests.cs` para bar charts y heatmaps.
+  - [x] Validar compilación Release (0 errores), stateless (4/4), Core & ForgeWeave (73), Desktop MVVM (63), Render (292), Agentes (31) y Pipeline de Imágenes (5).
+  - [x] Ejecutar smoke test Windows UI Automation (23/23 registros observados).
+- [x] Fase 7: Registro de Aprendizaje, Empaquetado y Sincronización Git
+  - [x] Redactar Propuesta 37 en `learning_proposal.md` (`/learn`).
+  - [x] Empaquetar distribución con `tools/package.ps1` (3 archivos ZIP generados en `artifacts/`).
+  - [x] Sincronizar y push a GitHub (`main`) bajo la Regla E.
+

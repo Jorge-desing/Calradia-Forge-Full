@@ -17,8 +17,8 @@
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Troop.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding TroopTreeDashboard.Culture}"/>
-           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding TroopTreeDashboard.ArchetypeSummary}"/>
-           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding TroopTreeDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,3,0,0" Text="{Binding TroopTreeDashboard.ArchetypeSummary}"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="22,4,0,0" Text="{Binding TroopTreeDashboard.StudioCaveat}" TextWrapping="Wrap"/>
            <StackPanel Orientation="Horizontal" Margin="22,3,0,0">
             <Button Command="{Binding TroopTreeDashboard.FilterArchetypeCommand}" CommandParameter="All" Content="All" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
             <Button Command="{Binding TroopTreeDashboard.FilterArchetypeCommand}" CommandParameter="Infantry" Content="Inf" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
@@ -34,7 +34,7 @@
           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
            <StackPanel Orientation="Horizontal">
             <Path Data="{StaticResource Icon.Shield}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Troop.CountBadge}"/>
+            <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Troop.CountBadge}"/>
            </StackPanel>
           </Border>
          </Grid>
@@ -46,7 +46,7 @@
           <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0,0,8,0" Padding="8" Width="175">
            <StackPanel>
             <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,1">
-             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="{DynamicResource Viz.Troop.TierI}" TextWrapping="Wrap"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="{DynamicResource Viz.Troop.TierI}" TextWrapping="Wrap"/>
             </Border>
             <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,0,6" Padding="6">
              <StackPanel>
@@ -79,7 +79,7 @@
           <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0,0,8,0" Padding="8" Width="195">
            <StackPanel>
             <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,1">
-             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="{DynamicResource Viz.Troop.TierTwoThree}" TextWrapping="Wrap"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="{DynamicResource Viz.Troop.TierTwoThree}" TextWrapping="Wrap"/>
             </Border>
             <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,0,5" Padding="6">
              <StackPanel>
@@ -125,7 +125,7 @@
           <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0,0,8,0" Padding="8" Width="205">
            <StackPanel>
             <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,1">
-             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="{DynamicResource Viz.Troop.TierFour}" TextWrapping="Wrap"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="{DynamicResource Viz.Troop.TierFour}" TextWrapping="Wrap"/>
             </Border>
             <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,0,4" Padding="6">
              <StackPanel>
@@ -178,7 +178,7 @@
           <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="4" Padding="8" Width="215">
            <StackPanel>
             <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,1">
-             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="{DynamicResource Viz.Troop.NobleLine}" TextWrapping="Wrap"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="{DynamicResource Viz.Troop.NobleLine}" TextWrapping="Wrap"/>
             </Border>
             <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,0,4" Padding="5">
              <StackPanel>
@@ -217,7 +217,7 @@
           <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Width="200" Margin="0,0,4,0">
            <StackPanel>
             <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,1">
-             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="TACTICAL COMBAT RADAR" TextWrapping="Wrap"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="TACTICAL COMBAT RADAR" TextWrapping="Wrap"/>
             </Border>
             <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="4">
              <presentation:ForgeRadarChart
@@ -241,6 +241,25 @@
             <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Pentagonal Shock &amp; Armor Geometry"/>
            </StackPanel>
           </Border>
+          <!-- Column: Stat Distribution Bars -->
+          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Width="200" Margin="0,0,4,0">
+           <StackPanel>
+            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,1">
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="STAT ENVELOPE BARS" TextWrapping="Wrap"/>
+            </Border>
+            <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="4">
+             <presentation:ForgeBarChart
+                 Bars="{Binding TroopTreeDashboard.TroopStatDistributionBars}"
+                 BarBrush="{DynamicResource BrassBrush}"
+                 BackgroundBarBrush="{DynamicResource FrameSurfaceSolidBrush}"
+                 LabelBrush="{DynamicResource PaperBrush}"
+                 ValueBrush="{DynamicResource BrassBrush}"
+                 BarThickness="9"
+                 Height="130" Width="175"/>
+            </Border>
+            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="Dynamic Selected Troop Attribute Index" TextWrapping="Wrap"/>
+           </StackPanel>
+          </Border>
          </StackPanel>
         </ScrollViewer>
        </Grid></DataTemplate>
@@ -262,10 +281,10 @@
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Audio.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding AudioStudioDashboard.AudioFormat}"/>
-           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding AudioStudioDashboard.DurationText}"/>
-           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding AudioStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,3,0,0" Text="{Binding AudioStudioDashboard.DurationText}"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="22,4,0,0" Text="{Binding AudioStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
            <StackPanel Orientation="Horizontal" Margin="22,3,0,0">
-            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,3,0" Text="Preset:"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,4,0" Text="Preset:"/>
             <Button Command="{Binding AudioStudioDashboard.ApplyPresetCommand}" CommandParameter="Flat" Content="Flat" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
             <Button Command="{Binding AudioStudioDashboard.ApplyPresetCommand}" CommandParameter="Bass Boost" Content="Bass" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
             <Button Command="{Binding AudioStudioDashboard.ApplyPresetCommand}" CommandParameter="Voice Clarity" Content="Voice" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
@@ -276,7 +295,7 @@
           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
            <StackPanel Orientation="Horizontal">
             <Path Data="{StaticResource Icon.Shield}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource VerdigrisBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{DynamicResource Viz.Audio.NoClipping}"/>
+            <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{DynamicResource Viz.Audio.NoClipping}"/>
            </StackPanel>
           </Border>
          </Grid>
@@ -291,7 +310,7 @@
          <!-- 5-Band Equalizer Spectrum -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,8,0" Padding="8">
           <StackPanel>
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,6" Text="{DynamicResource Viz.Audio.Equalizer}"/>
+            <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,7" Text="{DynamicResource Viz.Audio.Equalizer}"/>
            <ItemsControl ItemsSource="{Binding AudioStudioDashboard.Bands}">
             <ItemsControl.ItemTemplate>
              <DataTemplate>
@@ -316,7 +335,7 @@
          <Border Background="#060907" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,8,0" Padding="8">
           <DockPanel LastChildFill="True">
            <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
-            <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Audio.Waveform}"/>
+            <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Audio.Waveform}"/>
             <TextBlock FontSize="9" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Right"><Run Text="{DynamicResource Viz.Audio.PeakLabel}"/><Run Text=" -1.4 dBFS"/></TextBlock>
            </Grid>
            <TextBlock DockPanel.Dock="Bottom" FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="0.0s ──────────────────────── 1.42s"/>
@@ -338,7 +357,7 @@
          <!-- VU Peak & Headroom Meters -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
           <StackPanel>
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,6" Text="{DynamicResource Viz.Audio.OutputMeters}"/>
+            <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,7" Text="{DynamicResource Viz.Audio.OutputMeters}"/>
            <Grid Margin="0,0,0,2">
             <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="{DynamicResource Viz.Audio.LeftChannel}"/>
             <TextBlock FontSize="7" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Right" Text="-2.1 dB"/>
@@ -381,8 +400,8 @@
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Workshop.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding WorkshopDashboard.Settlement}"/>
-           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" TextWrapping="Wrap"><Run Text="{DynamicResource Viz.Workshop.ScopeLabel}"/><Run Text=": 30-Day Economic Amortization · 7 Enterprises Simulated"/></TextBlock>
-           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding WorkshopDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,3,0,0" TextWrapping="Wrap"><Run Text="{DynamicResource Viz.Workshop.ScopeLabel}"/><Run Text=": 30-Day Economic Amortization · 7 Enterprises Simulated"/></TextBlock>
+            <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="22,4,0,0" Text="{Binding WorkshopDashboard.StudioCaveat}" TextWrapping="Wrap"/>
            <StackPanel Orientation="Horizontal" Margin="22,3,0,0">
             <Button Command="{Binding WorkshopDashboard.CycleHorizonCommand}" FontSize="7.5" Padding="4,1" Margin="0,0,2,0">
              <TextBlock FontSize="7.5"><Run Text="{Binding WorkshopDashboard.HorizonDays, Mode=OneWay}"/><Run Text="d"/></TextBlock>
@@ -459,7 +478,7 @@
          <!-- Civic Equilibrium KPI Card -->
          <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Padding="8">
           <StackPanel>
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,6" Text="{DynamicResource Viz.Workshop.RiskHeading}"/>
+            <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,7" Text="{DynamicResource Viz.Workshop.RiskHeading}"/>
            <Grid Margin="0,2,0,1">
             <TextBlock FontSize="9" Foreground="{DynamicResource PaperBrush}" TextWrapping="Wrap"><Run Text="{DynamicResource Viz.Workshop.ProsperityLabel}"/><Run Text=": 5,420"/></TextBlock>
             <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Right" Text="+4.2/d ▲"/>
@@ -498,6 +517,18 @@
               <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" HorizontalAlignment="Center"><Run Text="{DynamicResource Viz.Workshop.StableLabel}"/><Run Text=" · "/><Run Text="{DynamicResource Viz.Workshop.RiskThresholdLabel}"/><Run Text=": 45%"/></TextBlock>
             </StackPanel>
            </Border>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,5,0,2" Padding="4,1">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="OPERATING COST BREAKDOWN" TextWrapping="Wrap"/>
+           </Border>
+           <presentation:ForgeBarChart
+               Bars="{Binding WorkshopDashboard.WorkshopEconomicBreakdownBars}"
+               BarBrush="{DynamicResource BrassBrush}"
+               BackgroundBarBrush="{DynamicResource CoalBrush}"
+               LabelBrush="{DynamicResource PaperBrush}"
+               ValueBrush="{DynamicResource BrassBrush}"
+               ValueUnit="d"
+               BarThickness="8"
+               Height="80" Width="150" Margin="0,2"/>
           </StackPanel>
          </Border>
         </Grid>
@@ -520,8 +551,8 @@
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Memory.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding AgentMemoryDashboard.CapacitySummary}"/>
-           <TextBlock FontSize="9" Foreground="{DynamicResource VerdigrisBrush}" Margin="22,1,0,0" Text="{Binding AgentMemoryDashboard.ActiveClusterOverview}"/>
-           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding AgentMemoryDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource VerdigrisBrush}" Margin="22,3,0,0" Text="{Binding AgentMemoryDashboard.ActiveClusterOverview}"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="22,4,0,0" Text="{Binding AgentMemoryDashboard.StudioCaveat}" TextWrapping="Wrap"/>
            <StackPanel Orientation="Horizontal" Margin="22,3,0,0">
             <TextBox Text="{Binding AgentMemoryDashboard.SearchQuery, UpdateSourceTrigger=PropertyChanged}" Width="80" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
             <Button Command="{Binding AgentMemoryDashboard.FilterCategoryCommand}" CommandParameter="All" Content="All" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
@@ -590,7 +621,7 @@
          <!-- Tier 1: Semantic Memory -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="8">
           <DockPanel LastChildFill="True">
-           <TextBlock DockPanel.Dock="Top" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,4" Text="{DynamicResource Viz.Memory.Semantic}"/>
+            <TextBlock DockPanel.Dock="Top" FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,5" Text="{DynamicResource Viz.Memory.Semantic}"/>
            <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,4" Padding="5,3">
             <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="{Binding AgentMemoryDashboard.SelectedAgent.WorkingMemory}" TextWrapping="Wrap"/>
            </Border>
@@ -617,7 +648,7 @@
          <!-- Tier 2: Episodic Memory -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="8">
           <DockPanel LastChildFill="True">
-           <TextBlock DockPanel.Dock="Top" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,4" Text="{DynamicResource Viz.Memory.Episodic}"/>
+            <TextBlock DockPanel.Dock="Top" FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,5" Text="{DynamicResource Viz.Memory.Episodic}"/>
            <ItemsControl ItemsSource="{Binding AgentMemoryDashboard.FilteredEpisodicEvents}">
             <ItemsControl.ItemTemplate>
              <DataTemplate>
@@ -632,7 +663,7 @@
          <!-- Tier 3: Procedural Memory -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
           <DockPanel LastChildFill="True">
-           <TextBlock DockPanel.Dock="Top" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,4" Text="{DynamicResource Viz.Memory.Procedural}"/>
+            <TextBlock DockPanel.Dock="Top" FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,5" Text="{DynamicResource Viz.Memory.Procedural}"/>
            <ItemsControl ItemsSource="{Binding AgentMemoryDashboard.FilteredProceduralTactics}">
             <ItemsControl.ItemTemplate>
              <DataTemplate>
@@ -664,8 +695,8 @@
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.CodeSecurity.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0"><Run Text="{DynamicResource Viz.CodeSecurity.TargetAssemblyLabel}"/><Run Text=": "/><Run Text="{Binding CodeSecurityDashboard.AuditTargetAssembly, Mode=OneWay}"/></TextBlock>
-           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0"><Run Text="{DynamicResource Viz.CodeSecurity.RuntimeClrLabel}"/><Run Text=": "/><Run Text="{Binding CodeSecurityDashboard.ClrTargetFramework, Mode=OneWay}"/></TextBlock>
-           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="21,2,0,0" Text="{Binding CodeSecurityDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,3,0,0"><Run Text="{DynamicResource Viz.CodeSecurity.RuntimeClrLabel}"/><Run Text=": "/><Run Text="{Binding CodeSecurityDashboard.ClrTargetFramework, Mode=OneWay}"/></TextBlock>
+            <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="21,4,0,0" Text="{Binding CodeSecurityDashboard.StudioCaveat}" TextWrapping="Wrap"/>
            <StackPanel Orientation="Horizontal" Margin="21,3,0,0">
             <Button Command="{Binding CodeSecurityDashboard.ToggleStrictScanCommand}" Content="🛡️ Strict Scan" FontSize="7.5" Padding="4,1" Margin="0,0,3,0"/>
             <Button Command="{Binding CodeSecurityDashboard.AuditSelectedRulesCommand}" Content="⚡ Run Audit" FontSize="7.5" Padding="4,1" Margin="0,0,4,0"/>
@@ -745,8 +776,8 @@
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.ModuleHierarchy.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0"><Run Text="{DynamicResource Viz.ModuleHierarchy.IdentifierLabel}"/><Run Text=": "/><Run Text="{Binding ModuleHierarchyDashboard.TargetModuleId, Mode=OneWay}"/></TextBlock>
-           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0"><Run Text="{DynamicResource Viz.ModuleHierarchy.ReleaseTagLabel}"/><Run Text=": "/><Run Text="{Binding ModuleHierarchyDashboard.ModuleVersion, Mode=OneWay}"/></TextBlock>
-           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="21,2,0,0" Text="{Binding ModuleHierarchyDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,3,0,0"><Run Text="{DynamicResource Viz.ModuleHierarchy.ReleaseTagLabel}"/><Run Text=": "/><Run Text="{Binding ModuleHierarchyDashboard.ModuleVersion, Mode=OneWay}"/></TextBlock>
+            <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="21,4,0,0" Text="{Binding ModuleHierarchyDashboard.StudioCaveat}" TextWrapping="Wrap"/>
            <StackPanel Orientation="Horizontal" Margin="21,3,0,0">
             <Button Command="{Binding ModuleHierarchyDashboard.MoveModuleUpCommand}" Content="▲ Up" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
             <Button Command="{Binding ModuleHierarchyDashboard.MoveModuleDownCommand}" Content="▼ Down" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
@@ -805,10 +836,10 @@
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Diplomacy.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0"><Run Text="{DynamicResource Viz.Diplomacy.RealmLabel}"/><Run Text=": "/><Run Text="{Binding KingdomDiplomacyDashboard.PlayerFaction}"/></TextBlock>
-           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0"><Run Text="{DynamicResource Viz.Diplomacy.MonarchLabel}"/><Run Text=": "/><Run Text="{Binding KingdomDiplomacyDashboard.PlayerRuler}"/></TextBlock>
-           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="21,2,0,0" Text="{Binding KingdomDiplomacyDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,3,0,0"><Run Text="{DynamicResource Viz.Diplomacy.MonarchLabel}"/><Run Text=": "/><Run Text="{Binding KingdomDiplomacyDashboard.PlayerRuler}"/></TextBlock>
+            <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="21,4,0,0" Text="{Binding KingdomDiplomacyDashboard.StudioCaveat}" TextWrapping="Wrap"/>
            <StackPanel Orientation="Horizontal" Margin="21,3,0,0">
-            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,3,0" Text="Tension:"/>
+            <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,4,0" Text="Tension:"/>
             <Button Command="{Binding KingdomDiplomacyDashboard.AdjustTensionCommand}" CommandParameter="-10" Content="-10" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
             <Button Command="{Binding KingdomDiplomacyDashboard.AdjustTensionCommand}" CommandParameter="10" Content="+10" FontSize="7.5" Padding="4,1" Margin="0,0,3,0"/>
             <Button Command="{Binding KingdomDiplomacyDashboard.SimulateSenateVoteCommand}" Content="🗳️ Vote Senate" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
@@ -879,7 +910,7 @@
          <Border Grid.Column="1" Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6">
           <StackPanel>
            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,4" Padding="4,1">
-            <TextBlock FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="REALM POWER BALANCE"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="REALM POWER BALANCE"/>
            </Border>
            <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="2" Margin="0,0,0,4">
             <presentation:ForgeRadarChart
@@ -929,6 +960,18 @@
              </StackPanel>
             </Border>
            </Grid>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,5,0,2" Padding="4,1">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="FEUDAL MILITARY STRENGTH" TextWrapping="Wrap"/>
+           </Border>
+           <presentation:ForgeBarChart
+               Bars="{Binding KingdomDiplomacyDashboard.KingdomPowerComparisonBars}"
+               BarBrush="{DynamicResource BrassBrush}"
+               BackgroundBarBrush="{DynamicResource CoalBrush}"
+               LabelBrush="{DynamicResource PaperBrush}"
+               ValueBrush="{DynamicResource BrassBrush}"
+               ValueUnit=""
+               BarThickness="8"
+               Height="90" Width="195" Margin="0,2"/>
           </StackPanel>
          </Border>
         </Grid></Grid></DataTemplate>
@@ -950,10 +993,10 @@
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Component.Title}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0"><Run Text="{DynamicResource Viz.Component.IdentifierLabel}"/><Run Text=": "/><Run Text="{Binding ComponentGeneratorDashboard.ComponentId, Mode=OneWay}"/></TextBlock>
-           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0"><Run Text="{DynamicResource Viz.Component.SchemaTargetLabel}"/><Run Text=": "/><Run Text="{Binding ComponentGeneratorDashboard.TargetSchemaType, Mode=OneWay}"/></TextBlock>
-           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="21,2,0,0" Text="{Binding ComponentGeneratorDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,3,0,0"><Run Text="{DynamicResource Viz.Component.SchemaTargetLabel}"/><Run Text=": "/><Run Text="{Binding ComponentGeneratorDashboard.TargetSchemaType, Mode=OneWay}"/></TextBlock>
+            <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="21,4,0,0" Text="{Binding ComponentGeneratorDashboard.StudioCaveat}" TextWrapping="Wrap"/>
            <StackPanel Orientation="Horizontal" Margin="21,3,0,0">
-            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,3,0" Text="ID:"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,4,0" Text="ID:"/>
             <TextBox Text="{Binding ComponentGeneratorDashboard.CustomComponentId, UpdateSourceTrigger=PropertyChanged}" Width="100" FontSize="8" Padding="2,1" Margin="0,0,3,0"/>
             <Button Command="{Binding ComponentGeneratorDashboard.GenerateBlueprintCommand}" Content="⚙️ Synthesize" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
             <Button Command="{Binding ComponentGeneratorDashboard.CopyXmlBlueprintCommand}" Content="📋 Copy XML" FontSize="7.5" Padding="4,1" Margin="0,0,3,0"/>
@@ -1021,13 +1064,13 @@
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding CombatStudioDashboard.RegimentName, Mode=OneWay}" VerticalAlignment="Center"/>
            </StackPanel>
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding CombatStudioDashboard.TacticalDoctrine, Mode=OneWay}"/>
-           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding CombatStudioDashboard.DeploymentTerrain, Mode=OneWay}"/>
-           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding CombatStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,3,0,0" Text="{Binding CombatStudioDashboard.DeploymentTerrain, Mode=OneWay}"/>
+            <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="22,4,0,0" Text="{Binding CombatStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
            <StackPanel Orientation="Horizontal">
             <Path Data="{StaticResource Icon.Shield}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="4 BATTLE COHORTS"/>
+            <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="4 BATTLE COHORTS"/>
            </StackPanel>
           </Border>
          </Grid>
@@ -1043,7 +1086,7 @@
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="8">
           <DockPanel LastChildFill="True">
            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,6" Padding="4,2">
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="ACTIVE DEPLOYED CONTINGENTS"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="ACTIVE DEPLOYED CONTINGENTS"/>
            </Border>
            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding CombatStudioDashboard.Contingents}">
@@ -1075,7 +1118,7 @@
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="8">
           <StackPanel HorizontalAlignment="Center">
            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="DOCTRINE PROFILE"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="DOCTRINE PROFILE"/>
            </Border>
            <presentation:ForgeRadarChart
                AxisLabels="{Binding CombatStudioDashboard.CombatRadarAxes}"
@@ -1087,17 +1130,29 @@
                ComparisonFill="{DynamicResource EmberBrush}"
                GridBrush="{DynamicResource BorderBrush}"
                AxisLabelBrush="{DynamicResource PaperBrush}"
-               Height="130" Width="130" HorizontalAlignment="Center" Margin="0,2"/>
-           <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="■ Shieldwall (Brass)  ■ Counter-Assault (Ember)"/>
+               Height="115" Width="120" HorizontalAlignment="Center" Margin="0,2"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,3,0,0" Text="■ Shieldwall (Brass)  ■ Counter-Assault (Ember)"/>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,5,0,2" Padding="4,1">
+             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="WEAPON IMPACT PROFILE" TextWrapping="Wrap"/>
+           </Border>
+           <presentation:ForgeBarChart
+               Bars="{Binding CombatStudioDashboard.WeaponDamageBreakdownBars}"
+               BarBrush="{DynamicResource BrassBrush}"
+               BackgroundBarBrush="{DynamicResource CoalBrush}"
+               LabelBrush="{DynamicResource PaperBrush}"
+               ValueBrush="{DynamicResource BrassBrush}"
+               ValueUnit=" pts"
+               BarThickness="7"
+               Height="70" Width="140" Margin="0,2"/>
           </StackPanel>
          </Border>
          <!-- Column 3: Casualty Sparkline & Dual Ring Gauges -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
           <StackPanel>
            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="TACTICAL TELEMETRY"/>
+            <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="TACTICAL TELEMETRY"/>
            </Border>
-           <TextBlock FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource EmberBrush}" Text="15-MIN CASUALTY ENVELOPE"/>
+            <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource EmberBrush}" Text="15-MIN CASUALTY ENVELOPE" TextWrapping="Wrap"/>
            <presentation:ForgeSparkline
                DataPoints="{Binding CombatStudioDashboard.LossesTrajectory}"
                Stroke="{DynamicResource EmberBrush}"
@@ -1123,7 +1178,7 @@
                  ThresholdBrush="{DynamicResource EmberBrush}"
                  TextBrush="{DynamicResource PaperBrush}"
                  Height="56" Width="56"/>
-             <TextBlock FontSize="7.5" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="COHESION HIGH"/>
+             <TextBlock FontSize="8.5" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="COHESION HIGH"/>
             </StackPanel>
             <!-- Gauge 2: Siege Breach -->
             <StackPanel Grid.Column="1" HorizontalAlignment="Center">
@@ -1138,10 +1193,20 @@
                  ThresholdBrush="{DynamicResource VerdigrisBrush}"
                  TextBrush="{DynamicResource PaperBrush}"
                  Height="56" Width="56"/>
-             <TextBlock FontSize="7.5" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="SIEGE VIABLE"/>
+             <TextBlock FontSize="8.5" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="SIEGE VIABLE"/>
             </StackPanel>
            </Grid>
-           <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding CombatStudioDashboard.TacticalShockEfficiency, Mode=OneWay}"/>
+           <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" TextWrapping="Wrap" Text="{Binding CombatStudioDashboard.TacticalShockEfficiency, Mode=OneWay}"/>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,5,0,2" Padding="4,1">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="FORMATION COHORT HEATMAP" TextWrapping="Wrap"/>
+           </Border>
+           <presentation:ForgeHeatmapGrid
+               Matrix="{Binding CombatStudioDashboard.FormationCombatHeatmap}"
+               RowHeaders="{Binding CombatStudioDashboard.FormationHeatmapRows}"
+               ColumnHeaders="{Binding CombatStudioDashboard.FormationHeatmapCols}"
+               BaseBrush="{DynamicResource CoalBrush}"
+               HotBrush="{DynamicResource EmberBrush}"
+               Height="48" Margin="0,2"/>
           </StackPanel>
          </Border>
         </Grid>
@@ -1231,8 +1296,20 @@
                ComparisonFill="{DynamicResource BrassBrush}"
                GridBrush="{DynamicResource BorderBrush}"
                AxisLabelBrush="{DynamicResource PaperBrush}"
-               Height="130" Width="130" HorizontalAlignment="Center" Margin="0,2"/>
-           <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="■ Silver Route (Verdigris)  ■ Overland (Brass)"/>
+               Height="115" Width="120" HorizontalAlignment="Center" Margin="0,2"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,3,0,0" Text="■ Silver Route (Verdigris)  ■ Overland (Brass)"/>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,5,0,2" Padding="4,1">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="COMMODITY ARBITRAGE MARGINS"/>
+           </Border>
+           <presentation:ForgeBarChart
+               Bars="{Binding CaravanTradeDashboard.CommodityProfitMarginBars}"
+               BarBrush="{DynamicResource VerdigrisBrush}"
+               BackgroundBarBrush="{DynamicResource CoalBrush}"
+               LabelBrush="{DynamicResource PaperBrush}"
+               ValueBrush="{DynamicResource VerdigrisBrush}"
+               ValueUnit="d"
+               BarThickness="7"
+               Height="70" Width="140" Margin="0,2"/>
           </StackPanel>
          </Border>
          <!-- Column 3: Arbitrage Spread & Security Gauges -->
@@ -1285,7 +1362,17 @@
              <TextBlock FontSize="7.5" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="FAVORABLE"/>
             </StackPanel>
            </Grid>
-           <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding CaravanTradeDashboard.SecurityRiskAssessment, Mode=OneWay}"/>
+           <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" TextWrapping="Wrap" Text="{Binding CaravanTradeDashboard.SecurityRiskAssessment, Mode=OneWay}"/>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,5,0,2" Padding="4,1">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="SEASONAL LIQUIDITY HEATMAP"/>
+           </Border>
+           <presentation:ForgeHeatmapGrid
+               Matrix="{Binding CaravanTradeDashboard.SeasonalTradeLiquidityHeatmap}"
+               RowHeaders="{Binding CaravanTradeDashboard.TradeHeatmapRows}"
+               ColumnHeaders="{Binding CaravanTradeDashboard.TradeHeatmapCols}"
+               BaseBrush="{DynamicResource CoalBrush}"
+               HotBrush="{DynamicResource VerdigrisBrush}"
+               Height="48" Margin="0,2"/>
           </StackPanel>
          </Border>
         </Grid>
@@ -2176,8 +2263,14 @@
            </StackPanel>
           </Border>
          </Grid>
-         <!-- Live Findings Flight Deck -->
-          <Border Grid.Row="2" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="6">
+         <!-- Live Findings Flight Deck & Sub-Engine Throughput -->
+         <Grid Grid.Row="2">
+          <Grid.ColumnDefinitions>
+           <ColumnDefinition Width="*"/>
+           <ColumnDefinition Width="230"/>
+          </Grid.ColumnDefinitions>
+          <!-- Left: Live Findings Flight Deck -->
+          <Border Grid.Column="0" Margin="0,0,6,0" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="6">
            <DockPanel LastChildFill="True">
             <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
              <Grid.ColumnDefinitions>
@@ -2222,6 +2315,26 @@
            </ScrollViewer>
           </DockPanel>
          </Border>
+         <!-- Right: Sub-Engine Throughput -->
+         <Border Grid.Column="1" Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="6">
+          <DockPanel LastChildFill="True">
+           <Border DockPanel.Dock="Top" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,4" Padding="4,1">
+            <TextBlock FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="SUB-ENGINE THROUGHPUT"/>
+           </Border>
+           <TextBlock DockPanel.Dock="Bottom" FontSize="7" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Ops/Sec · Thread-Isolated Dispatch"/>
+           <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="4">
+            <presentation:ForgeBarChart
+                Bars="{Binding GenericOperationDashboard.OperationThroughputBars}"
+                BarBrush="{DynamicResource VerdigrisBrush}"
+                BackgroundBarBrush="{DynamicResource FrameSurfaceSolidBrush}"
+                LabelBrush="{DynamicResource PaperBrush}"
+                ValueBrush="{DynamicResource BrassBrush}"
+                BarThickness="8"
+                Height="105" Width="205"/>
+           </Border>
+          </DockPanel>
+         </Border>
+        </Grid>
         </Grid>
        </Grid></DataTemplate>
   <DataTemplate DataType="{x:Type presentation:ToolPageViewModel}">
@@ -2256,7 +2369,7 @@
 
       </Grid.ColumnDefinitions>
 
-      <Image Focusable="False" Grid.Column="2" Height="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ResponsiveDecorationDimensionConverter}, ConverterParameter=corner-height}" HorizontalAlignment="Right" IsHitTestVisible="False" Opacity="0.14" RenderOptions.BitmapScalingMode="HighQuality" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/dossier-corner-ornament-rev057.png" Stretch="Uniform" VerticalAlignment="Center" Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ResponsiveDecorationDimensionConverter}, ConverterParameter=corner-width}">
+      <Image Focusable="False" Grid.Column="2" Height="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ResponsiveDecorationDimensionConverter}, ConverterParameter=corner-height}" HorizontalAlignment="Right" IsHitTestVisible="False" Opacity="0.14" RenderOptions.BitmapScalingMode="HighQuality" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/dossier-corner-ornament-hq-rev083.png" Stretch="Uniform" VerticalAlignment="Center" Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ResponsiveDecorationDimensionConverter}, ConverterParameter=corner-width}">
 
        <Image.Visibility>
 
@@ -2322,7 +2435,7 @@
 
       <Grid AutomationProperties.AutomationId="WorkbenchCartographicBoardDecoration" ClipToBounds="True" Focusable="False" Grid.Column="2" Height="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ResponsiveDecorationDimensionConverter}, ConverterParameter=board-height}" IsHitTestVisible="False" Margin="8,0,0,0" VerticalAlignment="Center" Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ResponsiveDecorationDimensionConverter}, ConverterParameter=board-width}">
 
-       <Image Focusable="False" IsHitTestVisible="False" Opacity="0.42" RenderOptions.BitmapScalingMode="HighQuality" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/workbench-cartographic-board-v1.png" Stretch="Uniform">
+       <Image Focusable="False" IsHitTestVisible="False" Opacity="0.42" RenderOptions.BitmapScalingMode="HighQuality" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/workbench-cartographic-board-hq-rev083.png" Stretch="Uniform">
 
         <Image.Visibility>
 
