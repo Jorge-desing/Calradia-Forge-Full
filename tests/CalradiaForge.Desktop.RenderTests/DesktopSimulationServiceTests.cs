@@ -26,6 +26,14 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop workspace routes simulation tools to dedicated engines");
         SplitDeckLifecycle();
         Console.WriteLine("PASS Desktop shell manages Split Deck activation and pinned tool retention");
+        TroopTreeCaptainPerks();
+        Console.WriteLine("PASS Desktop simulation toggles captain perks and evaluates wage/cohesion modifiers");
+        CoalaCognitiveMemoryConsolidation();
+        Console.WriteLine("PASS Desktop simulation executes CoALA sleep memory consolidation and category filtering");
+        KingdomDiplomacySenateVoteAndWarActions();
+        Console.WriteLine("PASS Desktop simulation evaluates senate decrees, war declarations, and truce actions");
+        GenericOperationFlightDeckDiagnostics();
+        Console.WriteLine("PASS Desktop simulation validates generic operation flight deck diagnostic scans");
     }
 
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
@@ -220,5 +228,96 @@ internal static class DesktopSimulationServiceTests
 
         shell.CloseSplitDeckCommand.Execute(null);
         Check(!shell.IsSplitDeckActive, "CloseSplitDeckCommand must deactivate Split Deck.");
+    }
+
+    static void TroopTreeCaptainPerks()
+    {
+        var vm = new TroopTreeDashboardViewModel();
+        Check(!vm.CaptainPerksActive, "Captain perks must be inactive by default.");
+        Check(vm.PerkBonusSummary.Contains("INACTIVE"), "Perk bonus summary must show INACTIVE initially.");
+
+        vm.ToggleCaptainPerksCommand.Execute(null);
+        Check(vm.CaptainPerksActive, "Captain perks must be active after toggle.");
+        Check(vm.PerkBonusSummary.Contains("ACTIVE"), "Perk bonus summary must show ACTIVE.");
+        Check(vm.SimulatedFrontlineCohesion.Contains("Cohesion"), "Cohesion summary must be updated.");
+        Check(vm.SimulatedArmyCostEstimate.Contains("Wage"), "Army cost estimate must be updated with perk efficiency.");
+
+        vm.ToggleCaptainPerksCommand.Execute(null);
+        Check(!vm.CaptainPerksActive, "Captain perks must toggle back to inactive.");
+        Check(vm.PerkBonusSummary.Contains("INACTIVE"), "Perk bonus summary must return to INACTIVE.");
+    }
+
+    static void CoalaCognitiveMemoryConsolidation()
+    {
+        var vm = new AgentMemoryDashboardViewModel();
+        Check(vm.SelectedAgent != null, "Selected agent must be populated by default.");
+
+        // Category filter test
+        vm.FilterCategoryCommand.Execute("Belief");
+        Check(vm.SelectedCategoryFilter == "Belief", "Category filter must be set to Belief.");
+        Check(vm.FilteredSemanticFacts.All(f => f.Category.Equals("Belief", StringComparison.OrdinalIgnoreCase)), "All filtered facts must be in Belief category.");
+
+        vm.FilterCategoryCommand.Execute("All");
+        Check(vm.FilteredSemanticFacts.Count >= 2, "All filter must restore all semantic facts.");
+
+        // Add custom fact test
+        vm.NewFactKey = "strategic_ambush_site";
+        vm.NewFactValue = "High ground advantage near Jalmarys mountain pass";
+        vm.NewFactCategory = "Stance";
+        vm.NewFactTtl = "Permanent Anchor";
+        vm.AddSemanticFactCommand.Execute(null);
+        Check(vm.SelectedAgent.SemanticFacts.Any(f => f.Key == "strategic_ambush_site"), "Injected semantic fact must be present in agent memory.");
+        Check(vm.ConsolidationFeedback.Contains("strategic_ambush_site"), "Consolidation feedback must confirm injected fact.");
+
+        // Sleep cycle consolidation test
+        vm.ConsolidateMemoriesCommand.Execute(null);
+        Check(vm.ConsolidationFeedback.Contains("Sleep cycle consolidation complete"), "Consolidation feedback must confirm sleep cycle completion.");
+        Check(vm.SelectedAgent.WorkingMemory.Contains("Sleep Consolidation Active"), "Working memory must reflect active consolidation.");
+    }
+
+    static void KingdomDiplomacySenateVoteAndWarActions()
+    {
+        var vm = new KingdomDiplomacyDashboardViewModel();
+        Check(!string.IsNullOrWhiteSpace(vm.PlayerFaction), "PlayerFaction must be populated.");
+        Check(!string.IsNullOrWhiteSpace(vm.PlayerRuler), "PlayerRuler must be populated.");
+        Check(vm.FactionStances.Count > 0, "FactionStances must contain seeded realm stances.");
+
+        // Senate voting test
+        vm.SimulateSenateVoteCommand.Execute(null);
+        Check(!string.IsNullOrWhiteSpace(vm.SenateVoteOutcome), "Senate vote outcome must be populated.");
+        Check(vm.SenateVoteOutcome.Contains("DECREE"), "Senate vote outcome must reflect decree decision.");
+
+        // War declaration & truce test
+        var initialStance = vm.FactionStances[0];
+        vm.SelectedStance = initialStance;
+        Check(!string.IsNullOrWhiteSpace(vm.SelectedStanceDetails), "Selected stance details must be populated.");
+
+        vm.DeclareWarCommand.Execute(null);
+        Check(initialStance.Stance == "Hostile", "DeclareWarCommand must set target stance to Hostile.");
+        Check(initialStance.Tension >= 90, "DeclareWarCommand must elevate tension.");
+        Check(vm.SenateVoteOutcome.Contains("CASUS BELLI RATIFIED"), "Senate vote outcome must reflect casus belli ratification.");
+
+        vm.ProposePeaceTreatyCommand.Execute(null);
+        Check(initialStance.Stance == "Truce", "ProposePeaceTreatyCommand must set target stance to Truce.");
+        Check(initialStance.Tension <= 30, "ProposePeaceTreatyCommand must reduce tension.");
+        Check(vm.SenateVoteOutcome.Contains("PEACE TREATY SIGNED"), "Senate vote outcome must reflect peace treaty signing.");
+    }
+
+    static void GenericOperationFlightDeckDiagnostics()
+    {
+        var vm = new GenericOperationDashboardViewModel();
+        Check(vm.DiagnosticFindings.Count == 4, "Flight deck must contain 4 baseline boundary telemetry findings.");
+        Check(vm.ScanProgressPercentage == 100.0, "Initial scan progress must be 100%.");
+
+        vm.RunDiagnosticScanCommand.Execute(null);
+        Check(vm.ScanStatusMessage.Contains("DIAGNOSTIC COMPLETE"), "RunDiagnosticScanCommand must report complete status.");
+        Check(vm.DiagnosticFindings.Count == 4, "Diagnostic findings must be intact after scan.");
+
+        vm.ClearFindingsCommand.Execute(null);
+        Check(vm.DiagnosticFindings.Count == 0, "ClearFindingsCommand must clear all diagnostic findings.");
+        Check(vm.ScanStatusMessage.Contains("FINDINGS CLEARED"), "ClearFindingsCommand must update status message.");
+
+        vm.RunDiagnosticScanCommand.Execute(null);
+        Check(vm.DiagnosticFindings.Count == 4, "Re-running scan must repopulate verified boundary findings.");
     }
 }

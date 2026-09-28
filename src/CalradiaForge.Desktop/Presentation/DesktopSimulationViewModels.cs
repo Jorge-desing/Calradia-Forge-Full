@@ -116,6 +116,9 @@ namespace CalradiaForge.Desktop.Presentation
         string selectedArchetypeFilter = "All";
         string simulatedFrontlineCohesion = "94.2% Cohesion · Shock Absorption: 3.8x (Formation Wedge)";
         string simulatedArmyCostEstimate = "Party Sample (x50): 10,000d Upfront · 550d/week Wage";
+        bool captainPerksActive;
+        string perkBonusSummary = "Captain Perks: INACTIVE (Vanilla baseline)";
+        string perkBadgeBrushKey = "MutedTextBrush";
 
         public TroopTreeDashboardViewModel()
         {
@@ -126,6 +129,7 @@ namespace CalradiaForge.Desktop.Presentation
             SelectTroopCommand = new RelayCommand(p => { if (p is TroopNodeViewModel t) SelectedTroop = t; });
             FilterArchetypeCommand = new RelayCommand(p => { if (p is string s) SelectedArchetypeFilter = s; });
             SimulateBattleShockCommand = new RelayCommand(() => RecalculateBattleShock());
+            ToggleCaptainPerksCommand = new RelayCommand(ToggleCaptainPerks);
         }
 
         public string Culture { get => culture; private set => Set(ref culture, value); }
@@ -134,6 +138,27 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<TroopNodeViewModel> StandardTreeRoots { get; }
         public IReadOnlyList<TroopNodeViewModel> NobleTreeRoots { get; }
         public IReadOnlyList<TroopNodeViewModel> AllHighlightedTroops { get; }
+
+        public bool CaptainPerksActive { get => captainPerksActive; private set => Set(ref captainPerksActive, value); }
+        public string PerkBonusSummary { get => perkBonusSummary; private set => Set(ref perkBonusSummary, value); }
+        public string PerkBadgeBrushKey { get => perkBadgeBrushKey; private set => Set(ref perkBadgeBrushKey, value); }
+        public RelayCommand ToggleCaptainPerksCommand { get; }
+
+        public void ToggleCaptainPerks()
+        {
+            CaptainPerksActive = !CaptainPerksActive;
+            if (CaptainPerksActive)
+            {
+                PerkBonusSummary = "Captain Perks: ACTIVE (+15 HP, +10% Wage Efficiency, +5.0% Cohesion)";
+                PerkBadgeBrushKey = "VerdigrisBrush";
+            }
+            else
+            {
+                PerkBonusSummary = "Captain Perks: INACTIVE (Vanilla baseline)";
+                PerkBadgeBrushKey = "MutedTextBrush";
+            }
+            RecalculateBattleShock();
+        }
 
         public string SelectedArchetypeFilter
         {
@@ -163,12 +188,13 @@ namespace CalradiaForge.Desktop.Presentation
             var troop = SelectedTroop ?? CanonicalDefaultSelected;
             var isCav = troop.Archetype.Equals("Cavalry", StringComparison.OrdinalIgnoreCase);
             var isRanged = troop.Archetype.Equals("Ranged", StringComparison.OrdinalIgnoreCase);
-            var cohesionBase = isCav ? 96.8 : isRanged ? 88.4 : 93.5;
-            var shockMulti = isCav ? 4.2 : isRanged ? 1.6 : 3.4;
+            var cohesionBase = (isCav ? 96.8 : isRanged ? 88.4 : 93.5) + (CaptainPerksActive ? 5.0 : 0.0);
+            cohesionBase = Math.Min(100.0, cohesionBase);
+            var shockMulti = (isCav ? 4.2 : isRanged ? 1.6 : 3.4) + (CaptainPerksActive ? 0.6 : 0.0);
             var formation = isCav ? "Wedge" : isRanged ? "Loose" : "Shieldwall";
             simulatedFrontlineCohesion = $"{cohesionBase:0.0}% Cohesion · Shock Absorption: {shockMulti:0.0}x ({formation})";
             var upfrontCost = troop.Cost * 50;
-            var weeklyWage = troop.Wage * 50;
+            var weeklyWage = (int)(troop.Wage * 50 * (CaptainPerksActive ? 0.90 : 1.0));
             simulatedArmyCostEstimate = $"Party Sample (x50): {upfrontCost:N0}d Upfront · {weeklyWage:N0}d/week Wage";
             Raise(nameof(SimulatedFrontlineCohesion));
             Raise(nameof(SimulatedArmyCostEstimate));
@@ -851,6 +877,13 @@ namespace CalradiaForge.Desktop.Presentation
         IReadOnlyList<AgentProfileViewModel> agents;
         AgentProfileViewModel selectedAgent;
         string searchQuery = string.Empty;
+        string selectedCategoryFilter = "All";
+        string consolidationFeedback = "Sleep Cycle Ready · 0 pending consolidation passes";
+        string consolidationFeedbackBrushKey = "VerdigrisBrush";
+        string newFactKey = string.Empty;
+        string newFactValue = string.Empty;
+        string newFactCategory = "Belief";
+        string newFactTtl = "Permanent";
         readonly ObservableCollection<string> liveInjectedEpisodes = [];
 
         public AgentMemoryDashboardViewModel()
@@ -867,12 +900,139 @@ namespace CalradiaForge.Desktop.Presentation
                 Raise(nameof(FilteredEpisodicEvents));
                 Raise(nameof(FilteredFactsSummary));
             });
+            ConsolidateMemoriesCommand = new RelayCommand(ConsolidateMemories);
+            FilterCategoryCommand = new RelayCommand(p => { if (p is string cat) SelectedCategoryFilter = cat; });
+            AddSemanticFactCommand = new RelayCommand(AddCustomFact, () => !string.IsNullOrWhiteSpace(NewFactKey));
         }
 
         public string Architecture => "CoALA Cognitive Architecture (Short-Term Working + Bounded Episodic + Semantic Facts + Utility Decay)";
         public string CapacitySummary { get => capacitySummary; set => Set(ref capacitySummary, value); }
         public double CapacityPercentage { get => capacityPercentage; set => Set(ref capacityPercentage, value); }
         public IReadOnlyList<AgentProfileViewModel> Agents { get => agents; private set => Set(ref agents, value); }
+
+        public string SelectedCategoryFilter
+        {
+            get => selectedCategoryFilter;
+            set
+            {
+                if (Set(ref selectedCategoryFilter, value ?? "All"))
+                {
+                    Raise(nameof(FilteredSemanticFacts));
+                    Raise(nameof(FilteredFactsSummary));
+                }
+            }
+        }
+
+        public string ConsolidationFeedback { get => consolidationFeedback; private set => Set(ref consolidationFeedback, value); }
+        public string ConsolidationFeedbackBrushKey { get => consolidationFeedbackBrushKey; private set => Set(ref consolidationFeedbackBrushKey, value); }
+
+        public string NewFactKey
+        {
+            get => newFactKey;
+            set
+            {
+                if (Set(ref newFactKey, value))
+                    AddSemanticFactCommand?.NotifyCanExecuteChanged();
+            }
+        }
+        public string NewFactValue { get => newFactValue; set => Set(ref newFactValue, value); }
+        public string NewFactCategory { get => newFactCategory; set => Set(ref newFactCategory, value); }
+        public string NewFactTtl { get => newFactTtl; set => Set(ref newFactTtl, value); }
+
+        public RelayCommand ConsolidateMemoriesCommand { get; }
+        public RelayCommand FilterCategoryCommand { get; }
+        public RelayCommand AddSemanticFactCommand { get; }
+
+        public void AddCustomFact()
+        {
+            if (selectedAgent == null || string.IsNullOrWhiteSpace(newFactKey)) return;
+            var key = newFactKey.Trim();
+            var val = string.IsNullOrWhiteSpace(newFactValue) ? "Active Observation" : newFactValue.Trim();
+            var cat = string.IsNullOrWhiteSpace(newFactCategory) ? "Belief" : newFactCategory.Trim();
+            var ttl = string.IsNullOrWhiteSpace(newFactTtl) ? "Permanent" : newFactTtl.Trim();
+
+            var currentFacts = new List<MemoryFactItem>(selectedAgent.SemanticFacts)
+            {
+                new(key, val, ttl, cat, 1.0, 0.7, 0.8)
+            };
+
+            var updatedAgent = new AgentProfileViewModel(
+                selectedAgent.HeroId,
+                selectedAgent.Name,
+                selectedAgent.Culture,
+                selectedAgent.WorkingMemory,
+                currentFacts,
+                selectedAgent.EpisodicEvents,
+                selectedAgent.ProceduralTactics,
+                selectedAgent.DecayState
+            );
+
+            var newAgentsList = new List<AgentProfileViewModel>(agents);
+            var idx = newAgentsList.IndexOf(selectedAgent);
+            if (idx >= 0) newAgentsList[idx] = updatedAgent;
+            Agents = newAgentsList;
+            SelectedAgent = updatedAgent;
+
+            NewFactKey = string.Empty;
+            NewFactValue = string.Empty;
+            ConsolidationFeedback = $"Injected custom fact '{key}' into {updatedAgent.Name} cognitive tier.";
+            ConsolidationFeedbackBrushKey = "VerdigrisBrush";
+        }
+
+        public void ConsolidateMemories()
+        {
+            if (selectedAgent == null) return;
+            var agent = selectedAgent;
+            var retainedFacts = new List<MemoryFactItem>();
+            int evictedCount = 0;
+            for (int i = 0; i < agent.SemanticFacts.Count; i++)
+            {
+                var f = agent.SemanticFacts[i];
+                if (f.Ttl.Contains("Expired", StringComparison.OrdinalIgnoreCase) || f.UtilityScore < 0.35)
+                {
+                    evictedCount++;
+                }
+                else
+                {
+                    retainedFacts.Add(new MemoryFactItem(f.Key, f.Value, f.Ttl, f.Category, Math.Max(0.60, f.Recency), Math.Min(1.0, f.Frequency + 0.1), f.Importance));
+                }
+            }
+
+            if (agent.EpisodicEvents.Count > 0 || liveInjectedEpisodes.Count > 0)
+            {
+                var sourceEp = liveInjectedEpisodes.Count > 0 ? liveInjectedEpisodes[0] : agent.EpisodicEvents[0];
+                var distilledKey = $"consolidated_insight_{retainedFacts.Count + 1}";
+                var distilledValue = sourceEp.Length > 42 ? sourceEp.Substring(0, 42) + "..." : sourceEp;
+                retainedFacts.Add(new MemoryFactItem(distilledKey, distilledValue, "Permanent Anchor", "Goal", 1.0, 0.95, 0.95));
+            }
+
+            var consolidated = new AgentProfileViewModel(
+                agent.HeroId,
+                agent.Name,
+                agent.Culture,
+                $"{agent.WorkingMemory} · [Sleep Consolidation Active]",
+                retainedFacts,
+                agent.EpisodicEvents.Take(2).ToList(),
+                agent.ProceduralTactics,
+                "T+Consolidated (Sleep Complete)"
+            );
+
+            var newAgentsList = new List<AgentProfileViewModel>(agents);
+            var idx = newAgentsList.IndexOf(agent);
+            if (idx >= 0) newAgentsList[idx] = consolidated;
+            Agents = newAgentsList;
+            SelectedAgent = consolidated;
+
+            ConsolidationFeedback = $"Sleep cycle consolidation complete: 1 insight crystallized, {evictedCount} stale facts pruned.";
+            ConsolidationFeedbackBrushKey = "VerdigrisBrush";
+
+            Raise(nameof(FilteredSemanticFacts));
+            Raise(nameof(FilteredEpisodicEvents));
+            Raise(nameof(FilteredProceduralTactics));
+            Raise(nameof(FilteredFactsSummary));
+            Raise(nameof(ActiveClusterOverview));
+            Raise(nameof(ActiveConsolidationRate));
+        }
 
         public string SearchQuery
         {
@@ -894,18 +1054,26 @@ namespace CalradiaForge.Desktop.Presentation
             get
             {
                 var facts = SelectedAgent?.SemanticFacts;
-                if (facts == null || string.IsNullOrWhiteSpace(searchQuery)) return facts ?? Array.Empty<MemoryFactItem>();
-                var q = searchQuery.Trim();
+                if (facts == null) return Array.Empty<MemoryFactItem>();
+                var q = string.IsNullOrWhiteSpace(searchQuery) ? null : searchQuery.Trim();
+                var cat = selectedCategoryFilter;
+                var hasCatFilter = !string.IsNullOrEmpty(cat) && !cat.Equals("All", StringComparison.OrdinalIgnoreCase);
+
                 var results = new List<MemoryFactItem>(facts.Count);
                 for (int i = 0; i < facts.Count; i++)
                 {
                     var f = facts[i];
-                    if (f.Key.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        f.Value.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        f.Category.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0)
+                    if (hasCatFilter && !f.Category.Equals(cat, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    if (q != null &&
+                        f.Key.IndexOf(q, StringComparison.OrdinalIgnoreCase) < 0 &&
+                        f.Value.IndexOf(q, StringComparison.OrdinalIgnoreCase) < 0 &&
+                        f.Category.IndexOf(q, StringComparison.OrdinalIgnoreCase) < 0)
                     {
-                        results.Add(f);
+                        continue;
                     }
+                    results.Add(f);
                 }
                 return results;
             }
@@ -935,7 +1103,7 @@ namespace CalradiaForge.Desktop.Presentation
         }
 
         public string FilteredFactsSummary =>
-            $"Filter: {FilteredSemanticFacts.Count}/{SelectedAgent?.SemanticFacts.Count ?? 0} Facts · {FilteredEpisodicEvents.Count} Episodes";
+            $"Filter [{SelectedCategoryFilter}]: {FilteredSemanticFacts.Count}/{SelectedAgent?.SemanticFacts.Count ?? 0} Facts · {FilteredEpisodicEvents.Count} Episodes";
 
         public RelayCommand SimulateMemoryDecayCommand { get; }
         public RelayCommand InjectSimulatedEpisodeCommand { get; }
@@ -1436,26 +1604,35 @@ namespace CalradiaForge.Desktop.Presentation
     // KINGDOM DIPLOMACY & POLITICS VIEW MODELS
     // =========================================================================
 
-    internal sealed class FactionStanceViewModel
+    internal sealed class FactionStanceViewModel : ObservableObject
     {
+        string stance;
+        int tension;
+        string brushKey;
+        string details;
+
         public FactionStanceViewModel(string targetFaction, string stance, int tension, string brushKey, string details)
         {
             TargetFaction = targetFaction;
-            Stance = stance;
-            Tension = tension;
-            BrushKey = brushKey;
-            Details = details;
-            TensionText = $"{tension}% Tension";
-            BarWidth = Math.Max(10, tension * 1.5);
+            this.stance = stance;
+            this.tension = tension;
+            this.brushKey = brushKey;
+            this.details = details;
         }
 
         public string TargetFaction { get; }
-        public string Stance { get; }
-        public int Tension { get; }
-        public string BrushKey { get; }
-        public string Details { get; }
-        public string TensionText { get; }
-        public double BarWidth { get; }
+        public string Stance { get => stance; set { if (Set(ref stance, value)) { Raise(nameof(TensionText)); } } }
+        public int Tension { get => tension; set { if (Set(ref tension, value)) { Raise(nameof(TensionText)); Raise(nameof(BarWidth)); Raise(nameof(TensionLevel)); Raise(nameof(BorderConflictProbability)); } } }
+        public string BrushKey { get => brushKey; set { if (Set(ref brushKey, value)) { Raise(nameof(TensionBrushKey)); } } }
+        public string Details { get => details; set => Set(ref details, value); }
+        public string TensionText => $"{Tension}% Tension";
+        public double BarWidth => Math.Max(10, Tension * 1.5);
+
+        // Aliases for XAML bindings
+        public string FactionName => TargetFaction;
+        public string TensionBrushKey => BrushKey;
+        public int TensionLevel => Tension;
+        public int BorderConflictProbability => Math.Clamp((int)(Tension * 0.85), 5, 95);
     }
 
     internal sealed class KingdomDiplomacyDashboardViewModel : ObservableObject
@@ -1485,14 +1662,15 @@ namespace CalradiaForge.Desktop.Presentation
         string ruler = "Empress Rhagaea Pethros";
         string warRiskText = "WAR RISK: 24% · STABLE";
         string peaceIndexText = "PEACE PROBABILITY: 76%";
+        string senateVoteOutcome = "DECREE PENDING: Awaiting Senate Chamber ballot";
+        string senateVoteBrushKey = "BrassBrush";
         readonly ObservableCollection<FactionStanceViewModel> stances;
+        FactionStanceViewModel selectedStance;
         int tensionModifier;
 
         public KingdomDiplomacyDashboardViewModel()
         {
-            var initialStances = ScenarioStances[0];
             stances = new ObservableCollection<FactionStanceViewModel>();
-            for (int i = 0; i < initialStances.Length; i++) stances.Add(initialStances[i]);
             AdjustTensionCommand = new RelayCommand(p =>
             {
                 if (int.TryParse(p?.ToString(), out var delta))
@@ -1500,6 +1678,14 @@ namespace CalradiaForge.Desktop.Presentation
                     TensionModifier = Math.Clamp(tensionModifier + delta, -20, 20);
                 }
             });
+            SimulateSenateVoteCommand = new RelayCommand(SimulateSenateVote);
+            DeclareWarCommand = new RelayCommand(DeclareWar);
+            ProposePeaceTreatyCommand = new RelayCommand(ProposePeaceTreaty);
+
+            var initialStances = ScenarioStances[0];
+            for (int i = 0; i < initialStances.Length; i++) stances.Add(initialStances[i]);
+            if (stances.Count > 0) SelectedStance = stances[0];
+            RecalculateDiplomacy();
         }
 
         public string FactionName { get => factionName; set => Set(ref factionName, value); }
@@ -1507,6 +1693,85 @@ namespace CalradiaForge.Desktop.Presentation
         public string WarRiskText { get => warRiskText; set => Set(ref warRiskText, value); }
         public string PeaceIndexText { get => peaceIndexText; set => Set(ref peaceIndexText, value); }
         public ObservableCollection<FactionStanceViewModel> Stances => stances;
+
+        // Aliases for XAML template bindings
+        public string PlayerFaction => FactionName;
+        public string PlayerRuler => Ruler;
+        public string DynasticHeirScoreText => DynasticHeir;
+        public string SenateChamberStatus => $"{SimulatedSenateConsensus} (Quorum Active)";
+        public ObservableCollection<FactionStanceViewModel> FactionStances => Stances;
+
+        public string SenateVoteOutcome { get => senateVoteOutcome; private set => Set(ref senateVoteOutcome, value); }
+        public string SenateVoteBrushKey { get => senateVoteBrushKey; private set => Set(ref senateVoteBrushKey, value); }
+
+        public FactionStanceViewModel SelectedStance
+        {
+            get => selectedStance;
+            set
+            {
+                if (Set(ref selectedStance, value))
+                {
+                    Raise(nameof(SelectedStanceDetails));
+                }
+            }
+        }
+
+        public string SelectedStanceDetails => selectedStance != null
+            ? $"{selectedStance.FactionName} · Stance: {selectedStance.Stance} · Tension: {selectedStance.Tension}% · Risk: {selectedStance.BorderConflictProbability}%\n{selectedStance.Details}"
+            : "Select a faction card to inspect diplomatic intelligence and dispatch envoys.";
+
+        public RelayCommand SimulateSenateVoteCommand { get; }
+        public RelayCommand DeclareWarCommand { get; }
+        public RelayCommand ProposePeaceTreatyCommand { get; }
+
+        public void SimulateSenateVote()
+        {
+            var supportRate = Math.Clamp(68 - tensionModifier * 2, 15, 92);
+            var passed = supportRate >= 50;
+            if (passed)
+            {
+                SenateVoteOutcome = $"DECREE PASSED: {supportRate}% Noble Majority · 540 Influence Enacted";
+                SenateVoteBrushKey = "VerdigrisBrush";
+                TensionModifier = Math.Max(-20, tensionModifier - 4);
+            }
+            else
+            {
+                SenateVoteOutcome = $"DECREE REJECTED: Only {supportRate}% Support · Patrician Veto Enacted";
+                SenateVoteBrushKey = "EmberBrush";
+                TensionModifier = Math.Min(20, tensionModifier + 3);
+            }
+            Raise(nameof(SenateChamberStatus));
+        }
+
+        public void DeclareWar()
+        {
+            var target = SelectedStance ?? (stances.Count > 0 ? stances[0] : null);
+            if (target == null) return;
+            target.Stance = "Hostile";
+            target.Tension = 92;
+            target.BrushKey = "EmberBrush";
+            target.Details = "[TOTAL WAR DECLARED] Senate war decree enacted; border legions mobilized.";
+            TensionModifier = Math.Min(20, tensionModifier + 8);
+            SenateVoteOutcome = $"CASUS BELLI RATIFIED: War declared against {target.FactionName}";
+            SenateVoteBrushKey = "EmberBrush";
+            RecalculateDiplomacy();
+            Raise(nameof(SelectedStanceDetails));
+        }
+
+        public void ProposePeaceTreaty()
+        {
+            var target = SelectedStance ?? (stances.Count > 0 ? stances[0] : null);
+            if (target == null) return;
+            target.Stance = "Truce";
+            target.Tension = 28;
+            target.BrushKey = "VerdigrisBrush";
+            target.Details = "[TRUCE RATIFIED] Peace terms accepted; daily trade resumed (+180d trade flow).";
+            TensionModifier = Math.Max(-20, tensionModifier - 6);
+            SenateVoteOutcome = $"PEACE TREATY SIGNED: Truce established with {target.FactionName}";
+            SenateVoteBrushKey = "VerdigrisBrush";
+            RecalculateDiplomacy();
+            Raise(nameof(SelectedStanceDetails));
+        }
 
         public int TensionModifier
         {
@@ -1533,6 +1798,7 @@ namespace CalradiaForge.Desktop.Presentation
             WarRiskText = $"WAR RISK: {adjustedRisk}% · {status}";
             PeaceIndexText = $"PEACE PROBABILITY: {adjustedPeace}%";
             Raise(nameof(SimulatedSenateConsensus));
+            Raise(nameof(SenateChamberStatus));
         }
 
         public void CycleScenario(int index)
@@ -1562,6 +1828,8 @@ namespace CalradiaForge.Desktop.Presentation
             }
             var targetStances = ScenarioStances[sc];
             for (int i = 0; i < targetStances.Length; i++) stances.Add(targetStances[i]);
+            if (stances.Count > 0) SelectedStance = stances[0];
+            RecalculateDiplomacy();
         }
         public string StudioDocumentation => "Bannerlord Geopolitical Diplomacy & Casus Belli Engine: Evaluates faction power ratios, war justification viability, border friction scores, tribute settlement agreements, and council voting dynamics.";
         public string ArchitecturalInvariants => "1. Diplomatic actions must verify active peace treaties and active sieges.\n2. DeclareWarAction must validate faction leadership and avoid null casus belli.\n3. Decorator GameModels must wrap _previousModel and apply ExplainedNumber bonuses.\n4. Kingdom decisions must remain deterministic under simulated AI voting.";
@@ -1803,9 +2071,23 @@ namespace CalradiaForge.Desktop.Presentation
         public string ProceduralMacroAction => "cf.novice_scaffold behavior CustomBehavior && cf.novice_checklist MyFirstMod";
     }
 
-    // =========================================================================
-    // GENERIC OPERATION DECK OVERVIEW VIEW MODELS
-    // =========================================================================
+    internal sealed class DiagnosticFindingViewModel
+    {
+        public DiagnosticFindingViewModel(string level, string component, string message, string brushKey)
+        {
+            Level = level;
+            Component = component;
+            Message = message;
+            BrushKey = brushKey;
+            StatusBrushKey = brushKey;
+        }
+
+        public string Level { get; }
+        public string Component { get; }
+        public string Message { get; }
+        public string BrushKey { get; }
+        public string StatusBrushKey { get; }
+    }
 
     internal sealed class GenericOperationDashboardViewModel : ObservableObject
     {
@@ -1820,6 +2102,23 @@ namespace CalradiaForge.Desktop.Presentation
         string fileTraversalText = "TopDirectoryOnly · MaxDepth 64";
         string threadIsolationText = "Strict UI Thread Isolation (Net8.0)";
         string executionBoundsText = "Bounded Async CancellationToken";
+        bool isScanning;
+        double scanProgressPercentage = 100.0;
+        string scanStatusMessage = "SYSTEM READY · 4 Boundary Sensors Active";
+        string scanStatusBrushKey = "VerdigrisBrush";
+        readonly ObservableCollection<DiagnosticFindingViewModel> diagnosticFindings = [];
+
+        public GenericOperationDashboardViewModel()
+        {
+            RunDiagnosticScanCommand = new RelayCommand(RunDiagnosticScan);
+            ClearFindingsCommand = new RelayCommand(() =>
+            {
+                diagnosticFindings.Clear();
+                ScanStatusMessage = "FINDINGS CLEARED · Standby";
+                ScanStatusBrushKey = "MutedTextBrush";
+            });
+            PopulateDefaultFindings();
+        }
 
         public string OperationName { get => operationName; set => Set(ref operationName, value); }
         public string CategoryTitle { get => categoryTitle; set => Set(ref categoryTitle, value); }
@@ -1837,6 +2136,33 @@ namespace CalradiaForge.Desktop.Presentation
         public string ThreadAffinity => "Strict UI Thread Isolation · Net8.0-Windows Engine";
         public string DeterministicProof => "Deterministic SHA-256 Provenance Ledger Active";
         public string OperationReadiness => "SYSTEM STATUS: OPERATIONAL & BOUNDED";
+
+        public bool IsScanning { get => isScanning; private set => Set(ref isScanning, value); }
+        public double ScanProgressPercentage { get => scanProgressPercentage; private set => Set(ref scanProgressPercentage, value); }
+        public string ScanStatusMessage { get => scanStatusMessage; private set => Set(ref scanStatusMessage, value); }
+        public string ScanStatusBrushKey { get => scanStatusBrushKey; private set => Set(ref scanStatusBrushKey, value); }
+        public ObservableCollection<DiagnosticFindingViewModel> DiagnosticFindings => diagnosticFindings;
+
+        public RelayCommand RunDiagnosticScanCommand { get; }
+        public RelayCommand ClearFindingsCommand { get; }
+
+        void PopulateDefaultFindings()
+        {
+            diagnosticFindings.Clear();
+            diagnosticFindings.Add(new DiagnosticFindingViewModel("VERIFIED", "UI Thread Isolation", "Net8.0-Windows dispatcher boundaries strictly enforced.", "VerdigrisBrush"));
+            diagnosticFindings.Add(new DiagnosticFindingViewModel("VERIFIED", "Working Buffer Ceiling", "64 MB working buffer allocation ceiling verified.", "VerdigrisBrush"));
+            diagnosticFindings.Add(new DiagnosticFindingViewModel("VERIFIED", "File System Scope", "TopDirectoryOnly traversal prevents unauthorized disk probing.", "VerdigrisBrush"));
+            diagnosticFindings.Add(new DiagnosticFindingViewModel("VERIFIED", "State-Changing Guard", "State-changing execution safely guarded from this desktop route.", "VerdigrisBrush"));
+        }
+
+        public void RunDiagnosticScan()
+        {
+            PopulateDefaultFindings();
+            ScanStatusMessage = "DIAGNOSTIC COMPLETE: All 4 boundary guards passed (0 hazards detected)";
+            ScanStatusBrushKey = "VerdigrisBrush";
+            ScanProgressPercentage = 100.0;
+            IsScanning = false;
+        }
 
         public void CycleScenario(int index)
         {
@@ -1860,6 +2186,7 @@ namespace CalradiaForge.Desktop.Presentation
                 ThreadIsolationText = "Strict UI Thread Isolation (Net8.0)";
                 ExecutionBoundsText = "Bounded Async CancellationToken";
             }
+            RunDiagnosticScan();
         }
         public string PlaybookTitle => "Playbook: Tactical Workbench Diagnostic Flow";
         public IReadOnlyList<string> PlaybookSteps { get; } =

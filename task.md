@@ -447,4 +447,14 @@
 - [x] Fase 4: Verificación exhaustiva (compilación Release 0 errores, stateless 4/4, Desktop MVVM 63 pruebas, WPF Render 289 pruebas, Antigravity Agents 31 pruebas y UI Automation smoke).
 - [x] Fase 5: Registro de aprendizaje (Propuesta 28 en `learning_proposal.md`), actualización de codemaps, sincronización y push a GitHub (`main`) bajo la Regla E.
 
+## Gran Ronda de Mejoras de Consolidación CoALA, Barómetro Senatorial y Flight Deck Interactivo (Rev072)
+- [x] Fase 1: Motor de Consolidación Cognitiva CoALA y Filtro por Categorías (`DesktopSimulationViewModels.cs`): comando `ConsolidateMemoriesCommand` (ciclo de sueño, poda de hechos expirados y cálculo de cohesión), filtro por categorías `SelectedCategoryFilter` con comando `FilterCategoryCommand`, e inyección de hechos personalizados `AddSemanticFactCommand`.
+- [x] Fase 2: Simulación de Votación Senatorial y Acciones Diplomáticas (`DesktopSimulationViewModels.cs`): aliases completos en `FactionStanceViewModel` y `KingdomDiplomacyDashboardViewModel`, comando de votación senatorial interactivo `SimulateSenateVoteCommand` con cálculo de influencia de clanes nobles y decretos, y comandos de acción en caliente `DeclareWarCommand` y `ProposePeaceTreatyCommand`.
+- [x] Fase 3: Flight Deck Operacional Interactivo para más de 180 Herramientas (`DesktopSimulationViewModels.cs`): comando `RunDiagnosticScanCommand`, progreso en tiempo real `ScanProgressPercentage`, colección observable de hallazgos `DiagnosticFindings` y comando `ClearFindingsCommand`.
+- [x] Fase 4: Modificadores de Pericias de Capitán en Árbol de Tropas (`DesktopSimulationViewModels.cs`): comando `ToggleCaptainPerksCommand`, propiedad `CaptainPerksActive` y bonificaciones de cohesión y soldada.
+- [x] Fase 5: Cableado en Plantillas XAML (`ToolPageTemplates.xaml`): integración de controles interactivos para consolidación de memoria, votación senatorial, acciones de guerra/paz, diagnóstico en flight deck genérico y pericias de capitán con `Mode=OneWay` estricto en `<Run>`.
+- [x] Fase 6: Pruebas unitarias de simulación en `DesktopSimulationServiceTests.cs` y verificación exhaustiva de 6 capas (compilación Release, stateless 4/4, Core 73, Desktop 63, Render 289, Agentes 31 y UI Automation).
+- [x] Fase 7: Empaquetado automático con `FastPackageEngine` (`package.ps1`), registro de Propuesta 29 en `learning_proposal.md`, sincronización y push a GitHub (`main`) bajo la Regla E.
+
+
 

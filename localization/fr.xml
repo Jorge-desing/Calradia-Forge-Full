@@ -228,7 +228,7 @@
   <string key="Toggle tactical keyboard shortcuts guide (Ctrl+K)." value="Affiche ou masque le guide tactique des raccourcis clavier (Ctrl+K)." />
   <string key="Trade simulation completed." value="La simulation commerciale est terminée." />
   <string key="[ ⌨ Keys ]" value="[ ⌨ Touches ]" />
-  <string key="Filter current output without changing the tool argument." value="Filtrer la sortie actuelle sans modifier le paramètre de l&apos;outil." />
+  <string key="Filter current output without changing the tool argument." value="Filtrer la sortie actuelle sans modifier le paramètre de l'outil." />
   <string key="Filter output lines..." value="Filtrer les lignes de sortie..." />
   <string key="Clear output filter." value="Effacer le filtre de sortie." />
   <string key="No output lines match this filter." value="Aucune ligne de sortie ne correspond à ce filtre." />

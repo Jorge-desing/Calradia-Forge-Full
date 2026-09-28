@@ -228,9 +228,9 @@
   <string key="Toggle tactical keyboard shortcuts guide (Ctrl+K)." value="Mostra o nasconde la guida tattica alle scorciatoie da tastiera (Ctrl+K)." />
   <string key="Trade simulation completed." value="La simulazione commerciale è completata." />
   <string key="[ ⌨ Keys ]" value="[ ⌨ Tasti ]" />
-  <string key="Filter current output without changing the tool argument." value="Filtra l&apos;output corrente senza modificare il parametro dello strumento." />
-  <string key="Filter output lines..." value="Filtra le righe dell&apos;output..." />
-  <string key="Clear output filter." value="Cancella il filtro dell&apos;output." />
+  <string key="Filter current output without changing the tool argument." value="Filtra l'output corrente senza modificare il parametro dello strumento." />
+  <string key="Filter output lines..." value="Filtra le righe dell'output..." />
+  <string key="Clear output filter." value="Cancella il filtro dell'output." />
   <string key="No output lines match this filter." value="Nessuna riga di output corrisponde a questo filtro." />
   <string key="Evidence" value="Prove" />
 </strings>
