@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -366,6 +367,8 @@ namespace CalradiaForge.Tests
             test("PanelViewModel & CalradiaForge.xml UI telemetry, clear output, and empty-state placeholder", TestPanelViewModelAndPrefabPolish);
             test("Gauntlet live output filter preserves source, argument, wrapping, and paging", TestGauntletLiveOutputFilter);
             test("Gauntlet output comparison is deterministic, filtered, paged, and bounded", TestGauntletOutputComparison);
+            test("Gauntlet test-results explorer parses individual and bounded batch results", TestGauntletTestResultsExplorerParser);
+            test("Gauntlet test-results explorer bindings and dismissal lifecycle", TestGauntletTestResultsExplorerContracts);
             test("Desktop & In-Game UI error corrections (panel overlap, glyph fallback, action parity)", TestUiErrorCorrectionsAndSafety);
             test("Zero-Scroll Desktop Navigation (Accordion, ZenMode, CategoryPicker, Breadcrumbs, Recent)", TestZeroScrollDesktopInterface);
             test("Desktop Top and Bottom Panel Typography Upgrades (TitleBar, Header, Breadcrumbs, StatusBar)", TestDesktopPanelFontSizesAndLayout);
@@ -2210,6 +2213,261 @@ namespace MyCustomMod.QuestBehaviors
             if (closeStart < 0 || closeEnd <= closeStart ||
                 !vm.Substring(closeStart, closeEnd - closeStart).Contains("_outputBaseline = null;"))
                 throw new Exception("Closing the panel must release the pinned baseline.");
+        }
+
+        private static void TestGauntletTestResultsExplorerParser()
+        {
+            var single = new TestResult
+            {
+                Id = "serialization.roundtrip",
+                Status = "Failed",
+                Seed = 1729,
+                Context = "Campaign",
+                StartedAt = "2026-09-28T12:34:56.0000000Z",
+                Milliseconds = 12.375,
+                Steps = new List<string> { "Prepared fixture", "Detected mismatch" },
+                Error = "expected 4, received 3",
+                CleanupError = "fixture cleanup warning"
+            };
+            if (!TestResultExplorerParser.TryParse("run", Json.Serialize(single), out List<TestResult> singleResults) ||
+                singleResults == null || singleResults.Count != 1)
+                throw new Exception("The explorer parser must accept one result returned by run.");
+            TestResult parsedSingle = singleResults[0];
+            if (parsedSingle.Id != single.Id || parsedSingle.Status != single.Status || parsedSingle.Seed != single.Seed ||
+                parsedSingle.Context != single.Context || parsedSingle.StartedAt != single.StartedAt ||
+                parsedSingle.Milliseconds != single.Milliseconds || parsedSingle.Error != single.Error ||
+                parsedSingle.CleanupError != single.CleanupError || !parsedSingle.Steps.SequenceEqual(single.Steps))
+                throw new Exception("The explorer parser must preserve technical result metadata and failure state unchanged.");
+
+            var panelType = typeof(PanelViewModel);
+            var panel = (PanelViewModel)FormatterServices.GetUninitializedObject(panelType);
+            var resultCollectionProperty = panelType.GetProperty("TestResults");
+            var resultCollectionField = panelType.GetFields(BindingFlags.Instance | BindingFlags.NonPublic)
+                .Single(field => field.FieldType == resultCollectionProperty.PropertyType);
+            var resultCollection = (System.Collections.IList)Activator.CreateInstance(resultCollectionProperty.PropertyType);
+            resultCollectionField.SetValue(panel, resultCollection);
+            panelType.GetField("current", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(panel, "tests");
+            panelType.GetField("argument", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(panel, "unchanged-test-id");
+            panelType.GetField("full", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(panel, "unchanged ledger output");
+            var comparisonRowsField = panelType.GetField("_outputComparisonRows", BindingFlags.Instance | BindingFlags.NonPublic);
+            comparisonRowsField.SetValue(panel, Activator.CreateInstance(comparisonRowsField.FieldType));
+            if ((bool)panelType.GetProperty("HasTestResults").GetValue(panel) ||
+                !(bool)panelType.GetProperty("IsTestResultsExplorerEmpty").GetValue(panel))
+                throw new Exception("An empty collection must expose the localized empty state before any run is displayed.");
+
+            var row = new TestResultItemVM(panel, parsedSingle);
+            if (row.ResultId != single.Id || row.Status != single.Status || string.IsNullOrWhiteSpace(row.DurationText))
+                throw new Exception("A result row must expose the original ID, status and a visible duration.");
+            string detail = row.DetailText ?? string.Empty;
+            foreach (string field in new[]
+            {
+                single.Id, single.Status, single.Seed.ToString(), single.Context, single.StartedAt,
+                single.Steps[0], single.Steps[1], single.Error, single.CleanupError
+            })
+            {
+                if (!detail.Contains(field))
+                    throw new Exception("The selected result detail must preserve field value '" + field + "'.");
+            }
+            resultCollection.Add(row);
+            if (!(bool)panelType.GetProperty("HasTestResults").GetValue(panel) ||
+                (bool)panelType.GetProperty("IsTestResultsExplorerEmpty").GetValue(panel))
+                throw new Exception("Adding a parsed run result must replace the empty state with the result list.");
+            row.ExecuteSelect();
+            if (!ReferenceEquals(panel.SelectedTestResult, row) || panel.SelectedTestResultDetail != row.DetailText)
+                throw new Exception("Selecting a displayed result must update the detail pane from the stored result without re-running it.");
+
+            panel.ExecuteOpenTestResultsExplorer();
+            if (!panel.IsTestResultsExplorerOpen)
+                throw new Exception("Opening the explorer must only show the stored results overlay.");
+            panel.ExecuteCloseTestResultsExplorer();
+            if (panel.IsTestResultsExplorerOpen || resultCollection.Count != 1)
+                throw new Exception("Closing the overlay must hide it without discarding the latest results.");
+            if ((string)panelType.GetField("argument", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(panel) != "unchanged-test-id" ||
+                (string)panelType.GetField("full", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(panel) != "unchanged ledger output")
+                throw new Exception("Opening, selecting and closing the explorer must not alter the argument or original ledger output.");
+            panel.ExecuteOpenTestResultsExplorer();
+            panel.CancelPendingWork();
+            if (panel.IsTestResultsExplorerOpen || resultCollection.Count != 0 || panel.SelectedTestResult != null)
+                throw new Exception("Closing the panel must release the result collection, selected detail, and overlay state.");
+
+            string panelSource = File.ReadAllText(Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.cs"));
+            int navigationStart = panelSource.IndexOf("void SelectSection(string section, bool executeOnSelect)", StringComparison.Ordinal);
+            int navigationEnd = panelSource.IndexOf("private void RenderNavigationPaletteLanding", navigationStart, StringComparison.Ordinal);
+            if (navigationStart < 0 || navigationEnd <= navigationStart)
+                throw new Exception("Could not isolate route navigation to verify test-result retention.");
+            string navigationFlow = panelSource.Substring(navigationStart, navigationEnd - navigationStart);
+            if (navigationFlow.Contains("_testResults.Clear()") || navigationFlow.Contains("_selectedTestResult = null;") ||
+                navigationFlow.Contains("ReplaceTestResults("))
+                throw new Exception("Changing areas must retain the most recent test results and selection.");
+            if (!panelSource.Contains("if (r.Success && TestResultExplorerParser.TryParse(action, r.Data, out List<TestResult> parsedTestResults))") ||
+                !panelSource.Contains("ReplaceTestResults(parsedTestResults);"))
+                throw new Exception("Only a successful, valid run or run-batch response may replace the retained result collection.");
+
+            List<TestResult> oversizedBatch = Enumerable.Range(0, 64).Select(index => new TestResult
+            {
+                Id = "case." + index,
+                Status = index == 7 ? "Failed" : "Passed",
+                Seed = index,
+                Context = "Any",
+                StartedAt = "2026-09-28T12:34:56.0000000Z",
+                Milliseconds = index + 0.5,
+                Steps = new List<string> { "step " + index }
+            }).ToList();
+            if (!TestResultExplorerParser.TryParse("run-batch", Json.Serialize(oversizedBatch), out List<TestResult> batchResults) ||
+                batchResults == null || batchResults.Count != 51)
+                throw new Exception("The explorer parser must bound run-batch display to the documented maximum of 51 results.");
+            if (batchResults[0].Id != "case.0" || batchResults[50].Id != "case.50" ||
+                batchResults.Any(result => result.Id == "case.51"))
+                throw new Exception("Bounding a batch must retain its original order and exclude only entries beyond the visible limit.");
+            if (batchResults.Single(result => result.Id == "case.7").Status != "Failed")
+                throw new Exception("A failed batch item must retain its failure status rather than appear completed.");
+
+            if (!TestResultExplorerParser.TryParse("run-batch", "[]", out List<TestResult> emptyResults) ||
+                emptyResults == null || emptyResults.Count != 0)
+                throw new Exception("An empty batch is a valid empty-state result for the explorer.");
+            if (TestResultExplorerParser.TryParse("run", "{invalid json", out List<TestResult> malformedResults) ||
+                (malformedResults != null && malformedResults.Count != 0))
+                throw new Exception("Malformed responses must be rejected without exposing partially parsed results.");
+            if (TestResultExplorerParser.TryParse("summary", Json.Serialize(single), out List<TestResult> unrelatedResults) ||
+                (unrelatedResults != null && unrelatedResults.Count != 0))
+                throw new Exception("Only run and run-batch responses may populate the test-results explorer.");
+        }
+
+        private static void TestGauntletTestResultsExplorerContracts()
+        {
+            string prefabPath = Path.GetFullPath("modules/CalradiaForge/GUI/Prefabs/CalradiaForge.xml");
+            string panelSource = File.ReadAllText(Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.cs"));
+            XDocument document = XDocument.Load(prefabPath);
+
+            string[] requiredProperties =
+            {
+                "TestResults", "HasTestResults", "IsTestResultsExplorerOpen", "IsTestResultsExplorerEmpty",
+                "TestResultsExplorerTitle", "TestResultsExplorerSummary", "TestResultsExplorerOpenLabel",
+                "TestResultsExplorerCloseLabel", "TestResultsExplorerEmptyLabel", "SelectedTestResultDetail"
+            };
+            foreach (string property in requiredProperties)
+            {
+                if (!panelSource.Contains(property))
+                    throw new Exception("PanelViewModel is missing test-results explorer binding/property " + property + ".");
+            }
+            if (!panelSource.Contains("ExecuteOpenTestResultsExplorer") ||
+                !panelSource.Contains("ExecuteCloseTestResultsExplorer") ||
+                !panelSource.Contains("CancelPendingWork") ||
+                !panelSource.Contains("TestResults.Clear()"))
+                throw new Exception("The results explorer must have explicit open/close actions and clear its retained results when the panel closes.");
+
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            foreach (XElement element in document.Root.DescendantsAndSelf())
+            {
+                string id = (string)element.Attribute("Id");
+                if (string.IsNullOrWhiteSpace(id)) continue;
+                if (!ids.Add(id)) throw new Exception("Gauntlet results explorer introduces duplicate widget ID " + id + ".");
+            }
+
+            string[] explorerBindings =
+            {
+                "TestResults", "HasTestResults", "IsTestResultsExplorerOpen", "IsTestResultsExplorerEmpty",
+                "TestResultsExplorerTitle", "TestResultsExplorerSummary", "TestResultsExplorerOpenHint",
+                "TestResultsExplorerCloseLabel", "TestResultsExplorerEmptyLabel", "TestResultsExplorerEmptyDetail",
+                "TestResultsExplorerTestIdLabel", "TestResultsExplorerStatusLabel", "TestResultsExplorerDurationLabel",
+                "SelectedTestResultHeading", "SelectedTestResultDetail"
+            };
+            foreach (string binding in explorerBindings)
+            {
+                if (!document.Descendants().Attributes().Any(attribute => attribute.Value == "@" + binding || attribute.Value == "{" + binding + "}"))
+                    throw new Exception("Gauntlet prefab must bind test-results explorer property @" + binding + ".");
+            }
+            foreach (string command in new[] { "ExecuteOpenTestResultsExplorer", "ExecuteCloseTestResultsExplorer" })
+            {
+                if (!document.Descendants().Attributes("Command.Click").Any(attribute => attribute.Value == command))
+                    throw new Exception("Gauntlet prefab must expose the explorer action " + command + ".");
+            }
+
+            XElement resultsList = document.Descendants().SingleOrDefault(element => (string)element.Attribute("DataSource") == "{TestResults}");
+            if (resultsList == null || resultsList.Name.LocalName != "ListPanel")
+                throw new Exception("Test results must use a scrollable Gauntlet ListPanel bound to the retained result collection.");
+            XElement itemTemplate = resultsList.Elements().SingleOrDefault(element => element.Name.LocalName == "ItemTemplate");
+            if (itemTemplate == null)
+                throw new Exception("Each result item must be presented through a Gauntlet ItemTemplate.");
+            foreach (string itemBinding in new[] { "ResultId", "Status", "DurationText", "IsSelected" })
+            {
+                if (!itemTemplate.DescendantsAndSelf().Attributes().Any(attribute => attribute.Value == "@" + itemBinding))
+                    throw new Exception("The result item template must show its " + itemBinding + " binding.");
+            }
+            if (!itemTemplate.DescendantsAndSelf().Attributes("Command.Click").Any(attribute => attribute.Value == "ExecuteSelect"))
+                throw new Exception("Selecting a displayed result must use its item-level ExecuteSelect command and must not run a test.");
+            if (itemTemplate.DescendantsAndSelf().Attributes("Command.Click").Any(attribute =>
+                    attribute.Value.IndexOf("Run", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    attribute.Value.IndexOf("ExecuteTest", StringComparison.OrdinalIgnoreCase) >= 0))
+                throw new Exception("Result selection must inspect a stored result and must not invoke a test execution command.");
+
+            // The generic native binding audit resolves each binding and command against the panel or
+            // the item DataSource type, and the translation audit below checks localized presentation.
+            Type panelType = typeof(PanelViewModel);
+            foreach (string property in explorerBindings)
+            {
+                var propertyInfo = panelType.GetProperty(property, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (propertyInfo == null || !propertyInfo.GetCustomAttributesData().Any(attribute => attribute.AttributeType.Name == "DataSourceProperty"))
+                    throw new Exception("Explorer binding " + property + " must be a compiled Gauntlet DataSourceProperty.");
+            }
+
+            var resultItemType = typeof(PanelViewModel).Assembly.GetType("CalradiaForge.Mod.TestResultItemVM", false);
+            if (resultItemType == null)
+                throw new Exception("TestResultItemVM must be defined in the mod assembly for list item binding resolution.");
+            foreach (string itemBinding in new[] { "ResultId", "Status", "DurationText", "IsSelected" })
+            {
+                var propertyInfo = resultItemType.GetProperty(itemBinding, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (propertyInfo == null || !propertyInfo.GetCustomAttributesData().Any(attribute => attribute.AttributeType.Name == "DataSourceProperty"))
+                    throw new Exception("Result item binding " + itemBinding + " must be a compiled Gauntlet DataSourceProperty.");
+            }
+            if (resultItemType.GetMethod("ExecuteSelect", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) == null)
+                throw new Exception("TestResultItemVM must provide ExecuteSelect for its list row.");
+
+            string[] localizedDetailFields = { "Seed", "Context", "Started", "Steps", "Error", "Cleanup error" };
+            foreach (string field in localizedDetailFields)
+            {
+                if (!panelSource.Contains("Field(\"" + field + "\","))
+                    throw new Exception("TestResultItemVM must localize the " + field + " detail label through Field(...).");
+            }
+
+            var locales = new[]
+            {
+                Tuple.Create("en", "EN"), Tuple.Create("es", "SP"), Tuple.Create("pt", "BR"),
+                Tuple.Create("de", "DE"), Tuple.Create("fr", "FR"), Tuple.Create("it", "IT"),
+                Tuple.Create("pl", "PL"), Tuple.Create("ru", "RU"), Tuple.Create("tr", "TR"),
+                Tuple.Create("zh-HANS", "CNs"), Tuple.Create("zh-HANT", "CNt"),
+                Tuple.Create("ja", "JP"), Tuple.Create("ko", "KO")
+            };
+            string[] localizedKeys =
+            {
+                "Test results", "Recent test results", "Open test results", "Close test results",
+                "No test results are available.", "Test result details", "Started", "Steps", "Cleanup error",
+                "Test ID", "Status", "Duration", "Seed", "Context", "Error",
+                "Select a result to inspect its details.",
+                "Showing {0} results from the latest test response."
+            };
+            var english = XDocument.Load(Path.GetFullPath("localization/en.xml"))
+                .Root.Elements("string").ToDictionary(element => (string)element.Attribute("key"), element => (string)element.Attribute("value"));
+            foreach (Tuple<string, string> locale in locales)
+            {
+                var source = XDocument.Load(Path.GetFullPath("localization/" + locale.Item1 + ".xml"))
+                    .Root.Elements("string").ToDictionary(element => (string)element.Attribute("key"), element => (string)element.Attribute("value"));
+                var generated = XDocument.Load(Path.GetFullPath("modules/CalradiaForge/ModuleData/Languages/" + locale.Item2 + "/forge_strings.xml"))
+                    .Descendants("string").ToDictionary(element => (string)element.Attribute("id"), element => (string)element.Attribute("text"));
+                using (SHA256 sha = SHA256.Create())
+                {
+                    foreach (string key in localizedKeys)
+                    {
+                        if (!english.ContainsKey(key) || !source.TryGetValue(key, out string translated) || string.IsNullOrWhiteSpace(translated))
+                            throw new Exception("Test-results explorer localization is missing " + key + " for " + locale.Item1 + ".");
+                        string hash = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(english[key])))
+                            .Replace("-", string.Empty).ToLowerInvariant();
+                        string generatedId = "forge_" + hash.Substring(0, 12);
+                        if (!generated.TryGetValue(generatedId, out string generatedValue) || generatedValue != translated)
+                            throw new Exception("Generated test-results localization is stale for " + locale.Item1 + ": " + key + ".");
+                    }
+                }
+            }
         }
 
         private static void AssertOutputComparison(OutputLineComparisonResult result, OutputLineComparisonStatus status,

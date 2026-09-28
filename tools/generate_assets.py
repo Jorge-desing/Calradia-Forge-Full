@@ -259,13 +259,15 @@ for cmd,label,icon,active in routes:
 # Active route context and a compact, keyboard-focusable evidence toggle.
 E.SubElement(children,'TextWidget',Id='ForgeCurrentSection',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='35',MaxWidth='560',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='102',Brush='CalradiaForge.HeaderGold',Text='@CurrentSectionLabel',HorizontalAlignment='Left',**{'Brush.FontSize':'28'})
 E.SubElement(children,'TextWidget',Id='ForgeSectionHelp',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='60',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='150',Brush='CalradiaForge.Muted',Text='@SectionHelpLabel',HorizontalAlignment='Left',**{'Brush.FontSize':'16'})
-focus=E.SubElement(E.SubElement(children,'ListPanel',Id='ForgeEvidenceToggle',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='282',SuggestedHeight='46',MarginTop='101',MarginRight='24',HorizontalAlignment='Right',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
+focus=E.SubElement(E.SubElement(children,'ListPanel',Id='ForgeEvidenceToggle',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='336',SuggestedHeight='46',MarginTop='101',MarginRight='24',HorizontalAlignment='Right',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
 icon_button(focus,'ToggleEvidenceFocus','calradiaforge_scroll_unfurled','@FocusEvidenceLabel')
 icon_button(focus,'SdkCatalogButton','calradiaforge_open_book','@SdkCatalogHint',command='ExecuteCategorySdk')
 icon_button(focus,'CycleModderRoleButton','calradiaforge_knight_banner','@ActiveModderRoleHint',command='ExecuteCycleModderRole')
 icon_button(focus,'ToggleDetailMode','calradiaforge_magnifying_glass','@DetailModeHint')
 icon_button(focus,'ToggleCategoryCommandsButton','calradiaforge_files','@SuggestedCommandsHint',command='ExecuteToggleCategoryCommands')
 icon_button(focus,'CategoryHelpButton','calradiaforge_compass','@CategoryHelpHint',command='ExecuteCategoryHelp',margin_right=0)
+test_results_shortcut=icon_button(focus,'TestResultsExplorerShortcut','calradiaforge_test_tubes','@TestResultsExplorerOpenHint',command='ExecuteOpenTestResultsExplorer',margin_right=0)
+test_results_shortcut.set('IsVisible','@ShowTestActions')
 
 # Context cards are a single visual summary row and disappear with the command deck in evidence-focus mode.
 briefing_row=E.SubElement(children,'ListPanel',Id='ForgeBriefingDeck',IsVisible='@ShowCommandDeck',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='58',MarginLeft='280',MarginRight='24',MarginTop='216',HorizontalAlignment='Center',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
@@ -541,6 +543,54 @@ E.SubElement(E.SubElement(toast,'Children'),'TextWidget',Id='ForgeStatusToastMes
 # Global route and SDK-tool navigation stays above the page content. The result
 # list is keyboard-driven by the view model; the separate marker shows focus
 # without reusing the active-route selection state.
+# The structured test results overlay is presentation only; opening it or
+# selecting a row never calls the test runner.
+results_overlay=E.SubElement(children,'Widget',Id='TestResultsExplorerOverlay',IsVisible='@IsTestResultsExplorerOpen',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Sprite='BlankWhiteSquare_9',Color='#000000D8')
+results_panel=E.SubElement(E.SubElement(results_overlay,'Children'),'Widget',Id='TestResultsExplorerPanel',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',SuggestedWidth='1120',SuggestedHeight='760',MaxWidth='1160',MaxHeight='820',HorizontalAlignment='Center',VerticalAlignment='Center',MarginLeft='30',MarginRight='30',MarginTop='30',MarginBottom='30',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
+results_surface=E.SubElement(E.SubElement(results_panel,'Children'),'Widget',Id='TestResultsExplorerSurface',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginRight='1',MarginTop='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0D1511FF')
+results_children=E.SubElement(results_surface,'Children')
+results_header=E.SubElement(results_children,'Widget',Id='TestResultsExplorerHeader',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='42',MarginLeft='20',MarginRight='20',MarginTop='12')
+results_header_children=E.SubElement(results_header,'Children')
+E.SubElement(results_header_children,'TextWidget',Id='TestResultsExplorerHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginRight='54',Brush='CalradiaForge.HeaderGold',Text='@TestResultsExplorerTitle',VerticalAlignment='Center',**{'Brush.FontSize':'25'})
+results_close=E.SubElement(results_header_children,'ButtonWidget',Id='TestResultsExplorerClose',IsFocusable='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='40',SuggestedHeight='36',HorizontalAlignment='Right',VerticalAlignment='Center',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteCloseTestResultsExplorer','Hint.HintText':'@TestResultsExplorerCloseLabel'})
+E.SubElement(E.SubElement(results_close,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.ButtonText',Text='×',HorizontalAlignment='Center',VerticalAlignment='Center')
+E.SubElement(results_children,'TextWidget',Id='TestResultsExplorerSummary',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='30',MarginLeft='20',MarginRight='20',MarginTop='54',Brush='CalradiaForge.Muted',Text='@TestResultsExplorerSummary',VerticalAlignment='Center',**{'Brush.FontSize':'15'})
+
+results_content=E.SubElement(results_children,'ListPanel',Id='TestResultsExplorerContent',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='20',MarginRight='20',MarginTop='92',MarginBottom='18',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
+results_content_children=E.SubElement(results_content,'Children')
+results_list_frame=E.SubElement(results_content_children,'Widget',Id='TestResultsExplorerListFrame',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='424',Sprite='BlankWhiteSquare_9',Color='#14211CFF')
+results_list_children=E.SubElement(results_list_frame,'Children')
+results_columns=E.SubElement(results_list_children,'ListPanel',Id='TestResultsExplorerColumns',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='28',MarginLeft='10',MarginRight='10',MarginTop='8',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
+results_column_children=E.SubElement(results_columns,'Children')
+E.SubElement(results_column_children,'TextWidget',Id='TestResultsExplorerTestIdHeader',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.Gold',Text='@TestResultsExplorerTestIdLabel',VerticalAlignment='Center',**{'Brush.FontSize':'13'})
+E.SubElement(results_column_children,'TextWidget',Id='TestResultsExplorerStatusHeader',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='90',Brush='CalradiaForge.Gold',Text='@TestResultsExplorerStatusLabel',VerticalAlignment='Center',**{'Brush.FontSize':'13'})
+E.SubElement(results_column_children,'TextWidget',Id='TestResultsExplorerDurationHeader',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='84',Brush='CalradiaForge.Gold',Text='@TestResultsExplorerDurationLabel',VerticalAlignment='Center',**{'Brush.FontSize':'13'})
+results_scroll=E.SubElement(results_list_children,'ScrollablePanel',Id='TestResultsExplorerScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='8',MarginRight='8',MarginTop='42',MarginBottom='8',ClipRect='TestResultsExplorerClip',InnerPanel='TestResultsExplorerClip\\TestResults',VerticalScrollbar='..\\TestResultsExplorerScrollBar')
+results_scroll_children=E.SubElement(results_scroll,'Children')
+results_clip=E.SubElement(results_scroll_children,'Widget',Id='TestResultsExplorerClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
+results_list=E.SubElement(E.SubElement(results_clip,'Children'),'ListPanel',Id='TestResults',DataSource='{TestResults}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+results_template=E.SubElement(results_list,'ItemTemplate')
+results_row=E.SubElement(results_template,'ButtonWidget',IsFocusable='true',IsSelected='@IsSelected',DoNotPassEventsToChildren='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='54',MarginBottom='4',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteSelect'})
+results_row_children=E.SubElement(results_row,'Children')
+E.SubElement(results_row_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='24',MarginLeft='10',MarginRight='10',MarginTop='3',Brush='CalradiaForge.ButtonText',Text='@ResultId',VerticalAlignment='Center',**{'Brush.FontSize':'14'})
+E.SubElement(results_row_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='20',MarginLeft='10',MarginRight='184',MarginTop='28',Brush='CalradiaForge.Muted',Text='@Status',VerticalAlignment='Center',**{'Brush.FontSize':'12'})
+E.SubElement(results_row_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='168',SuggestedHeight='20',MarginRight='10',MarginTop='28',HorizontalAlignment='Right',Brush='CalradiaForge.Gold',Text='@DurationText',VerticalAlignment='Center',**{'Brush.FontSize':'12'})
+scrollbar(results_list_children,'TestResultsExplorerScrollBar',42,8,2)
+
+results_detail=E.SubElement(results_content_children,'Widget',Id='TestResultsExplorerDetailFrame',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='14',Sprite='BlankWhiteSquare_9',Color='#14211CFF')
+results_detail_children=E.SubElement(results_detail,'Children')
+E.SubElement(results_detail_children,'TextWidget',Id='TestResultsExplorerSelectedHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='36',MarginLeft='16',MarginRight='16',MarginTop='12',Brush='CalradiaForge.HeaderGold',Text='@SelectedTestResultHeading',VerticalAlignment='Center',**{'Brush.FontSize':'19'})
+detail_scroll=E.SubElement(results_detail_children,'ScrollablePanel',Id='TestResultsExplorerDetailScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='14',MarginRight='12',MarginTop='54',MarginBottom='12',ClipRect='TestResultsExplorerDetailClip',InnerPanel='TestResultsExplorerDetailClip\\TestResultsExplorerDetailContent',VerticalScrollbar='..\\TestResultsExplorerDetailScrollBar')
+detail_scroll_children=E.SubElement(detail_scroll,'Children')
+detail_clip=E.SubElement(detail_scroll_children,'Widget',Id='TestResultsExplorerDetailClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
+detail_content=E.SubElement(E.SubElement(detail_clip,'Children'),'Widget',Id='TestResultsExplorerDetailContent',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren')
+detail_content_children=E.SubElement(detail_content,'Children')
+E.SubElement(detail_content_children,'TextWidget',Id='SelectedTestResultDetail',IsVisible='@HasTestResults',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',MarginLeft='4',MarginRight='8',Brush='GameTip.Text',Text='@SelectedTestResultDetail',ClipContents='true',**{'Brush.FontSize':'15'})
+E.SubElement(detail_content_children,'TextWidget',Id='TestResultsExplorerDetailEmpty',IsVisible='@IsTestResultsExplorerEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='4',MarginRight='8',Brush='CalradiaForge.Muted',Text='@TestResultsExplorerEmptyDetail',HorizontalAlignment='Center',VerticalAlignment='Center',**{'Brush.FontSize':'16'})
+E.SubElement(results_children,'TextWidget',Id='TestResultsExplorerEmptyMessage',IsVisible='@IsTestResultsExplorerEmpty',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='410',SuggestedHeight='56',MarginLeft='26',MarginTop='155',Brush='CalradiaForge.Gold',Text='@TestResultsExplorerEmptyLabel',HorizontalAlignment='Center',VerticalAlignment='Center',ClipContents='true',**{'Brush.FontSize':'18'})
+scrollbar(results_detail_children,'TestResultsExplorerDetailScrollBar',54,12,4)
+
+
 palette_overlay=E.SubElement(children,'Widget',Id='NavigationPaletteOverlay',IsVisible='@IsNavigationPaletteOpen',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Sprite='BlankWhiteSquare_9',Color='#000000B8')
 palette_panel=E.SubElement(E.SubElement(palette_overlay,'Children'),'Widget',Id='NavigationPalettePanel',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',SuggestedWidth='920',SuggestedHeight='760',MaxWidth='980',MaxHeight='780',HorizontalAlignment='Center',VerticalAlignment='Center',MarginLeft='48',MarginRight='48',MarginTop='48',MarginBottom='48',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
 palette_surface=E.SubElement(E.SubElement(palette_panel,'Children'),'Widget',Id='NavigationPaletteSurface',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginRight='1',MarginTop='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0D1511FF')
@@ -578,6 +628,7 @@ scrollbar(palette_children,'NavigationPaletteScrollBar',146,50,20)
 palette_empty=E.SubElement(palette_children,'Widget',Id='NavigationPaletteEmptyState',IsVisible='@IsNavigationPaletteEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='20',MarginRight='20',MarginTop='146',MarginBottom='50')
 E.SubElement(E.SubElement(palette_empty,'Children'),'TextWidget',Id='NavigationPaletteEmptyMessage',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='54',Brush='CalradiaForge.Muted',Text='@NavigationPaletteEmptyLabel',HorizontalAlignment='Center',VerticalAlignment='Center',**{'Brush.FontSize':'17'})
 E.SubElement(palette_children,'TextWidget',Id='NavigationPaletteKeyboardHint',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='28',MarginLeft='20',MarginRight='20',MarginBottom='12',VerticalAlignment='Bottom',Brush='CalradiaForge.Muted',Text='@NavigationPaletteNavigationHint',**{'Brush.FontSize':'14'})
+
 
 write_xml(ROOT/'modules/CalradiaForge/GUI/Prefabs/CalradiaForge.xml',root)
 
@@ -642,6 +693,25 @@ output_filter_keys=(
     'Clear the pinned output baseline.',
     'Output baseline cleared.',
 )
+test_results_explorer_keys=(
+    'Test results',
+    'Recent test results',
+    'Open test results',
+    'Close test results',
+    'No test results are available.',
+    'Test result details',
+    'Started',
+    'Steps',
+    'Cleanup error',
+    'Showing {0} results from the latest test response.',
+    'Select a result to inspect its details.',
+    'Test ID',
+    'Status',
+    'Duration',
+    'Seed',
+    'Context',
+    'Error',
+)
 for language,folder,display,catalog in catalogs:
     catalog.update({source:localized[language] for source,localized in navigation_palette.items()})
     source_catalog={entry.attrib['key']:entry.attrib['value'] for entry in E.parse(ROOT/'localization'/f'{language}.xml').getroot()}
@@ -649,6 +719,11 @@ for language,folder,display,catalog in catalogs:
         translated=source_catalog.get(key)
         if not translated or (language=='en' and translated!=key):
             raise ValueError(f'Incomplete in-game Gauntlet label translation for {language}: {key}')
+        catalog[key]=translated
+    for key in test_results_explorer_keys:
+        translated=source_catalog.get(key)
+        if not translated or (language=='en' and translated!=key):
+            raise ValueError(f'Incomplete test-results explorer translation for {language}: {key}')
         catalog[key]=translated
     strings=E.Element('base',type='string')
     E.SubElement(E.SubElement(strings,'tags'),'tag',language=display)

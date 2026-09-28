@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -49,6 +50,10 @@ namespace CalradiaForge.Mod
         bool _outputLinesCached;
         readonly List<string> _outputSourceLines = new List<string>();
         readonly MBBindingList<OutputComparisonRowVM> _outputComparisonRows = new MBBindingList<OutputComparisonRowVM>();
+        const int MaximumVisibleTestResults = 51;
+        readonly MBBindingList<TestResultItemVM> _testResults = new MBBindingList<TestResultItemVM>();
+        TestResultItemVM _selectedTestResult;
+        bool _isTestResultsExplorerOpen;
         string _outputBaseline;
         string _outputBaselineRouteId;
         string _outputBaselineRouteName;
@@ -1004,6 +1009,25 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string VersionLabel => "v" + SuiteInfo.Version;
         [DataSourceProperty] public string SessionStatusColor => runtime != null ? "#34D399FF" : "#F87171FF";
         [DataSourceProperty] public string PageLabel => "[ " + (page + 1) + " / " + pageCount + " ]";
+        [DataSourceProperty] public MBBindingList<TestResultItemVM> TestResults => _testResults;
+        [DataSourceProperty] public bool HasTestResults => _testResults.Count > 0;
+        [DataSourceProperty] public bool IsTestResultsExplorerOpen => _isTestResultsExplorerOpen;
+        [DataSourceProperty] public bool IsTestResultsExplorerEmpty => _testResults.Count == 0;
+        [DataSourceProperty] public string TestResultsExplorerTitle => T("Test results");
+        [DataSourceProperty] public string TestResultsExplorerSummary => _testResults.Count == 0
+            ? T("Recent test results")
+            : string.Format(T("Showing {0} results from the latest test response."), _testResults.Count);
+        [DataSourceProperty] public string TestResultsExplorerOpenLabel => T("Open test results");
+        [DataSourceProperty] public string TestResultsExplorerOpenHint => T("Open test results");
+        [DataSourceProperty] public string TestResultsExplorerCloseLabel => T("Close test results");
+        [DataSourceProperty] public string TestResultsExplorerEmptyLabel => T("No test results are available.");
+        [DataSourceProperty] public string TestResultsExplorerEmptyDetail => T("Select a result to inspect its details.");
+        [DataSourceProperty] public string TestResultsExplorerTestIdLabel => T("Test ID");
+        [DataSourceProperty] public string TestResultsExplorerStatusLabel => T("Status");
+        [DataSourceProperty] public string TestResultsExplorerDurationLabel => T("Duration");
+        [DataSourceProperty] public TestResultItemVM SelectedTestResult => _selectedTestResult;
+        [DataSourceProperty] public string SelectedTestResultHeading => _selectedTestResult?.ResultId ?? T("Test result details");
+        [DataSourceProperty] public string SelectedTestResultDetail => _selectedTestResult?.DetailText ?? T("Select a result to inspect its details.");
         [DataSourceProperty] public bool IsPreviousDisabled => page <= 0;
         [DataSourceProperty] public bool IsNextDisabled => page >= pageCount - 1;
         [DataSourceProperty] public bool ShowModuleActions => current == "modules" || current == "dependencies";
@@ -1411,6 +1435,19 @@ namespace CalradiaForge.Mod
             OnPropertyChanged(nameof(NavigationPaletteActiveRouteLabel));
             OnPropertyChanged(nameof(NavigationPaletteActiveGroupLabel));
             OnPropertyChanged(nameof(NavigationPaletteEmptyLabel));
+            OnPropertyChanged(nameof(TestResultsExplorerTitle));
+            OnPropertyChanged(nameof(TestResultsExplorerSummary));
+            OnPropertyChanged(nameof(TestResultsExplorerOpenLabel));
+            OnPropertyChanged(nameof(TestResultsExplorerCloseLabel));
+            OnPropertyChanged(nameof(TestResultsExplorerEmptyLabel));
+            OnPropertyChanged(nameof(TestResultsExplorerEmptyDetail));
+            OnPropertyChanged(nameof(TestResultsExplorerTestIdLabel));
+            OnPropertyChanged(nameof(TestResultsExplorerStatusLabel));
+            OnPropertyChanged(nameof(TestResultsExplorerDurationLabel));
+            OnPropertyChanged(nameof(SelectedTestResultHeading));
+            OnPropertyChanged(nameof(SelectedTestResultDetail));
+            for (int i = 0; i < _testResults.Count; i++)
+                _testResults[i].RefreshLocalizedDetail();
         }
 
         void NotifyLayout()
@@ -1471,6 +1508,8 @@ namespace CalradiaForge.Mod
                 return;
             }
             var r = runtime.Handle(new Request { Action = action, Argument = effectiveArg }, CancellationToken.None);
+            if (r.Success && TestResultExplorerParser.TryParse(action, r.Data, out List<TestResult> parsedTestResults))
+                ReplaceTestResults(parsedTestResults);
             overview = action == "summary" && r.Success;
             full = r.Success ? Format(action, r.Data) : T("Error") + ": " + FormatError(r.Error); page = 0; Render();
             OnPropertyChanged(nameof(EnableLabel));
@@ -1777,6 +1816,8 @@ namespace CalradiaForge.Mod
 
         void SelectSection(string section, bool executeOnSelect)
         {
+            if (_isTestResultsExplorerOpen && !string.Equals(current, section, StringComparison.Ordinal))
+                ExecuteCloseTestResultsExplorer();
             if (!section.StartsWith("sdk-", StringComparison.Ordinal)) CloseSdkCatalog();
             _isAssemblyWorkbench = false;
             current = section;
@@ -1787,6 +1828,7 @@ namespace CalradiaForge.Mod
             OnPropertyChanged(nameof(IsNormalInputVisible));
             OnPropertyChanged(nameof(IsRegularActionDeckVisible));
             OnPropertyChanged(nameof(IsExtensionsActionDeckVisible));
+            OnPropertyChanged(nameof(ShowTestActions));
             switch (section)
             {
                 case "project-wizard":
@@ -2156,8 +2198,63 @@ namespace CalradiaForge.Mod
             _outputComparisonStatus = string.Empty;
             _outputComparisonRows.Clear();
             _restoreEvidenceFocusAfterComparison = false;
+            _isTestResultsExplorerOpen = false;
+            _selectedTestResult = null;
+            TestResults.Clear();
+            NotifyTestResultsExplorerState();
         }
         public void ExecuteRemove() => Send("unpin");
+        public void ExecuteOpenTestResultsExplorer()
+        {
+            if (_finalized || current != "tests")
+                return;
+            _isTestResultsExplorerOpen = true;
+            OnPropertyChanged(nameof(IsTestResultsExplorerOpen));
+            OnPropertyChanged(nameof(SelectedTestResultHeading));
+            OnPropertyChanged(nameof(SelectedTestResultDetail));
+        }
+        public void ExecuteCloseTestResultsExplorer()
+        {
+            if (!_isTestResultsExplorerOpen)
+                return;
+            _isTestResultsExplorerOpen = false;
+            OnPropertyChanged(nameof(IsTestResultsExplorerOpen));
+        }
+        public void SelectTestResult(TestResultItemVM item)
+        {
+            if (_finalized || item == null || !_testResults.Contains(item))
+                return;
+            for (int i = 0; i < _testResults.Count; i++)
+                _testResults[i].IsSelected = ReferenceEquals(_testResults[i], item);
+            _selectedTestResult = item;
+            OnPropertyChanged(nameof(SelectedTestResult));
+            OnPropertyChanged(nameof(SelectedTestResultHeading));
+            OnPropertyChanged(nameof(SelectedTestResultDetail));
+        }
+        void ReplaceTestResults(IList<TestResult> results)
+        {
+            _testResults.Clear();
+            _selectedTestResult = null;
+            int count = Math.Min(results?.Count ?? 0, MaximumVisibleTestResults);
+            for (int i = 0; i < count; i++)
+                _testResults.Add(new TestResultItemVM(this, results[i]));
+            if (_testResults.Count > 0)
+            {
+                _selectedTestResult = _testResults[0];
+                _selectedTestResult.IsSelected = true;
+            }
+            NotifyTestResultsExplorerState();
+        }
+        void NotifyTestResultsExplorerState()
+        {
+            OnPropertyChanged(nameof(TestResults));
+            OnPropertyChanged(nameof(HasTestResults));
+            OnPropertyChanged(nameof(IsTestResultsExplorerEmpty));
+            OnPropertyChanged(nameof(TestResultsExplorerSummary));
+            OnPropertyChanged(nameof(SelectedTestResult));
+            OnPropertyChanged(nameof(SelectedTestResultHeading));
+            OnPropertyChanged(nameof(SelectedTestResultDetail));
+        }
         public void ExecuteBatch() => Send("run-batch");
         public void ExecuteRefresh() => Send(current);
         public void ExecuteScan() => Send("scan");
@@ -4913,8 +5010,8 @@ namespace CalradiaForge.Mod
 
 namespace CalradiaForge.Mod
 {
-    internal sealed class OutputComparisonRowVM : ViewModel
-    {
+internal sealed class OutputComparisonRowVM : ViewModel
+{
         internal OutputComparisonRowVM(string baselineText, string currentText)
         {
             BaselineText = baselineText ?? string.Empty;
@@ -4923,6 +5020,111 @@ namespace CalradiaForge.Mod
 
         [DataSourceProperty] public string BaselineText { get; }
         [DataSourceProperty] public string CurrentText { get; }
-        [DataSourceProperty] public int EvidenceFontSize => 18;
+    [DataSourceProperty] public int EvidenceFontSize => 18;
+}
+
+internal sealed class TestResultItemVM : ViewModel
+{
+    readonly PanelViewModel _parent;
+    readonly TestResult _result;
+    bool _isSelected;
+
+    public TestResultItemVM(PanelViewModel parent, TestResult result)
+    {
+        _parent = parent;
+        _result = result ?? throw new ArgumentNullException(nameof(result));
     }
+
+    [DataSourceProperty] public string ResultId => _result.Id ?? string.Empty;
+    [DataSourceProperty] public string Status => _result.Status ?? string.Empty;
+    [DataSourceProperty] public string DurationText => _result.Milliseconds.ToString("0.##", CultureInfo.InvariantCulture) + " ms";
+    [DataSourceProperty] public string DetailText => BuildDetailText();
+    [DataSourceProperty]
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value)
+                return;
+            _isSelected = value;
+            OnPropertyChangedWithValue(value, nameof(IsSelected));
+        }
+    }
+
+    public void ExecuteSelect() => _parent?.SelectTestResult(this);
+
+    internal void RefreshLocalizedDetail() => OnPropertyChanged(nameof(DetailText));
+
+    string BuildDetailText()
+    {
+        var lines = new List<string>
+        {
+            Field("Test ID", _result.Id),
+            Field("Status", _result.Status),
+            Field("Seed", _result.Seed.ToString(CultureInfo.InvariantCulture)),
+            Field("Context", _result.Context),
+            Field("Started", _result.StartedAt),
+            Field("Steps", _result.Steps == null ? string.Empty : string.Join(Environment.NewLine, _result.Steps)),
+            Field("Error", _result.Error),
+            Field("Cleanup error", _result.CleanupError)
+        };
+        return string.Join(Environment.NewLine + Environment.NewLine, lines);
+    }
+
+    string Field(string label, string value)
+    {
+        string translatedLabel = _parent?.T(label) ?? label;
+        return translatedLabel + ": " + (string.IsNullOrEmpty(value) ? "—" : value);
+    }
+}
+
+internal static class TestResultExplorerParser
+{
+    const int MaximumResults = 51;
+
+    internal static bool TryParse(string action, string json, out List<TestResult> results)
+    {
+        results = null;
+        if (string.IsNullOrEmpty(json))
+            return false;
+
+        try
+        {
+            if (string.Equals(action, "run", StringComparison.Ordinal))
+            {
+                TestResult result = Json.Deserialize<TestResult>(json);
+                if (!IsValid(result))
+                    return false;
+                results = new List<TestResult> { result };
+                return true;
+            }
+
+            if (!string.Equals(action, "run-batch", StringComparison.Ordinal))
+                return false;
+
+            List<TestResult> batch = Json.Deserialize<List<TestResult>>(json);
+            if (batch == null)
+                return false;
+            for (int i = 0; i < batch.Count; i++)
+            {
+                if (!IsValid(batch[i]))
+                    return false;
+            }
+
+            int count = Math.Min(batch.Count, MaximumResults);
+            results = batch.GetRange(0, count);
+            return true;
+        }
+        catch
+        {
+            results = null;
+            return false;
+        }
+    }
+
+    static bool IsValid(TestResult result) => result != null
+        && !string.IsNullOrWhiteSpace(result.Id)
+        && !string.IsNullOrWhiteSpace(result.Status);
+}
 }

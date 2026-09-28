@@ -820,3 +820,10 @@ Initial developer preview: Gauntlet panel, WPF client, local named pipes, diagno
 - Clarifies that Rev076's matching source/installed prefab hash `5741D7571C254B6487477D601F0CFE016AA254A1DFC6BD6795766274543B2F45` was measured before source regeneration. The regenerated source prefab is now `C7BDE061D57F142797DF7B046BC93437E53049351A9D1C1821F6326CDC3BAC31`; the installed prefab remains at the prior hash because the new source assets were not imported or deployed. Both use canonical `<ScrollbarWidget>` and omit `<ScrollBarWidget>`; this does not establish the cause or resolution of the historical F10 assertion.
 - `SubModule.Open()` now records ordered brush-file and panel-movie loading/loaded milestones. The regression checks source order statically; it is not a runtime telemetry capture or a reproduction of the assertion. Cause/resolution, Resource Browser import, and live rendering remain unverified or pending.
 - Product version remains 25.2.0; this clarification changes no API, route, command, permission, TPAC, or ZIP.
+
+### Gauntlet test-results explorer (Rev081) — 2026-09-28
+
+- Added a panel-lifetime inspector for the latest structurally valid `run` or `run-batch` response. A scrollable list displays result ID, status and duration; selecting a result reveals its seed, context, `StartedAt`, steps, error and cleanup error. The result collection is bounded to 51 records and survives navigation between areas until the panel closes.
+- Opening the inspector or selecting a row is read-only and does not execute or repeat tests. Failed test statuses remain explicit. Raw ledger output, arguments, history, filtering and output comparison are unchanged; no new route, command, public API or protocol surface is introduced.
+- Source, localization parity, structural checks, runtime tests and live in-game inspection remain pending; this entry does not claim they passed.
+- Product version remains 25.2.0; no ZIP is regenerated.

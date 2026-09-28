@@ -250,4 +250,18 @@
   <string key="Return to the current output without removing the baseline." value="Temel çıktıyı kaldırmadan geçerli çıktıya dön." />
   <string key="Clear the pinned output baseline." value="Sabitlenmiş temel çıktıyı temizle." />
   <string key="Output baseline cleared." value="Temel çıktı temizlendi." />
+  <string key="Test results" value="Test sonuçları" />
+  <string key="Recent test results" value="Son test sonuçları" />
+  <string key="Open test results" value="Test sonuçlarını aç" />
+  <string key="Close test results" value="Test sonuçlarını kapat" />
+  <string key="No test results are available." value="Henüz test sonucu yok." />
+  <string key="Test result details" value="Test sonucu ayrıntıları" />
+  <string key="Started" value="Başlangıç" />
+  <string key="Steps" value="Adımlar" />
+  <string key="Cleanup error" value="Temizleme hatası" />
+  <string key="Showing {0} results from the latest test response." value="En son test yanıtındaki {0} sonuç gösteriliyor." />
+  <string key="Select a result to inspect its details." value="Ayrıntıları görmek için bir sonuç seçin." />
+  <string key="Test ID" value="Test kimliği" />
+  <string key="Status" value="Durum" />
+  <string key="Duration" value="Süre" />
 </strings>

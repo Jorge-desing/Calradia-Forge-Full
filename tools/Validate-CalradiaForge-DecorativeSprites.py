@@ -42,7 +42,13 @@ DECORATION_SIZES = {
     "forge_header_extensions_v1": (128, 64),
 }
 DECORATIONS = tuple(DECORATION_SIZES)
-OCCLUDING_PANEL_IDS = {"ForgeKeyHelpPanel", "ForgeSdkCatalogPanel", "NavigationPalettePanel", "ForgePlaybookPanel"}
+OCCLUDING_PANEL_IDS = {
+    "ForgeKeyHelpPanel",
+    "ForgeSdkCatalogPanel",
+    "NavigationPalettePanel",
+    "ForgePlaybookPanel",
+    "TestResultsExplorerPanel",
+}
 MAX_ALPHA = {
     "forge_war_table_cloth_v2": 24,
     "forge_rail_cartographic_field_v1": 36,
@@ -1112,6 +1118,32 @@ def validate_prefab(errors: List[str]) -> None:
                 continue
             # The overlay dims the shell but is translucent. Only the opaque
             # inner panel masks its descendants from decorations behind it.
+            visible_binding = overlay.get("IsVisible", "")
+        elif panel_id == "TestResultsExplorerPanel":
+            overlay = direct_widget_parent(root, panel)
+            shell_parent = direct_widget_parent(root, overlay) if overlay is not None else None
+            overlay_placement = placed.get(id(overlay)) if overlay is not None else None
+            overlay_rect = overlay_placement[0] if overlay_placement is not None else None
+            modal_contract_ok = (
+                overlay is not None
+                and overlay.get("Id") == "TestResultsExplorerOverlay"
+                and local_name(overlay.tag) == "Widget"
+                and overlay.get("IsVisible") == "@IsTestResultsExplorerOpen"
+                and overlay.get("WidthSizePolicy") == "StretchToParent"
+                and overlay.get("HeightSizePolicy") == "StretchToParent"
+                and shell_parent is not None
+                and shell_parent.get("Id") == "ForgeWorkbenchShell"
+                and overlay_rect is not None
+                and overlay_rect == workbench_rect
+                and panel_rect is not None
+                and overlay_rect.contains(panel_rect)
+            )
+            if not modal_contract_ok:
+                errors.append("TestResultsExplorerPanel occlusion requires an opaque panel inside the shell-sized @IsTestResultsExplorerOpen overlay")
+                continue
+            # The results window is an opaque inset frame, but the scrim and
+            # panel are intentionally below NavigationPaletteOverlay. The
+            # latter remains the final interactive modal in the shell.
             visible_binding = overlay.get("IsVisible", "")
         else:
             visible_binding = panel.get("IsVisible", "")

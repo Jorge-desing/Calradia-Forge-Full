@@ -250,4 +250,18 @@
   <string key="Return to the current output without removing the baseline." value="Zur aktuellen Ausgabe zurückkehren, ohne die Basis zu entfernen." />
   <string key="Clear the pinned output baseline." value="Fixierte Ausgabebasis löschen." />
   <string key="Output baseline cleared." value="Ausgabebasis gelöscht." />
+  <string key="Test results" value="Testergebnisse" />
+  <string key="Recent test results" value="Neueste Testergebnisse" />
+  <string key="Open test results" value="Testergebnisse öffnen" />
+  <string key="Close test results" value="Testergebnisse schließen" />
+  <string key="No test results are available." value="Es sind noch keine Testergebnisse verfügbar." />
+  <string key="Test result details" value="Details des Testergebnisses" />
+  <string key="Started" value="Gestartet" />
+  <string key="Steps" value="Schritte" />
+  <string key="Cleanup error" value="Bereinigungsfehler" />
+  <string key="Showing {0} results from the latest test response." value="{0} Ergebnisse aus der letzten Testantwort werden angezeigt." />
+  <string key="Select a result to inspect its details." value="Wähle ein Ergebnis aus, um die Details anzusehen." />
+  <string key="Test ID" value="Test-ID" />
+  <string key="Status" value="Status" />
+  <string key="Duration" value="Dauer" />
 </strings>
