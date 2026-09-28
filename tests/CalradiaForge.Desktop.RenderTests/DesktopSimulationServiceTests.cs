@@ -34,6 +34,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation evaluates senate decrees, war declarations, and truce actions");
         GenericOperationFlightDeckDiagnostics();
         Console.WriteLine("PASS Desktop simulation validates generic operation flight deck diagnostic scans");
+        VectorChartControlsTelemetry();
+        Console.WriteLine("PASS Desktop simulation computes vector chart trajectories and radar axes");
     }
 
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
@@ -319,5 +321,67 @@ internal static class DesktopSimulationServiceTests
 
         vm.RunDiagnosticScanCommand.Execute(null);
         Check(vm.DiagnosticFindings.Count == 4, "Re-running scan must repopulate verified boundary findings.");
+    }
+
+    static void VectorChartControlsTelemetry()
+    {
+        // 1. Troop Tree Pentagonal Radar
+        var troopVm = new TroopTreeDashboardViewModel();
+        Check(troopVm.CombatRadarAxes != null && troopVm.CombatRadarAxes.Count == 5, "Troop tree must define 5 combat radar axes.");
+        Check(troopVm.SelectedTroopRadarValues != null && troopVm.SelectedTroopRadarValues.Count == 5, "Selected troop must expose 5 radar values.");
+        Check(troopVm.CaptainPerksRadarValues != null && troopVm.CaptainPerksRadarValues.Count == 5, "Captain perks overlay must expose 5 radar values.");
+        Check(troopVm.SelectedTroopRadarValues.All(v => v >= 0.0 && v <= 1.0), "Troop radar values must be normalized in [0, 1].");
+        Check(troopVm.CaptainPerksRadarValues.All(v => v >= 0.0 && v <= 1.0), "Captain perks radar values must be normalized in [0, 1].");
+
+        var initialLegionaryDmg = troopVm.SelectedTroopRadarValues[1];
+        if (troopVm.AllHighlightedTroops.Count > 1)
+        {
+            troopVm.SelectedTroop = troopVm.AllHighlightedTroops[0];
+            Check(troopVm.SelectedTroopRadarValues[1] != initialLegionaryDmg, "Selecting recruit must update radar damage value reactively.");
+        }
+
+        troopVm.ToggleCaptainPerksCommand.Execute(null);
+        Check(troopVm.CaptainPerksActive, "ToggleCaptainPerksCommand must activate captain perks.");
+        Check(troopVm.CaptainPerksRadarValues.All(v => v >= 0.0 && v <= 1.0), "Toggling captain perks discount must maintain normalized radar bounds.");
+
+        // 2. Workshop 30-Day Cumulative Sparkline & Rebellion Risk Gauge
+        var wsVm = new WorkshopDashboardViewModel();
+        Check(wsVm.CumulativeProfitTrajectory != null && wsVm.CumulativeProfitTrajectory.Count >= 30, "Workshop must expose 30-day cumulative profit trajectory.");
+        Check(wsVm.RebellionRiskGaugeValue >= 0.0 && wsVm.RebellionRiskGaugeValue <= 100.0, "Rebellion risk gauge must be bounded in [0, 100].");
+
+        var initialRisk = wsVm.RebellionRiskGaugeValue;
+        wsVm.CostMultiplier = 1.5;
+        Check(wsVm.RebellionRiskGaugeValue != initialRisk, "Modifying cost multiplier must reactively update rebellion risk gauge.");
+
+        // 3. Kingdom Diplomacy Radar & Ring Gauges
+        var diploVm = new KingdomDiplomacyDashboardViewModel();
+        Check(diploVm.SenateConsensusGaugeValue >= 0.0 && diploVm.SenateConsensusGaugeValue <= 100.0, "Senate consensus gauge must be bounded in [0, 100].");
+        Check(diploVm.WarRiskGaugeValue >= 0.0 && diploVm.WarRiskGaugeValue <= 100.0, "War risk gauge must be bounded in [0, 100].");
+        Check(diploVm.DiplomaticRadarAxes != null && diploVm.DiplomaticRadarAxes.Count == 5, "Diplomatic radar must define 5 geopolitical axes.");
+        Check(diploVm.FactionPowerRadarValues != null && diploVm.FactionPowerRadarValues.Count == 5, "Faction power radar must expose 5 normalized values.");
+        Check(diploVm.FactionPowerRadarValues.All(v => v >= 0.0 && v <= 1.0), "Faction power radar values must be normalized in [0, 1].");
+
+        var initialDiploRisk = diploVm.WarRiskGaugeValue;
+        diploVm.DeclareWarCommand.Execute(null);
+        Check(diploVm.WarRiskGaugeValue > initialDiploRisk, "Declaring war must escalate war risk gauge.");
+
+        var escalatedRisk = diploVm.WarRiskGaugeValue;
+        diploVm.ProposePeaceTreatyCommand.Execute(null);
+        Check(diploVm.WarRiskGaugeValue < escalatedRisk, "Proposing peace must de-escalate war risk gauge.");
+
+        // 4. CoALA Agent Memory Decay Sparkline & Slot Utilization Gauge
+        var memVm = new AgentMemoryDashboardViewModel();
+        Check(memVm.MemoryDecayTrajectory != null && memVm.MemoryDecayTrajectory.Count == 24, "Memory decay trajectory must expose 24 hourly intervals.");
+        Check(memVm.MemorySlotUtilizationGaugeValue >= 0.0 && memVm.MemorySlotUtilizationGaugeValue <= 100.0, "Memory slot utilization gauge must be bounded in [0, 100].");
+        Check(memVm.MemoryDecayTrajectory[0] > memVm.MemoryDecayTrajectory[23], "Memory utility trajectory must exhibit decay over time.");
+
+        // 5. Generic Operation IPC Latency Sparkline & Buffer Gauge
+        var opVm = new GenericOperationDashboardViewModel();
+        Check(opVm.ExecutionLatencyTrajectory != null && opVm.ExecutionLatencyTrajectory.Count == 16, "Generic operation must expose 16-sample latency trajectory.");
+        Check(opVm.BufferUtilizationGaugeValue >= 0.0 && opVm.BufferUtilizationGaugeValue <= 100.0, "Buffer utilization gauge must be bounded in [0, 100].");
+
+        var initialBuf = opVm.BufferUtilizationGaugeValue;
+        opVm.CycleScenario(1);
+        Check(opVm.BufferUtilizationGaugeValue != initialBuf, "Cycling scenario must reactively update buffer gauge.");
     }
 }

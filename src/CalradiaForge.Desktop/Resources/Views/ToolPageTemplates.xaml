@@ -213,6 +213,34 @@
             </Border>
            </StackPanel>
           </Border>
+          <!-- Column: Tactical Combat Radar (5-Axis Vector Analysis) -->
+          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Width="200" Margin="0,0,4,0">
+           <StackPanel>
+            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,1">
+             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="TACTICAL COMBAT RADAR" TextWrapping="Wrap"/>
+            </Border>
+            <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="4">
+             <presentation:ForgeRadarChart
+                 AxisLabels="{Binding TroopTreeDashboard.CombatRadarAxes}"
+                 Values="{Binding TroopTreeDashboard.SelectedTroopRadarValues}"
+                 ComparisonValues="{Binding TroopTreeDashboard.CaptainPerksRadarValues}"
+                 Stroke="{DynamicResource BrassBrush}"
+                 Fill="{DynamicResource BrassBrush}"
+                 ComparisonStroke="{DynamicResource VerdigrisBrush}"
+                 ComparisonFill="{DynamicResource VerdigrisBrush}"
+                 GridBrush="{DynamicResource BorderBrush}"
+                 AxisLabelBrush="{DynamicResource MutedTextBrush}"
+                 Height="130" Width="175"/>
+            </Border>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
+             <Border Background="{DynamicResource BrassBrush}" Height="6" Width="6" CornerRadius="1" Margin="0,0,3,0"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource BrassBrush}" Text="Standard" Margin="0,0,8,0"/>
+             <Border Background="{DynamicResource VerdigrisBrush}" Height="6" Width="6" CornerRadius="1" Margin="0,0,3,0"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource VerdigrisBrush}" Text="Captain Perks"/>
+            </StackPanel>
+            <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Pentagonal Shock &amp; Armor Geometry"/>
+           </StackPanel>
+          </Border>
          </StackPanel>
         </ScrollViewer>
        </Grid></DataTemplate>
@@ -377,9 +405,31 @@
           <ColumnDefinition Width="*"/>
           <ColumnDefinition Width="225"/>
          </Grid.ColumnDefinitions>
-         <!-- Enterprise Profitability Bars -->
+         <!-- Enterprise Profitability Bars & Cumulative Trajectory -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,8,0" Padding="8">
-          <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <DockPanel LastChildFill="True">
+           <!-- 30-Day Cumulative Profit Trajectory Sparkline Header -->
+           <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" DockPanel.Dock="Top" Margin="0,0,0,6" Padding="6,4">
+            <Grid>
+             <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+             </Grid.ColumnDefinitions>
+             <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="30-DAY CUMULATIVE TRAJECTORY" VerticalAlignment="Center" Margin="0,0,8,0"/>
+             <presentation:ForgeSparkline
+                 Grid.Column="1"
+                 DataPoints="{Binding WorkshopDashboard.CumulativeProfitTrajectory}"
+                 Stroke="{DynamicResource BrassBrush}"
+                 Fill="{DynamicResource BrassBrush}"
+                 ShowGridLines="True"
+                 GridBrush="{DynamicResource BorderBrush}"
+                 ValueUnit="d"
+                 Height="24" Margin="0,0,8,0"/>
+             <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" Grid.Column="2" VerticalAlignment="Center" Text="{Binding WorkshopDashboard.CalculatedNetProfit, StringFormat='Net: +{0}d/day'}"/>
+            </Grid>
+           </Border>
+           <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
            <ItemsControl ItemsSource="{Binding WorkshopDashboard.Enterprises}">
             <ItemsControl.ItemTemplate>
              <DataTemplate>
@@ -404,6 +454,7 @@
             </ItemsControl.ItemTemplate>
            </ItemsControl>
           </ScrollViewer>
+          </DockPanel>
          </Border>
          <!-- Civic Equilibrium KPI Card -->
          <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Padding="8">
@@ -430,13 +481,21 @@
            </Border>
            <TextBlock FontSize="9" Foreground="{DynamicResource VerdigrisBrush}" Margin="0,2,0,0" TextWrapping="Wrap"><Run Text="{DynamicResource Viz.Workshop.FoodStorageLabel}"/><Run Text=": 184 (+14/d Surplus)"/></TextBlock>
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="0,2,0,0" TextWrapping="Wrap"><Run Text="{DynamicResource Viz.Workshop.GarrisonLabel}"/><Run Text=": 165 Regulars"/></TextBlock>
-           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,8,0,0" Padding="5,4">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,6,0,0" Padding="5,4">
             <StackPanel>
-              <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" TextWrapping="Wrap"><Run Text="{DynamicResource Viz.Workshop.RebellionRiskLabel}"/><Run Text=": 8.6%"/></TextBlock>
-              <Border Background="{DynamicResource CoalBrush}" CornerRadius="2" Height="4" Margin="0,3,0,3">
-               <Border Background="{DynamicResource VerdigrisBrush}" CornerRadius="2" Height="4" HorizontalAlignment="Left" Width="20"/>
-              </Border>
-              <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap"><Run Text="{DynamicResource Viz.Workshop.StableLabel}"/><Run Text=" · "/><Run Text="{DynamicResource Viz.Workshop.RiskThresholdLabel}"/><Run Text=": 45%"/></TextBlock>
+              <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" TextWrapping="Wrap" HorizontalAlignment="Center"><Run Text="{DynamicResource Viz.Workshop.RebellionRiskLabel}"/><Run Text=": 8.6%"/></TextBlock>
+              <presentation:ForgeRingGauge
+                  Value="{Binding WorkshopDashboard.RebellionRiskGaugeValue}"
+                  Maximum="100"
+                  Threshold="45"
+                  CenterText="8.6%"
+                  SubText="CIVIC RISK"
+                  AccentBrush="{DynamicResource VerdigrisBrush}"
+                  BackgroundBrush="{DynamicResource CoalBrush}"
+                  ThresholdBrush="{DynamicResource EmberBrush}"
+                  TextBrush="{DynamicResource PaperBrush}"
+                  Height="64" Width="64" HorizontalAlignment="Center" Margin="0,2"/>
+              <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" HorizontalAlignment="Center"><Run Text="{DynamicResource Viz.Workshop.StableLabel}"/><Run Text=" · "/><Run Text="{DynamicResource Viz.Workshop.RiskThresholdLabel}"/><Run Text=": 45%"/></TextBlock>
             </StackPanel>
            </Border>
           </StackPanel>
@@ -477,19 +536,48 @@
             </TextBlock>
            </StackPanel>
           </StackPanel>
-          <!-- Agent Switcher Pills -->
-          <ItemsControl Grid.Column="1" ItemsSource="{Binding AgentMemoryDashboard.Agents}" VerticalAlignment="Center">
-           <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
-           </ItemsControl.ItemsPanel>
-           <ItemsControl.ItemTemplate>
-            <DataTemplate>
-             <Button Command="{Binding DataContext.AgentMemoryDashboard.SelectAgentCommand, RelativeSource={RelativeSource AncestorType=Border}}" CommandParameter="{Binding}" FontSize="8" Margin="2,0" Padding="5,2">
-              <TextBlock Text="{Binding Name}"/>
-             </Button>
-            </DataTemplate>
-           </ItemsControl.ItemTemplate>
-          </ItemsControl>
+          <!-- Cognitive Slot Telemetry & Agent Switcher -->
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <!-- Memory Slot Gauge -->
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,6,0" Padding="4,2">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding AgentMemoryDashboard.MemorySlotUtilizationGaugeValue}"
+                 Maximum="100"
+                 Threshold="85"
+                 CenterText="6%"
+                 SubText="SLOTS"
+                 AccentBrush="{DynamicResource VerdigrisBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="40" Width="40" VerticalAlignment="Center"/>
+             <StackPanel Margin="5,0,2,0" VerticalAlignment="Center">
+              <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="U(t) DECAY"/>
+              <presentation:ForgeSparkline
+                  DataPoints="{Binding AgentMemoryDashboard.MemoryDecayTrajectory}"
+                  Stroke="{DynamicResource BrassBrush}"
+                  Fill="{DynamicResource BrassBrush}"
+                  ValueUnit="U"
+                  FormatString="0.00"
+                  Height="20" Width="68"/>
+             </StackPanel>
+            </StackPanel>
+           </Border>
+           <!-- Agent Switcher Pills -->
+           <ItemsControl ItemsSource="{Binding AgentMemoryDashboard.Agents}" VerticalAlignment="Center">
+            <ItemsControl.ItemsPanel>
+             <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+             <DataTemplate>
+              <Button Command="{Binding DataContext.AgentMemoryDashboard.SelectAgentCommand, RelativeSource={RelativeSource AncestorType=Border}}" CommandParameter="{Binding}" FontSize="8" Margin="2,0" Padding="5,2">
+               <TextBlock Text="{Binding Name}"/>
+              </Button>
+             </DataTemplate>
+            </ItemsControl.ItemTemplate>
+           </ItemsControl>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Body: 3 Cognitive Memory Tiers -->
@@ -741,47 +829,109 @@
           </StackPanel>
          </Grid>
         </Border>
-        <!-- Body: Faction Stances & Tension Barometers -->
+        <!-- Body: Faction Stances, Radar & Geopolitical Barometers -->
         <Grid Grid.Row="1">
-         <Grid.RowDefinitions>
-          <RowDefinition Height="*"/>
-          <RowDefinition Height="Auto"/>
-         </Grid.RowDefinitions>
-         <ItemsControl Grid.Row="0" ItemsSource="{Binding KingdomDiplomacyDashboard.FactionStances}">
-          <ItemsControl.ItemsPanel>
-           <ItemsPanelTemplate>
-            <UniformGrid Columns="4"/>
-           </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-           <DataTemplate>
-            <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="4" Margin="0,0,6,0" Padding="7">
-             <StackPanel>
-              <Grid Margin="0,0,0,4">
-               <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-               </Grid.ColumnDefinitions>
-               <TextBlock FontSize="11" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Grid.Column="0" Text="{Binding FactionName}"/>
-               <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="2" Grid.Column="1" Padding="4,1">
-                <TextBlock FontSize="8" FontWeight="Bold" Foreground="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding Stance}"/>
+         <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="220"/>
+         </Grid.ColumnDefinitions>
+         <!-- Left Column: Faction Cards & Details -->
+         <Grid Grid.Column="0" Margin="0,0,6,0">
+          <Grid.RowDefinitions>
+           <RowDefinition Height="*"/>
+           <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <ItemsControl Grid.Row="0" ItemsSource="{Binding KingdomDiplomacyDashboard.FactionStances}">
+           <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+             <UniformGrid Columns="3"/>
+            </ItemsPanelTemplate>
+           </ItemsControl.ItemsPanel>
+           <ItemsControl.ItemTemplate>
+            <DataTemplate>
+             <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="4" Margin="0,0,6,6" Padding="6">
+              <StackPanel>
+               <Grid Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                 <ColumnDefinition Width="*"/>
+                 <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Grid.Column="0" Text="{Binding FactionName}" TextTrimming="CharacterEllipsis"/>
+                <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="2" Grid.Column="1" Padding="3,1">
+                 <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding Stance}"/>
+                </Border>
+               </Grid>
+               <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding TensionText}"/>
+               <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Height="8" Margin="0,3,0,3">
+                <ProgressBar Background="Transparent" BorderThickness="0" Foreground="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" Maximum="100" Value="{Binding TensionLevel}"/>
                </Border>
-              </Grid>
-              <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding TensionText}"/>
-              <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Height="10" Margin="0,4,0,4">
-               <ProgressBar Background="Transparent" BorderThickness="0" Foreground="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" Maximum="100" Value="{Binding TensionLevel}"/>
-              </Border>
-              <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}"><Run Text="{DynamicResource Viz.Diplomacy.BorderConflictRiskLabel}"/><Run Text=": "/><Run Text="{Binding BorderConflictProbability}"/><Run Text="%"/></TextBlock>
+               <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}"><Run Text="{DynamicResource Viz.Diplomacy.BorderConflictRiskLabel}"/><Run Text=": "/><Run Text="{Binding BorderConflictProbability}"/><Run Text="%"/></TextBlock>
+              </StackPanel>
+             </Border>
+            </DataTemplate>
+           </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Border Grid.Row="1" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,2,6,0" Padding="6,3">
+           <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="{Binding KingdomDiplomacyDashboard.SelectedStanceDetails, Mode=OneWay}" TextWrapping="Wrap"/>
+          </Border>
+         </Grid>
+         <!-- Right Column: Geopolitical Balance Radar & Senatorial Gauges -->
+         <Border Grid.Column="1" Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6">
+          <StackPanel>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,4" Padding="4,1">
+            <TextBlock FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="REALM POWER BALANCE"/>
+           </Border>
+           <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="2" Margin="0,0,0,4">
+            <presentation:ForgeRadarChart
+                AxisLabels="{Binding KingdomDiplomacyDashboard.DiplomaticRadarAxes}"
+                Values="{Binding KingdomDiplomacyDashboard.FactionPowerRadarValues}"
+                Stroke="{DynamicResource BrassBrush}"
+                Fill="{DynamicResource BrassBrush}"
+                GridBrush="{DynamicResource BorderBrush}"
+                AxisLabelBrush="{DynamicResource MutedTextBrush}"
+                Height="105" Width="195"/>
+           </Border>
+           <Grid Margin="0,2,0,0">
+            <Grid.ColumnDefinitions>
+             <ColumnDefinition Width="*"/>
+             <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <!-- Senate Consensus Gauge -->
+            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Grid.Column="0" Margin="0,0,3,0" Padding="3,2">
+             <StackPanel HorizontalAlignment="Center">
+              <presentation:ForgeRingGauge
+                  Value="{Binding KingdomDiplomacyDashboard.SenateConsensusGaugeValue}"
+                  Maximum="100"
+                  Threshold="50"
+                  CenterText="68%"
+                  SubText="SENATE"
+                  AccentBrush="{DynamicResource BrassBrush}"
+                  BackgroundBrush="{DynamicResource CoalBrush}"
+                  ThresholdBrush="{DynamicResource VerdigrisBrush}"
+                  TextBrush="{DynamicResource PaperBrush}"
+                  Height="46" Width="46"/>
              </StackPanel>
             </Border>
-           </DataTemplate>
-          </ItemsControl.ItemTemplate>
-         </ItemsControl>
-         <Border Grid.Row="1" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,4,6,0" Padding="6,3">
-          <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="{Binding KingdomDiplomacyDashboard.SelectedStanceDetails, Mode=OneWay}" TextWrapping="Wrap"/>
+            <!-- War Risk Gauge -->
+            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Grid.Column="1" Margin="3,0,0,0" Padding="3,2">
+             <StackPanel HorizontalAlignment="Center">
+              <presentation:ForgeRingGauge
+                  Value="{Binding KingdomDiplomacyDashboard.WarRiskGaugeValue}"
+                  Maximum="100"
+                  Threshold="60"
+                  CenterText="24%"
+                  SubText="WAR RISK"
+                  AccentBrush="{DynamicResource EmberBrush}"
+                  BackgroundBrush="{DynamicResource CoalBrush}"
+                  ThresholdBrush="{DynamicResource EmberBrush}"
+                  TextBrush="{DynamicResource PaperBrush}"
+                  Height="46" Width="46"/>
+             </StackPanel>
+            </Border>
+           </Grid>
+          </StackPanel>
          </Border>
-        </Grid>
-       </Grid></DataTemplate>
+        </Grid></Grid></DataTemplate>
   <DataTemplate x:Key="ComponentGeneratorStudioDashboardTemplate"><Grid>
         <Grid.RowDefinitions>
          <RowDefinition Height="Auto"/>
@@ -899,8 +1049,19 @@
           <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="7">
            <StackPanel>
             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Operation.RingBuffer}"/>
-            <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Margin="0,3,0,0" Text="{Binding GenericOperationDashboard.BufferCapacityText}"/>
-            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0" Text="{DynamicResource Viz.Operation.RingDescription}" TextWrapping="Wrap"/>
+            <presentation:ForgeRingGauge
+                Value="{Binding GenericOperationDashboard.BufferUtilizationGaugeValue}"
+                Maximum="100"
+                Threshold="80"
+                CenterText="42%"
+                SubText="BUFFER"
+                AccentBrush="{DynamicResource VerdigrisBrush}"
+                BackgroundBrush="{DynamicResource CoalBrush}"
+                ThresholdBrush="{DynamicResource EmberBrush}"
+                TextBrush="{DynamicResource PaperBrush}"
+                Height="48" Width="48" HorizontalAlignment="Center" Margin="0,2"/>
+            <TextBlock FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Margin="0,1,0,0" Text="{Binding GenericOperationDashboard.BufferCapacityText}"/>
+            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,2,0,0" Text="{DynamicResource Viz.Operation.RingDescription}" TextWrapping="Wrap"/>
            </StackPanel>
           </Border>
           <!-- Sensor 2: File Traversal -->
@@ -929,10 +1090,28 @@
           </Border>
          </Grid>
          <!-- Live Findings Flight Deck -->
-         <Border Grid.Row="1" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="6">
-          <DockPanel LastChildFill="True">
-           <TextBlock DockPanel.Dock="Top" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,3" Text="FLIGHT DECK DIAGNOSTIC TELEMETRY FINDINGS"/>
-           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <Border Grid.Row="1" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="6">
+           <DockPanel LastChildFill="True">
+            <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
+             <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+             </Grid.ColumnDefinitions>
+             <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="FLIGHT DECK DIAGNOSTIC TELEMETRY FINDINGS" VerticalAlignment="Center"/>
+             <presentation:ForgeSparkline
+                 Grid.Column="1"
+                 DataPoints="{Binding GenericOperationDashboard.ExecutionLatencyTrajectory}"
+                 Stroke="{DynamicResource VerdigrisBrush}"
+                 Fill="{DynamicResource VerdigrisBrush}"
+                 ShowGridLines="True"
+                 GridBrush="{DynamicResource BorderBrush}"
+                 ValueUnit="ms"
+                 FormatString="0.0"
+                 Height="20" Margin="10,0,10,0"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource VerdigrisBrush}" Grid.Column="2" Text="IPC Latency: 1.2ms (Zero-Lock)" VerticalAlignment="Center"/>
+            </Grid>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding GenericOperationDashboard.DiagnosticFindings}">
              <ItemsControl.ItemTemplate>
               <DataTemplate>

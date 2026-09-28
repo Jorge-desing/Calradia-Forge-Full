@@ -458,3 +458,28 @@
 
 
 
+
+## Gran Ronda de Gráficas Vectoriales Interactivas y Telemetría Multidimensional en WPF (Rev073)
+- [x] Fase 1: Suite de Controles Vectoriales Directos (`ForgeChartControls.cs`): Implementación nativa de `ForgeSparkline` (línea y área con gradiente suave), `ForgeRadarChart` (poligonal n-dimensional con cuadrícula concéntrica regular y soporte multicapa) y `ForgeRingGauge` (reloj de anillo angular de 270° con umbral dinámico de alerta y tipografía centrada), todos derivados de `FrameworkElement` con `DrawingContext.DrawGeometry()` y geometrías congeladas (`Freeze()`) para 0 sobrecoste en el árbol visual.
+- [x] Fase 2: Modelos de Vista y Telemetría Multidimensional (`DesktopSimulationViewModels.cs`):
+  - Árbol de Tropas (`TroopTreeDashboardViewModel`): 5 ejes ortogonales normalizados `CombatRadarAxes` [Armor, Damage, Speed, Cohesion, CostEff], `SelectedTroopRadarValues` reactivo y superposición comparativa `CaptainPerksRadarValues`.
+  - Simulador de Empresas (`WorkshopDashboardViewModel`): Trayectoria acumulada de beneficios a 30 días `CumulativeProfitTrajectory` y medidor radial de riesgo de rebelión cívica `RebellionRiskGaugeValue` con umbral de 45%.
+  - Diplomacia Geopolítica (`KingdomDiplomacyDashboardViewModel`): Medidores radiales duales `SenateConsensusGaugeValue` y `WarRiskGaugeValue`, y radar geopolítico pentagonal `DiplomaticRadarAxes` y `FactionPowerRadarValues`.
+  - Memoria Cognitiva CoALA (`AgentMemoryDashboardViewModel`): Curva analítica horaria de decaimiento de utilidad $U(t) = 0.4R(t) + 0.3F + 0.3I$ a 24 intervalos `MemoryDecayTrajectory` y medidor radial de ocupación de slots `MemorySlotUtilizationGaugeValue`.
+  - Flight Deck de Operaciones Genéricas (`GenericOperationDashboardViewModel`): Histograma de latencia de despacho IPC `ExecutionLatencyTrajectory` a 16 muestras y medidor radial de búfer de 64 MB `BufferUtilizationGaugeValue`.
+- [x] Fase 3: Integración y Cableado XAML en Estudios Tácticos (`ToolPageTemplates.xaml`):
+  - Inserción de `ForgeRadarChart` pentagonal en columna táctica de `TroopTreeVisualizerDashboardTemplate`.
+  - Inserción de `ForgeSparkline` de rentabilidad acumulada y `ForgeRingGauge` de riesgo cívico en `WorkshopSimulatorDashboardTemplate`.
+  - Inserción de `ForgeRingGauge` de slots y `ForgeSparkline` de decaimiento cognitivo en `AgentMemoryInspectorDashboardTemplate`.
+  - Inserción de `ForgeRadarChart` de poder geopolítico y medidores duales `ForgeRingGauge` en `KingdomDiplomacyStudioDashboardTemplate`.
+  - Inserción de `ForgeRingGauge` de búfer y `ForgeSparkline` de latencia IPC en `GenericOperationOverviewDashboardTemplate`.
+  - Preservación inviolable de los 37 tokens de localización verificados por `VisualizerStaticLabelLocalization` y purga de duplicados de cierre XAML.
+- [x] Fase 4: Pruebas Unitarias de Telemetría Gráfica en `DesktopSimulationServiceTests.cs`: Comprobación exhaustiva de cotas [0.0, 1.0] y [0, 100], colecciones no nulas y mutaciones reactivas ante selección de tropas, pericias de capitán, costes económicos, decretos de guerra y ciclos de escenario.
+- [x] Fase 5: Verificación Exhaustiva de 6 Capas:
+  - Compilación de la solución `CalradiaForge.sln` en Release (0 errores / 0 advertencias).
+  - Verificación de comportamiento sin estado `verify_stateless_behavior.ps1` (4/4 criterios cumplidos).
+  - Suite de pruebas de la solución (`Run-CalradiaForge-Tests.bat`): Core & ForgeWeave 73 pasadas, Desktop MVVM 63 pasadas, WPF Render 289 pasadas en < 13.5s.
+  - Suite de agentes autónomos Antigravity (`test_forge_agents.py`): 31 pruebas pasadas en 25.1s.
+  - Verificación Windows UI Automation smoke (`Test-CalradiaForge-Desktop-Uia.ps1`): 23/23 registros conformes.
+- [x] Fase 6: Empaquetado Automático con `FastPackageEngine` (`package.ps1`): Generación de los 3 archivos ZIP de distribución en `artifacts/` (`CalradiaForge-Modules-25.2.0.zip`, `CalradiaForge-Source-SDK-25.2.0.zip`, `CalradiaForge-Desktop-25.2.0.zip`).
+- [x] Fase 7: Registro de Aprendizaje (Propuesta 30 en `learning_proposal.md`), Sincronización y Push a GitHub (`main`) bajo la Regla E.

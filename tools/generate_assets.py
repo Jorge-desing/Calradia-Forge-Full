@@ -593,7 +593,7 @@ for source,localized in navigation_palette.items():
     if localized.get('en')!=source or set(localized)!=navigation_languages or any(not value.strip() for value in localized.values()):
         raise ValueError('Incomplete navigation palette translation: '+source)
 english_catalog.update({source:localized['en'] for source,localized in navigation_palette.items()})
-localized_panel_keys=(
+output_filter_keys=(
     'Evidence',
     'Filter current output without changing the tool argument.',
     'Filter output lines...',
@@ -603,7 +603,7 @@ localized_panel_keys=(
 for language,folder,display,catalog in catalogs:
     catalog.update({source:localized[language] for source,localized in navigation_palette.items()})
     source_catalog={entry.attrib['key']:entry.attrib['value'] for entry in E.parse(ROOT/'localization'/f'{language}.xml').getroot()}
-    for key in localized_panel_keys:
+    for key in output_filter_keys:
         translated=source_catalog.get(key)
         if not translated or (language=='en' and translated!=key):
             raise ValueError(f'Incomplete in-game Gauntlet label translation for {language}: {key}')

@@ -119,6 +119,9 @@ namespace CalradiaForge.Desktop.Presentation
         bool captainPerksActive;
         string perkBonusSummary = "Captain Perks: INACTIVE (Vanilla baseline)";
         string perkBadgeBrushKey = "MutedTextBrush";
+        static readonly string[] DefaultCombatRadarAxes = ["Armor", "Damage", "Speed", "Cohesion", "CostEff"];
+        IReadOnlyList<double> selectedTroopRadarValues = [0.82, 0.70, 0.55, 0.94, 0.65];
+        IReadOnlyList<double> captainPerksRadarValues = [0.88, 0.78, 0.58, 0.98, 0.75];
 
         public TroopTreeDashboardViewModel()
         {
@@ -130,6 +133,7 @@ namespace CalradiaForge.Desktop.Presentation
             FilterArchetypeCommand = new RelayCommand(p => { if (p is string s) SelectedArchetypeFilter = s; });
             SimulateBattleShockCommand = new RelayCommand(() => RecalculateBattleShock());
             ToggleCaptainPerksCommand = new RelayCommand(ToggleCaptainPerks);
+            RecalculateBattleShock();
         }
 
         public string Culture { get => culture; private set => Set(ref culture, value); }
@@ -138,6 +142,10 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<TroopNodeViewModel> StandardTreeRoots { get; }
         public IReadOnlyList<TroopNodeViewModel> NobleTreeRoots { get; }
         public IReadOnlyList<TroopNodeViewModel> AllHighlightedTroops { get; }
+
+        public IReadOnlyList<string> CombatRadarAxes => DefaultCombatRadarAxes;
+        public IReadOnlyList<double> SelectedTroopRadarValues { get => selectedTroopRadarValues; private set => Set(ref selectedTroopRadarValues, value); }
+        public IReadOnlyList<double> CaptainPerksRadarValues { get => captainPerksRadarValues; private set => Set(ref captainPerksRadarValues, value); }
 
         public bool CaptainPerksActive { get => captainPerksActive; private set => Set(ref captainPerksActive, value); }
         public string PerkBonusSummary { get => perkBonusSummary; private set => Set(ref perkBonusSummary, value); }
@@ -196,6 +204,22 @@ namespace CalradiaForge.Desktop.Presentation
             var upfrontCost = troop.Cost * 50;
             var weeklyWage = (int)(troop.Wage * 50 * (CaptainPerksActive ? 0.90 : 1.0));
             simulatedArmyCostEstimate = $"Party Sample (x50): {upfrontCost:N0}d Upfront · {weeklyWage:N0}d/week Wage";
+
+            var armorVal = Math.Clamp((troop.Tier * 0.13) + (isCav ? 0.22 : isRanged ? 0.08 : 0.28), 0.15, 0.98);
+            var dmgVal = Math.Clamp((troop.Tier * 0.12) + (isRanged ? 0.32 : isCav ? 0.26 : 0.20), 0.15, 0.98);
+            var spdVal = isCav ? 0.92 : isRanged ? 0.62 : 0.52;
+            var cohVal = Math.Clamp((isCav ? 0.88 : isRanged ? 0.76 : 0.94) + (CaptainPerksActive ? 0.05 : 0.0), 0.2, 1.0);
+            var costVal = Math.Clamp(1.05 - (troop.Tier * 0.12) + (CaptainPerksActive ? 0.08 : 0.0), 0.25, 0.95);
+
+            SelectedTroopRadarValues = [armorVal, dmgVal, spdVal, cohVal, costVal];
+            CaptainPerksRadarValues = [
+                Math.Clamp(armorVal + 0.06, 0.1, 1.0),
+                Math.Clamp(dmgVal + 0.08, 0.1, 1.0),
+                Math.Clamp(spdVal + 0.05, 0.1, 1.0),
+                Math.Clamp(cohVal + 0.05, 0.1, 1.0),
+                Math.Clamp(costVal + 0.10, 0.1, 1.0)
+            ];
+
             Raise(nameof(SimulatedFrontlineCohesion));
             Raise(nameof(SimulatedArmyCostEstimate));
         }
@@ -465,6 +489,8 @@ namespace CalradiaForge.Desktop.Presentation
         int calculatedNetProfit = 306;
         double calculatedPaybackPeriod = 41.1;
         string simulationSummary = "Horizon: 30d · Insumos: 1.0x · Impuesto: 10% · Retorno Proyectado: +9,180d";
+        IReadOnlyList<double> cumulativeProfitTrajectory = Array.Empty<double>();
+        double rebellionRiskGaugeValue = 8.6;
 
         public WorkshopDashboardViewModel()
         {
@@ -478,6 +504,7 @@ namespace CalradiaForge.Desktop.Presentation
                 CostMultiplier = CostMultiplier < 0.9 ? 1.0 : CostMultiplier < 1.1 ? 1.2 : CostMultiplier < 1.3 ? 1.5 : 0.8;
             });
             RecalculateEconomyCommand = new RelayCommand(() => RecalculateEconomy());
+            RecalculateEconomy();
         }
 
         public string Settlement { get => settlement; private set => Set(ref settlement, value); }
@@ -487,6 +514,9 @@ namespace CalradiaForge.Desktop.Presentation
         public string RebellionRisk { get => rebellionRisk; private set => Set(ref rebellionRisk, value); }
         public string OptimalEnterprise { get => optimalEnterprise; private set => Set(ref optimalEnterprise, value); }
         public IReadOnlyList<WorkshopEnterpriseItemViewModel> Enterprises { get; }
+
+        public IReadOnlyList<double> CumulativeProfitTrajectory { get => cumulativeProfitTrajectory; private set => Set(ref cumulativeProfitTrajectory, value); }
+        public double RebellionRiskGaugeValue { get => rebellionRiskGaugeValue; private set => Set(ref rebellionRiskGaugeValue, value); }
 
         public int HorizonDays
         {
@@ -530,8 +560,23 @@ namespace CalradiaForge.Desktop.Presentation
             calculatedPaybackPeriod = Math.Round(50000.0 / Math.Max(1, calculatedNetProfit), 1);
             var totalReturn = calculatedNetProfit * horizonDays;
             var taxStrain = taxRate > 0.15 ? 14.2 : taxRate > 0.10 ? 10.4 : 6.8;
-            RebellionRisk = $"{taxStrain:0.0}% (Simulated · Threshold: 45.0%)";
+            var costStrain = (costMultiplier - 1.0) * 4.0;
+            var compositeRisk = Math.Round(Math.Max(1.0, taxStrain + costStrain), 1);
+            RebellionRisk = $"{compositeRisk:0.0}% (Simulated · Threshold: 45.0%)";
             simulationSummary = $"Horizon: {horizonDays}d · Insumos: {costMultiplier:0.0}x · Impuesto: {taxRate * 100:0}% · Retorno Proyectado: +{totalReturn:N0}d";
+
+            var days = Math.Max(7, horizonDays);
+            var traj = new double[days];
+            var runningTotal = 0.0;
+            for (int d = 1; d <= days; d++)
+            {
+                var daily = calculatedNetProfit * (1.0 + Math.Sin(d * 0.45) * 0.08);
+                runningTotal += daily;
+                traj[d - 1] = Math.Round(runningTotal, 1);
+            }
+            CumulativeProfitTrajectory = traj;
+            RebellionRiskGaugeValue = compositeRisk;
+
             Raise(nameof(CalculatedNetProfit));
             Raise(nameof(CalculatedPaybackPeriod));
             Raise(nameof(SimulationSummary));
@@ -885,6 +930,7 @@ namespace CalradiaForge.Desktop.Presentation
         string newFactCategory = "Belief";
         string newFactTtl = "Permanent";
         readonly ObservableCollection<string> liveInjectedEpisodes = [];
+        IReadOnlyList<double> memoryDecayTrajectory = Array.Empty<double>();
 
         public AgentMemoryDashboardViewModel()
         {
@@ -903,7 +949,11 @@ namespace CalradiaForge.Desktop.Presentation
             ConsolidateMemoriesCommand = new RelayCommand(ConsolidateMemories);
             FilterCategoryCommand = new RelayCommand(p => { if (p is string cat) SelectedCategoryFilter = cat; });
             AddSemanticFactCommand = new RelayCommand(AddCustomFact, () => !string.IsNullOrWhiteSpace(NewFactKey));
+            UpdateDecayTrajectory();
         }
+
+        public IReadOnlyList<double> MemoryDecayTrajectory { get => memoryDecayTrajectory; private set => Set(ref memoryDecayTrajectory, value); }
+        public double MemorySlotUtilizationGaugeValue => CapacityPercentage;
 
         public string Architecture => "CoALA Cognitive Architecture (Short-Term Working + Bounded Episodic + Semantic Facts + Utility Decay)";
         public string CapacitySummary { get => capacitySummary; set => Set(ref capacitySummary, value); }
@@ -1153,6 +1203,7 @@ namespace CalradiaForge.Desktop.Presentation
                 CapacitySummary = "6 / 100 Agent Slots Active · 3.2% Memory Utilization (T+72h Pruned & Consolidated)";
                 CapacityPercentage = 3.2;
             }
+            UpdateDecayTrajectory();
         }
 
         public void CycleScenario() => CycleScenario(activeScenarioIndex + 1);
@@ -1161,6 +1212,23 @@ namespace CalradiaForge.Desktop.Presentation
         {
             CapacitySummary = $"Live Game Session · {liveAgentCount} Registered Cognitive NPCs · {liveSemantic} Active Facts · {liveEpisodic} Episodes";
             CapacityPercentage = Math.Min(100.0, (liveAgentCount / 2048.0) * 100.0);
+            UpdateDecayTrajectory();
+        }
+
+        void UpdateDecayTrajectory()
+        {
+            var points = new double[24];
+            var decayRate = activeScenarioIndex == 2 ? 0.06 : activeScenarioIndex == 1 ? 0.04 : 0.025;
+            var baseF = 0.75;
+            var baseI = 0.85;
+            for (int t = 0; t < 24; t++)
+            {
+                var recency = Math.Exp(-decayRate * t);
+                var u = (0.4 * recency) + (0.3 * baseF) + (0.3 * baseI);
+                points[t] = Math.Round(u, 3);
+            }
+            MemoryDecayTrajectory = points;
+            Raise(nameof(MemorySlotUtilizationGaugeValue));
         }
         public string StudioDocumentation => "CoALA / MIRIX Cognitive Memory Architecture: Real-time working memory, episodic event recording, semantic knowledge graph with multi-dimensional utility decay score U = 0.4*R + 0.3*F + 0.3*I, and universal cognitive dialogues.";
         public string ArchitecturalInvariants => "1. Episodic records are bounded at 50 entries per agent to prevent unbounded memory growth.\n2. Semantic decay occurs on modulo-24 anti-lag time-slicing.\n3. 100% stateless save persistence (0 SaveableTypeDefiner, resolve via Hero.StringId).\n4. Condition delegates in cognitive dialogues must be side-effect free.";
@@ -1789,6 +1857,16 @@ namespace CalradiaForge.Desktop.Presentation
         public string SimulatedSenateConsensus => $"{Math.Clamp(68 - tensionModifier * 2, 10, 95)}% Support · {Math.Clamp(32 + tensionModifier * 2, 5, 90)}% Opposition";
         public RelayCommand AdjustTensionCommand { get; }
 
+        double senateConsensusGaugeValue = 68.0;
+        double warRiskGaugeValue = 24.0;
+        static readonly string[] DefaultDiplomaticRadarAxes = ["Military", "Clans", "Tribute", "Stability", "CasusBelli"];
+        IReadOnlyList<double> factionPowerRadarValues = [0.75, 0.65, 0.45, 0.80, 0.35];
+
+        public double SenateConsensusGaugeValue { get => senateConsensusGaugeValue; private set => Set(ref senateConsensusGaugeValue, value); }
+        public double WarRiskGaugeValue { get => warRiskGaugeValue; private set => Set(ref warRiskGaugeValue, value); }
+        public IReadOnlyList<string> DiplomaticRadarAxes => DefaultDiplomaticRadarAxes;
+        public IReadOnlyList<double> FactionPowerRadarValues { get => factionPowerRadarValues; private set => Set(ref factionPowerRadarValues, value); }
+
         void RecalculateDiplomacy()
         {
             var baseRisk = factionName.Contains("Western") ? 58 : factionName.Contains("Vlandia") ? 40 : 24;
@@ -1797,6 +1875,17 @@ namespace CalradiaForge.Desktop.Presentation
             var status = adjustedRisk >= 60 ? "MOBILIZED" : adjustedRisk >= 35 ? "EXPEDITIONARY" : "STABLE";
             WarRiskText = $"WAR RISK: {adjustedRisk}% · {status}";
             PeaceIndexText = $"PEACE PROBABILITY: {adjustedPeace}%";
+
+            SenateConsensusGaugeValue = Math.Clamp(68 - tensionModifier * 2, 10, 95);
+            WarRiskGaugeValue = adjustedRisk;
+
+            var mil = factionName.Contains("Western") ? 0.88 : factionName.Contains("Vlandia") ? 0.82 : 0.74;
+            var clans = factionName.Contains("Western") ? 0.70 : factionName.Contains("Vlandia") ? 0.85 : 0.68;
+            var trib = Math.Clamp(0.50 - (tensionModifier * 0.015), 0.15, 0.90);
+            var stab = Math.Clamp(1.0 - (adjustedRisk / 100.0), 0.10, 0.95);
+            var casus = Math.Clamp(adjustedRisk / 100.0, 0.10, 0.95);
+            FactionPowerRadarValues = [mil, clans, trib, stab, casus];
+
             Raise(nameof(SimulatedSenateConsensus));
             Raise(nameof(SenateChamberStatus));
         }
@@ -2143,6 +2232,16 @@ namespace CalradiaForge.Desktop.Presentation
         public string ScanStatusBrushKey { get => scanStatusBrushKey; private set => Set(ref scanStatusBrushKey, value); }
         public ObservableCollection<DiagnosticFindingViewModel> DiagnosticFindings => diagnosticFindings;
 
+        static readonly double[] DefaultExecutionLatencyTrajectory = [
+            1.2, 1.4, 0.9, 2.1, 1.5, 1.1, 0.8, 1.3,
+            1.8, 1.2, 0.9, 1.1, 1.6, 1.0, 0.8, 1.2
+        ];
+        IReadOnlyList<double> executionLatencyTrajectory = DefaultExecutionLatencyTrajectory;
+        double bufferUtilizationGaugeValue = 42.0;
+
+        public IReadOnlyList<double> ExecutionLatencyTrajectory { get => executionLatencyTrajectory; private set => Set(ref executionLatencyTrajectory, value); }
+        public double BufferUtilizationGaugeValue { get => bufferUtilizationGaugeValue; private set => Set(ref bufferUtilizationGaugeValue, value); }
+
         public RelayCommand RunDiagnosticScanCommand { get; }
         public RelayCommand ClearFindingsCommand { get; }
 
@@ -2175,6 +2274,7 @@ namespace CalradiaForge.Desktop.Presentation
                 FileTraversalText = "Recursive Bounds · MaxDepth 128";
                 ThreadIsolationText = "Background Worker Pipeline";
                 ExecutionBoundsText = "Adaptive 30s Guard Timeout";
+                BufferUtilizationGaugeValue = 64.5;
             }
             else
             {
@@ -2185,6 +2285,7 @@ namespace CalradiaForge.Desktop.Presentation
                 FileTraversalText = "TopDirectoryOnly · MaxDepth 64";
                 ThreadIsolationText = "Strict UI Thread Isolation (Net8.0)";
                 ExecutionBoundsText = "Bounded Async CancellationToken";
+                BufferUtilizationGaugeValue = 42.0;
             }
             RunDiagnosticScan();
         }

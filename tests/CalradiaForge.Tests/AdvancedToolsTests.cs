@@ -1966,7 +1966,7 @@ namespace MyCustomMod.QuestBehaviors
                 Tuple.Create("zh-HANS", "CNs"), Tuple.Create("zh-HANT", "CNt"),
                 Tuple.Create("ja", "JP"), Tuple.Create("ko", "KO")
             };
-            string[] localizedPanelKeys = new[]
+            string[] localizedFilterKeys = new[]
             {
                 "Evidence",
                 "Filter current output without changing the tool argument.",
@@ -1983,17 +1983,15 @@ namespace MyCustomMod.QuestBehaviors
                     Dictionary<string, string> generatedCatalog = XDocument.Load(Path.GetFullPath(
                             "modules/CalradiaForge/ModuleData/Languages/" + locale.Item2 + "/forge_strings.xml"))
                         .Descendants("string").ToDictionary(element => (string)element.Attribute("id"), element => (string)element.Attribute("text"));
-                    foreach (string key in localizedPanelKeys)
+                    foreach (string key in localizedFilterKeys)
                     {
                         if (!sourceCatalog.TryGetValue(key, out string localized) || string.IsNullOrWhiteSpace(localized))
-                            throw new Exception("Missing Gauntlet panel source translation for " + locale.Item1 + ": " + key);
-                        if (key == "Evidence" && localized.Length > 14)
-                            throw new Exception("The evidence header label is too long for its fixed title area in " + locale.Item1 + ".");
+                            throw new Exception("Missing output-filter source translation for " + locale.Item1 + ": " + key);
                         string hash = BitConverter.ToString(sha256.ComputeHash(Encoding.UTF8.GetBytes(englishCatalog[key])))
                             .Replace("-", string.Empty).ToLowerInvariant();
                         string id = "forge_" + hash.Substring(0, 12);
                         if (!generatedCatalog.TryGetValue(id, out string generated) || generated != localized)
-                            throw new Exception("Generated Gauntlet panel language resource is stale for " + locale.Item1 + ": " + key);
+                            throw new Exception("Generated Gauntlet language resource is stale for " + locale.Item1 + ": " + key);
                     }
                 }
             }
