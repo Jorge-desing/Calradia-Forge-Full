@@ -838,3 +838,10 @@ Initial developer preview: Gauntlet panel, WPF client, local named pipes, diagno
 - `tools/Prepare-CalradiaForge-ImageGenTextures.bat --check --no-pause` passed. The reported Core/ForgeWeave run passed Core 343/343 and ForgeWeave 73/73 without build warnings. The full Gauntlet visual audit and source-atlas regeneration remain pending for this revision.
 - Resource Browser import and live Gauntlet rendering remain pending; no current source check proves either. No live F10 observation, campaign, or battle was performed for this revision.
 - Product version remains 25.2.0; public API, routes, commands, permissions, and ZIPs are unchanged.
+
+### Resource Browser Gauntlet atlas TPAC import verified (Rev083) — 2026-09-28
+
+- Imported the generated `ui_calradiaforge_1` atlas through Resource Browser with the existing texture settings. After saving and refreshing, the inspector loaded the resource as a 4096×512 texture; runtime details showed DXT5 and 13 mip levels.
+- The installed `ui_calradiaforge_1_tex.tpac` changed from SHA-256 `69513B5617F026E1F106F6CA6D47CF5C5CE0B5869FFA472E9166B037CA8EDEA6` to `131E623077708032C76790324F31EDC7862BDC6D5ACA79350B4A03C241A0529E`. The pre-import installed and source TPAC backups were rechecked and retained.
+- The workspace source TPAC remains at its prior hash because the collection helper depends on the obsolete TpacTool reader; TpacTool was not used. Resource Browser import is verified, while live Gauntlet panel rendering remains unverified.
+- Product version remains 25.2.0; no API, route, command, permission, or ZIP changed.

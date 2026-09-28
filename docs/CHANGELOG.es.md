@@ -629,3 +629,10 @@ Consulta VALIDATION.md para distinguir las pruebas automáticas, la ejecución d
 - Pasó `tools/Prepare-CalradiaForge-ImageGenTextures.bat --check --no-pause`. La ejecución reportada de Core/ForgeWeave pasó Core 343/343 y ForgeWeave 73/73 sin advertencias de compilación. La auditoría visual Gauntlet completa y la regeneración del atlas fuente siguen pendientes para esta revisión.
 - La importación por Resource Browser y el render Gauntlet en vivo siguen pendientes; ninguna comprobación actual de fuente demuestra esos resultados. En esta revisión no se observó F10 en vivo ni se cargó campaña o batalla.
 - La versión del producto sigue en 25.2.0; no cambian API pública, rutas, comandos, permisos ni ZIPs.
+
+### Importación del TPAC del atlas Gauntlet verificada en Resource Browser (Rev083) — 28/09/2026
+
+- Se importó el atlas generado `ui_calradiaforge_1` mediante Resource Browser con los ajustes de textura existentes. Tras guardar y actualizar, el inspector cargó el recurso como textura de 4096×512; los detalles de ejecución mostraron DXT5 y 13 niveles mip.
+- El `ui_calradiaforge_1_tex.tpac` instalado cambió del SHA-256 `69513B5617F026E1F106F6CA6D47CF5C5CE0B5869FFA472E9166B037CA8EDEA6` a `131E623077708032C76790324F31EDC7862BDC6D5ACA79350B4A03C241A0529E`. Se volvieron a comprobar y conservar los respaldos previos del TPAC instalado y fuente.
+- El TPAC fuente del espacio de trabajo conserva su hash anterior porque la herramienta de recopilación depende del lector obsoleto de TpacTool; no se usó TpacTool. La importación de Resource Browser está verificada; el render del panel Gauntlet en vivo sigue sin verificarse.
+- La versión del producto sigue en 25.2.0; no cambian API, rutas, comandos, permisos ni ZIPs.
