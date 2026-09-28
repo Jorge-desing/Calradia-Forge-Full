@@ -483,3 +483,34 @@
   - Verificación Windows UI Automation smoke (`Test-CalradiaForge-Desktop-Uia.ps1`): 23/23 registros conformes.
 - [x] Fase 6: Empaquetado Automático con `FastPackageEngine` (`package.ps1`): Generación de los 3 archivos ZIP de distribución en `artifacts/` (`CalradiaForge-Modules-25.2.0.zip`, `CalradiaForge-Source-SDK-25.2.0.zip`, `CalradiaForge-Desktop-25.2.0.zip`).
 - [x] Fase 7: Registro de Aprendizaje (Propuesta 30 en `learning_proposal.md`), Sincronización y Push a GitHub (`main`) bajo la Regla E.
+
+## Integración de 8 Skills Élite para Agentes y Explorador de Resultados Gauntlet (Rev081)
+- [x] Fase 1: Investigación y Selección de Skills Élite: Análisis de repositorios abiertos para desarrollo en Bannerlord y Antigravity, seleccionando 8 skills en 4 pilares:
+  1. Rendimiento & Depuración: `debugging-master`, `performance-hunter`
+  2. IA de Juego & Simulación: `game-ai-behavior-trees`, `discrete-event-simulation`
+  3. Multi-Agente & Testing: `multi-agent-orchestration`, `test-architect`
+  4. UI/UX de Juego & Audio: `game-ui-design`, `game-audio`
+- [x] Fase 2: Especialización Completa de las 8 Skills en `.agents/skills/`:
+  - `debugging-master/SKILL.md`: Triaje de fallos nativos (0xC0000005), regla de los 10 minutos y análisis de volcados `.cfcrash`.
+  - `performance-hunter/SKILL.md`: Zero GC allocs en ticks de simulación, time-slicing modulo-24 y enumeradores estructurados.
+  - `game-ai-behavior-trees/SKILL.md`: Diseño de nodos de árboles de comportamiento, patrón Blackboard y ciclo de vida de `AgentComponent` / `MissionLogic`.
+  - `discrete-event-simulation/SKILL.md`: Cadencias horarias/diarias/semanales, afinidad de hilo de juego y máquinas de estados deterministas.
+  - `multi-agent-orchestration/SKILL.md`: Coordinación de Google Antigravity SDK y OpenAI Codex CLI con compactación de tokens sin pérdida de telemetría de fallos.
+  - `test-architect/SKILL.md`: Pirámide de verificación de 5 fases, contratos estáticos de C#/XAML, pruebas de renderizado WPF headless y smoke UIA.
+  - `game-ui-design/SKILL.md`: Prefabs Gauntlet XML con `[DataSourceProperty]`, paleta táctica WPF y sondeo de flanco ascendente en F10.
+  - `game-audio/SKILL.md`: Directorio `ModuleSounds/`, esquema `module_sounds.xml`, categorías de mezcla `ui`/`mission_combat` y reproducción 2D/3D.
+- [x] Fase 3: Gobernanza y Taxonomía:
+  - Actualización de la tabla de enrutamiento y categorías en `docs/SKILLS_TAXONOMY.md`.
+  - Registro de la Propuesta 35 en `learning_proposal.md`.
+- [x] Fase 4: Implementación del Explorador de Resultados Gauntlet (Rev081):
+  - Modelos `TestResultItemVM` y analizador acotado `TestResultExplorerParser` (51 registros) en `PanelViewModel.cs`.
+  - Prefab Gauntlet `CalradiaForge.xml` con `ListPanel` desplazable, `ItemTemplate` y panel de detalle contextual.
+  - Sincronización de cadenas en 13 idiomas e inclusión de oclusión en `Validate-CalradiaForge-DecorativeSprites.py`.
+- [x] Fase 5: Verificación Integral de 6 Capas:
+  - Compilación Release de `CalradiaForge.sln`: 0 advertencias, 0 errores.
+  - Verificación stateless (`verify_stateless_behavior.ps1`): 4/4 criterios superados.
+  - Suite de pruebas de la solución (`Run-CalradiaForge-Tests.bat`): 343 Core, 73 ForgeWeave, 63 Desktop, 289 WPF Render (182 pasadas, 193.796 nodos) superados al 100%.
+  - Suite de agentes autónomos (`test_forge_agents.py`): 31/31 pruebas superadas al 100% con 58.6% de reducción en compactación de tokens.
+  - Validación de sprites decorativos (`Validate-CalradiaForge-DecorativeSprites.py`): 100% aprobado.
+- [x] Fase 6: Empaquetado Automático con `FastPackageEngine` (`package.ps1`): 3 archivos ZIP generados en `artifacts/` (`CalradiaForge-Modules-25.2.0.zip`, `CalradiaForge-Source-SDK-25.2.0.zip`, `CalradiaForge-Desktop-25.2.0.zip`).
+- [x] Fase 7: Sincronización Git y Push a GitHub (`main`): Commit `9e8f0be` sincronizado exitosamente con el repositorio remoto.
