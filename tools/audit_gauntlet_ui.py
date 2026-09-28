@@ -1262,6 +1262,21 @@ def validate_contracts(
     if len(action_nodes) == len(comparison_actions) and len(action_rows) != 1:
         audit.error("Output comparison actions must share one dedicated action row")
 
+    compare_method = zero_arg_method_body(viewmodel_source, "ExecuteCompareOutput")
+    if compare_method is None:
+        audit.error("PanelViewModel must expose ExecuteCompareOutput for the paired ledger action")
+    else:
+        activation = re.search(r"_isOutputComparisonActive\s*=\s*true\s*;", compare_method)
+        expand = re.search(r"\bExpandEvidenceForOutputComparison\s*\(\s*\)", compare_method)
+        activation_render = re.search(r"\bRender\s*\(\s*\)", compare_method[expand.end():]) if expand else None
+        deactivation = re.search(r"_isOutputComparisonActive\s*=\s*false\s*;", compare_method)
+        restore = re.search(r"\bRestoreEvidenceFocusAfterOutputComparison\s*\(\s*\)", compare_method)
+        restore_render = re.search(r"\bRender\s*\(\s*\)", compare_method[restore.end():]) if restore else None
+        if activation is None or expand is None or expand.start() < activation.end() or activation_render is None:
+            audit.error("ExecuteCompareOutput must expand evidence before rendering the active comparison")
+        if deactivation is None or restore is None or restore.start() < deactivation.end() or restore_render is None:
+            audit.error("ExecuteCompareOutput must restore the prior evidence focus before rendering after comparison")
+
     comparison_scroll = find_by_id(evidence, "ForgeOutputComparisonScroll")
     comparison_clip = find_by_id(evidence, "ForgeOutputComparisonClip")
     comparison_rows = find_by_id(evidence, "ForgeOutputComparisonRows")
