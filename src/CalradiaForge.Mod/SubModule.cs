@@ -394,9 +394,10 @@ namespace CalradiaForge.Mod
             owner=ScreenManager.TopScreen;if(owner==null)throw new InvalidOperationException("No active game screen for the panel");
             runtime.Register("CalradiaForge","Info","Opening panel on "+owner.GetType().FullName);
             runtime.Register("CalradiaForge","Info","Creating panel GauntletLayer.");
-            vm=new PanelViewModel(runtime,Close);layer=new GauntletLayer("CalradiaForge",500,true);
-            runtime.Register("CalradiaForge","Info","Panel GauntletLayer created.");
+            vm=new PanelViewModel(runtime,Close);
             try {
+                layer=new GauntletLayer("CalradiaForge",500,true);
+                runtime.Register("CalradiaForge","Info","Panel GauntletLayer created.");
                 runtime.Register("CalradiaForge","Info","Loading panel brush file.");
                 layer.UIContext.BrushFactory.LoadBrushFile("CalradiaForge");
                 runtime.Register("CalradiaForge","Info","Panel brush file loaded.");
@@ -500,7 +501,6 @@ namespace CalradiaForge.Mod
         void Close()
         {
             CloseExtensionPage();
-            if(layer==null)return;
             keyboardControl=null;
             navigationPaletteReturnFocus=null;
             navigationPaletteWasOpen=false;
@@ -510,7 +510,7 @@ namespace CalradiaForge.Mod
             try {
                 // Screen shutdown already releases its layers. Touching their input/native
                 // resources again during module unload can access a destroyed screen.
-                if(!closingLayer.IsFinalized && closingOwner!=null && !closingOwner.IsFinalized) {
+                if(closingLayer!=null && !closingLayer.IsFinalized && closingOwner!=null && !closingOwner.IsFinalized) {
                     closingLayer.InputRestrictions.ResetInputRestrictions();
                     ScreenManager.TryLoseFocus(closingLayer);
                     if(closingOwner.HasLayer(closingLayer))closingOwner.RemoveLayer(closingLayer);

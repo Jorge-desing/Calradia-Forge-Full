@@ -16,5 +16,6 @@
     <Reference Include="$(GameBin)\TaleWorlds.Library.dll"><Private>true</Private></Reference>
     <PackageReference Include="AsmResolver.DotNet" Version="6.0.1" />
     <Compile Include="../../src/CalradiaForge.Mod/PipeServer.cs" Link="PipeServer.cs" />
+    <Compile Include="../../src/CalradiaForge.Mod/OutputLineFilter.cs" Link="OutputLineFilter.cs" />
   </ItemGroup>
 </Project>

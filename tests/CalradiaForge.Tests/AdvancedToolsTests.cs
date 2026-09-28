@@ -4,10 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Xml.Linq;
 using CalradiaForge.Sdk;
 using CalradiaForge.Core;
+using CalradiaForge.Mod;
 
 namespace CalradiaForge.Tests
 {
@@ -201,6 +204,12 @@ namespace CalradiaForge.Tests
             XElement page = document.Descendants().Single(element => (string)element.Attribute("Id") == "ForgeEvidencePage");
             XElement empty = document.Descendants().Single(element => (string)element.Attribute("Id") == "ForgeEmptyEvidence");
             XElement content = document.Descendants().Single(element => (string)element.Attribute("Id") == "ForgeEvidenceContent");
+            XElement filterRow = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeOutputFilterRow");
+            XElement filterInput = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeOutputFilterInput");
+            XElement filterPlaceholder = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeOutputFilterPlaceholder");
+            XElement filterClear = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeOutputFilterClear");
+            XElement evidenceScroll = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeEvidenceScroll");
+            XElement evidenceScrollbar = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeEvidenceScrollBar");
             if ((string)evidence.Attribute("WidthSizePolicy") != "StretchToParent" ||
                 (string)evidence.Attribute("HeightSizePolicy") != "StretchToParent" ||
                 (string)evidence.Attribute("MarginTop") != "@EvidenceTop" ||
@@ -210,6 +219,22 @@ namespace CalradiaForge.Tests
                 (string)empty.Attribute("Text") != "@ContentPlaceholder" || (string)content.Attribute("Text") != "@Content" ||
                 (string)content.Attribute("ClipContents") != "true")
                 throw new Exception("Evidence ledger must retain page, empty-state, and raw-content bindings.");
+            if (filterRow == null || (string)filterRow.Attribute("MarginTop") != "5" ||
+                (string)filterRow.Attribute("SuggestedHeight") != "32" ||
+                (string)filterRow.Attribute("MarginLeft") != "225" ||
+                (string)filterRow.Attribute("MarginRight") != "150" ||
+                filterInput == null || filterInput.Name.LocalName != "EditableTextWidget" ||
+                (string)filterInput.Attribute("Text") != "@OutputFilterText" ||
+                (string)filterInput.Attribute("UpdateTextOnTyping") != "true" ||
+                (string)filterInput.Attribute("Hint.HintText") != "@FilterLinesHint" ||
+                filterPlaceholder == null || (string)filterPlaceholder.Attribute("IsVisible") != "@IsOutputFilterEmpty" ||
+                (string)filterPlaceholder.Attribute("Text") != "@OutputFilterPlaceholder" ||
+                filterClear == null || (string)filterClear.Attribute("IsVisible") != "@HasOutputFilter" ||
+                (string)filterClear.Attribute("Command.Click") != "ExecuteClearOutputFilter" ||
+                (string)filterClear.Attribute("Hint.HintText") != "@ClearOutputFilterHint" ||
+                evidenceScroll == null || (string)evidenceScroll.Attribute("MarginTop") != "44" ||
+                evidenceScrollbar == null || (string)evidenceScrollbar.Attribute("MarginTop") != "44")
+                throw new Exception("The live output filter must share the evidence header, update while typing, expose a localized clear action, and stay above the paged evidence viewport.");
 
             XElement previous = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgePrevious");
             XElement next = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeNext");
@@ -301,8 +326,16 @@ namespace CalradiaForge.Tests
             if (clearStart < 0 || clearEnd < 0) throw new Exception("Could not isolate the Clear Output display-only action.");
             string clearMethod = vm.Substring(clearStart, clearEnd - clearStart);
             if (!clearMethod.Contains("full = \"\";") || !clearMethod.Contains("page = 0;") ||
-                !clearMethod.Contains("pageCount = 1;") || !clearMethod.Contains("Content = \"\";") || clearMethod.Contains("Send("))
+                !clearMethod.Contains("pageCount = 1;") || !clearMethod.Contains("Render();") || clearMethod.Contains("Send("))
                 throw new Exception("Clear Output must reset only the local display buffer and must not issue a game command.");
+
+            string liveWatchSource = File.ReadAllText(Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.cs"));
+            string subModuleSource = File.ReadAllText(Path.GetFullPath("src/CalradiaForge.Mod/SubModule.cs"));
+            if (!liveWatchSource.Contains("\"action:toggle-live-watch\"") ||
+                !liveWatchSource.Contains("ExecuteNavigationPaletteSelect") ||
+                !subModuleSource.Contains("Input.IsKeyPressed(InputKey.W)") ||
+                !subModuleSource.Contains("vm?.ExecuteToggleLiveWatch()"))
+                throw new Exception("Live Watch must remain reachable through the navigation palette and its existing Ctrl+W shortcut, not a prefab button.");
         }
 
         public static void Run(Action<string, Action> test)
@@ -331,6 +364,7 @@ namespace CalradiaForge.Tests
             test("ForgeDetour restores original instruction bytes on unpatch", TestForgeDetourUnpatch);
             test("ForgeUI clears extension-page handlers", TestForgeUI_Clear);
             test("PanelViewModel & CalradiaForge.xml UI telemetry, clear output, and empty-state placeholder", TestPanelViewModelAndPrefabPolish);
+            test("Gauntlet live output filter preserves source, argument, wrapping, and paging", TestGauntletLiveOutputFilter);
             test("Desktop & In-Game UI error corrections (panel overlap, glyph fallback, action parity)", TestUiErrorCorrectionsAndSafety);
             test("Zero-Scroll Desktop Navigation (Accordion, ZenMode, CategoryPicker, Breadcrumbs, Recent)", TestZeroScrollDesktopInterface);
             test("Desktop Top and Bottom Panel Typography Upgrades (TitleBar, Header, Breadcrumbs, StatusBar)", TestDesktopPanelFontSizesAndLayout);
@@ -1737,9 +1771,10 @@ namespace MyCustomMod.QuestBehaviors
             // Verify Header, Toast Banner, Actions, Tools, and Cheat Sheet
             string[] requiredXmlTags = new[]
             {
-                "ExecuteToggleLiveWatch", "ExecuteToggleKeyHelp",
+                "ExecuteToggleKeyHelp",
                 "ToastBanner", "@IsToastVisible", "@ToastMessage",
-                "ExecuteFilterLines", "@FilterLinesLabel",
+                "ForgeOutputFilterInput", "@OutputFilterText", "UpdateTextOnTyping=\"true\"",
+                "ForgeOutputFilterClear", "ExecuteClearOutputFilter", "@OutputFilterPlaceholder",
                 "ExecuteSimParties", "ExecuteAudioTester",
                 "ExecuteLocalizationTester", "ExecuteSaveInspector",
                 "KeyHelpOverlay", "@IsKeyHelpOpen"
@@ -1784,7 +1819,8 @@ namespace MyCustomMod.QuestBehaviors
                 "IsLiveWatchActive", "ExecuteToggleLiveWatch", "LiveWatchLabel",
                 "IsKeyHelpOpen", "ExecuteToggleKeyHelp", "KeyHelpLabel",
                 "IsToastVisible", "ToastMessage", "ShowToast",
-                "FilterLinesLabel", "ExecuteFilterLines",
+                "FilterLinesLabel", "ExecuteFilterLines", "OutputFilterText", "IsOutputFilterEmpty",
+                "HasOutputFilter", "ExecuteClearOutputFilter", "No output lines match this filter.",
                 "IsSimPartiesActive", "ExecuteSimParties", "SimPartiesLabel",
                 "IsAudioTesterActive", "ExecuteAudioTester", "AudioTesterLabel",
                 "IsLocalizationTesterActive", "ExecuteLocalizationTester", "LocalizationTesterLabel",
@@ -1850,6 +1886,119 @@ namespace MyCustomMod.QuestBehaviors
                 throw new Exception("ForgeSaveChunker reassembled payload does not match original.");
         }
 
+        private static void TestGauntletLiveOutputFilter()
+        {
+            List<string> source = OutputLineFilter.SplitLines("alpha\r\nBuild step 03: done\r\nneedle-crosses-wrap-boundary\r\n");
+            if (source.Count != 4 || source[0] != "alpha" || source[3] != string.Empty)
+                throw new Exception("Output source lines must normalize CRLF while preserving the trailing empty line.");
+
+            List<string> caseInsensitive = OutputLineFilter.FilterAndWrap(source, "BUILD", 64);
+            if (caseInsensitive.Count != 1 || caseInsensitive[0] != "Build step 03: done")
+                throw new Exception("Output filtering must match without regard to case and preserve each matching source line.");
+
+            List<string> wrappedMatch = OutputLineFilter.FilterAndWrap(source, "crosses-wrap", 8);
+            if (wrappedMatch.Count != 4 || string.Concat(wrappedMatch) != "needle-crosses-wrap-boundary")
+                throw new Exception("Filtering must match raw lines before wrapping the displayed result.");
+
+            List<string> noMatches = OutputLineFilter.FilterAndWrap(source, "not-present", 64);
+            if (noMatches.Count != 0)
+                throw new Exception("A filter with no matches must produce no result rows for the localized empty state.");
+
+            List<string> manyLines = OutputLineFilter.SplitLines(string.Join("\n", Enumerable.Range(1, 18).Select(index => "Match " + index)));
+            List<string> matchingRows = OutputLineFilter.FilterAndWrap(manyLines, "match", 64);
+            if (matchingRows.Count != 18)
+                throw new Exception("Filtering must preserve every matching line before pagination.");
+            int pageCount = Math.Max(1, (matchingRows.Count + 16 - 1) / 16);
+            if (pageCount != 2 || matchingRows.Take(16).Count() != 16 || matchingRows.Skip(16).Count() != 2)
+                throw new Exception("Filtered lines must use the existing sixteen-row page size.");
+
+            List<string> unfiltered = OutputLineFilter.FilterAndWrap(manyLines, string.Empty, 64);
+            if (!unfiltered.SequenceEqual(manyLines))
+                throw new Exception("An empty query must show the original output rows without filtering.");
+            List<string> whitespaceQuery = OutputLineFilter.FilterAndWrap(manyLines, "  \t", 64);
+            if (!whitespaceQuery.SequenceEqual(manyLines))
+                throw new Exception("Whitespace-only queries must remain equivalent to an empty filter.");
+
+            string vmPath = Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.cs");
+            string vm = File.ReadAllText(vmPath);
+            int propertyStart = vm.IndexOf("public string OutputFilterText", StringComparison.Ordinal);
+            if (propertyStart < 0)
+                throw new Exception("PanelViewModel must expose a separately bound live filter property.");
+            int propertyEnd = vm.IndexOf("[DataSourceProperty] public bool IsOutputFilterEmpty", propertyStart, StringComparison.Ordinal);
+            if (propertyEnd <= propertyStart)
+                throw new Exception("PanelViewModel must expose the empty-filter presentation state.");
+            string filterProperty = vm.Substring(propertyStart, propertyEnd - propertyStart);
+            if (!filterProperty.Contains("Render();") || filterProperty.Contains("Argument") || filterProperty.Contains("full ="))
+                throw new Exception("Typing in the output filter must rerender without changing the tool argument or original output.");
+            if (!vm.Contains("IsOutputFilterEmpty => string.IsNullOrWhiteSpace(_filterQuery)") ||
+                !vm.Contains("HasOutputFilter => !string.IsNullOrWhiteSpace(_filterQuery)"))
+                throw new Exception("Whitespace-only queries must have a consistent empty presentation state.");
+            int sectionStart = vm.IndexOf("void SelectSection(string section, bool executeOnSelect)", StringComparison.Ordinal);
+            int sectionEnd = vm.IndexOf("void RenderNavigationPaletteLanding", sectionStart, StringComparison.Ordinal);
+            if (sectionStart < 0 || sectionEnd <= sectionStart)
+                throw new Exception("Could not isolate native section navigation to verify filter lifetime.");
+            string sectionFlow = vm.Substring(sectionStart, sectionEnd - sectionStart);
+            if (sectionFlow.Contains("_filterQuery =") || sectionFlow.Contains("OutputFilterText ="))
+                throw new Exception("Changing native areas must preserve the in-session output query.");
+            if (!vm.Contains("full = r.Success ? Format(action, r.Data) : T(\"Error\") + \": \" + FormatError(r.Error); page = 0; Render();"))
+                throw new Exception("New tool results must pass through Render so the current output query is reapplied.");
+            if (!vm.Contains("OutputLineFilter.FilterAndWrap(_outputSourceLines, _filterQuery, OutputWrapWidth)") ||
+                !vm.Contains("ReferenceEquals(_outputSourceForLines, full)") ||
+                !vm.Contains("No output lines match this filter.") ||
+                !vm.Contains("public void ExecuteClearOutputFilter() => OutputFilterText = string.Empty;"))
+                throw new Exception("PanelViewModel must filter cached source output, show a localized no-match state, and clear only the query.");
+            if (!vm.Contains("public string EvidenceHeading => T(\"Evidence\");"))
+                throw new Exception("The evidence header must use a short localized label instead of a route title that can collide with the filter.");
+
+            XDocument prefab = XDocument.Load(Path.GetFullPath("modules/CalradiaForge/GUI/Prefabs/CalradiaForge.xml"));
+            XElement input = prefab.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeOutputFilterInput");
+            XElement clear = prefab.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeOutputFilterClear");
+            if (input == null || (string)input.Attribute("Text") != "@OutputFilterText" ||
+                (string)input.Attribute("UpdateTextOnTyping") != "true" ||
+                clear == null || (string)clear.Attribute("Command.Click") != "ExecuteClearOutputFilter")
+                throw new Exception("The prefab must bind the immediate filter input and its independent clear action.");
+
+            var locales = new[]
+            {
+                Tuple.Create("en", "EN"), Tuple.Create("es", "SP"), Tuple.Create("pt", "BR"),
+                Tuple.Create("de", "DE"), Tuple.Create("fr", "FR"), Tuple.Create("it", "IT"),
+                Tuple.Create("pl", "PL"), Tuple.Create("ru", "RU"), Tuple.Create("tr", "TR"),
+                Tuple.Create("zh-HANS", "CNs"), Tuple.Create("zh-HANT", "CNt"),
+                Tuple.Create("ja", "JP"), Tuple.Create("ko", "KO")
+            };
+            string[] localizedPanelKeys = new[]
+            {
+                "Evidence",
+                "Filter current output without changing the tool argument.",
+                "Filter output lines...", "Clear output filter.", "No output lines match this filter."
+            };
+            Dictionary<string, string> englishCatalog = XDocument.Load(Path.GetFullPath("localization/en.xml"))
+                .Root.Elements("string").ToDictionary(element => (string)element.Attribute("key"), element => (string)element.Attribute("value"));
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                foreach (Tuple<string, string> locale in locales)
+                {
+                    Dictionary<string, string> sourceCatalog = XDocument.Load(Path.GetFullPath("localization/" + locale.Item1 + ".xml"))
+                        .Root.Elements("string").ToDictionary(element => (string)element.Attribute("key"), element => (string)element.Attribute("value"));
+                    Dictionary<string, string> generatedCatalog = XDocument.Load(Path.GetFullPath(
+                            "modules/CalradiaForge/ModuleData/Languages/" + locale.Item2 + "/forge_strings.xml"))
+                        .Descendants("string").ToDictionary(element => (string)element.Attribute("id"), element => (string)element.Attribute("text"));
+                    foreach (string key in localizedPanelKeys)
+                    {
+                        if (!sourceCatalog.TryGetValue(key, out string localized) || string.IsNullOrWhiteSpace(localized))
+                            throw new Exception("Missing Gauntlet panel source translation for " + locale.Item1 + ": " + key);
+                        if (key == "Evidence" && localized.Length > 14)
+                            throw new Exception("The evidence header label is too long for its fixed title area in " + locale.Item1 + ".");
+                        string hash = BitConverter.ToString(sha256.ComputeHash(Encoding.UTF8.GetBytes(englishCatalog[key])))
+                            .Replace("-", string.Empty).ToLowerInvariant();
+                        string id = "forge_" + hash.Substring(0, 12);
+                        if (!generatedCatalog.TryGetValue(id, out string generated) || generated != localized)
+                            throw new Exception("Generated Gauntlet panel language resource is stale for " + locale.Item1 + ": " + key);
+                    }
+                }
+            }
+        }
+
         private static void TestPanelHotkeyAndLayerLifecycleTelemetry()
         {
             string[] candidates = new[]
@@ -1882,6 +2031,8 @@ namespace MyCustomMod.QuestBehaviors
             };
             foreach (string token in requiredHotkeyTokens)
                 if (!tick.Contains(token)) throw new Exception("OnApplicationTick is missing F10 regression guard: " + token);
+            if (!tick.Contains("Input.IsKeyPressed(InputKey.W)") || !tick.Contains("vm?.ExecuteToggleLiveWatch()"))
+                throw new Exception("Live Watch must remain reachable through the existing Ctrl+W path.");
 
             string[] requiredLayerTokens = new[]
             {
@@ -1906,6 +2057,20 @@ namespace MyCustomMod.QuestBehaviors
                     throw new Exception("Open() is missing or misorders GauntletLayer lifecycle telemetry: " + token);
                 previous = current;
             }
+            int openTry = open.IndexOf("try {", StringComparison.Ordinal);
+            int layerConstruction = open.IndexOf("new GauntletLayer(", StringComparison.Ordinal);
+            if (openTry < 0 || layerConstruction < openTry)
+                throw new Exception("Open() must catch layer-construction failures so a partially created ViewModel is finalized.");
+
+            int closeStart = source.IndexOf("void Close()", StringComparison.Ordinal);
+            int closeEnd = source.IndexOf("protected override void OnSubModuleUnloaded()", closeStart, StringComparison.Ordinal);
+            if (closeStart < 0 || closeEnd <= closeStart)
+                throw new Exception("Could not isolate panel cleanup for partial initialization regression checks.");
+            string close = source.Substring(closeStart, closeEnd - closeStart);
+            if (close.Contains("if(layer==null)return;") ||
+                !close.Contains("var closingLayer=layer;var closingOwner=owner;var closingViewModel=vm;") ||
+                !close.Contains("finally {closingViewModel?.CancelPendingWork();closingViewModel?.OnFinalize();}"))
+                throw new Exception("Close() must finalize the ViewModel even when layer construction failed before assigning a layer.");
         }
 
         private static void TestNoviceModderFeatures()

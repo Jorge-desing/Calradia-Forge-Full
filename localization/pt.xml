@@ -228,4 +228,9 @@
   <string key="Toggle tactical keyboard shortcuts guide (Ctrl+K)." value="Mostra ou oculta o guia tático de atalhos do teclado (Ctrl+K)." />
   <string key="Trade simulation completed." value="A simulação de comércio foi concluída." />
   <string key="[ ⌨ Keys ]" value="[ ⌨ Teclas ]" />
+  <string key="Filter current output without changing the tool argument." value="Filtrar a saída atual sem alterar o argumento da ferramenta." />
+  <string key="Filter output lines..." value="Filtrar linhas de saída..." />
+  <string key="Clear output filter." value="Limpar filtro de saída." />
+  <string key="No output lines match this filter." value="Nenhuma linha de saída corresponde a este filtro." />
+  <string key="Evidence" value="Evidências" />
 </strings>

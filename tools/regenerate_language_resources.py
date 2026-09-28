@@ -17,6 +17,13 @@ LANGUAGES = {
     "CNs": ("zh-HANS", "简体中文"), "CNt": ("zh-HANT", "繁體中文"), "JP": ("ja", "日本語"), "KO": ("ko", "한국어"),
 }
 VERSION = __import__("re").search(r"<CalradiaForgeVersion>([^<]+)</CalradiaForgeVersion>", (ROOT / "Directory.Build.props").read_text(encoding="utf-8")).group(1)
+SOURCE_LOCALIZED_PANEL_KEYS = (
+    "Evidence",
+    "Filter current output without changing the tool argument.",
+    "Filter output lines...",
+    "Clear output filter.",
+    "No output lines match this filter.",
+)
 
 
 def stable_id(text: str) -> str:
@@ -37,6 +44,10 @@ def main() -> None:
     source = (ROOT / "src" / "CalradiaForge.Mod" / "PanelViewModel.cs").read_text(encoding="utf-8")
     literal_keys = set(re.findall(r'\bT\("([^"]+)"\)', source))
     original = {folder: parse_strings(LANGUAGE_ROOT / folder / "forge_strings.xml") for folder in LANGUAGES}
+    source_catalogs = {
+        folder: {entry.attrib["key"]: entry.attrib["value"] for entry in ET.parse(ROOT / "localization" / f"{iso}.xml").getroot()}
+        for folder, (iso, _) in LANGUAGES.items()
+    }
     navigation_palette = json.loads((ROOT / "localization" / "navigation-palette.json").read_text(encoding="utf-8"))
     required_locales = {iso for iso, _ in LANGUAGES.values()}
     for text, localized in navigation_palette.items():
@@ -58,6 +69,10 @@ def main() -> None:
             palette_translation = navigation_palette.get(text)
             if palette_translation is not None:
                 localized = palette_translation[iso]
+            elif text in SOURCE_LOCALIZED_PANEL_KEYS:
+                localized = source_catalogs[folder].get(text, "")
+                if not localized or (iso == "en" and localized != text):
+                    raise ValueError(f"Incomplete in-game Gauntlet label translation for {iso}: {text}")
             else:
                 previous_ids = old_ids_by_text.get(text, [])
                 localized = next((translated[old] for old in previous_ids if old in translated), text)

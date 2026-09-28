@@ -228,4 +228,9 @@
   <string key="Toggle tactical keyboard shortcuts guide (Ctrl+K)." value="전술 키보드 단축키 안내를 표시하거나 숨깁니다(Ctrl+K)." />
   <string key="Trade simulation completed." value="무역 시뮬레이션이 완료되었습니다." />
   <string key="[ ⌨ Keys ]" value="[ ⌨ 키 ]" />
+  <string key="Filter current output without changing the tool argument." value="도구 인수를 변경하지 않고 현재 출력을 필터링합니다." />
+  <string key="Filter output lines..." value="출력 줄 필터링..." />
+  <string key="Clear output filter." value="출력 필터 지우기." />
+  <string key="No output lines match this filter." value="이 필터와 일치하는 출력 줄이 없습니다." />
+  <string key="Evidence" value="증거" />
 </strings>

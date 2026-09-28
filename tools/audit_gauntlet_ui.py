@@ -984,6 +984,8 @@ def validate_contracts(
         "ForgeEvidencePage": ("Text", "@PageLabel"),
         "ForgeEmptyEvidence": ("Text", "@ContentPlaceholder"),
         "ForgeEvidenceContent": ("Text", "@Content"),
+        "ForgeOutputFilterInput": ("Text", "@OutputFilterText"),
+        "ForgeOutputFilterPlaceholder": ("Text", "@OutputFilterPlaceholder"),
     }
     for element_id, (attribute, expected_value) in expected_evidence.items():
         node = find_by_id(evidence, element_id)
@@ -997,6 +999,45 @@ def validate_contracts(
     content = find_by_id(evidence, "ForgeEvidenceContent")
     if content is not None and content.attrib.get("ClipContents", "").lower() != "true":
         audit.error("ForgeEvidenceContent must clip long raw evidence to its viewport")
+    filter_row = find_by_id(evidence, "ForgeOutputFilterRow")
+    filter_input = find_by_id(evidence, "ForgeOutputFilterInput")
+    filter_placeholder = find_by_id(evidence, "ForgeOutputFilterPlaceholder")
+    filter_clear = find_by_id(evidence, "ForgeOutputFilterClear")
+    scroll = find_by_id(evidence, "ForgeEvidenceScroll")
+    scrollbar = find_by_id(evidence, "ForgeEvidenceScrollBar")
+    heading = find_by_id(evidence, "ForgeEvidenceHeading")
+    if heading is None or heading.attrib.get("WidthSizePolicy") != "Fixed" \
+            or heading.attrib.get("SuggestedWidth") != "205":
+        audit.error("ForgeEvidenceHeading must reserve a bounded title area for the inline filter")
+    if 'public string EvidenceHeading => T("Evidence");' not in viewmodel_source:
+        audit.error("ForgeEvidenceHeading must use the short localized label so long route titles cannot collide with the filter")
+    if filter_row is None or filter_row.attrib.get("MarginTop") != "5" \
+            or filter_row.attrib.get("SuggestedHeight") != "32" \
+            or filter_row.attrib.get("MarginLeft") != "225" \
+            or filter_row.attrib.get("MarginRight") != "150":
+        audit.error("ForgeOutputFilterRow must share the evidence heading row and reserve usable width before pagination")
+    if filter_input is None or local_name(filter_input.tag) != "EditableTextWidget" \
+            or filter_input.attrib.get("UpdateTextOnTyping", "").lower() != "true" \
+            or filter_input.attrib.get("IsFocusable", "").lower() != "true" \
+            or filter_input.attrib.get("Hint.HintText") != "@FilterLinesHint":
+        audit.error("ForgeOutputFilterInput must be a focusable live editable Gauntlet field with the localized hint")
+    if filter_placeholder is None or filter_placeholder.attrib.get("IsVisible") != "@IsOutputFilterEmpty" \
+            or filter_placeholder.attrib.get("DoNotAcceptEvents", "").lower() != "true":
+        audit.error("ForgeOutputFilterPlaceholder must remain passive and follow the empty query state")
+    if filter_clear is None or local_name(filter_clear.tag) != "ButtonWidget" \
+            or filter_clear.attrib.get("IsVisible") != "@HasOutputFilter" \
+            or filter_clear.attrib.get("Command.Click") != "ExecuteClearOutputFilter" \
+            or filter_clear.attrib.get("Hint.HintText") != "@ClearOutputFilterHint":
+        audit.error("ForgeOutputFilterClear must expose its localized command only when a query is present")
+    if scroll is None or scroll.attrib.get("MarginTop") != "44" \
+            or scrollbar is None or scrollbar.attrib.get("MarginTop") != "44":
+        audit.error("Evidence scrolling and its scrollbar must begin below the inline evidence header")
+    if filter_row is not None and scroll is not None \
+            and number(filter_row.attrib.get("MarginTop")) is not None \
+            and number(filter_row.attrib.get("SuggestedHeight")) is not None \
+            and number(scroll.attrib.get("MarginTop")) is not None \
+            and number(filter_row.attrib["MarginTop"]) + number(filter_row.attrib["SuggestedHeight"]) > number(scroll.attrib["MarginTop"]):
+        audit.error("ForgeOutputFilterRow must not overlap the paged evidence viewport")
     if any(
         local_name(node.tag) == "ImageWidget" and custom_sprite_name(node.attrib.get("Sprite", ""))
         for node in evidence.iter()
@@ -1761,6 +1802,8 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
                     audit.error(f"Cannot resolve actionable geometry for {node.attrib.get('Id', local_name(node.tag))} in {viewport[0]}x{viewport[1]}")
                 elif rect.width <= 0 or rect.height <= 0 or not contained(shell_bounds, rect):
                     audit.error(f"Actionable control {node.attrib.get('Id', local_name(node.tag))} is clipped in {viewport[0]}x{viewport[1]}")
+                elif node.attrib.get("Id") == "ForgeOutputFilterInput" and rect.width < 96:
+                    audit.error(f"ForgeOutputFilterInput is too narrow for a usable live query ({rect.width:g} DIP) in {viewport[0]}x{viewport[1]}")
 
             # All eight route buttons remain inside the visible rail at each viewport.
             rail = top_nodes.get("ForgeNavigationRail")

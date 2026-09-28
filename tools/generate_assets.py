@@ -317,8 +317,17 @@ button(quick_actions,'Run','@RunLabel','@PrimaryActionButtonWidth',height=42,bru
 body_frame=E.SubElement(children,'Widget',Id='ForgeEvidenceFrame',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='@EvidenceTop',MarginBottom='178',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
 body=E.SubElement(E.SubElement(body_frame,'Children'),'Widget',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginTop='1',MarginRight='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0A0D0BFF')
 evidence_children=E.SubElement(body,'Children')
-E.SubElement(evidence_children,'TextWidget',Id='ForgeEvidenceHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='31',MarginLeft='16',MarginTop='6',MarginRight='160',Brush='CalradiaForge.HeaderGold',Text='@EvidenceHeading',**{'Brush.FontSize':'22'})
+E.SubElement(evidence_children,'TextWidget',Id='ForgeEvidenceHeading',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='205',SuggestedHeight='31',MarginLeft='16',MarginTop='6',Brush='CalradiaForge.HeaderGold',Text='@EvidenceHeading',**{'Brush.FontSize':'22'})
 E.SubElement(evidence_children,'TextWidget',Id='ForgeEvidencePage',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='135',SuggestedHeight='31',HorizontalAlignment='Right',MarginRight='11',MarginTop='6',Brush='CalradiaForge.Gold',Text='@PageLabel',**{'Brush.FontSize':'19'})
+filter_row=E.SubElement(evidence_children,'Widget',Id='ForgeOutputFilterRow',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='32',MarginLeft='225',MarginTop='5',MarginRight='150')
+filter_row_children=E.SubElement(filter_row,'Children')
+filter_frame=E.SubElement(filter_row_children,'Widget',Id='ForgeOutputFilterFrame',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginRight='46',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
+filter_inner=E.SubElement(E.SubElement(filter_frame,'Children'),'Widget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginRight='1',MarginTop='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0A0D0BFF')
+filter_input_children=E.SubElement(filter_inner,'Children')
+E.SubElement(filter_input_children,'EditableTextWidget',Id='ForgeOutputFilterInput',IsFocusable='true',UpdateTextOnTyping='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='6',MarginRight='6',Brush='GameTip.Text',Text='@OutputFilterText',**{'Hint.HintText':'@FilterLinesHint'})
+E.SubElement(filter_input_children,'TextWidget',Id='ForgeOutputFilterPlaceholder',IsVisible='@IsOutputFilterEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='6',MarginRight='6',Brush='CalradiaForge.Muted',Text='@OutputFilterPlaceholder',VerticalAlignment='Center',**{'Brush.FontSize':'15'})
+filter_clear=E.SubElement(filter_row_children,'ButtonWidget',Id='ForgeOutputFilterClear',IsVisible='@HasOutputFilter',IsFocusable='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='40',HorizontalAlignment='Right',VerticalAlignment='Center',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteClearOutputFilter','Hint.HintText':'@ClearOutputFilterHint'})
+E.SubElement(E.SubElement(filter_clear,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.ButtonText',Text='×',HorizontalAlignment='Center',VerticalAlignment='Center')
 E.SubElement(evidence_children,'TextWidget',Id='ForgeEmptyEvidence',IsVisible='@IsContentEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='38',MarginLeft='20',MarginTop='62',MarginRight='20',Brush='CalradiaForge.Muted',Text='@ContentPlaceholder',**{'Brush.FontSize':'19'})
 evidence_scroll=E.SubElement(evidence_children,'ScrollablePanel',Id='ForgeEvidenceScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='18',MarginTop='44',MarginRight='16',MarginBottom='12',ClipRect='ForgeEvidenceClip',InnerPanel='ForgeEvidenceClip\\ForgeEvidenceContent',VerticalScrollbar='..\\ForgeEvidenceScrollBar')
 evidence_scroll_children=E.SubElement(evidence_scroll,'Children')
@@ -584,8 +593,21 @@ for source,localized in navigation_palette.items():
     if localized.get('en')!=source or set(localized)!=navigation_languages or any(not value.strip() for value in localized.values()):
         raise ValueError('Incomplete navigation palette translation: '+source)
 english_catalog.update({source:localized['en'] for source,localized in navigation_palette.items()})
+localized_panel_keys=(
+    'Evidence',
+    'Filter current output without changing the tool argument.',
+    'Filter output lines...',
+    'Clear output filter.',
+    'No output lines match this filter.',
+)
 for language,folder,display,catalog in catalogs:
     catalog.update({source:localized[language] for source,localized in navigation_palette.items()})
+    source_catalog={entry.attrib['key']:entry.attrib['value'] for entry in E.parse(ROOT/'localization'/f'{language}.xml').getroot()}
+    for key in localized_panel_keys:
+        translated=source_catalog.get(key)
+        if not translated or (language=='en' and translated!=key):
+            raise ValueError(f'Incomplete in-game Gauntlet label translation for {language}: {key}')
+        catalog[key]=translated
     strings=E.Element('base',type='string')
     E.SubElement(E.SubElement(strings,'tags'),'tag',language=display)
     target=E.SubElement(strings,'strings')

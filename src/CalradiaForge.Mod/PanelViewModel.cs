@@ -14,6 +14,7 @@ namespace CalradiaForge.Mod
     internal sealed class PanelViewModel : ViewModel
     {
         const int LinesPerPage = 16;
+        const int OutputWrapWidth = 112;
         readonly Runtime runtime; readonly Action close; string argument = ""; string content = ""; string current = "summary"; string currentCategory = "overview"; string full = ""; int page, pageCount = 1; bool overview = true;
         readonly List<string> _commandHistory = new List<string>();
         readonly MBBindingList<CommandHistoryItemVM> _commandHistoryList = new MBBindingList<CommandHistoryItemVM>();
@@ -43,6 +44,9 @@ namespace CalradiaForge.Mod
         string _toastMessage = "";
         float _toastTimer;
         string _filterQuery = "";
+        string _outputSourceForLines;
+        bool _outputLinesCached;
+        readonly List<string> _outputSourceLines = new List<string>();
         ModderRole _activeModderRole = ModderRole.All;
         readonly MBBindingList<CategoryCommandItemVM> _categorySuggestedCommands = new MBBindingList<CategoryCommandItemVM>();
         readonly MBBindingList<CategoryCommandItemVM> _pinnedCommands = new MBBindingList<CategoryCommandItemVM>();
@@ -763,7 +767,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public float EvidenceHeight => evidenceFocused ? 482f : 310f;
         [DataSourceProperty] public int EvidenceFontSize => evidenceFocused ? 24 : 18;
         [DataSourceProperty] public string FocusEvidenceLabel => evidenceFocused ? T("Show tools") : T("Focus evidence");
-        [DataSourceProperty] public string EvidenceHeading => T(CurrentName);
+        [DataSourceProperty] public string EvidenceHeading => T("Evidence");
         public void ExecuteToggleEvidenceFocus()
         {
             evidenceFocused = !evidenceFocused;
@@ -1145,7 +1149,9 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public bool IsToastVisible => _isToastVisible;
         [DataSourceProperty] public bool IsNavigationFooterVisible => !_isToastVisible;
         [DataSourceProperty] public string FilterLinesLabel => string.IsNullOrWhiteSpace(_filterQuery) ? T("[ 🔍 Filter ]") : T("[ 🔍 Filtered ]");
-        [DataSourceProperty] public string FilterLinesHint => T("Filter current output lines matching the search / argument input.");
+        [DataSourceProperty] public string FilterLinesHint => T("Filter current output without changing the tool argument.");
+        [DataSourceProperty] public string OutputFilterPlaceholder => T("Filter output lines...");
+        [DataSourceProperty] public string ClearOutputFilterHint => T("Clear output filter.");
         [DataSourceProperty] public string ForceGCLabel => T("Trim Heap");
         [DataSourceProperty] public string ForceGCHint => T("Trigger immediate garbage collection to reclaim memory.");
         [DataSourceProperty] public string QuickStateLabel => T("Game State");
@@ -1243,6 +1249,25 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public bool IsContentEmpty => string.IsNullOrWhiteSpace(content);
         [DataSourceProperty] public string MemoryHealthText => $"HEAP: ~{(GC.GetTotalMemory(false) / 1048576)} MB | CTX: {runtime?.CurrentContext.ToString() ?? "None"}";
         [DataSourceProperty] public string Argument { get => argument; set { argument = value; OnPropertyChangedWithValue(value, nameof(Argument)); } }
+        [DataSourceProperty]
+        public string OutputFilterText
+        {
+            get => _filterQuery;
+            set
+            {
+                string next = value ?? string.Empty;
+                if (string.Equals(_filterQuery, next, StringComparison.Ordinal)) return;
+                _filterQuery = next;
+                page = 0;
+                OnPropertyChangedWithValue(next, nameof(OutputFilterText));
+                OnPropertyChanged(nameof(IsOutputFilterEmpty));
+                OnPropertyChanged(nameof(HasOutputFilter));
+                OnPropertyChanged(nameof(FilterLinesLabel));
+                Render();
+            }
+        }
+        [DataSourceProperty] public bool IsOutputFilterEmpty => string.IsNullOrWhiteSpace(_filterQuery);
+        [DataSourceProperty] public bool HasOutputFilter => !string.IsNullOrWhiteSpace(_filterQuery);
         [DataSourceProperty] public string Content { get => content; set { content = value; OnPropertyChangedWithValue(value, nameof(Content)); OnPropertyChanged(nameof(IsContentEmpty)); } }
         [DataSourceProperty] public MBBindingList<CommandHistoryItemVM> CommandHistoryList => _commandHistoryList;
         [DataSourceProperty]
@@ -1585,7 +1610,28 @@ namespace CalradiaForge.Mod
                 default: return value ?? "";
             }
         }
-        void Render() { var lines = full.Split('\n').SelectMany(l => Enumerable.Range(0, Math.Max(1, (l.Length + 111) / 112)).Select(n => l.Substring(Math.Min(n * 112, l.Length), Math.Min(112, Math.Max(0, l.Length - n * 112))))).ToArray(); pageCount = Math.Max(1, (lines.Length + LinesPerPage - 1) / LinesPerPage); page = Math.Max(0, Math.Min(page, pageCount - 1)); Content = string.Join("\n", lines.Skip(page * LinesPerPage).Take(LinesPerPage)); OnPropertyChanged(nameof(PageLabel)); OnPropertyChanged(nameof(IsPreviousDisabled)); OnPropertyChanged(nameof(IsNextDisabled)); }
+        void Render()
+        {
+            if (!_outputLinesCached || !ReferenceEquals(_outputSourceForLines, full))
+            {
+                _outputSourceLines.Clear();
+                _outputSourceLines.AddRange(OutputLineFilter.SplitLines(full));
+                _outputSourceForLines = full;
+                _outputLinesCached = true;
+            }
+
+            List<string> lines = OutputLineFilter.FilterAndWrap(_outputSourceLines, _filterQuery, OutputWrapWidth);
+            pageCount = Math.Max(1, (lines.Count + LinesPerPage - 1) / LinesPerPage);
+            page = Math.Max(0, Math.Min(page, pageCount - 1));
+            if (lines.Count == 0 && !string.IsNullOrEmpty(full) && !string.IsNullOrWhiteSpace(_filterQuery))
+                Content = T("No output lines match this filter.");
+            else
+                Content = string.Join("\n", lines.Skip(page * LinesPerPage).Take(LinesPerPage));
+
+            OnPropertyChanged(nameof(PageLabel));
+            OnPropertyChanged(nameof(IsPreviousDisabled));
+            OnPropertyChanged(nameof(IsNextDisabled));
+        }
         void SelectSection(string section)
         {
             SelectSection(section, executeOnSelect: true);
@@ -2006,39 +2052,10 @@ namespace CalradiaForge.Mod
         }
         public void ExecuteFilterLines()
         {
-            var q = (Argument ?? "").Trim();
-            if (string.IsNullOrEmpty(q))
-            {
-                _filterQuery = "";
-                page = 0;
-                Render();
-                ShowToast(T("Filter cleared. Showing all lines."));
-            }
-            else
-            {
-                _filterQuery = q;
-                var allLines = full.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                var matched = allLines.Where(l => l.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0).ToArray();
-                if (matched.Length == 0)
-                {
-                    Content = T("No lines matched filter: ") + q;
-                    page = 0;
-                    pageCount = 1;
-                    ShowToast(T("0 matching lines found."));
-                }
-                else
-                {
-                    page = 0;
-                    pageCount = Math.Max(1, (matched.Length + LinesPerPage - 1) / LinesPerPage);
-                    Content = string.Join("\n", matched.Take(LinesPerPage));
-                    ShowToast(string.Format(T("Filtered to {0} matching lines."), matched.Length));
-                }
-                OnPropertyChanged(nameof(PageLabel));
-                OnPropertyChanged(nameof(IsPreviousDisabled));
-                OnPropertyChanged(nameof(IsNextDisabled));
-            }
-            OnPropertyChanged(nameof(FilterLinesLabel));
+            page = 0;
+            Render();
         }
+        public void ExecuteClearOutputFilter() => OutputFilterText = string.Empty;
         public void Tick(float dt)
         {
             if (_toastTimer > 0)
@@ -2114,7 +2131,7 @@ namespace CalradiaForge.Mod
             full = "";
             page = 0;
             pageCount = 1;
-            Content = "";
+            Render();
             NotifyLayout();
             ShowToast(T("Output display cleared."));
         }

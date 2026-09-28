@@ -228,4 +228,9 @@
   <string key="Toggle tactical keyboard shortcuts guide (Ctrl+K)." value="Показывает или скрывает справочник тактических сочетаний клавиш (Ctrl+K)." />
   <string key="Trade simulation completed." value="Моделирование торговли завершено." />
   <string key="[ ⌨ Keys ]" value="[ ⌨ Клавиши ]" />
+  <string key="Filter current output without changing the tool argument." value="Фильтровать текущий вывод, не изменяя аргумент инструмента." />
+  <string key="Filter output lines..." value="Фильтровать строки вывода..." />
+  <string key="Clear output filter." value="Очистить фильтр вывода." />
+  <string key="No output lines match this filter." value="Нет строк вывода, соответствующих этому фильтру." />
+  <string key="Evidence" value="Доказательства" />
 </strings>
