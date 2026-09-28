@@ -814,3 +814,9 @@ Initial developer preview: Gauntlet panel, WPF client, local named pipes, diagno
 - The installed TPAC was left intact and predates this atlas; Resource Browser import and in-game visual rendering remain pending. No game was launched for this round.
 - F10 evidence is limited to source and persisted diagnostics: source and installed prefab SHA-256 values match (`5741D7571C254B6487477D601F0CFE016AA254A1DFC6BD6795766274543B2F45`), and both use the canonical `ScrollbarWidget` spelling. The prior session log records opening/loading and closing, and the F10 edge/layer telemetry regression passed. This is not a fresh crash reproduction; the historical assertion's exact cause and whether it is resolved remain unverified.
 - Product version remains 25.2.0; no public API, route, command, permission, dependency, TPAC or ZIP changed.
+
+### F10 prefab hash chronology and instrumentation boundary (Rev077) — 2026-09-27
+
+- Clarifies that Rev076's matching source/installed prefab hash `5741D7571C254B6487477D601F0CFE016AA254A1DFC6BD6795766274543B2F45` was measured before source regeneration. The regenerated source prefab is now `C7BDE061D57F142797DF7B046BC93437E53049351A9D1C1821F6326CDC3BAC31`; the installed prefab remains at the prior hash because the new source assets were not imported or deployed. Both use canonical `<ScrollbarWidget>` and omit `<ScrollBarWidget>`; this does not establish the cause or resolution of the historical F10 assertion.
+- `SubModule.Open()` now records ordered brush-file and panel-movie loading/loaded milestones. The regression checks source order statically; it is not a runtime telemetry capture or a reproduction of the assertion. Cause/resolution, Resource Browser import, and live rendering remain unverified or pending.
+- Product version remains 25.2.0; this clarification changes no API, route, command, permission, TPAC, or ZIP.
