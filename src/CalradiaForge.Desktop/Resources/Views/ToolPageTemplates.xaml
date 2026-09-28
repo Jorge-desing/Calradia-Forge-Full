@@ -567,9 +567,14 @@
             <Path Data="{StaticResource Icon.Shield}" Height="15" Margin="0,0,6,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="15"/>
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.CodeSecurity.Title}" VerticalAlignment="Center"/>
            </StackPanel>
-           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0"><Run Text="{DynamicResource Viz.CodeSecurity.TargetAssemblyLabel}"/><Run Text=": "/><Run Text="{Binding CodeSecurityDashboard.AuditTargetAssembly}"/></TextBlock>
-           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0"><Run Text="{DynamicResource Viz.CodeSecurity.RuntimeClrLabel}"/><Run Text=": "/><Run Text="{Binding CodeSecurityDashboard.ClrTargetFramework}"/></TextBlock>
+           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0"><Run Text="{DynamicResource Viz.CodeSecurity.TargetAssemblyLabel}"/><Run Text=": "/><Run Text="{Binding CodeSecurityDashboard.AuditTargetAssembly, Mode=OneWay}"/></TextBlock>
+           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0"><Run Text="{DynamicResource Viz.CodeSecurity.RuntimeClrLabel}"/><Run Text=": "/><Run Text="{Binding CodeSecurityDashboard.ClrTargetFramework, Mode=OneWay}"/></TextBlock>
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="21,2,0,0" Text="{Binding CodeSecurityDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+           <StackPanel Orientation="Horizontal" Margin="21,3,0,0">
+            <Button Command="{Binding CodeSecurityDashboard.ToggleStrictScanCommand}" Content="🛡️ Strict Scan" FontSize="7.5" Padding="4,1" Margin="0,0,3,0"/>
+            <Button Command="{Binding CodeSecurityDashboard.AuditSelectedRulesCommand}" Content="⚡ Run Audit" FontSize="7.5" Padding="4,1" Margin="0,0,4,0"/>
+            <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" VerticalAlignment="Center" Text="{Binding CodeSecurityDashboard.AuditSummaryMessage, Mode=OneWay}"/>
+           </StackPanel>
           </StackPanel>
           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding CodeSecurityDashboard.RiskScoreBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,4" VerticalAlignment="Center">
            <TextBlock FontSize="10" FontWeight="Bold" Foreground="{Binding CodeSecurityDashboard.RiskScoreBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding CodeSecurityDashboard.RiskScoreText}"/>
@@ -585,40 +590,40 @@
           <ColumnDefinition Width="*"/>
          </Grid.ColumnDefinitions>
          <!-- Rule A Card -->
-         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="7">
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{Binding CodeSecurityDashboard.RuleACheck.BrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="7">
           <StackPanel>
-           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,5" Padding="4,2">
-            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="{Binding CodeSecurityDashboard.RuleACheck.StatusText}"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding CodeSecurityDashboard.RuleACheck.BrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,5" Padding="4,2">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{Binding CodeSecurityDashboard.RuleACheck.BrushKey, Converter={StaticResource BrushKeyConverter}}" HorizontalAlignment="Center" Text="{Binding CodeSecurityDashboard.RuleACheck.StatusText}"/>
            </Border>
            <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="{Binding CodeSecurityDashboard.RuleACheck.Name}" TextWrapping="Wrap"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" Text="{Binding CodeSecurityDashboard.RuleACheck.DetailText}" TextWrapping="Wrap"/>
           </StackPanel>
          </Border>
          <!-- Rule B Card -->
-         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="7">
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{Binding CodeSecurityDashboard.RuleBCheck.BrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="7">
           <StackPanel>
-           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,5" Padding="4,2">
-            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="{Binding CodeSecurityDashboard.RuleBCheck.StatusText}"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding CodeSecurityDashboard.RuleBCheck.BrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,5" Padding="4,2">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{Binding CodeSecurityDashboard.RuleBCheck.BrushKey, Converter={StaticResource BrushKeyConverter}}" HorizontalAlignment="Center" Text="{Binding CodeSecurityDashboard.RuleBCheck.StatusText}"/>
            </Border>
            <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="{Binding CodeSecurityDashboard.RuleBCheck.Name}" TextWrapping="Wrap"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" Text="{Binding CodeSecurityDashboard.RuleBCheck.DetailText}" TextWrapping="Wrap"/>
           </StackPanel>
          </Border>
          <!-- Rule C Card -->
-         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Margin="0,0,6,0" Padding="7">
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{Binding CodeSecurityDashboard.RuleCCheck.BrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Margin="0,0,6,0" Padding="7">
           <StackPanel>
-           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,5" Padding="4,2">
-            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="{Binding CodeSecurityDashboard.RuleCCheck.StatusText}"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding CodeSecurityDashboard.RuleCCheck.BrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,5" Padding="4,2">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{Binding CodeSecurityDashboard.RuleCCheck.BrushKey, Converter={StaticResource BrushKeyConverter}}" HorizontalAlignment="Center" Text="{Binding CodeSecurityDashboard.RuleCCheck.StatusText}"/>
            </Border>
            <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="{Binding CodeSecurityDashboard.RuleCCheck.Name}" TextWrapping="Wrap"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" Text="{Binding CodeSecurityDashboard.RuleCCheck.DetailText}" TextWrapping="Wrap"/>
           </StackPanel>
          </Border>
          <!-- Rule D Card -->
-         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="3" Padding="7">
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{Binding CodeSecurityDashboard.RuleDCheck.BrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="4" Grid.Column="3" Padding="7">
           <StackPanel>
-           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,5" Padding="4,2">
-            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="{Binding CodeSecurityDashboard.RuleDCheck.StatusText}"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding CodeSecurityDashboard.RuleDCheck.BrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,5" Padding="4,2">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{Binding CodeSecurityDashboard.RuleDCheck.BrushKey, Converter={StaticResource BrushKeyConverter}}" HorizontalAlignment="Center" Text="{Binding CodeSecurityDashboard.RuleDCheck.StatusText}"/>
            </Border>
            <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="{Binding CodeSecurityDashboard.RuleDCheck.Name}" TextWrapping="Wrap"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" Text="{Binding CodeSecurityDashboard.RuleDCheck.DetailText}" TextWrapping="Wrap"/>
@@ -643,9 +648,15 @@
             <Path Data="{StaticResource Icon.Flag}" Height="15" Margin="0,0,6,0" Stretch="Uniform" Stroke="{DynamicResource VerdigrisBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="15"/>
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.ModuleHierarchy.Title}" VerticalAlignment="Center"/>
            </StackPanel>
-           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0"><Run Text="{DynamicResource Viz.ModuleHierarchy.IdentifierLabel}"/><Run Text=": "/><Run Text="{Binding ModuleHierarchyDashboard.TargetModuleId}"/></TextBlock>
-           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0"><Run Text="{DynamicResource Viz.ModuleHierarchy.ReleaseTagLabel}"/><Run Text=": "/><Run Text="{Binding ModuleHierarchyDashboard.ModuleVersion}"/></TextBlock>
+           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0"><Run Text="{DynamicResource Viz.ModuleHierarchy.IdentifierLabel}"/><Run Text=": "/><Run Text="{Binding ModuleHierarchyDashboard.TargetModuleId, Mode=OneWay}"/></TextBlock>
+           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0"><Run Text="{DynamicResource Viz.ModuleHierarchy.ReleaseTagLabel}"/><Run Text=": "/><Run Text="{Binding ModuleHierarchyDashboard.ModuleVersion, Mode=OneWay}"/></TextBlock>
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="21,2,0,0" Text="{Binding ModuleHierarchyDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+           <StackPanel Orientation="Horizontal" Margin="21,3,0,0">
+            <Button Command="{Binding ModuleHierarchyDashboard.MoveModuleUpCommand}" Content="▲ Up" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
+            <Button Command="{Binding ModuleHierarchyDashboard.MoveModuleDownCommand}" Content="▼ Down" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
+            <Button Command="{Binding ModuleHierarchyDashboard.ResetLoadOrderCommand}" Content="↺ Reset" FontSize="7.5" Padding="4,1" Margin="0,0,4,0"/>
+            <TextBlock FontSize="8" Foreground="{Binding ModuleHierarchyDashboard.WarningBrushKey, Converter={StaticResource BrushKeyConverter}}" VerticalAlignment="Center" Text="{Binding ModuleHierarchyDashboard.LoadOrderWarning, Mode=OneWay}"/>
+           </StackPanel>
           </StackPanel>
           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,4" VerticalAlignment="Center">
             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding ModuleHierarchyDashboard.SubModuleXmlStatus}"/>
@@ -666,11 +677,11 @@
              <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{Binding StatusColor, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="4" Height="96" Padding="8" Width="130">
               <StackPanel VerticalAlignment="Center">
                <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding StatusColor, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,4" Padding="4,1">
-                <TextBlock FontSize="8" FontWeight="Bold" Foreground="{Binding StatusColor, Converter={StaticResource BrushKeyConverter}}" HorizontalAlignment="Center"><Run Text="{DynamicResource Viz.ModuleHierarchy.StageLabel}"/><Run Text=" #"/><Run Text="{Binding OrderIndex}"/></TextBlock>
+                <TextBlock FontSize="8" FontWeight="Bold" Foreground="{Binding StatusColor, Converter={StaticResource BrushKeyConverter}}" HorizontalAlignment="Center"><Run Text="{DynamicResource Viz.ModuleHierarchy.StageLabel}"/><Run Text=" #"/><Run Text="{Binding OrderIndex, Mode=OneWay}"/></TextBlock>
                </Border>
                <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding ModuleName}" TextAlignment="Center" TextWrapping="Wrap"/>
                <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,2,0,0" Text="{Binding TypeTag}" TextAlignment="Center"/>
-               <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" Margin="0,2,0,0" TextAlignment="Center"><Run Text="{Binding DepCount}"/><Run Text=" "/><Run Text="{DynamicResource Viz.ModuleHierarchy.UpstreamDependenciesLabel}"/></TextBlock>
+               <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" Margin="0,2,0,0" TextAlignment="Center"><Run Text="{Binding DepCount, Mode=OneWay}"/><Run Text=" "/><Run Text="{DynamicResource Viz.ModuleHierarchy.UpstreamDependenciesLabel}"/></TextBlock>
               </StackPanel>
              </Border>
              <TextBlock FontSize="14" Foreground="{DynamicResource BrassBrush}" Margin="3,0,3,0" Text="➔" VerticalAlignment="Center"/>
@@ -766,37 +777,58 @@
             <Path Data="{StaticResource GameIcon.gear_hammer}" Fill="{DynamicResource BrassBrush}" Height="15" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="15"/>
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Component.Title}" VerticalAlignment="Center"/>
            </StackPanel>
-           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0"><Run Text="{DynamicResource Viz.Component.IdentifierLabel}"/><Run Text=": "/><Run Text="{Binding ComponentGeneratorDashboard.ComponentId}"/></TextBlock>
-           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0"><Run Text="{DynamicResource Viz.Component.SchemaTargetLabel}"/><Run Text=": "/><Run Text="{Binding ComponentGeneratorDashboard.TargetSchemaType}"/></TextBlock>
+           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0"><Run Text="{DynamicResource Viz.Component.IdentifierLabel}"/><Run Text=": "/><Run Text="{Binding ComponentGeneratorDashboard.ComponentId, Mode=OneWay}"/></TextBlock>
+           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,1,0,0"><Run Text="{DynamicResource Viz.Component.SchemaTargetLabel}"/><Run Text=": "/><Run Text="{Binding ComponentGeneratorDashboard.TargetSchemaType, Mode=OneWay}"/></TextBlock>
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="21,2,0,0" Text="{Binding ComponentGeneratorDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+           <StackPanel Orientation="Horizontal" Margin="21,3,0,0">
+            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,3,0" Text="ID:"/>
+            <TextBox Text="{Binding ComponentGeneratorDashboard.CustomComponentId, UpdateSourceTrigger=PropertyChanged}" Width="100" FontSize="8" Padding="2,1" Margin="0,0,3,0"/>
+            <Button Command="{Binding ComponentGeneratorDashboard.GenerateBlueprintCommand}" Content="⚙️ Synthesize" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
+            <Button Command="{Binding ComponentGeneratorDashboard.CopyXmlBlueprintCommand}" Content="📋 Copy XML" FontSize="7.5" Padding="4,1" Margin="0,0,3,0"/>
+            <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" VerticalAlignment="Center" Text="{Binding ComponentGeneratorDashboard.XmlCopyFeedback, Mode=OneWay}"/>
+           </StackPanel>
           </StackPanel>
           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,4" VerticalAlignment="Center">
            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding ComponentGeneratorDashboard.MixerComplianceStatus}"/>
           </Border>
          </Grid>
         </Border>
-        <!-- Body: Blueprint Synthesis Stages -->
-        <ItemsControl Grid.Row="1" ItemsSource="{Binding ComponentGeneratorDashboard.BlueprintNodes}">
-         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-           <UniformGrid Columns="4"/>
-          </ItemsPanelTemplate>
-         </ItemsControl.ItemsPanel>
-         <ItemsControl.ItemTemplate>
-          <DataTemplate>
-           <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{Binding StatusBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="4" Margin="0,0,6,0" Padding="7">
-            <StackPanel>
-             <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding StatusBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,5" Padding="4,1">
-              <TextBlock FontSize="8" FontWeight="Bold" Foreground="{Binding StatusBrushKey, Converter={StaticResource BrushKeyConverter}}" HorizontalAlignment="Center" Text="{Binding Status}"/>
-             </Border>
-             <TextBlock FontSize="11" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding NodeName}"/>
-             <TextBlock FontSize="9" Foreground="{DynamicResource BrassBrush}" Margin="0,2,0,0" Text="{Binding Category}"/>
-             <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0"><Run Text="{Binding FieldCount}"/><Run Text=" "/><Run Text="{DynamicResource Viz.Component.GeneratedMembersLabel}"/></TextBlock>
-            </StackPanel>
-           </Border>
-          </DataTemplate>
-         </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <!-- Body: Blueprint Synthesis Stages & Live XML Preview -->
+        <Grid Grid.Row="1">
+         <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+         </Grid.RowDefinitions>
+         <ItemsControl Grid.Row="0" Margin="0,0,0,6" ItemsSource="{Binding ComponentGeneratorDashboard.BlueprintNodes}">
+          <ItemsControl.ItemsPanel>
+           <ItemsPanelTemplate>
+            <UniformGrid Columns="4"/>
+           </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+           <DataTemplate>
+            <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{Binding StatusBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="4" Margin="0,0,6,0" Padding="7">
+             <StackPanel>
+              <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding StatusBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,5" Padding="4,1">
+               <TextBlock FontSize="8" FontWeight="Bold" Foreground="{Binding StatusBrushKey, Converter={StaticResource BrushKeyConverter}}" HorizontalAlignment="Center" Text="{Binding Status}"/>
+              </Border>
+              <TextBlock FontSize="11" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding NodeName}"/>
+              <TextBlock FontSize="9" Foreground="{DynamicResource BrassBrush}" Margin="0,2,0,0" Text="{Binding Category}"/>
+              <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0"><Run Text="{Binding FieldCount, Mode=OneWay}"/><Run Text=" "/><Run Text="{DynamicResource Viz.Component.GeneratedMembersLabel}"/></TextBlock>
+             </StackPanel>
+            </Border>
+           </DataTemplate>
+          </ItemsControl.ItemTemplate>
+         </ItemsControl>
+         <Border Grid.Row="1" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="6">
+          <DockPanel LastChildFill="True">
+           <TextBlock DockPanel.Dock="Top" FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,2" Text="XML BLUEPRINT SYNTHESIS PREVIEW"/>
+           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+            <TextBox Text="{Binding ComponentGeneratorDashboard.GeneratedXmlPreview, Mode=OneWay}" IsReadOnly="True" Background="Transparent" BorderThickness="0" FontFamily="Consolas" FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" TextWrapping="NoWrap"/>
+           </ScrollViewer>
+          </DockPanel>
+         </Border>
+        </Grid>
        </Grid></DataTemplate>
   <DataTemplate x:Key="GenericOperationOverviewDashboardTemplate"><Grid>
         <Grid.RowDefinitions>

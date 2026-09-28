@@ -173,3 +173,10 @@ When modifying or creating new UI components for Calradia Forge (both WPF Deskto
   - Todo ViewModel presentado en una vista compartida debe implementar todas las propiedades enlazadas por el XAML, incluso con valores por defecto o indicadores informativos. Ningún enlace debe fallar en tiempo de ejecución para evitar penalizaciones de reflexión interna en el motor de enlace WPF.
 - **Clasificación de Estudios y Sub-vistas en O(1):**
   - La diferenciación de sub-vistas especializadas debe resolverse mediante un enum compacto (`byte`) precalculado en la definición inmutable de la herramienta, y exponerse en el ViewModel de página como propiedades booleanas `{ get; }` inmutables, nunca como expresiones dinámicas en el getter.
+
+## Ciclo de Vida de Comandos y Telemetría en el Pie de Página (Rev071+)
+- **Orden de Inicialización de Comandos en ViewModels:**
+  - Todo RelayCommand o AsyncRelayCommand cuyo estado de ejecución sea notificado por setters de propiedades observables debe ser instanciado en el constructor del ViewModel ANTES de cualquier llamada a métodos de configuración que asignen dichas propiedades.
+  - En los setters de propiedades, invocar siempre Command?.NotifyCanExecuteChanged() con operador de propagación nula para garantizar seguridad ante invocaciones tempranas.
+- **Controles de Telemetría en Pie de Página (AssertFooterFitsShellViewport):**
+  - El botón de telemetría IPC (FooterPingButton) debe residir en la columna izquierda del pie de página dentro de un StackPanel horizontal junto al badge de paleta, manteniendo una altura máxima de 18 DIP y respetando estrictamente los márgenes centrales asignados a KeyboardShortcutHint.

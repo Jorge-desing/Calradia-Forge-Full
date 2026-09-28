@@ -1026,6 +1026,22 @@ namespace CalradiaForge.Desktop.Presentation
     // CODE SECURITY & ASSEMBLY AUDITOR VIEW MODELS
     // =========================================================================
 
+    internal sealed class SecurityRuleCheckViewModel
+    {
+        public SecurityRuleCheckViewModel(string name, string statusText, string detailText, string brushKey)
+        {
+            Name = name;
+            StatusText = statusText;
+            DetailText = detailText;
+            BrushKey = brushKey;
+        }
+
+        public string Name { get; }
+        public string StatusText { get; }
+        public string DetailText { get; }
+        public string BrushKey { get; }
+    }
+
     internal sealed class CodeSecurityDashboardViewModel : ObservableObject
     {
         string targetAssembly = "CalradiaForge.Mod.dll (Release x64)";
@@ -1033,12 +1049,49 @@ namespace CalradiaForge.Desktop.Presentation
         string riskScore = "0.0% RISK · LEVEL: SECURE";
         string riskLevel = "SECURE [PASS]";
         string riskBrushKey = "VerdigrisBrush";
+        bool isStrictScan = true;
+        string auditSummaryMessage = "36/36 Architectural Compliance Rules Passed · 0 Violations";
+
+        public CodeSecurityDashboardViewModel()
+        {
+            InitializeRules();
+            ToggleStrictScanCommand = new RelayCommand(() => IsStrictScan = !IsStrictScan);
+            AuditSelectedRulesCommand = new RelayCommand(AuditActiveRules);
+        }
 
         public string TargetAssembly { get => targetAssembly; set => Set(ref targetAssembly, value); }
+        public string AuditTargetAssembly { get => TargetAssembly; set => TargetAssembly = value; }
+
         public string TargetRuntime { get => targetRuntime; set => Set(ref targetRuntime, value); }
+        public string ClrTargetFramework { get => TargetRuntime; set => TargetRuntime = value; }
+
         public string RiskScore { get => riskScore; set => Set(ref riskScore, value); }
+        public string RiskScoreText { get => RiskScore; set => RiskScore = value; }
+
         public string RiskLevel { get => riskLevel; set => Set(ref riskLevel, value); }
         public string RiskBrushKey { get => riskBrushKey; set => Set(ref riskBrushKey, value); }
+        public string RiskScoreBrushKey { get => RiskBrushKey; set => RiskBrushKey = value; }
+
+        public SecurityRuleCheckViewModel RuleACheck { get; private set; }
+        public SecurityRuleCheckViewModel RuleBCheck { get; private set; }
+        public SecurityRuleCheckViewModel RuleCCheck { get; private set; }
+        public SecurityRuleCheckViewModel RuleDCheck { get; private set; }
+
+        public bool IsStrictScan
+        {
+            get => isStrictScan;
+            set
+            {
+                if (Set(ref isStrictScan, value))
+                {
+                    AuditActiveRules();
+                }
+            }
+        }
+
+        public string AuditSummaryMessage { get => auditSummaryMessage; set => Set(ref auditSummaryMessage, value); }
+        public RelayCommand ToggleStrictScanCommand { get; }
+        public RelayCommand AuditSelectedRulesCommand { get; }
 
         public string RuleATitle => "RULE A: ANTI-SHADOWING";
         public string RuleABadge => "PASS";
@@ -1066,6 +1119,39 @@ namespace CalradiaForge.Desktop.Presentation
 
         public IReadOnlyList<string> MetadataStreams => DefaultMetadataStreams;
 
+        void InitializeRules()
+        {
+            RuleACheck = new SecurityRuleCheckViewModel("RULE A: ANTI-SHADOWING", "PASS", "0 namespaces, classes, or folders named 'Campaign' or 'Localization'. Verified against TaleWorlds types.", "VerdigrisBrush");
+            RuleBCheck = new SecurityRuleCheckViewModel("RULE B: STATELESS BEHAVIORS", "PASS", "0 SaveableTypeDefiner derivations; SyncData() contains zero serialization.", "VerdigrisBrush");
+            RuleCCheck = new SecurityRuleCheckViewModel("RULE C: SAVEABLE BASE ID", "PASS", "Base ID verified >= 2,500,000 (Safe partition allocated: 2,500,000+).", "VerdigrisBrush");
+            RuleDCheck = new SecurityRuleCheckViewModel("RULE D: DISTRIBUTION METADATA", "PASS", "Company, Product, Description, and Copyright PE metadata properly emitted.", "VerdigrisBrush");
+            Raise(nameof(RuleACheck));
+            Raise(nameof(RuleBCheck));
+            Raise(nameof(RuleCCheck));
+            Raise(nameof(RuleDCheck));
+        }
+
+        public void AuditActiveRules()
+        {
+            if (isStrictScan)
+            {
+                RiskScore = "0.0% RISK · LEVEL: SECURE";
+                RiskLevel = "SECURE [PASS]";
+                RiskBrushKey = "VerdigrisBrush";
+                AuditSummaryMessage = "Forensic Deep Scan: 36/36 Rules Passed · Zero CLR Violations · 100% Deterministic Safety";
+            }
+            else
+            {
+                RiskScore = "0.0% RISK · LEVEL: FAST SCAN";
+                RiskLevel = "FAST SCAN [PASS]";
+                RiskBrushKey = "VerdigrisBrush";
+                AuditSummaryMessage = "Standard Scan: Anti-Shadowing and Stateless Invariants Validated";
+            }
+            InitializeRules();
+            Raise(nameof(RiskScoreText));
+            Raise(nameof(RiskScoreBrushKey));
+        }
+
         public void CycleScenario(int index)
         {
             switch (index % 3)
@@ -1092,6 +1178,7 @@ namespace CalradiaForge.Desktop.Presentation
                     RiskBrushKey = "VerdigrisBrush";
                     break;
             }
+            AuditActiveRules();
         }
         public string StudioDocumentation => "Calradia Forge Architectural Gateways & Code Security: Automated audit of GEMINI Rule A (anti-shadowing), Rule B (stateless behaviors), Rule C (desktop static contracts), and Rule D (distribution safety).";
         public string ArchitecturalInvariants => "1. Rule A: Prohibit namespaces, classes, or folders named 'Campaign' or 'Localization'.\n2. Rule B: Zero SaveableTypeDefiner inheritance in mod behaviors; empty SyncData.\n3. Rule C: Preserve all 6 desktop static source contracts.\n4. Rule D: Exclude proprietary TaleWorlds DLLs and scripts from release archives.";
@@ -1125,61 +1212,167 @@ namespace CalradiaForge.Desktop.Presentation
     // MODULE HIERARCHY & DEPENDENCY VALIDATOR VIEW MODELS
     // =========================================================================
 
-    internal sealed class ModulePipelineNodeViewModel(string id, string version, string type, string status, string brushKey)
+    internal sealed class ModulePipelineNodeViewModel
     {
-        public string Id { get; } = id;
-        public string Version { get; } = version;
-        public string Type { get; } = type;
-        public string Status { get; } = status;
-        public string BrushKey { get; } = brushKey;
+        public ModulePipelineNodeViewModel(string id, string version, string type, string status, string brushKey, int orderIndex = 1, int depCount = 0)
+        {
+            Id = id;
+            Version = version;
+            Type = type;
+            Status = status;
+            BrushKey = brushKey;
+            OrderIndex = orderIndex;
+            ModuleName = id;
+            TypeTag = type;
+            DepCount = depCount;
+            StatusColor = brushKey;
+        }
+
+        public string Id { get; }
+        public string Version { get; }
+        public string Type { get; }
+        public string Status { get; }
+        public string BrushKey { get; }
+        public int OrderIndex { get; set; }
+        public string ModuleName { get; }
+        public string TypeTag { get; }
+        public int DepCount { get; }
+        public string StatusColor { get; }
     }
 
     internal sealed class ModuleHierarchyDashboardViewModel : ObservableObject
     {
         static readonly ModulePipelineNodeViewModel[][] ScenarioNodes = [
             [
-                new("Native", "v1.2.9", "Engine Core", "VERIFIED", "BrassBrush"),
-                new("SandBoxCore", "v1.2.9", "Engine Sandbox", "VERIFIED", "BrassBrush"),
-                new("SandBox", "v1.2.9", "Campaign Engine", "VERIFIED", "BrassBrush"),
-                new("StoryMode", "v1.2.9", "Story Quests", "VERIFIED", "BrassBrush"),
-                new("CalradiaForge", "v25.2.0", "Active Mod Module", "LOADED", "VerdigrisBrush")
+                new("Native", "v1.2.9", "Engine Core", "VERIFIED", "BrassBrush", 1, 0),
+                new("SandBoxCore", "v1.2.9", "Engine Sandbox", "VERIFIED", "BrassBrush", 2, 1),
+                new("SandBox", "v1.2.9", "Campaign Engine", "VERIFIED", "BrassBrush", 3, 2),
+                new("StoryMode", "v1.2.9", "Story Quests", "VERIFIED", "BrassBrush", 4, 3),
+                new("CalradiaForge", "v25.2.0", "Active Mod Module", "LOADED", "VerdigrisBrush", 5, 4)
             ],
             [
-                new("Native", "v1.2.9", "Engine Core", "VERIFIED", "BrassBrush"),
-                new("SandBoxCore", "v1.2.9", "Engine Sandbox", "VERIFIED", "BrassBrush"),
-                new("SandBox", "v1.2.9", "Campaign Engine", "VERIFIED", "BrassBrush"),
-                new("CalradiaForge", "v25.2.0", "Standalone Mod", "LOADED", "VerdigrisBrush")
+                new("Native", "v1.2.9", "Engine Core", "VERIFIED", "BrassBrush", 1, 0),
+                new("SandBoxCore", "v1.2.9", "Engine Sandbox", "VERIFIED", "BrassBrush", 2, 1),
+                new("SandBox", "v1.2.9", "Campaign Engine", "VERIFIED", "BrassBrush", 3, 2),
+                new("CalradiaForge", "v25.2.0", "Standalone Mod", "LOADED", "VerdigrisBrush", 4, 3)
             ],
             [
-                new("Native", "v1.2.9", "Engine Core", "VERIFIED", "BrassBrush"),
-                new("SandBoxCore", "v1.2.9", "Engine Sandbox", "VERIFIED", "BrassBrush"),
-                new("SandBox", "v1.2.9", "Campaign Engine", "VERIFIED", "BrassBrush"),
-                new("StoryMode", "v1.2.9", "Story Quests", "VERIFIED", "BrassBrush"),
-                new("CustomBattle", "v1.2.9", "Combat Arena", "STANDBY", "MutedTextBrush"),
-                new("CalradiaForge", "v25.2.0", "Framework Stack", "LOADED", "VerdigrisBrush")
+                new("Native", "v1.2.9", "Engine Core", "VERIFIED", "BrassBrush", 1, 0),
+                new("SandBoxCore", "v1.2.9", "Engine Sandbox", "VERIFIED", "BrassBrush", 2, 1),
+                new("SandBox", "v1.2.9", "Campaign Engine", "VERIFIED", "BrassBrush", 3, 2),
+                new("StoryMode", "v1.2.9", "Story Quests", "VERIFIED", "BrassBrush", 4, 3),
+                new("CustomBattle", "v1.2.9", "Combat Arena", "STANDBY", "MutedTextBrush", 5, 3),
+                new("CalradiaForge", "v25.2.0", "Framework Stack", "LOADED", "VerdigrisBrush", 6, 5)
             ]
         ];
 
         string manifestId = "CalradiaForge";
         string version = "v25.2.0";
         string subModuleXmlStatus = "100% VALID MANIFEST";
+        string loadOrderWarning = "LOAD ORDER OPTIMAL: Engine dependencies load first (Native -> Sandbox -> Mod).";
+        string warningBrushKey = "VerdigrisBrush";
+        ModulePipelineNodeViewModel selectedModule;
         readonly ObservableCollection<ModulePipelineNodeViewModel> pipelineNodes;
 
         public ModuleHierarchyDashboardViewModel()
         {
-            var nodes = ScenarioNodes[0];
             pipelineNodes = new ObservableCollection<ModulePipelineNodeViewModel>();
-            for (int i = 0; i < nodes.Length; i++) pipelineNodes.Add(nodes[i]);
+            MoveModuleUpCommand = new RelayCommand(MoveModuleUp, () => SelectedModule != null);
+            MoveModuleDownCommand = new RelayCommand(MoveModuleDown, () => SelectedModule != null);
+            ResetLoadOrderCommand = new RelayCommand(ResetLoadOrder);
+            ResetLoadOrder();
         }
 
         public string ManifestId { get => manifestId; set => Set(ref manifestId, value); }
+        public string TargetModuleId { get => ManifestId; set => ManifestId = value; }
+
         public string Version { get => version; set => Set(ref version, value); }
+        public string ModuleVersion { get => Version; set => Version = value; }
+
         public string SubModuleXmlStatus { get => subModuleXmlStatus; set => Set(ref subModuleXmlStatus, value); }
         public ObservableCollection<ModulePipelineNodeViewModel> PipelineNodes => pipelineNodes;
 
         public string ConflictMatrix => "0 Circular Cycles · 0 Missing References · 0 Shadowing Collisions";
         public string DllStatus => "Win64_Shipping_Client / Net472 Verified";
         public string XmlRegistrations => "Items, SPCultures, NPCCharacters, ModuleSounds";
+
+        public string LoadOrderWarning { get => loadOrderWarning; private set => Set(ref loadOrderWarning, value); }
+        public string WarningBrushKey { get => warningBrushKey; private set => Set(ref warningBrushKey, value); }
+
+        public ModulePipelineNodeViewModel SelectedModule
+        {
+            get => selectedModule;
+            set
+            {
+                if (Set(ref selectedModule, value))
+                {
+                    MoveModuleUpCommand?.NotifyCanExecuteChanged();
+                    MoveModuleDownCommand?.NotifyCanExecuteChanged();
+                }
+            }
+        }
+
+        public RelayCommand MoveModuleUpCommand { get; }
+        public RelayCommand MoveModuleDownCommand { get; }
+        public RelayCommand ResetLoadOrderCommand { get; }
+
+        public void MoveModuleUp()
+        {
+            if (selectedModule == null) return;
+            var index = pipelineNodes.IndexOf(selectedModule);
+            if (index > 0)
+            {
+                pipelineNodes.Move(index, index - 1);
+                RecalculateOrderIndices();
+            }
+        }
+
+        public void MoveModuleDown()
+        {
+            if (selectedModule == null) return;
+            var index = pipelineNodes.IndexOf(selectedModule);
+            if (index >= 0 && index < pipelineNodes.Count - 1)
+            {
+                pipelineNodes.Move(index, index + 1);
+                RecalculateOrderIndices();
+            }
+        }
+
+        public void ResetLoadOrder()
+        {
+            var nodes = ScenarioNodes[0];
+            pipelineNodes.Clear();
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                var n = nodes[i];
+                pipelineNodes.Add(new ModulePipelineNodeViewModel(n.Id, n.Version, n.Type, n.Status, n.BrushKey, i + 1, Math.Max(0, i)));
+            }
+            if (pipelineNodes.Count > 0) SelectedModule = pipelineNodes[pipelineNodes.Count - 1];
+            RecalculateOrderIndices();
+        }
+
+        void RecalculateOrderIndices()
+        {
+            var hasHazard = false;
+            var seenCustomMod = false;
+            for (int i = 0; i < pipelineNodes.Count; i++)
+            {
+                pipelineNodes[i].OrderIndex = i + 1;
+                var isNative = pipelineNodes[i].Id == "Native" || pipelineNodes[i].Id == "SandBoxCore" || pipelineNodes[i].Id == "SandBox" || pipelineNodes[i].Id == "StoryMode";
+                if (!isNative) seenCustomMod = true;
+                else if (seenCustomMod && isNative) hasHazard = true;
+            }
+            if (hasHazard)
+            {
+                LoadOrderWarning = "CRITICAL ORDER CONFLICT: Custom module loads before engine core dependencies!";
+                WarningBrushKey = "EmberBrush";
+            }
+            else
+            {
+                LoadOrderWarning = "LOAD ORDER OPTIMAL: Engine dependencies load first (Native -> Sandbox -> Mod).";
+                WarningBrushKey = "VerdigrisBrush";
+            }
+        }
 
         public void CycleScenario(int index)
         {
@@ -1204,7 +1397,13 @@ namespace CalradiaForge.Desktop.Presentation
                 SubModuleXmlStatus = "MULTI-MOD COEXISTENCE MATRIX";
             }
             var nodes = ScenarioNodes[sc];
-            for (int i = 0; i < nodes.Length; i++) pipelineNodes.Add(nodes[i]);
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                var n = nodes[i];
+                pipelineNodes.Add(new ModulePipelineNodeViewModel(n.Id, n.Version, n.Type, n.Status, n.BrushKey, i + 1, Math.Max(0, i)));
+            }
+            if (pipelineNodes.Count > 0) SelectedModule = pipelineNodes[pipelineNodes.Count - 1];
+            RecalculateOrderIndices();
         }
         public string StudioDocumentation => "TaleWorlds Module Dependency & Execution Pipeline: Resolves SubModule.xml manifests, module load order DAG, SubModuleClassType reflection initialization, and Gauntlet UI layer priority.";
         public string ArchitecturalInvariants => "1. Module folder name MUST strictly match <Id value=\"...\" /> in SubModule.xml.\n2. Compiled assemblies must be placed in bin/Win64_Shipping_Client/.\n3. TaleWorlds native modules (Native, SandBoxCore, SandBox, StoryMode) must load first.\n4. Circular module dependencies cause silent launcher startup failure.";
@@ -1396,40 +1595,61 @@ namespace CalradiaForge.Desktop.Presentation
     // COMPONENT GENERATOR & XML BLUEPRINT VIEW MODELS
     // =========================================================================
 
-    internal sealed class BlueprintNodeViewModel(string name, string type, string status, string brushKey, string payload)
+    internal sealed class BlueprintNodeViewModel
     {
-        public string Name { get; } = name;
-        public string Type { get; } = type;
-        public string Status { get; } = status;
-        public string BrushKey { get; } = brushKey;
-        public string Payload { get; } = payload;
+        public BlueprintNodeViewModel(string name, string type, string status, string brushKey, string payload, int fieldCount = 4, string category = "XML Entity")
+        {
+            Name = name;
+            Type = type;
+            Status = status;
+            BrushKey = brushKey;
+            Payload = payload;
+            NodeName = name;
+            Category = category;
+            FieldCount = fieldCount;
+            StatusBrushKey = brushKey;
+        }
+
+        public string Name { get; }
+        public string Type { get; }
+        public string Status { get; }
+        public string BrushKey { get; }
+        public string Payload { get; }
+        public string NodeName { get; }
+        public string Category { get; }
+        public int FieldCount { get; }
+        public string StatusBrushKey { get; }
     }
 
     internal sealed class ComponentGeneratorDashboardViewModel : ObservableObject
     {
         static readonly BlueprintNodeViewModel[][] ScenarioBlueprints = [
             [
-                new("custom_ui_click", "2D UI Audio", "VALIDATED", "VerdigrisBrush", "<module_sound name=\"custom_ui_click\" is_2d=\"true\" sound_category=\"ui\" path=\"ui_click.ogg\" />"),
-                new("custom_iron_shield_clash", "3D Combat Sound", "VALIDATED", "BrassBrush", "<module_sound name=\"custom_iron_shield_clash\" is_2d=\"false\" sound_category=\"mission_combat\" path=\"shield_clash.ogg\" />"),
-                new("custom_quest_fanfare", "2D Notification", "VALIDATED", "VerdigrisBrush", "<module_sound name=\"custom_quest_fanfare\" is_2d=\"true\" sound_category=\"ui\" path=\"quest_fanfare.ogg\" />"),
-                new("custom_ambient_wind", "Ambient Loop", "VALIDATED", "DeepPineBrush", "<module_sound name=\"custom_ambient_wind\" is_2d=\"true\" sound_category=\"ambient\" path=\"ambient_wind.ogg\" />")
+                new("custom_ui_click", "2D UI Audio", "VALIDATED", "VerdigrisBrush", "<module_sound name=\"custom_ui_click\" is_2d=\"true\" sound_category=\"ui\" path=\"ui_click.ogg\" />", 4, "Sound Definition"),
+                new("custom_iron_shield_clash", "3D Combat Sound", "VALIDATED", "BrassBrush", "<module_sound name=\"custom_iron_shield_clash\" is_2d=\"false\" sound_category=\"mission_combat\" path=\"shield_clash.ogg\" />", 4, "Sound Definition"),
+                new("custom_quest_fanfare", "2D Notification", "VALIDATED", "VerdigrisBrush", "<module_sound name=\"custom_quest_fanfare\" is_2d=\"true\" sound_category=\"ui\" path=\"quest_fanfare.ogg\" />", 4, "Sound Definition"),
+                new("custom_ambient_wind", "Ambient Loop", "VALIDATED", "DeepPineBrush", "<module_sound name=\"custom_ambient_wind\" is_2d=\"true\" sound_category=\"ambient\" path=\"ambient_wind.ogg\" />", 4, "Sound Definition")
             ],
             [
-                new("Widget.Root", "Root Container", "VALIDATED", "BrassBrush", "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\">"),
-                new("ListPanel.Nav", "Navigation Stack", "VALIDATED", "VerdigrisBrush", "<ListPanel StackLayout.LayoutMethod=\"VerticalBottomToTop\" MarginLeft=\"16\">"),
-                new("ButtonWidget.Command", "Tactical Trigger", "VALIDATED", "BrassBrush", "<ButtonWidget Command.Click=\"ExecuteAction\" SuggestedWidth=\"140\" />"),
-                new("TextWidget.Label", "Dynamic Text", "VALIDATED", "DeepPineBrush", "<TextWidget Text=\"@Headline\" Brush=\"CalradiaForge.Gold\" />")
+                new("Widget.Root", "Root Container", "VALIDATED", "BrassBrush", "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\">", 3, "Gauntlet Prefab"),
+                new("ListPanel.Nav", "Navigation Stack", "VALIDATED", "VerdigrisBrush", "<ListPanel StackLayout.LayoutMethod=\"VerticalBottomToTop\" MarginLeft=\"16\">", 4, "Gauntlet Prefab"),
+                new("ButtonWidget.Command", "Tactical Trigger", "VALIDATED", "BrassBrush", "<ButtonWidget Command.Click=\"ExecuteAction\" SuggestedWidth=\"140\" />", 3, "Gauntlet Prefab"),
+                new("TextWidget.Label", "Dynamic Text", "VALIDATED", "DeepPineBrush", "<TextWidget Text=\"@Headline\" Brush=\"CalradiaForge.Gold\" />", 3, "Gauntlet Prefab")
             ],
             [
-                new("imperial_cataphract", "Elite Cavalry [T6]", "VALIDATED", "BrassBrush", "<NPCCharacter id=\"imperial_cataphract\" default_group=\"Cavalry\" level=\"31\" />"),
-                new("imperial_legionary", "Frontline Infantry [T4]", "VALIDATED", "VerdigrisBrush", "<NPCCharacter id=\"imperial_legionary\" default_group=\"Infantry\" level=\"21\" />"),
-                new("imperial_palatine_guard", "Elite Archer [T4]", "VALIDATED", "VerdigrisBrush", "<NPCCharacter id=\"imperial_palatine_guard\" default_group=\"Ranged\" level=\"21\" />")
+                new("imperial_cataphract", "Elite Cavalry [T6]", "VALIDATED", "BrassBrush", "<NPCCharacter id=\"imperial_cataphract\" default_group=\"Cavalry\" level=\"31\" />", 6, "Troop Character"),
+                new("imperial_legionary", "Frontline Infantry [T4]", "VALIDATED", "VerdigrisBrush", "<NPCCharacter id=\"imperial_legionary\" default_group=\"Infantry\" level=\"21\" />", 6, "Troop Character"),
+                new("imperial_palatine_guard", "Elite Archer [T4]", "VALIDATED", "VerdigrisBrush", "<NPCCharacter id=\"imperial_palatine_guard\" default_group=\"Ranged\" level=\"21\" />", 6, "Troop Character")
             ]
         ];
 
         string targetOutput = "ModuleSounds/module_sounds.xml";
         string schemaStandard = "Calradia Forge Audio & Prefab Definition (bannerlord_audio_system.md)";
         string validationStatus = "100% VALIDATED SCHEMA · ZERO RUNTIME HAZARDS";
+        string customComponentId = "custom_iron_shield_clash";
+        string generatedXmlPreview = "<module_sound name=\"custom_iron_shield_clash\" is_2d=\"false\" sound_category=\"mission_combat\" path=\"shield_clash.ogg\" />";
+        string xmlCopyFeedback = string.Empty;
+        BlueprintNodeViewModel selectedBlueprint;
         readonly ObservableCollection<BlueprintNodeViewModel> blueprintNodes;
 
         public ComponentGeneratorDashboardViewModel()
@@ -1437,15 +1657,95 @@ namespace CalradiaForge.Desktop.Presentation
             var initialBlueprints = ScenarioBlueprints[0];
             blueprintNodes = new ObservableCollection<BlueprintNodeViewModel>();
             for (int i = 0; i < initialBlueprints.Length; i++) blueprintNodes.Add(initialBlueprints[i]);
+            CopyXmlBlueprintCommand = new RelayCommand(CopyXmlBlueprint);
+            GenerateBlueprintCommand = new RelayCommand(RegenerateXmlPreview);
+            if (blueprintNodes.Count > 0) SelectedBlueprint = blueprintNodes[0];
         }
 
         public string TargetOutput { get => targetOutput; set => Set(ref targetOutput, value); }
+        public string ComponentId { get => TargetOutput; set => TargetOutput = value; }
+
         public string SchemaStandard { get => schemaStandard; set => Set(ref schemaStandard, value); }
+        public string TargetSchemaType { get => SchemaStandard; set => SchemaStandard = value; }
+
         public string ValidationStatus { get => validationStatus; set => Set(ref validationStatus, value); }
+        public string MixerComplianceStatus { get => ValidationStatus; set => ValidationStatus = value; }
+
         public ObservableCollection<BlueprintNodeViewModel> BlueprintNodes => blueprintNodes;
 
         public string MixerCategoryStatus => "Mixer Buses: ui (2D Interface), mission_combat (3D Combat) & ambient";
         public string FormatCompliance => "Vorbis .OGG / 16-bit 44.1kHz PCM Zero-Latency Decoding";
+
+        public string CustomComponentId
+        {
+            get => customComponentId;
+            set
+            {
+                if (Set(ref customComponentId, value))
+                {
+                    RegenerateXmlPreview();
+                }
+            }
+        }
+
+        public string GeneratedXmlPreview
+        {
+            get => generatedXmlPreview;
+            set => Set(ref generatedXmlPreview, value);
+        }
+
+        public string XmlCopyFeedback
+        {
+            get => xmlCopyFeedback;
+            set => Set(ref xmlCopyFeedback, value);
+        }
+
+        public BlueprintNodeViewModel SelectedBlueprint
+        {
+            get => selectedBlueprint;
+            set
+            {
+                if (Set(ref selectedBlueprint, value) && value != null)
+                {
+                    CustomComponentId = value.Name;
+                    GeneratedXmlPreview = value.Payload;
+                }
+            }
+        }
+
+        public RelayCommand CopyXmlBlueprintCommand { get; }
+        public RelayCommand GenerateBlueprintCommand { get; }
+
+        public void RegenerateXmlPreview()
+        {
+            var id = string.IsNullOrWhiteSpace(customComponentId) ? "custom_component" : customComponentId.Trim();
+            if (targetOutput.Contains("sounds", StringComparison.OrdinalIgnoreCase))
+            {
+                GeneratedXmlPreview = $"<module_sound name=\"{id}\" is_2d=\"false\" sound_category=\"mission_combat\" path=\"{id}.ogg\" />";
+            }
+            else if (targetOutput.Contains("Prefabs", StringComparison.OrdinalIgnoreCase))
+            {
+                GeneratedXmlPreview = $"<Widget Id=\"{id}\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\">\n  <TextWidget Text=\"@{id}Text\" Brush=\"CalradiaForge.Gold\" />\n</Widget>";
+            }
+            else
+            {
+                GeneratedXmlPreview = $"<NPCCharacter id=\"{id}\" default_group=\"Infantry\" level=\"21\" name=\"{{={id}_name}}Imperial Legionary Vanguard\" />";
+            }
+            XmlCopyFeedback = $"Regenerated blueprint for: {id}";
+        }
+
+        public void CopyXmlBlueprint()
+        {
+            try
+            {
+                System.Windows.Clipboard.SetText(GeneratedXmlPreview);
+                XmlCopyFeedback = "Blueprint XML copied to clipboard!";
+            }
+            catch
+            {
+                XmlCopyFeedback = "Preview updated (Clipboard unavailable in headless mode)";
+            }
+        }
 
         public void CycleScenario(int index)
         {
@@ -1471,6 +1771,8 @@ namespace CalradiaForge.Desktop.Presentation
             }
             var targetBlueprints = ScenarioBlueprints[sc];
             for (int i = 0; i < targetBlueprints.Length; i++) blueprintNodes.Add(targetBlueprints[i]);
+            if (blueprintNodes.Count > 0) SelectedBlueprint = blueprintNodes[0];
+            RegenerateXmlPreview();
         }
         public string StudioDocumentation => "Component & Scaffold Generation Pipeline: Interactive generation of safe CampaignBehaviorBase, QuestBase, NPCCharacters.xml, Items.xml, SubModule.xml, and Gauntlet UI ViewModels.";
         public string ArchitecturalInvariants => "1. Quests MUST invoke SetDialogs() in constructor AND InitializeQuestOnGameLoad().\n2. CampaignBehaviors must register listeners using AddNonSerializedListener.\n3. XML registrations in SubModule.xml must omit the .xml extension in path attribute.\n4. Gauntlet UI ViewModels must decorate exposed members with [DataSourceProperty].";

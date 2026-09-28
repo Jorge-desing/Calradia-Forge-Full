@@ -123,6 +123,7 @@ namespace CalradiaForge.Desktop.Presentation
             CycleModderRoleCommand = new(CycleModderRole);
             ToggleFavoritesOnlyCommand = new(() => ShowFavoritesOnly = !ShowFavoritesOnly);
             ExportMarkdownReportCommand = new(ExportCurrentPageMarkdownAsync, () => CurrentPage != null && !string.IsNullOrWhiteSpace(CurrentPage.RawResult));
+            PingConnectionCommand = new(PingConnectionAsync);
             RefreshVisibleTools();
             SelectedTool = VisibleTools.FirstOrDefault();
         }
@@ -150,6 +151,7 @@ namespace CalradiaForge.Desktop.Presentation
         public AsyncRelayCommand ExportEvidenceCommand { get; }
         public RelayCommand ApplyThemeCommand { get; }
         public AsyncRelayCommand ConnectCommand { get; }
+        public AsyncRelayCommand PingConnectionCommand { get; }
         public RelayCommand ToggleSplitDeckCommand { get; }
         public RelayCommand PinCurrentToolToSplitDeckCommand { get; }
         public RelayCommand CloseSplitDeckCommand { get; }
@@ -304,6 +306,10 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyCollection<string> SupportedLanguages => DesktopLocalizationService.SupportedResourceCodes;
         public int EvidenceCount => retainedEvidence.Count;
         public string ConnectionState => workspace.IsConnected ? "Connected" : "Disconnected";
+        public string ConnectionLatencyText => workspace.Session?.LastRoundTripLatencyMs.HasValue == true
+            ? $"{workspace.Session.LastRoundTripLatencyMs.Value:0.0} ms"
+            : "-- ms";
+        public bool IsIpcConnected => workspace.IsConnected;
         public string WorkOrderContext => Session.Context;
         public string TestingPermission => Session.TestPermission;
         public string ReportState => Session.Report;
@@ -571,6 +577,26 @@ namespace CalradiaForge.Desktop.Presentation
             Status = connected ? "Connected to Forge session" : (workspace.ConnectionError ?? "Connection was not established.");
             Session.Connection = ConnectionState;
             Raise(nameof(ConnectionState));
+            Raise(nameof(IsIpcConnected));
+            Raise(nameof(ConnectionLatencyText));
+        }
+
+        async Task PingConnectionAsync(CancellationToken cancellation)
+        {
+            if (!workspace.IsConnected)
+            {
+                Status = "Standalone Mode · No active Bannerlord IPC pipe connection.";
+                Raise(nameof(ConnectionLatencyText));
+                Raise(nameof(IsIpcConnected));
+                return;
+            }
+            Status = "Pinging Bannerlord IPC transport...";
+            var latency = await workspace.Session.PingAsync(cancellation).ConfigureAwait(true);
+            Raise(nameof(ConnectionLatencyText));
+            Raise(nameof(IsIpcConnected));
+            Status = latency.HasValue
+                ? $"IPC Round-Trip: {latency.Value:0.1} ms · Session Active"
+                : "Ping timed out or endpoint unreachable.";
         }
 
         void SelectTool(object value) { if (value is ToolDefinition tool) { IsCommandPaletteOpen = false; SelectedTool = tool; } }

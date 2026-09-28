@@ -24,6 +24,7 @@ namespace CalradiaForge.Desktop.Services
         }
 
         public bool IsConnected => session.IsConnected;
+        public DesktopSessionService Session => session;
         public IReadOnlyCollection<string> Capabilities => session.Capabilities;
         public string ConnectionError => session.LastError;
         public Task<bool> ConnectAsync(CancellationToken cancellation) => session.ConnectAsync(cancellation);

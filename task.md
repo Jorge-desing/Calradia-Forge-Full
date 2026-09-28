@@ -440,3 +440,11 @@
 - [x] Fase 4: Verificación exhaustiva (compilación Release 0 errores, stateless 4/4, Desktop MVVM 63 pruebas, WPF Render 289 pruebas, Antigravity Agents 31 pruebas y UI Automation smoke).
 - [x] Fase 5: Registro de aprendizaje (Propuesta 27 en `learning_proposal.md`), sincronización y push a GitHub (`main`) bajo la Regla E.
 
+## Gran Ronda de Mejoras de Funcionalidad Táctica, Topología de Módulos y Telemetría IPC en Tiempo Real (Rev071)
+- [x] Fase 1: Interactividad en los 3 Estudios de Dominio Restantes (`DesktopSimulationViewModels.cs` y `ToolPageTemplates.xaml`): auditor de seguridad CLR interactivo con alternador de escaneo forense, simulación de orden de carga de módulos DAG con detección de conflictos, y síntesis interactiva de planos XML con vista previa en vivo y copiado.
+- [x] Fase 2: Telemetría IPC en Vivo en Shell y Footer (`DesktopSessionService.cs`, `DesktopShellViewModel.cs` y `WorkbenchFooterControl.xaml`): monitor de latencia en tiempo real, comando de ping/heartbeat reactivo y estado de conexión online/standalone.
+- [x] Fase 3: Cableado y Robustez XAML (`ToolPageTemplates.xaml`): alineación de enlaces de datos, botones de acción interactiva y garantía estricta de `Mode=OneWay` en elementos `<Run>`.
+- [x] Fase 4: Verificación exhaustiva (compilación Release 0 errores, stateless 4/4, Desktop MVVM 63 pruebas, WPF Render 289 pruebas, Antigravity Agents 31 pruebas y UI Automation smoke).
+- [x] Fase 5: Registro de aprendizaje (Propuesta 28 en `learning_proposal.md`), actualización de codemaps, sincronización y push a GitHub (`main`) bajo la Regla E.
+
+

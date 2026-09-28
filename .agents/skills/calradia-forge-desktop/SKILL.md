@@ -79,3 +79,13 @@ Use this skill for `src/CalradiaForge.Desktop/`, its WPF presentation, and its d
   - Properties in secondary item models formatting text (`StatSummary`, `TensionText`) or layout dimensions (`BarWidth`) must be precalculated in constructors and exposed via `{ get; }` to eliminate string interpolation and floating-point math during continuous WPF binding passes.
 - **Frozen Converters & Zero-Allocation Caching:**
   - Geometry and brush converters must cache resolved instances in static dictionaries and freeze Freezables (`geom.Freeze()`) to enable thread-independent hardware acceleration in the WPF render compositor. Invalidate caches atomically upon theme changes.
+
+## Command Lifecycle & Module DAG Topology Conventions (Rev071+)
+
+- **Command Initialization Order in ViewModels:**
+  - Any RelayCommand whose execution state is signaled by property setters (e.g. SelectedModule) must be instantiated in the constructor BEFORE any method call (e.g. ResetLoadOrder()) that updates those properties.
+  - Setters must invoke Command?.NotifyCanExecuteChanged() using null-conditional propagation.
+- **Interactive Module DAG Topology:**
+  - Module topology visualizers (ModuleHierarchyDashboardViewModel) must support in-memory reordering (MoveModuleUp, MoveModuleDown, ResetLoadOrder) and heuristic conflict warnings (LoadOrderWarning) without mutating game files.
+- **Real-Time IPC Telemetry in Footer:**
+  - The telemetry ping control in WorkbenchFooterControl.xaml must remain within a compact horizontal stack in Column 0, preserving the central shortcut hint's margins and satisfying AssertFooterFitsShellViewport.
