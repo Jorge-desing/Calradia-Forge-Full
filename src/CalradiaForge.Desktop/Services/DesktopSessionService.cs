@@ -22,6 +22,7 @@ namespace CalradiaForge.Desktop.Services
         public bool IsConnected => pipe.Connected;
         public IReadOnlyCollection<string> Capabilities => pipe.Capabilities;
         public string LastError { get; private set; }
+        public double? LastRoundTripLatencyMs { get; private set; }
 
         public async Task<bool> ConnectAsync(CancellationToken cancellation)
         {
@@ -69,7 +70,53 @@ namespace CalradiaForge.Desktop.Services
         public async Task<CalradiaForge.Core.Response> SendAsync(CalradiaForge.Core.Request request, CancellationToken cancellation)
         {
             cancellation.ThrowIfCancellationRequested();
-            return await pipe.Send(request, cancellation).ConfigureAwait(true);
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var response = await pipe.Send(request, cancellation).ConfigureAwait(true);
+            sw.Stop();
+            LastRoundTripLatencyMs = sw.Elapsed.TotalMilliseconds;
+            return response;
+        }
+
+        public async Task<double?> PingAsync(CancellationToken cancellation = default)
+        {
+            if (!pipe.Connected) return null;
+            try
+            {
+                var response = await SendAsync(new CalradiaForge.Core.Request { Action = "ping" }, cancellation).ConfigureAwait(true);
+                return response != null ? LastRoundTripLatencyMs : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task<string> QueryVariableAsync(string variableName, CancellationToken cancellation = default)
+        {
+            if (!pipe.Connected || string.IsNullOrWhiteSpace(variableName)) return null;
+            try
+            {
+                var response = await SendAsync(new CalradiaForge.Core.Request { Action = "query-variable", Argument = variableName }, cancellation).ConfigureAwait(true);
+                return response?.Success == true ? response.Data : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task<string> QueryAgentMemoryAsync(string agentId, CancellationToken cancellation = default)
+        {
+            if (!pipe.Connected || string.IsNullOrWhiteSpace(agentId)) return null;
+            try
+            {
+                var response = await SendAsync(new CalradiaForge.Core.Request { Action = "query-agent-memory", Argument = agentId }, cancellation).ConfigureAwait(true);
+                return response?.Success == true ? response.Data : null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public bool Supports(string capability) => pipe.Supports(capability);

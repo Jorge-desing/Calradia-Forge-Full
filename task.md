@@ -432,3 +432,11 @@
 - [x] Fase 8: Benchmarking de rendimiento profundo con harness de renderizado en 5 pasadas comparativas.
 - [x] Fase 9: Suite de pruebas de agentes y UI Automation (`test_forge_agents.py` 31/31 pasadas).
 - [x] Fase 10: Documentación de aprendizajes (`learning_proposal.md`), sincronización y push a GitHub (`main`) bajo la Regla E.
+
+## Gran Ronda de Mejoras de Funcionalidad del Banco de Trabajo Desktop WPF (Rev070)
+- [x] Fase 1: Interactividad en Estudios Tácticos de Dominio (`DesktopSimulationViewModels.cs` y `ToolPageTemplates.xaml`): filtros de tropa, simulación de bajas, cálculo económico reactivo de talleres, decay y búsqueda en memoria CoALA, presets acústicos y modulador de tensión diplomática.
+- [x] Fase 2: Motor de Exportación Multiformato y Telemetría IPC (`DesktopReportExportService.cs`, `DesktopSessionService.cs`, `WorkspacePageViewModel.cs`): exportación atómica Markdown y JSON estructurado, medición de latencia ping IPC y consultas en caliente.
+- [x] Fase 3: Gestión Avanzada del Catálogo y Filtros en el Shell (`DesktopShellViewModel.cs`): filtro rápido por favoritos, filtro por ToolKind y contador dinámico de herramientas visibles.
+- [x] Fase 4: Verificación exhaustiva (compilación Release 0 errores, stateless 4/4, Desktop MVVM 63 pruebas, WPF Render 289 pruebas, Antigravity Agents 31 pruebas y UI Automation smoke).
+- [x] Fase 5: Registro de aprendizaje (Propuesta 27 en `learning_proposal.md`), sincronización y push a GitHub (`main`) bajo la Regla E.
+

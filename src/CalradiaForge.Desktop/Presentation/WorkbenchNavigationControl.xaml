@@ -57,6 +57,28 @@
          </Grid>
         </Button>
        </Grid>
+       <!-- Favorites & Tool Count Indicator -->
+       <Grid Margin="0,0,0,4">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Button AutomationProperties.AutomationId="FavoritesOnlyFilterButton" Command="{Binding ToggleFavoritesOnlyCommand}" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" Padding="6,2" Cursor="Hand" ToolTip="Toggle showing only pinned favorites">
+         <StackPanel Orientation="Horizontal">
+          <Path Data="{StaticResource Icon.Shield}" Height="10" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="10"/>
+          <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}">
+           <TextBlock.Style>
+            <Style TargetType="TextBlock">
+             <Setter Property="Text" Value="FAVORITES"/>
+             <Style.Triggers>
+              <DataTrigger Binding="{Binding ShowFavoritesOnly}" Value="True">
+               <Setter Property="Text" Value="★ FAVORITES"/>
+              </DataTrigger>
+             </Style.Triggers>
+            </Style>
+           </TextBlock.Style>
+          </TextBlock>
+         </StackPanel>
+        </Button>
+        <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="8" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding FilteredToolsCountText}"/>
+       </Grid>
       </StackPanel>
       <ListBox AutomationProperties.AutomationId="OperationalRailToolViewport" AutomationProperties.Name="{DynamicResource Ui.Operations}" Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Focusable="False" Grid.Row="1" ItemContainerStyle="{StaticResource OperationalRailListBoxItem}" ItemsSource="{Binding OperationalRailEntries}" KeyboardNavigation.TabNavigation="Continue" MinHeight="24" Padding="3,4,3,6" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ToolTip="{DynamicResource Ui.ScrollSections}" VirtualizingPanel.CacheLength="1,1" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.VirtualizationMode="Recycling">
        <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling"/></ItemsPanelTemplate></ListBox.ItemsPanel>

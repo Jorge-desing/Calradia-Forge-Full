@@ -53,7 +53,25 @@ namespace CalradiaForge.Desktop.Services
                 }
             }, cancellationToken);
 
-        async Task<ReportExportResult> ExportAsync(string prefix, Func<StreamWriter, Task> write, CancellationToken cancellationToken)
+        internal Task<ReportExportResult> ExportMarkdownAsync(string prefix, string title, string markdownBody, CancellationToken cancellationToken = default) =>
+            ExportAsync(prefix, async writer =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await writer.WriteLineAsync(("# " + (title ?? "Calradia Forge Report")).AsMemory(), cancellationToken).ConfigureAwait(false);
+                await writer.WriteLineAsync(("Date: " + utcNow().ToString("u")).AsMemory(), cancellationToken).ConfigureAwait(false);
+                await writer.WriteLineAsync(string.Empty.AsMemory(), cancellationToken).ConfigureAwait(false);
+                await writer.WriteAsync((markdownBody ?? string.Empty).AsMemory(), cancellationToken).ConfigureAwait(false);
+            }, cancellationToken, ".md");
+
+        internal Task<ReportExportResult> ExportJsonAsync<T>(string prefix, T data, CancellationToken cancellationToken = default) =>
+            ExportAsync(prefix, async writer =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var json = System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                await writer.WriteAsync(json.AsMemory(), cancellationToken).ConfigureAwait(false);
+            }, cancellationToken, ".json");
+
+        async Task<ReportExportResult> ExportAsync(string prefix, Func<StreamWriter, Task> write, CancellationToken cancellationToken, string extension = ".txt")
         {
             string temporaryPath = null;
             try
@@ -95,7 +113,8 @@ namespace CalradiaForge.Desktop.Services
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-                var finalPath = Path.Combine(outputDirectory, safePrefix + "-" + timestamp + "-" + fileToken + ".txt");
+                var ext = string.IsNullOrWhiteSpace(extension) ? ".txt" : (extension.StartsWith(".") ? extension : "." + extension);
+                var finalPath = Path.Combine(outputDirectory, safePrefix + "-" + timestamp + "-" + fileToken + ext);
                 File.Move(temporaryPath, finalPath, false);
                 temporaryPath = null;
                 return new ReportExportResult(ReportExportStatus.Succeeded, finalPath);

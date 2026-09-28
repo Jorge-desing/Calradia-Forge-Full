@@ -113,6 +113,10 @@ namespace CalradiaForge.Desktop.Presentation
         string culture = "Empire (Calradic Dominance)";
         string archetypeSummary = "Combined Arms: 45% Infantry · 30% Ranged · 25% Heavy Cavalry";
 
+        string selectedArchetypeFilter = "All";
+        string simulatedFrontlineCohesion = "94.2% Cohesion · Shock Absorption: 3.8x (Formation Wedge)";
+        string simulatedArmyCostEstimate = "Party Sample (x50): 10,000d Upfront · 550d/week Wage";
+
         public TroopTreeDashboardViewModel()
         {
             StandardTreeRoots = CanonicalStandardTreeRoots;
@@ -120,6 +124,8 @@ namespace CalradiaForge.Desktop.Presentation
             AllHighlightedTroops = CanonicalHighlightedTroops;
             selectedTroop = CanonicalDefaultSelected;
             SelectTroopCommand = new RelayCommand(p => { if (p is TroopNodeViewModel t) SelectedTroop = t; });
+            FilterArchetypeCommand = new RelayCommand(p => { if (p is string s) SelectedArchetypeFilter = s; });
+            SimulateBattleShockCommand = new RelayCommand(() => RecalculateBattleShock());
         }
 
         public string Culture { get => culture; private set => Set(ref culture, value); }
@@ -129,17 +135,63 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<TroopNodeViewModel> NobleTreeRoots { get; }
         public IReadOnlyList<TroopNodeViewModel> AllHighlightedTroops { get; }
 
+        public string SelectedArchetypeFilter
+        {
+            get => selectedArchetypeFilter;
+            set
+            {
+                if (Set(ref selectedArchetypeFilter, value))
+                {
+                    Raise(nameof(FilteredHighlightedTroops));
+                    RecalculateBattleShock();
+                }
+            }
+        }
+
+        public IReadOnlyList<TroopNodeViewModel> FilteredHighlightedTroops =>
+            string.IsNullOrEmpty(selectedArchetypeFilter) || selectedArchetypeFilter == "All"
+                ? AllHighlightedTroops
+                : AllHighlightedTroops.Where(t => t.Archetype.Equals(selectedArchetypeFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        public string SimulatedFrontlineCohesion { get => simulatedFrontlineCohesion; set => Set(ref simulatedFrontlineCohesion, value); }
+        public string SimulatedArmyCostEstimate { get => simulatedArmyCostEstimate; set => Set(ref simulatedArmyCostEstimate, value); }
+        public RelayCommand FilterArchetypeCommand { get; }
+        public RelayCommand SimulateBattleShockCommand { get; }
+
+        void RecalculateBattleShock()
+        {
+            var troop = SelectedTroop ?? CanonicalDefaultSelected;
+            var isCav = troop.Archetype.Equals("Cavalry", StringComparison.OrdinalIgnoreCase);
+            var isRanged = troop.Archetype.Equals("Ranged", StringComparison.OrdinalIgnoreCase);
+            var cohesionBase = isCav ? 96.8 : isRanged ? 88.4 : 93.5;
+            var shockMulti = isCav ? 4.2 : isRanged ? 1.6 : 3.4;
+            var formation = isCav ? "Wedge" : isRanged ? "Loose" : "Shieldwall";
+            simulatedFrontlineCohesion = $"{cohesionBase:0.0}% Cohesion · Shock Absorption: {shockMulti:0.0}x ({formation})";
+            var upfrontCost = troop.Cost * 50;
+            var weeklyWage = troop.Wage * 50;
+            simulatedArmyCostEstimate = $"Party Sample (x50): {upfrontCost:N0}d Upfront · {weeklyWage:N0}d/week Wage";
+            Raise(nameof(SimulatedFrontlineCohesion));
+            Raise(nameof(SimulatedArmyCostEstimate));
+        }
+
         public void SetDynasticNobleScenario()
         {
             Culture = "Empire · Noble Dynastic Lineage Focus";
             ArchetypeSummary = "Noble Line: 100% Shock Heavy Cavalry (T2 Vigla -> T6 Elite Cataphract)";
             SelectedTroop = CanonicalCataphract;
+            SelectedArchetypeFilter = "Cavalry";
         }
 
         public TroopNodeViewModel SelectedTroop
         {
             get => selectedTroop;
-            set => Set(ref selectedTroop, value);
+            set
+            {
+                if (Set(ref selectedTroop, value))
+                {
+                    RecalculateBattleShock();
+                }
+            }
         }
 
         public RelayCommand SelectTroopCommand { get; }
@@ -228,11 +280,16 @@ namespace CalradiaForge.Desktop.Presentation
         string rmsDbfs = "-14.8 dBFS (High Punch)";
         string category = "mission_combat (3D Spatial Emitter)";
         string headroom = "+1.4 dB Headroom (Full Dynamic Range)";
+        string activePreset = "Default Flat";
 
         public AudioStudioDashboardViewModel()
         {
             Bands = DefaultBands;
             Waveform = DefaultWaveform;
+            ApplyPresetCommand = new RelayCommand(p =>
+            {
+                if (p is string preset) ApplyEqualizerPreset(preset);
+            });
         }
 
         public string TargetAsset { get => targetAsset; private set => Set(ref targetAsset, value); }
@@ -242,10 +299,41 @@ namespace CalradiaForge.Desktop.Presentation
         public string RmsDbfs { get => rmsDbfs; private set => Set(ref rmsDbfs, value); }
         public string Category { get => category; private set => Set(ref category, value); }
         public string Headroom { get => headroom; private set => Set(ref headroom, value); }
+        public string ActivePreset { get => activePreset; private set => Set(ref activePreset, value); }
         public double LeftVuLevel => 0.86;
         public double RightVuLevel => 0.82;
         public IReadOnlyList<AudioBandViewModel> Bands { get; }
         public IReadOnlyList<AudioWavePoint> Waveform { get; }
+        public RelayCommand ApplyPresetCommand { get; }
+
+        public void ApplyEqualizerPreset(string presetName)
+        {
+            ActivePreset = presetName ?? "Default Flat";
+            if (presetName == "Bass Boost")
+            {
+                PeakDbfs = "-0.8 dBFS (Optimized Bass Resonance)";
+                RmsDbfs = "-12.2 dBFS (Heavy Siege Resonance)";
+                Headroom = "+0.8 dB Headroom (Low-End Punch)";
+            }
+            else if (presetName == "Voice Clarity")
+            {
+                PeakDbfs = "-2.1 dBFS (Dialogue Enhanced)";
+                RmsDbfs = "-16.4 dBFS (Consonant Articulation)";
+                Headroom = "+2.1 dB Headroom (Speech Intelligibility)";
+            }
+            else if (presetName == "Combat Punch")
+            {
+                PeakDbfs = "-0.4 dBFS (Transient Saturated)";
+                RmsDbfs = "-10.8 dBFS (Maximum Impact Punch)";
+                Headroom = "+0.4 dB Headroom (Sharp Edge Clash)";
+            }
+            else
+            {
+                PeakDbfs = "-1.4 dBFS (0 Digital Clipping)";
+                RmsDbfs = "-14.8 dBFS (High Punch)";
+                Headroom = "+1.4 dB Headroom (Full Dynamic Range)";
+            }
+        }
 
         public void SetUiFanfareSample()
         {
@@ -256,6 +344,7 @@ namespace CalradiaForge.Desktop.Presentation
             RmsDbfs = "-18.4 dBFS (Smooth Fanfare)";
             Category = "ui (2D Interface Sound)";
             Headroom = "+3.2 dB Headroom (Pristine Decay)";
+            ActivePreset = "Voice Clarity";
         }
         public string StudioDocumentation => "TaleWorlds FMOD Audio Architecture: Manages 8-band frequency spectrums, decibel levels, waveform analysis, and mixer bus routing for 2D UI and 3D positional mission emitters.";
         public string ArchitecturalInvariants => "1. Audio assets must reside in Modules/<ModId>/ModuleSounds/ as Vorbis .ogg or PCM .wav.\n2. Manifest declared in ModuleData/module_sounds.xml registered under <XmlName id=\"Sounds\" />.\n3. sound_category must match an active TaleWorlds mixer bus (ui, mission_combat, ambient, voice).\n4. 3D emitters must specify valid min/max attenuation distances.";
@@ -344,9 +433,25 @@ namespace CalradiaForge.Desktop.Presentation
         string rebellionRisk = "8.6% (Stable · Threshold for Unrest: 45.0%)";
         string optimalEnterprise = "Silversmith (+340 d/day · 41.1d Payback Period)";
 
+        int horizonDays = 30;
+        double costMultiplier = 1.0;
+        double taxRate = 0.10;
+        int calculatedNetProfit = 306;
+        double calculatedPaybackPeriod = 41.1;
+        string simulationSummary = "Horizon: 30d · Insumos: 1.0x · Impuesto: 10% · Retorno Proyectado: +9,180d";
+
         public WorkshopDashboardViewModel()
         {
             Enterprises = DefaultEnterprises;
+            CycleHorizonCommand = new RelayCommand(() =>
+            {
+                HorizonDays = HorizonDays switch { 7 => 14, 14 => 30, 30 => 60, 60 => 90, _ => 7 };
+            });
+            CycleCostMultiplierCommand = new RelayCommand(() =>
+            {
+                CostMultiplier = CostMultiplier < 0.9 ? 1.0 : CostMultiplier < 1.1 ? 1.2 : CostMultiplier < 1.3 ? 1.5 : 0.8;
+            });
+            RecalculateEconomyCommand = new RelayCommand(() => RecalculateEconomy());
         }
 
         public string Settlement { get => settlement; private set => Set(ref settlement, value); }
@@ -357,6 +462,55 @@ namespace CalradiaForge.Desktop.Presentation
         public string OptimalEnterprise { get => optimalEnterprise; private set => Set(ref optimalEnterprise, value); }
         public IReadOnlyList<WorkshopEnterpriseItemViewModel> Enterprises { get; }
 
+        public int HorizonDays
+        {
+            get => horizonDays;
+            set
+            {
+                if (Set(ref horizonDays, value)) RecalculateEconomy();
+            }
+        }
+
+        public double CostMultiplier
+        {
+            get => costMultiplier;
+            set
+            {
+                if (Set(ref costMultiplier, value)) RecalculateEconomy();
+            }
+        }
+
+        public double TaxRate
+        {
+            get => taxRate;
+            set
+            {
+                if (Set(ref taxRate, value)) RecalculateEconomy();
+            }
+        }
+
+        public int CalculatedNetProfit => calculatedNetProfit;
+        public double CalculatedPaybackPeriod => calculatedPaybackPeriod;
+        public string SimulationSummary => simulationSummary;
+
+        public RelayCommand CycleHorizonCommand { get; }
+        public RelayCommand CycleCostMultiplierCommand { get; }
+        public RelayCommand RecalculateEconomyCommand { get; }
+
+        void RecalculateEconomy()
+        {
+            var baseProfit = 340.0;
+            calculatedNetProfit = (int)Math.Round(baseProfit * costMultiplier * (1.0 - taxRate));
+            calculatedPaybackPeriod = Math.Round(50000.0 / Math.Max(1, calculatedNetProfit), 1);
+            var totalReturn = calculatedNetProfit * horizonDays;
+            var taxStrain = taxRate > 0.15 ? 14.2 : taxRate > 0.10 ? 10.4 : 6.8;
+            RebellionRisk = $"{taxStrain:0.0}% (Simulated · Threshold: 45.0%)";
+            simulationSummary = $"Horizon: {horizonDays}d · Insumos: {costMultiplier:0.0}x · Impuesto: {taxRate * 100:0}% · Retorno Proyectado: +{totalReturn:N0}d";
+            Raise(nameof(CalculatedNetProfit));
+            Raise(nameof(CalculatedPaybackPeriod));
+            Raise(nameof(SimulationSummary));
+        }
+
         public void SetEpicroteaScenario()
         {
             Settlement = "Epicrotea (Prosperity: 6,120 · Loyalty: 78.0/100 · Security: 85.0/100)";
@@ -365,6 +519,7 @@ namespace CalradiaForge.Desktop.Presentation
             Garrison = "210 Regular Troops + 140 Heavy Militia";
             RebellionRisk = "4.2% (Very Stable · 0 Unrest)";
             OptimalEnterprise = "Smithy & Brewery (+580 d/day Combined Revenue)";
+            RecalculateEconomy();
         }
         public string StudioDocumentation => "Bannerlord Dynamic Market Equilibrium & Workshop Simulation: Models settlement supply/demand elasticity, raw material consumption, worker wages, and daily production cycles.";
         public string ArchitecturalInvariants => "1. Workshop production must verify input item availability before deducting.\n2. Prevent ItemRoster underflow when consuming raw materials.\n3. Custom workshops must declare <WorkshopType> in workshops.xml and register via CampaignGameStarter.\n4. Keep daily production cycles stateless with respect to save persistence.";
@@ -695,18 +850,95 @@ namespace CalradiaForge.Desktop.Presentation
         int activeScenarioIndex;
         IReadOnlyList<AgentProfileViewModel> agents;
         AgentProfileViewModel selectedAgent;
+        string searchQuery = string.Empty;
+        readonly ObservableCollection<string> liveInjectedEpisodes = [];
 
         public AgentMemoryDashboardViewModel()
         {
             agents = ScenarioAgentSets[0];
             selectedAgent = agents[0];
             SelectAgentCommand = new RelayCommand(p => { if (p is AgentProfileViewModel a) SelectedAgent = a; });
+            SimulateMemoryDecayCommand = new RelayCommand(() => CycleScenario());
+            InjectSimulatedEpisodeCommand = new RelayCommand(() =>
+            {
+                var stamp = DateTime.UtcNow.ToString("HH:mm:ss");
+                var hero = SelectedAgent?.Name ?? "Active NPC";
+                liveInjectedEpisodes.Insert(0, $"[{stamp} CoALA Live] Observed diplomatic council deliberation with {hero}");
+                Raise(nameof(FilteredEpisodicEvents));
+                Raise(nameof(FilteredFactsSummary));
+            });
         }
 
         public string Architecture => "CoALA Cognitive Architecture (Short-Term Working + Bounded Episodic + Semantic Facts + Utility Decay)";
         public string CapacitySummary { get => capacitySummary; set => Set(ref capacitySummary, value); }
         public double CapacityPercentage { get => capacityPercentage; set => Set(ref capacityPercentage, value); }
         public IReadOnlyList<AgentProfileViewModel> Agents { get => agents; private set => Set(ref agents, value); }
+
+        public string SearchQuery
+        {
+            get => searchQuery;
+            set
+            {
+                if (Set(ref searchQuery, value))
+                {
+                    Raise(nameof(FilteredSemanticFacts));
+                    Raise(nameof(FilteredEpisodicEvents));
+                    Raise(nameof(FilteredProceduralTactics));
+                    Raise(nameof(FilteredFactsSummary));
+                }
+            }
+        }
+
+        public IReadOnlyList<MemoryFactItem> FilteredSemanticFacts
+        {
+            get
+            {
+                var facts = SelectedAgent?.SemanticFacts;
+                if (facts == null || string.IsNullOrWhiteSpace(searchQuery)) return facts ?? Array.Empty<MemoryFactItem>();
+                var q = searchQuery.Trim();
+                var results = new List<MemoryFactItem>(facts.Count);
+                for (int i = 0; i < facts.Count; i++)
+                {
+                    var f = facts[i];
+                    if (f.Key.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        f.Value.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        f.Category.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        results.Add(f);
+                    }
+                }
+                return results;
+            }
+        }
+
+        public IReadOnlyList<string> FilteredEpisodicEvents
+        {
+            get
+            {
+                var list = new List<string>(SelectedAgent?.EpisodicEvents ?? Array.Empty<string>());
+                for (int i = 0; i < liveInjectedEpisodes.Count; i++) list.Insert(0, liveInjectedEpisodes[i]);
+                if (string.IsNullOrWhiteSpace(searchQuery)) return list;
+                var q = searchQuery.Trim();
+                return list.Where(e => e.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+            }
+        }
+
+        public IReadOnlyList<string> FilteredProceduralTactics
+        {
+            get
+            {
+                var tactics = SelectedAgent?.ProceduralTactics;
+                if (tactics == null || string.IsNullOrWhiteSpace(searchQuery)) return tactics ?? Array.Empty<string>();
+                var q = searchQuery.Trim();
+                return tactics.Where(t => t.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+            }
+        }
+
+        public string FilteredFactsSummary =>
+            $"Filter: {FilteredSemanticFacts.Count}/{SelectedAgent?.SemanticFacts.Count ?? 0} Facts · {FilteredEpisodicEvents.Count} Episodes";
+
+        public RelayCommand SimulateMemoryDecayCommand { get; }
+        public RelayCommand InjectSimulatedEpisodeCommand { get; }
 
         public AgentProfileViewModel SelectedAgent
         {
@@ -717,6 +949,10 @@ namespace CalradiaForge.Desktop.Presentation
                 {
                     Raise(nameof(ActiveClusterOverview));
                     Raise(nameof(ActiveConsolidationRate));
+                    Raise(nameof(FilteredSemanticFacts));
+                    Raise(nameof(FilteredEpisodicEvents));
+                    Raise(nameof(FilteredProceduralTactics));
+                    Raise(nameof(FilteredFactsSummary));
                 }
             }
         }
@@ -1051,12 +1287,20 @@ namespace CalradiaForge.Desktop.Presentation
         string warRiskText = "WAR RISK: 24% · STABLE";
         string peaceIndexText = "PEACE PROBABILITY: 76%";
         readonly ObservableCollection<FactionStanceViewModel> stances;
+        int tensionModifier;
 
         public KingdomDiplomacyDashboardViewModel()
         {
             var initialStances = ScenarioStances[0];
             stances = new ObservableCollection<FactionStanceViewModel>();
             for (int i = 0; i < initialStances.Length; i++) stances.Add(initialStances[i]);
+            AdjustTensionCommand = new RelayCommand(p =>
+            {
+                if (int.TryParse(p?.ToString(), out var delta))
+                {
+                    TensionModifier = Math.Clamp(tensionModifier + delta, -20, 20);
+                }
+            });
         }
 
         public string FactionName { get => factionName; set => Set(ref factionName, value); }
@@ -1065,10 +1309,32 @@ namespace CalradiaForge.Desktop.Presentation
         public string PeaceIndexText { get => peaceIndexText; set => Set(ref peaceIndexText, value); }
         public ObservableCollection<FactionStanceViewModel> Stances => stances;
 
+        public int TensionModifier
+        {
+            get => tensionModifier;
+            set
+            {
+                if (Set(ref tensionModifier, value)) RecalculateDiplomacy();
+            }
+        }
+
         public string SenateProposal => "Imperial Land Grants for Veteran Legionaries (High Senate Decree)";
         public string SenateSupportPercent => "68% (540 Influence)";
         public string SenateOpposePercent => "32% (250 Influence)";
         public string DynasticHeir => "Ira Pethros (Prestige: 88 · Legitimacy: 95% · Succession Score: 92.4)";
+        public string SimulatedSenateConsensus => $"{Math.Clamp(68 - tensionModifier * 2, 10, 95)}% Support · {Math.Clamp(32 + tensionModifier * 2, 5, 90)}% Opposition";
+        public RelayCommand AdjustTensionCommand { get; }
+
+        void RecalculateDiplomacy()
+        {
+            var baseRisk = factionName.Contains("Western") ? 58 : factionName.Contains("Vlandia") ? 40 : 24;
+            var adjustedRisk = Math.Clamp(baseRisk + tensionModifier, 5, 95);
+            var adjustedPeace = 100 - adjustedRisk;
+            var status = adjustedRisk >= 60 ? "MOBILIZED" : adjustedRisk >= 35 ? "EXPEDITIONARY" : "STABLE";
+            WarRiskText = $"WAR RISK: {adjustedRisk}% · {status}";
+            PeaceIndexText = $"PEACE PROBABILITY: {adjustedPeace}%";
+            Raise(nameof(SimulatedSenateConsensus));
+        }
 
         public void CycleScenario(int index)
         {

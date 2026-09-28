@@ -66,6 +66,7 @@ namespace CalradiaForge.Desktop.Presentation
         readonly ObservableCollection<WorkspaceEvidence> pinnedEvidence = [];
         bool disposed;
         ModderRolePreset activeModderRole = ModderRolePreset.All;
+        bool showFavoritesOnly;
 
         public DesktopShellViewModel(ToolCatalog catalog, DesktopWorkspaceService workspace, DesktopMetricsService metrics, DesktopLocalizationService localization, DesktopThemeService theme, DesktopPreferenceService preferences, Func<ToolDefinition, bool, string> pickInput = null, DesktopReportExportService reportExport = null, Func<string, bool> clipboardWriter = null)
         {
@@ -120,6 +121,8 @@ namespace CalradiaForge.Desktop.Presentation
             CloseSplitDeckCommand = new(() => IsSplitDeckActive = false);
             ClearPinnedDeckCommand = new(ClearPinnedDeck);
             CycleModderRoleCommand = new(CycleModderRole);
+            ToggleFavoritesOnlyCommand = new(() => ShowFavoritesOnly = !ShowFavoritesOnly);
+            ExportMarkdownReportCommand = new(ExportCurrentPageMarkdownAsync, () => CurrentPage != null && !string.IsNullOrWhiteSpace(CurrentPage.RawResult));
             RefreshVisibleTools();
             SelectedTool = VisibleTools.FirstOrDefault();
         }
@@ -151,6 +154,20 @@ namespace CalradiaForge.Desktop.Presentation
         public RelayCommand PinCurrentToolToSplitDeckCommand { get; }
         public RelayCommand CloseSplitDeckCommand { get; }
         public RelayCommand ClearPinnedDeckCommand { get; }
+        public RelayCommand ToggleFavoritesOnlyCommand { get; }
+        public AsyncRelayCommand ExportMarkdownReportCommand { get; }
+        public bool ShowFavoritesOnly
+        {
+            get => showFavoritesOnly;
+            set
+            {
+                if (!Set(ref showFavoritesOnly, value)) return;
+                RefreshVisibleTools();
+                if (!VisibleTools.Contains(SelectedTool)) SelectedTool = VisibleTools.FirstOrDefault();
+                Status = showFavoritesOnly ? "Filtering favorite tools only" : "Showing all tools";
+            }
+        }
+        public string FilteredToolsCountText => $"{VisibleTools.Count} / {Catalog.Tools.Count} TOOLS";
         public bool IsSplitDeckActive { get => isSplitDeckActive; set => Set(ref isSplitDeckActive, value); }
         public ToolDefinition PinnedTool { get => pinnedTool; private set { Set(ref pinnedTool, value); Raise(nameof(HasPinnedDeckContent)); Raise(nameof(PinnedToolTitle)); Raise(nameof(PinnedToolCategory)); } }
         public string PinnedToolTitle => PinnedTool?.Title ?? localization.GetText(
@@ -163,7 +180,7 @@ namespace CalradiaForge.Desktop.Presentation
         public string PinnedRawResult { get => pinnedRawResult; private set => Set(ref pinnedRawResult, value); }
         public ObservableCollection<WorkspaceEvidence> PinnedEvidence => pinnedEvidence;
         public bool HasPinnedDeckContent => PinnedTool != null || pinnedEvidence.Count > 0;
-        public ToolPageViewModel CurrentPage { get => currentPage; private set => Set(ref currentPage, value); }
+        public ToolPageViewModel CurrentPage { get => currentPage; private set { if (Set(ref currentPage, value)) ExportMarkdownReportCommand?.NotifyCanExecuteChanged(); } }
         public WorkbenchPageViewModel CurrentWorkbenchPage { get => currentWorkbenchPage; private set => Set(ref currentWorkbenchPage, value); }
         public SessionStatusViewModel Session { get; } = new();
         public ToolDefinition SelectedTool
@@ -366,7 +383,10 @@ namespace CalradiaForge.Desktop.Presentation
             for (int i = 0; i < tools.Count; i++)
             {
                 var item = tools[i];
-                if ((isCategoryEmpty || item.Category == selectedCategory) && MatchesSearch(item, query) && MatchesModderRole(item, activeModderRole))
+                if ((!showFavoritesOnly || pinned.Contains(item)) &&
+                    (isCategoryEmpty || item.Category == selectedCategory) &&
+                    MatchesSearch(item, query) &&
+                    MatchesModderRole(item, activeModderRole))
                 {
                     matches.Add(item);
                 }
@@ -375,6 +395,7 @@ namespace CalradiaForge.Desktop.Presentation
             // Emit one collection Reset rather than a Clear plus one Add per tool.
             // Unchanged matches keep their existing collection items and avoid a refresh.
             visibleTools.ReplaceAll(matches);
+            Raise(nameof(FilteredToolsCountText));
             var existingGroups = new Dictionary<string, ToolGroupViewModel>(visibleGroups.Count, StringComparer.Ordinal);
             for (int i = 0; i < visibleGroups.Count; i++)
             {
@@ -634,6 +655,7 @@ namespace CalradiaForge.Desktop.Presentation
             CurrentWorkbenchPage = null;
             RunPrimaryCommand.NotifyCanExecuteChanged();
             PinCurrentToolToSplitDeckCommand.NotifyCanExecuteChanged();
+            ExportMarkdownReportCommand.NotifyCanExecuteChanged();
         }
 
         void SelectPinned(object value) { if (value is ToolDefinition tool) { IsCommandPaletteOpen = false; SelectedTool = tool; } }
@@ -655,6 +677,7 @@ namespace CalradiaForge.Desktop.Presentation
                 pinnedToolsSnapshot = null;
                 Raise(nameof(PinnedTools));
                 Raise(nameof(HasPinnedTools));
+                if (showFavoritesOnly) RefreshVisibleTools();
             }
             Status = pinned.Contains(tool) ? "Pinned " + tool.Title : "Unpinned " + tool.Title;
         }
@@ -687,6 +710,7 @@ namespace CalradiaForge.Desktop.Presentation
             }
             RunPrimaryCommand.NotifyCanExecuteChanged();
             PinCurrentToolToSplitDeckCommand.NotifyCanExecuteChanged();
+            ExportMarkdownReportCommand.NotifyCanExecuteChanged();
             Session.Report = "Awaiting result";
             Status = "Selected " + tool.Title;
         }
@@ -698,6 +722,7 @@ namespace CalradiaForge.Desktop.Presentation
             Raise(nameof(RetainedEvidence)); Raise(nameof(EvidenceCount)); Raise(nameof(EvidenceSummary));
             CurrentWorkbenchPage?.EvidenceLedger.Refresh();
             ExportEvidenceCommand.NotifyCanExecuteChanged();
+            ExportMarkdownReportCommand.NotifyCanExecuteChanged();
             Status = result.Status; Session.Report = result.Status;
             return result;
         }
@@ -708,6 +733,15 @@ namespace CalradiaForge.Desktop.Presentation
             retainedEvidence.Clear(); retainedEvidence.AddRange(page.Evidence);
             Raise(nameof(EvidenceCount)); Raise(nameof(EvidenceSummary)); ExportEvidenceCommand.NotifyCanExecuteChanged();
             var result = await reportExport.ExportTextAsync("desktop-work-order", page.RawResult, cancellationToken).ConfigureAwait(true);
+            ApplyExportResult(result);
+        }
+
+        async Task ExportCurrentPageMarkdownAsync(CancellationToken cancellationToken)
+        {
+            if (CurrentPage == null) return;
+            var title = CurrentPage.Tool.Title + " - Forensic Telemetry";
+            var mdBody = "### Status: " + CurrentPage.Status + "\n\n```text\n" + CurrentPage.RawResult + "\n```";
+            var result = await reportExport.ExportMarkdownAsync("desktop-forensics", title, mdBody, cancellationToken).ConfigureAwait(true);
             ApplyExportResult(result);
         }
 
