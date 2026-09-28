@@ -556,6 +556,7 @@ namespace CalradiaForge.Desktop.Presentation
                     return tool.Group == "Diagnostics" || tool.Group == "Delivery" || tool.Group == "Forge SDK" || tool.Group == "Gauntlet" ||
                            tool.Studio == DesktopStudioKind.CodeSecurity || tool.Studio == DesktopStudioKind.ModuleHierarchy ||
                            tool.Studio == DesktopStudioKind.LiveSession || tool.Studio == DesktopStudioKind.DeliveryStudio ||
+                           tool.Studio == DesktopStudioKind.DiagnosticsStudio ||
                            tool.Id.IndexOf("Audit", StringComparison.OrdinalIgnoreCase) >= 0 ||
                            tool.Id.IndexOf("Save", StringComparison.OrdinalIgnoreCase) >= 0 ||
                            tool.Id.IndexOf("Assembly", StringComparison.OrdinalIgnoreCase) >= 0 ||

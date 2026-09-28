@@ -153,6 +153,7 @@ namespace CalradiaForge.Desktop.Presentation
             IsCampaignStudio = studio == DesktopStudioKind.CampaignStudio;
             IsLiveSession = studio == DesktopStudioKind.LiveSession;
             IsDeliveryStudio = studio == DesktopStudioKind.DeliveryStudio;
+            IsDiagnosticsStudio = studio == DesktopStudioKind.DiagnosticsStudio;
             HasVisualDashboard = studio != DesktopStudioKind.Generic;
             RunCommand = new AsyncRelayCommand(RunAsync, CanRun);
             CancelCommand = new RelayCommand(() => RunCommand.Cancel(), () => RunCommand.IsRunning);
@@ -280,6 +281,15 @@ namespace CalradiaForge.Desktop.Presentation
                 Evidence.Add(new("Delivery / Stream Stripping", "Verified", "NTFS :Zone.Identifier streams stripped; LoadFrom 0x80131515 avoided."));
                 Evidence.Add(new("Delivery / SHA-256 Audit", "Verified", "Distribution archives match cryptographic integrity ledger."));
             }
+            else if (IsDiagnosticsStudio)
+            {
+                DiagnosticsStudioDashboard = new DiagnosticsStudioDashboardViewModel();
+                status = "Simulation Ready";
+                rawResult = "=== DIAGNOSTICS & INTEGRITY FORENSIC SQUADRON ===\nManifest Scope  : SubModule.xml (Root Assembly & Category Manifest)\nSchema Standard : TaleWorlds XSD Strict · ModuleData Validation: PASS\nStructural Rule : Rule A (Anti-Shadowing) PASS · Rule B (Statelessness) PASS\nMesh & Memory   : OnInit() Physics Guard PASS · Replay Buffer Bounded: 2,048 Slots\nCompliance Rate : 98.5% Pass Rate · Fault Risk: 8.0% [LOW RISK]";
+                Evidence.Add(new("Diagnostics / Schema Integrity", "Verified", "SubModule.xml manifest and ModuleData schemas conform strictly to engine XSD."));
+                Evidence.Add(new("Diagnostics / GEMINI Rules", "Verified", "Rule A (Anti-Shadowing) and Rule B (Statelessness) verified across all modules."));
+                Evidence.Add(new("Diagnostics / Native Mesh Guard", "Verified", "Zero OnInit() skeleton or mesh manipulations detected in MissionLogic."));
+            }
             else
             {
                 GenericOperationDashboard = GenericOperationDashboardViewModel.CanonicalInstance;
@@ -304,6 +314,7 @@ namespace CalradiaForge.Desktop.Presentation
         public bool IsCampaignStudio { get; }
         public bool IsLiveSession { get; }
         public bool IsDeliveryStudio { get; }
+        public bool IsDiagnosticsStudio { get; }
 
         public bool IsGenericOperationOverview => false;
 
@@ -323,6 +334,7 @@ namespace CalradiaForge.Desktop.Presentation
         public CampaignStudioDashboardViewModel CampaignStudioDashboard => CampaignStudio;
         public LiveSessionDashboardViewModel LiveSessionDashboard { get; private set; }
         public DeliveryStudioDashboardViewModel DeliveryStudioDashboard { get; private set; }
+        public DiagnosticsStudioDashboardViewModel DiagnosticsStudioDashboard { get; private set; }
         public GenericOperationDashboardViewModel GenericOperationDashboard { get; private set; }
 
         int presetCycleIndex;
@@ -375,7 +387,9 @@ namespace CalradiaForge.Desktop.Presentation
                                                             ? (presetCycleIndex % 2 == 1 ? "⟳ Modo Alta Concurrencia" : "⟳ Sesión Interactiva Base")
                                                             : IsDeliveryStudio
                                                                 ? (presetCycleIndex % 2 == 1 ? "⟳ Perfil Rápido CI/CD" : "⟳ Perfil Estándar de Lanzamiento")
-                                                                : (presetCycleIndex % 2 == 1 ? "⟳ Modo Diagnóstico Exhaustivo" : "⟳ Cargar Parámetros Canónicos");
+                                                                : IsDiagnosticsStudio
+                                                                    ? (presetCycleIndex % 2 == 1 ? "⟳ Modo Sandbox & Crash Forense" : "⟳ Auditoría Estricta de Producción")
+                                                                    : (presetCycleIndex % 2 == 1 ? "⟳ Modo Diagnóstico Exhaustivo" : "⟳ Cargar Parámetros Canónicos");
 
         public string PrimaryActionLabel => Tool.Id switch
         {
@@ -689,6 +703,13 @@ namespace CalradiaForge.Desktop.Presentation
             {
                 Evidence.Add(new("Delivery / Preset", "Loaded", $"Cycled FastPackageEngine delivery preset #{presetCycleIndex % 2 + 1}"));
                 Raise(nameof(DeliveryStudioDashboard));
+                Raise(nameof(PresetActionLabel));
+            }
+            else if (IsDiagnosticsStudio)
+            {
+                DiagnosticsStudioDashboard?.CycleScenario(presetCycleIndex);
+                Evidence.Add(new("Diagnostics / Preset", "Loaded", $"Cycled diagnostics profile: {DiagnosticsStudioDashboard?.ActiveProfileLabel}"));
+                Raise(nameof(DiagnosticsStudioDashboard));
                 Raise(nameof(PresetActionLabel));
             }
             else

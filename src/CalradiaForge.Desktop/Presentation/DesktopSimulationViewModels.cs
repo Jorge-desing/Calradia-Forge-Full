@@ -3003,5 +3003,190 @@ namespace CalradiaForge.Desktop.Presentation
         public string TroubleshootingRemedy => "If antivirus flags output DLLs, verify assembly metadata in Directory.Build.props (Company, Product, Copyright) and set UseAppHost=false to prevent executable false alarms.";
         public string ProceduralMacroAction => "cf.preflight_check && python tools/audit_package.py";
     }
+
+    internal sealed class DiagnosticFindingItemViewModel
+    {
+        public DiagnosticFindingItemViewModel(string ruleId, string severity, string targetFile, int lineNumber, string description, string remediation, string brushKey)
+        {
+            RuleId = ruleId;
+            Severity = severity;
+            TargetFile = targetFile;
+            LineNumber = lineNumber;
+            Description = description;
+            Remediation = remediation;
+            StatusBrushKey = brushKey;
+        }
+
+        public string RuleId { get; }
+        public string Severity { get; }
+        public string TargetFile { get; }
+        public int LineNumber { get; }
+        public string Description { get; }
+        public string Remediation { get; }
+        public string StatusBrushKey { get; }
+        public string LocationSummary => LineNumber > 0 ? $"{TargetFile}:{LineNumber}" : TargetFile;
+    }
+
+    internal sealed class HexDiffSnippetViewModel
+    {
+        public HexDiffSnippetViewModel(string offset, string hexBytes, string ascii, string brushKey)
+        {
+            Offset = offset;
+            HexBytes = hexBytes;
+            Ascii = ascii;
+            HighlightBrushKey = brushKey;
+        }
+
+        public string Offset { get; }
+        public string HexBytes { get; }
+        public string Ascii { get; }
+        public string HighlightBrushKey { get; }
+    }
+
+    internal sealed class DiagnosticsStudioDashboardViewModel : ObservableObject
+    {
+        static readonly string[] DefaultDiagnosticsRadarAxes =
+        [
+            "Schema Validity",
+            "Manifest Parity",
+            "Memory Bounds",
+            "Mesh Integrity",
+            "API Freshness"
+        ];
+
+        static readonly double[] DefaultStrictRadarValues = [0.98, 0.95, 0.92, 0.94, 0.96];
+        static readonly double[] DefaultSandboxRadarValues = [0.82, 0.88, 0.65, 0.72, 0.80];
+
+        static readonly double[] DefaultScanLatencyTrajectory =
+        [
+            1.2, 1.4, 0.9, 1.1, 1.8, 1.5, 0.8, 1.0,
+            1.3, 1.7, 1.1, 0.9, 1.4, 1.2, 0.8, 1.0
+        ];
+
+        static readonly DiagnosticFindingItemViewModel[] StrictFindings =
+        [
+            new("XSD-001", "PASS", "SubModule.xml", 12, "Id attribute matches module folder exactly.", "No action required.", "VerdigrisBrush"),
+            new("SEC-004", "PASS", "SubModule.cs", 45, "Anti-shadowing verified; zero references to TaleWorlds.Campaign.", "No action required.", "VerdigrisBrush"),
+            new("MEM-012", "PASS", "ForgeWeaveEngine.cs", 108, "Replay buffer allocations bounded to 2,048 ring slots.", "No action required.", "VerdigrisBrush"),
+            new("CLR-009", "PASS", "Directory.Build.props", 14, "Assembly metadata Company, Product, Copyright populated.", "No action required.", "VerdigrisBrush")
+        ];
+
+        static readonly DiagnosticFindingItemViewModel[] SandboxFindings =
+        [
+            new("CRASH-041", "WARN", "dump_0928.cfcrash", 88, "NullReferenceException captured in TaleWorlds MissionView.OnInit.", "Defer skeleton manipulations to first OnTick(dt).", "BrassBrush"),
+            new("MESH-002", "WARN", "custom_armor.tpac", 204, "Vertex count exceeds 15,000 LOD0 threshold.", "Optimize mesh topology or generate LOD1/LOD2 decimation.", "BrassBrush"),
+            new("XSD-008", "INFO", "ModuleData/items.xml", 340, "Unrecognized custom attribute 'forge_perk' ignored by native parser.", "Verify schema extension tag in SubModule.xml.", "VerdigrisBrush"),
+            new("TIME-015", "PASS", "HourlyTickHandler.cs", 62, "Anti-lag modulo-24 time-slicing active for hero updates.", "Optimal distribution.", "VerdigrisBrush")
+        ];
+
+        static readonly HexDiffSnippetViewModel[] DefaultHexSnippets =
+        [
+            new("0x00000000", "3C 3F 78 6D 6C 20 76 65 72 73 69 6F 6E 3D 22 31", "<?xml version=\"1", "VerdigrisBrush"),
+            new("0x00000010", "2E 30 22 20 65 6E 63 6F 64 69 6E 67 3D 22 75 74", ".0\" encoding=\"ut", "VerdigrisBrush"),
+            new("0x00000020", "66 2D 38 22 3F 3E 0A 3C 4D 6F 64 75 6C 65 3E 0A", "f-8\"?>.<Module>.", "VerdigrisBrush"),
+            new("0x00000030", "20 20 3C 49 64 20 76 61 6C 75 65 3D 22 43 61 6C", "  <Id value=\"Cal", "BrassBrush")
+        ];
+
+        string sessionTitle = "DIAGNOSTICS & INTEGRITY FORENSIC SQUADRON";
+        string overallHealthStatus = "INTEGRITY 98.5% · ALL CHECKS PASS";
+        string healthBrushKey = "VerdigrisBrush";
+        string targetScope = "MODULE MANIFEST & XML SCHEMAS (SubModule.xml, ModuleData)";
+        string scanMetricsSummary = "Static Scan: 14 Rules Evaluated · 0 Errors · 0 Warnings · 14 Clean";
+        string activeProfileLabel = "Strict Production Audit";
+
+        double complianceScoreGaugeValue = 98.5;
+        double faultRiskGaugeValue = 8.0;
+
+        readonly ObservableCollection<DiagnosticFindingItemViewModel> findings = [];
+        readonly ObservableCollection<HexDiffSnippetViewModel> hexDumpSnippets = [];
+
+        public DiagnosticsStudioDashboardViewModel()
+        {
+            DiagnosticsRadarAxes = DefaultDiagnosticsRadarAxes;
+            StrictRadarValues = DefaultStrictRadarValues;
+            SandboxRadarValues = DefaultSandboxRadarValues;
+            ScanLatencyTrajectory = DefaultScanLatencyTrajectory;
+
+            for (int i = 0; i < StrictFindings.Length; i++) findings.Add(StrictFindings[i]);
+            for (int i = 0; i < DefaultHexSnippets.Length; i++) hexDumpSnippets.Add(DefaultHexSnippets[i]);
+        }
+
+        public string SessionTitle { get => sessionTitle; private set => Set(ref sessionTitle, value); }
+        public string OverallHealthStatus { get => overallHealthStatus; private set => Set(ref overallHealthStatus, value); }
+        public string HealthBrushKey { get => healthBrushKey; private set => Set(ref healthBrushKey, value); }
+        public string TargetScope { get => targetScope; private set => Set(ref targetScope, value); }
+        public string ScanMetricsSummary { get => scanMetricsSummary; private set => Set(ref scanMetricsSummary, value); }
+        public string ActiveProfileLabel { get => activeProfileLabel; private set => Set(ref activeProfileLabel, value); }
+
+        public IReadOnlyList<string> DiagnosticsRadarAxes { get; }
+        public IReadOnlyList<double> StrictRadarValues { get; }
+        public IReadOnlyList<double> SandboxRadarValues { get; }
+        public IReadOnlyList<double> ScanLatencyTrajectory { get; }
+
+        public ObservableCollection<DiagnosticFindingItemViewModel> Findings => findings;
+        public ObservableCollection<HexDiffSnippetViewModel> HexDumpSnippets => hexDumpSnippets;
+
+        public double ComplianceScoreGaugeValue { get => complianceScoreGaugeValue; private set => Set(ref complianceScoreGaugeValue, value); }
+        public double FaultRiskGaugeValue { get => faultRiskGaugeValue; private set => Set(ref faultRiskGaugeValue, value); }
+
+        public void CycleScenario(int index)
+        {
+            var isStrict = index % 2 == 0;
+            findings.Clear();
+            if (isStrict)
+            {
+                SessionTitle = "DIAGNOSTICS & INTEGRITY FORENSIC SQUADRON";
+                OverallHealthStatus = "INTEGRITY 98.5% · ALL CHECKS PASS";
+                HealthBrushKey = "VerdigrisBrush";
+                TargetScope = "MODULE MANIFEST & XML SCHEMAS (SubModule.xml, ModuleData)";
+                ScanMetricsSummary = "Static Scan: 14 Rules Evaluated · 0 Errors · 0 Warnings · 14 Clean";
+                ActiveProfileLabel = "Strict Production Audit";
+                ComplianceScoreGaugeValue = 98.5;
+                FaultRiskGaugeValue = 8.0;
+                for (int i = 0; i < StrictFindings.Length; i++) findings.Add(StrictFindings[i]);
+            }
+            else
+            {
+                SessionTitle = "CRASH FORENSICS & SANDBOX TRIAGE LAB";
+                OverallHealthStatus = "ANOMALY ISOLATED · 2 WARNINGS (BOUNDED)";
+                HealthBrushKey = "BrassBrush";
+                TargetScope = "CRASH DUMP & HEURISTIC TRACE (artifacts/*.cfcrash)";
+                ScanMetricsSummary = "Forensic Triage: 8 Exceptions Decoded · 2 Warnings · Bounded Sandbox";
+                ActiveProfileLabel = "Development Sandbox & Crash Forensics";
+                ComplianceScoreGaugeValue = 84.0;
+                FaultRiskGaugeValue = 22.5;
+                for (int i = 0; i < SandboxFindings.Length; i++) findings.Add(SandboxFindings[i]);
+            }
+            Raise(nameof(Findings));
+            Raise(nameof(ComplianceScoreGaugeValue));
+            Raise(nameof(FaultRiskGaugeValue));
+        }
+
+        public string StudioDocumentation => "Calradia Forge Diagnostics & Integrity Forensic Squadron: Deep inspection of XML schemas, SubModule manifests, crash logs (.cfcrash), memory allocations, and mission mesh safety.";
+        public string ArchitecturalInvariants => "1. Meshes, skeletons, and physics MUST NOT be created or swapped in OnInit() (defer to first OnTick).\n2. SubModule.xml Id must strictly match folder name inside Modules/.\n3. XML path attribute must omit the .xml extension.\n4. Never inherit from TaleWorlds engine types for persistence.";
+        public string StudioCaveat => "Manipulating 3D physics components or skeleton bones inside OnInit() causes native C++ engine crashes without managed stack traces.";
+        public string QuickActionCommand => "cf.audit_rules";
+        public string QuickActionLabel => "Audit Rules";
+        public string ScratchpadNotes { get; set; } = "Notes: Diagnostics & Integrity Squadron verified 14 static rules, zero anti-shadowing violations, and 98.5% compliance pass rate.";
+        public IReadOnlyList<StudioConsoleCommand> CuratedConsoleCommands { get; } =
+        [
+            new("cf.audit_rules", "Execute static source audit across all behaviors and assemblies.", "Diagnostics", true),
+            new("cf.validate_schema", "Validate XML data files against TaleWorlds XSD schemas.", "Diagnostics"),
+            new("cf.parse_crash", "Decode binary and text crash dumps (.cfcrash) with symbol resolution.", "Diagnostics"),
+            new("cf.check_conflicts", "Evaluate module dependencies and load order DAG for conflicts.", "Diagnostics"),
+            new("cf.verify_assembly", "Verify CLR assembly metadata, strong naming, and security bounds.", "Diagnostics")
+        ];
+        public string PlaybookTitle => "Playbook: Diagnostic Triage & Crash Resolution";
+        public IReadOnlyList<string> PlaybookSteps { get; } =
+        [
+            "1. Execute static rule audit to verify GEMINI Rule A (anti-shadowing) and Rule B (statelessness).",
+            "2. Validate SubModule.xml schema and verify module folder name parity.",
+            "3. Inspect crash dumps for OnInit() mesh/skeleton lifecycle violations."
+        ];
+        public string TroubleshootingHeader => "Troubleshooting: Native Crash on Mission Load (0xC0000005)";
+        public string TroubleshootingRemedy => "If Bannerlord crashes natively during battle scene loading without a C# stack trace, verify that MissionLogic or ScriptComponentBehaviour classes do not create physics meshes in OnInit(). Defer all mesh manipulations to first OnTick(float dt).";
+        public string ProceduralMacroAction => "cf.audit_rules && cf.validate_schema";
+    }
 }
+
 

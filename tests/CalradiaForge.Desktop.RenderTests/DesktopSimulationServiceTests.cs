@@ -478,5 +478,31 @@ internal static class DesktopSimulationServiceTests
         Check(deliveryVm.Packages != null && deliveryVm.Packages.Count == 4, "Delivery studio must expose 4 package artifacts.");
         Check(!string.IsNullOrWhiteSpace(deliveryVm.StudioDocumentation), "Delivery studio must provide forensic documentation.");
         Check(!string.IsNullOrWhiteSpace(deliveryVm.ArchitecturalInvariants), "Delivery studio must declare architectural invariants.");
+
+        // 13. Diagnostics & Integrity Studio Dashboard (Rev077)
+        var diagVm = new DiagnosticsStudioDashboardViewModel();
+        Check(diagVm.DiagnosticsRadarAxes != null && diagVm.DiagnosticsRadarAxes.Count == 5, "Diagnostics studio must expose 5 integrity radar axes.");
+        Check(diagVm.StrictRadarValues != null && diagVm.StrictRadarValues.Count == 5, "Strict profile radar values must have 5 entries.");
+        Check(diagVm.SandboxRadarValues != null && diagVm.SandboxRadarValues.Count == 5, "Sandbox profile radar values must have 5 entries.");
+        Check(diagVm.StrictRadarValues.All(v => v >= 0.0 && v <= 1.0), "Strict radar values must be normalized in [0, 1].");
+        Check(diagVm.SandboxRadarValues.All(v => v >= 0.0 && v <= 1.0), "Sandbox radar values must be normalized in [0, 1].");
+        Check(diagVm.ScanLatencyTrajectory != null && diagVm.ScanLatencyTrajectory.Count == 16, "Scan latency trajectory must contain 16 intervals.");
+        Check(diagVm.ComplianceScoreGaugeValue >= 0.0 && diagVm.ComplianceScoreGaugeValue <= 100.0, "Compliance score gauge must be bounded in [0, 100].");
+        Check(diagVm.FaultRiskGaugeValue >= 0.0 && diagVm.FaultRiskGaugeValue <= 100.0, "Fault risk gauge must be bounded in [0, 100].");
+        Check(diagVm.Findings != null && diagVm.Findings.Count == 4, "Diagnostics studio must expose 4 initial strict findings.");
+        Check(diagVm.HexDumpSnippets != null && diagVm.HexDumpSnippets.Count == 4, "Diagnostics studio must expose 4 hex dump snippets.");
+        Check(!string.IsNullOrWhiteSpace(diagVm.StudioDocumentation), "Diagnostics studio must provide forensic documentation.");
+        Check(!string.IsNullOrWhiteSpace(diagVm.ArchitecturalInvariants), "Diagnostics studio must declare architectural invariants.");
+
+        diagVm.CycleScenario(1);
+        Check(diagVm.ActiveProfileLabel == "Development Sandbox & Crash Forensics", "Cycling scenario must switch to Sandbox profile.");
+        Check(diagVm.ComplianceScoreGaugeValue == 84.0, "Sandbox compliance score must be 84.0.");
+        Check(diagVm.FaultRiskGaugeValue == 22.5, "Sandbox fault risk must be 22.5.");
+        Check(diagVm.OverallHealthStatus.Contains("ANOMALY ISOLATED"), "Sandbox health status must indicate anomaly isolated.");
+
+        diagVm.CycleScenario(2);
+        Check(diagVm.ActiveProfileLabel == "Strict Production Audit", "Cycling scenario back to 0/2 must switch to Strict profile.");
+        Check(diagVm.ComplianceScoreGaugeValue == 98.5, "Strict compliance score must be 98.5.");
+        Check(diagVm.FaultRiskGaugeValue == 8.0, "Strict fault risk must be 8.0.");
     }
 }

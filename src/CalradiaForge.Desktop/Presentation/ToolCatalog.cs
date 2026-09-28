@@ -25,7 +25,8 @@ namespace CalradiaForge.Desktop.Presentation
         GauntletStudio,
         CampaignStudio,
         LiveSession,
-        DeliveryStudio
+        DeliveryStudio,
+        DiagnosticsStudio
     }
 
     internal sealed class ToolDefinition : INotifyPropertyChanged
@@ -150,6 +151,9 @@ namespace CalradiaForge.Desktop.Presentation
                 or "PartyInventory" or "MapPathfindingDebugger" or "MockEngine" => DesktopStudioKind.LiveSession,
                 "ModPackager" or "RecentExports" or "SdkCheatSheet" or "ShortcutGuide"
                 or "ConsoleReference" or "FbxAsciiPreflight" => DesktopStudioKind.DeliveryStudio,
+                "XmlSchemaValidator" or "WatchdogParser" or "CrashAnalyzer"
+                or "ApiDeprecationChecker" or "PackagingAuditor" or "MissionMeshGuard"
+                or "ModIdAuditor" => DesktopStudioKind.DiagnosticsStudio,
                 _ => DesktopStudioKind.Generic
             };
 
@@ -362,6 +366,7 @@ namespace CalradiaForge.Desktop.Presentation
             "SettlementCalculator" or "SDK_ForgeWeatherController" => "Estudio de expedición y equilibrio de campaña de Calradia. Modela el crecimiento de hogares, estabilidad de lealtad, guarniciones, seguridad cívica y variaciones meteorológicas.",
             "LiveConsole" or "MemoryProfiler" or "ObjectInspector" => "Estudio de telemetría y sesión interactiva en tiempo real (Live Session). Monitorea el bus de eventos de ForgeWeave por Named Pipes, latencia IPC de ida y vuelta, saturación del buffer en anillo y cuotas de memoria sin interferir con el hilo del juego.",
             "ModPackager" or "RecentExports" or "FbxAsciiPreflight" => "Estudio de empaquetado y entrega de producción (Delivery & Deployment). Ejecuta auditorías preflight de FastPackageEngine, verificación de firmas e integridad SHA-256, saneamiento de streams Zone.Identifier y generación paralela multihilo.",
+            "XmlSchemaValidator" or "CrashAnalyzer" or "WatchdogParser" or "PackagingAuditor" or "MissionMeshGuard" or "ModIdAuditor" => "Estudio de diagnóstico e integridad estructural (Diagnostics & Integrity). Inspecciona la validez de esquemas XML, detección de excepciones y cuelgues en volcados .cfcrash, paridad de manifiestos SubModule.xml y barreras de memoria nativa sin alterar el estado del motor.",
                 _ => $"{Purpose} Opera de forma estrictamente acotada (bounded) y aislada del hilo de renderizado, garantizando cero efectos colaterales persistentes en partidas guardadas ni en la instalación del juego."
             };
 

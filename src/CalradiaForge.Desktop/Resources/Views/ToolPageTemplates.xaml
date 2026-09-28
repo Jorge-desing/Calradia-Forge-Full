@@ -1869,6 +1869,173 @@
          </Border>
         </Grid>
        </Grid></DataTemplate>
+  <!-- 14. Diagnostics & Integrity Studio (Rev077) -->
+  <DataTemplate x:Key="DiagnosticsStudioViewTemplate"><Grid>
+        <Grid.RowDefinitions>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <!-- Header -->
+        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Grid.Row="0" Margin="0,0,0,6" Padding="0,0,0,6">
+         <Grid>
+          <Grid.ColumnDefinitions>
+           <ColumnDefinition Width="*"/>
+           <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource Icon.Shield}" Fill="{DynamicResource VerdigrisBrush}" Height="16" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="16"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding DiagnosticsStudioDashboard.SessionTitle, Mode=OneWay}" VerticalAlignment="Center"/>
+           </StackPanel>
+           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding DiagnosticsStudioDashboard.TargetScope, Mode=OneWay}"/>
+           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding DiagnosticsStudioDashboard.ScanMetricsSummary, Mode=OneWay}"/>
+           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding DiagnosticsStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+          </StackPanel>
+          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding DiagnosticsStudioDashboard.HealthBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{Binding DiagnosticsStudioDashboard.HealthBrushKey, Converter={StaticResource BrushKeyConverter}}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{Binding DiagnosticsStudioDashboard.HealthBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding DiagnosticsStudioDashboard.OverallHealthStatus, Mode=OneWay}"/>
+           </StackPanel>
+          </Border>
+         </Grid>
+        </Border>
+        <!-- Body: Forensic Findings, Radar Chart, and Scan Latency / Gauges -->
+        <Grid Grid.Row="1">
+         <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1.35*"/>
+          <ColumnDefinition Width="1.1*"/>
+          <ColumnDefinition Width="1.2*"/>
+         </Grid.ColumnDefinitions>
+         <!-- Column 1: Diagnostic Findings & Hex Forensics -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="8">
+          <DockPanel LastChildFill="True">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="DIAGNOSTIC FINDINGS &amp; HEX FORENSICS"/>
+           </Border>
+           <TextBlock DockPanel.Dock="Top" FontSize="8.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,4" Text="Rule checks, schema deviations, and decoded memory offsets:"/>
+           <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="220">
+            <StackPanel>
+             <ItemsControl ItemsSource="{Binding DiagnosticsStudioDashboard.Findings}">
+              <ItemsControl.ItemTemplate>
+               <DataTemplate>
+                <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,0,4" Padding="6,4">
+                 <StackPanel>
+                  <Grid>
+                   <StackPanel Orientation="Horizontal">
+                    <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Code}"/>
+                    <TextBlock FontSize="8.5" Foreground="{DynamicResource MutedTextBrush}" Margin="6,0,0,0" Text="{Binding FileLocation}"/>
+                   </StackPanel>
+                   <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding SeverityBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="2" HorizontalAlignment="Right" Padding="4,1">
+                    <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{Binding SeverityBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding Severity}"/>
+                   </Border>
+                  </Grid>
+                  <TextBlock FontSize="8.5" Foreground="{DynamicResource PaperBrush}" Margin="0,2,0,0" Text="{Binding Message}" TextWrapping="Wrap"/>
+                  <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" Margin="0,1,0,0" Text="{Binding RecommendedAction}" TextWrapping="Wrap"/>
+                 </StackPanel>
+                </Border>
+               </DataTemplate>
+              </ItemsControl.ItemTemplate>
+             </ItemsControl>
+             <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,4,0,0" Padding="4">
+              <StackPanel>
+               <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,2" Text="HEX / XML MEMORY DUMP:"/>
+               <ItemsControl ItemsSource="{Binding DiagnosticsStudioDashboard.HexDumpSnippets}">
+                <ItemsControl.ItemTemplate>
+                 <DataTemplate>
+                  <Grid Margin="0,1">
+                   <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                   </Grid.ColumnDefinitions>
+                   <TextBlock FontFamily="Consolas" FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,6,0" Text="{Binding Offset}"/>
+                   <TextBlock FontFamily="Consolas" FontSize="7.5" Foreground="{Binding BrushKey, Converter={StaticResource BrushKeyConverter}}" Grid.Column="1" Text="{Binding HexBytes}"/>
+                   <TextBlock FontFamily="Consolas" FontSize="7.5" Foreground="{DynamicResource PaperBrush}" Grid.Column="2" Margin="6,0,0,0" Text="{Binding AsciiText}"/>
+                  </Grid>
+                 </DataTemplate>
+                </ItemsControl.ItemTemplate>
+               </ItemsControl>
+              </StackPanel>
+             </Border>
+            </StackPanel>
+           </ScrollViewer>
+          </DockPanel>
+         </Border>
+         <!-- Column 2: Integrity Radar Profile -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="8">
+          <StackPanel HorizontalAlignment="Center">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="INTEGRITY RADAR"/>
+           </Border>
+           <presentation:ForgeRadarChart
+               AxisLabels="{Binding DiagnosticsStudioDashboard.DiagnosticsRadarAxes}"
+               Values="{Binding DiagnosticsStudioDashboard.StrictRadarValues}"
+               ComparisonValues="{Binding DiagnosticsStudioDashboard.SandboxRadarValues}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource VerdigrisBrush}"
+               ComparisonStroke="{DynamicResource BrassBrush}"
+               ComparisonFill="{DynamicResource BrassBrush}"
+               GridBrush="{DynamicResource BorderBrush}"
+               AxisLabelBrush="{DynamicResource PaperBrush}"
+               Height="130" Width="130" HorizontalAlignment="Center" Margin="0,2"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="■ Strict Production  ■ Sandbox / Forensics"/>
+          </StackPanel>
+         </Border>
+         <!-- Column 3: Scan Latency Sparkline & Compliance / Fault Risk Gauges -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
+          <StackPanel>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="AUDIT TELEMETRY"/>
+           </Border>
+           <TextBlock FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="SCAN LATENCY TRAJECTORY (MS)"/>
+           <presentation:ForgeSparkline
+               DataPoints="{Binding DiagnosticsStudioDashboard.ScanLatencyTrajectory}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource VerdigrisBrush}"
+               ShowGridLines="True"
+               GridBrush="{DynamicResource BorderBrush}"
+               ValueUnit="ms"
+               FormatString="0.0"
+               Height="36" Margin="0,3"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="Real-time static rule scan latency across all AST visitors and schema analyzers."/>
+           <Grid Margin="0,4,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <!-- Gauge 1: Compliance Score -->
+            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding DiagnosticsStudioDashboard.ComplianceScoreGaugeValue}"
+                 Maximum="100"
+                 Threshold="90"
+                 CenterText="98.5%"
+                 SubText="SCORE"
+                 AccentBrush="{DynamicResource VerdigrisBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="COMPLIANT"/>
+            </StackPanel>
+            <!-- Gauge 2: Fault Risk -->
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding DiagnosticsStudioDashboard.FaultRiskGaugeValue}"
+                 Maximum="100"
+                 Threshold="25"
+                 CenterText="8.0%"
+                 SubText="RISK"
+                 AccentBrush="{DynamicResource BrassBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="LOW RISK"/>
+            </StackPanel>
+           </Grid>
+           <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Text="Zero anti-shadowing violations detected; stateless SaveableTypeDefiner contract preserved."/>
+          </StackPanel>
+         </Border>
+        </Grid>
+       </Grid></DataTemplate>
   <DataTemplate x:Key="GenericOperationOverviewDashboardTemplate"><Grid>
         <Grid.RowDefinitions>
          <RowDefinition Height="Auto"/>
@@ -2476,6 +2643,9 @@
 
        <!-- 15. Delivery & Distribution Studio -->
        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource DeliveryStudioViewTemplate}" MinHeight="0" MinWidth="0" Visibility="{Binding IsDeliveryStudio, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+       <!-- 16. Diagnostics & Integrity Studio -->
+       <ContentControl Content="{Binding}" ContentTemplate="{StaticResource DiagnosticsStudioViewTemplate}" MinHeight="0" MinWidth="0" Visibility="{Binding IsDiagnosticsStudio, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
       </Grid>
 
