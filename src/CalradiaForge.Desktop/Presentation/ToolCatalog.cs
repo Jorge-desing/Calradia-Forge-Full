@@ -21,7 +21,9 @@ namespace CalradiaForge.Desktop.Presentation
         KingdomDiplomacy,
         ComponentGenerator,
         CombatStudio,
-        CaravanTrade
+        CaravanTrade,
+        GauntletStudio,
+        CampaignStudio
     }
 
     internal sealed class ToolDefinition : INotifyPropertyChanged
@@ -94,6 +96,22 @@ namespace CalradiaForge.Desktop.Presentation
                 "SoundXmlSynthesizer" or "TroopXmlSynthesizer" or "ItemXmlSynthesizer" or "WeaponCraftingForge" or "BrushSynthesizer" or "XmlSnippetForge" => DesktopStudioKind.ComponentGenerator,
                 "ForgeFormationController" or "ForgeSiegeEngineManager" or "ForgeDamageModifier" or "ForgeArmorPenetration" or "ForgeMoraleShock" or "ForgeCavalryCharge" or "ForgeArcherVolley" or "ForgeAmbushTactics" or "ForgeCleaveStrike" or "ForgeShieldBash" or "TacticalCombatSimulator" or "CombatAiAuditor" or "SDK_ForgeCombatAi" => DesktopStudioKind.CombatStudio,
                 "ForgeCaravanController" or "ForgeMarketFluctuation" or "ForgeTaxesController" or "ForgeSmugglingSystem" or "ForgeLoanSystem" or "ForgeInflationController" or "ForgeTradeRouteOptimizer" or "ForgeBlackMarket" or "ForgeSupplyChainManager" or "CaravanTradeHub" or "MarketPriceSpreadInspector" or "SDK_ForgeEconomyTrade" => DesktopStudioKind.CaravanTrade,
+                "GauntletInspector" or "GauntletLivePreview" or "GauntletEventPassChecker" or "SpritePackageAuditor"
+                or "SDK_ForgeFloatingDamage" or "SDK_ForgeCustomCrosshair" or "SDK_ForgeMinimapOverlay" or "SDK_ForgeHealthBars"
+                or "SDK_ForgeCombatCompass" or "SDK_ForgeAdvancedKillfeed" or "SDK_ForgeInventorySort" or "SDK_ForgePartyFilter"
+                or "SDK_ForgeTroopTreeViewer" or "SDK_ForgeEncyclopediaExtender" or "SDK_ForgeDialogueOptionsUI" or "SDK_ForgeTradeProfitUI"
+                or "SDK_ForgeKingdomOverviewUI" or "SDK_ForgeClanRolesUI" or "SDK_ForgeSiegeHUD" or "SDK_ForgeTournamentBracketUI"
+                or "SDK_ForgeWeaponStatsUI" or "SDK_ForgeCharacterEditorExtra" or "SDK_ForgeMapBordersUI" or "SDK_ForgeArmyMoraleUI"
+                or "SDK_ForgeGarrisonManagerUI" or "SDK_ForgeWorkshopStatsUI" or "SDK_ForgeSettlementIcons" or "SDK_ForgePrisonerRansomUI"
+                or "SDK_ForgeRelationshipBarsUI" or "SDK_ForgeSkillTrackerUI" or "SDK_ForgeGoldTrackerUI" or "SDK_ForgeInfluenceGainUI"
+                or "SDK_ForgeRenownGainUI" or "SDK_ForgeFoodConsumptionUI" => DesktopStudioKind.GauntletStudio,
+                "SettlementCalculator" or "PartyCalculator" or "SDK_ForgeQuestManager" or "SDK_ForgeWeatherController"
+                or "SDK_ForgeTimeManipulator" or "SDK_ForgeReligionSystem" or "SDK_ForgeTraitManager" or "SDK_ForgeBanditController"
+                or "SDK_ForgeHideoutSpawner" or "SDK_ForgeMercenaryHiring" or "SDK_ForgeVillageHearthManager" or "SDK_ForgeLoyaltyModifier"
+                or "SDK_ForgeSecurityModifier" or "SDK_ForgeWoundRateController" or "SDK_ForgeNotableSpawner" or "SDK_ForgeCaravanGuardManager"
+                or "SDK_ForgeRandomEventTrigger" or "SDK_ForgePlagueSimulator" or "SDK_ForgeBanditInvasion" or "SDK_ForgeBountyHunting"
+                or "SDK_ForgeSlaveTrade" or "SDK_ForgeTournamentGenerator" or "SDK_ForgeCustomSettlementBuilder" or "SDK_ForgeNavalTravel"
+                or "SDK_ForgeCampingSystem" or "SDK_ForgeHuntingSystem" or "SDK_ForgeForagingSystem" or "SDK_ForgeCompanionSpawner" => DesktopStudioKind.CampaignStudio,
                 _ => DesktopStudioKind.Generic
             };
 
@@ -302,6 +320,8 @@ namespace CalradiaForge.Desktop.Presentation
             "DiplomaticMatrix" => "Chancillería diplomática y barómetro geopolítico del Senado Imperial. Evalúa posturas entre facciones (Paz, Guerra, Tregua), desgaste de guerra (War Weariness), intenciones de casus belli y votos del senado en políticas dinásticas.",
             "SoundXmlSynthesizer" => "Forja y sintetizador de manifiestos de sonido (module_sounds.xml). Genera definiciones XML conformes al esquema de TaleWorlds con balance estéreo, categorías activas y compatibilidad de eventos 2D de interfaz y 3D posicionales.",
             "TroopXmlSynthesizer" => "Sintetizador de definiciones de personajes y tropas (NPCCharacters.xml). Genera árboles de tropas válidos con niveles de habilidad, plantillas de equipo (body, gloves, boots, weapons) y etiquetas de facción/cultura.",
+            "GauntletInspector" or "GauntletLivePreview" => "Estudio táctico de Gauntlet UI y HUD. Modela la jerarquía de widgets, resolución de anclajes, presupuesto de draw calls, estilos de brochas y capas visuales del HUD in-game.",
+            "SettlementCalculator" or "SDK_ForgeWeatherController" => "Estudio de expedición y equilibrio de campaña de Calradia. Modela el crecimiento de hogares, estabilidad de lealtad, guarniciones, seguridad cívica y variaciones meteorológicas.",
                 _ => $"{Purpose} Opera de forma estrictamente acotada (bounded) y aislada del hilo de renderizado, garantizando cero efectos colaterales persistentes en partidas guardadas ni en la instalación del juego."
             };
 

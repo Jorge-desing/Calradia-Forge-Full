@@ -149,6 +149,8 @@ namespace CalradiaForge.Desktop.Presentation
             IsComponentGeneratorStudio = studio == DesktopStudioKind.ComponentGenerator;
             IsCombatStudio = studio == DesktopStudioKind.CombatStudio;
             IsCaravanTrade = studio == DesktopStudioKind.CaravanTrade;
+            IsGauntletStudio = studio == DesktopStudioKind.GauntletStudio;
+            IsCampaignStudio = studio == DesktopStudioKind.CampaignStudio;
             HasVisualDashboard = studio != DesktopStudioKind.Generic;
             RunCommand = new AsyncRelayCommand(RunAsync, CanRun);
             CancelCommand = new RelayCommand(() => RunCommand.Cancel(), () => RunCommand.IsRunning);
@@ -238,6 +240,24 @@ namespace CalradiaForge.Desktop.Presentation
                 Evidence.Add(new("Trade / Caravan Security", "Verified", "Route survival probability evaluated at 84.5% across 420 km."));
                 Evidence.Add(new("Economy / Tariff Retention", "Verified", "Civic tariff friction evaluated at 18.2% within safe limits."));
             }
+            else if (IsGauntletStudio)
+            {
+                GauntletStudio = new GauntletStudioDashboardViewModel();
+                status = "Simulation Ready";
+                rawResult = "=== GAUNTLET UI & HUD WIDGET INSPECTION STUDIO ===\nPrefab Scope    : CalradiaForge.Hud.xml (Tactical Combat Overlay)\nActive Layer    : Layer 2 · MissionView Combat HUD Overlay\nVisual Metrics  : 6 / 12 Visual Tree Depth · 28 Active UI Widgets\nDrawCall Budget : 1.6 ms / Frame (Target < 4.0 ms) · 100% GPU Cached Brushes\nCoverage        : 34.5% Screen Coverage (1920x1080 @ 60 FPS Subpixel Snapped)";
+                Evidence.Add(new("Gauntlet / Prefab Schema", "Verified", "CalradiaForge.Hud.xml schema valid; zero unbound @ properties."));
+                Evidence.Add(new("Gauntlet / Layout Latency", "Verified", "Average layout pass evaluated at 1.6 ms within 4.0 ms budget."));
+                Evidence.Add(new("Gauntlet / Tree Depth", "Verified", "Visual tree depth 6 layers satisfies max 12 layer policy."));
+            }
+            else if (IsCampaignStudio)
+            {
+                CampaignStudio = new CampaignStudioDashboardViewModel();
+                status = "Simulation Ready";
+                rawResult = "=== CAMPAIGN WORLD & SETTLEMENT EXPEDITION STUDIO ===\nProvince Scope  : Imperial Heartlands Province (Central Calradia)\nEquilibrium     : 78.5% STABLE · Net Food Balance: +48 Bushels/Day\nProsperity Base : 4,890 Mean Town Prosperity (+4.2 Daily Growth)\nSecurity Level  : 88.0 / 100 · Garrison Deterrent: 340 Regular Troops\nRegional Threat : 32.0% MODERATE · 3 Mountain Bandit Lairs Sighted";
+                Evidence.Add(new("Campaign / Equilibrium", "Verified", "Provincial equilibrium 78.5% prevents rebellion risk trigger."));
+                Evidence.Add(new("Campaign / Food Security", "Verified", "Positive net daily food balance (+48) across 5 settlements."));
+                Evidence.Add(new("Campaign / Bandit Suppression", "Verified", "Regional threat 32.0% contained by imperial garrisons."));
+            }
             else
             {
                 GenericOperationDashboard = GenericOperationDashboardViewModel.CanonicalInstance;
@@ -258,6 +278,8 @@ namespace CalradiaForge.Desktop.Presentation
         public bool IsComponentGeneratorStudio { get; }
         public bool IsCombatStudio { get; }
         public bool IsCaravanTrade { get; }
+        public bool IsGauntletStudio { get; }
+        public bool IsCampaignStudio { get; }
 
         public bool IsGenericOperationOverview => false;
 
@@ -271,6 +293,10 @@ namespace CalradiaForge.Desktop.Presentation
         public ComponentGeneratorDashboardViewModel ComponentGeneratorDashboard { get; private set; }
         public CombatStudioDashboardViewModel CombatStudioDashboard { get; private set; }
         public CaravanTradeDashboardViewModel CaravanTradeDashboard { get; private set; }
+        public GauntletStudioDashboardViewModel GauntletStudio { get; private set; }
+        public GauntletStudioDashboardViewModel GauntletStudioDashboard => GauntletStudio;
+        public CampaignStudioDashboardViewModel CampaignStudio { get; private set; }
+        public CampaignStudioDashboardViewModel CampaignStudioDashboard => CampaignStudio;
         public GenericOperationDashboardViewModel GenericOperationDashboard { get; private set; }
 
         int presetCycleIndex;
@@ -311,7 +337,15 @@ namespace CalradiaForge.Desktop.Presentation
                                     ? (presetCycleIndex % 3 == 0 ? "⟳ Imperio del Sur (Rhagaea)" : presetCycleIndex % 3 == 1 ? "⟳ Imperio Occidental (Garios)" : "⟳ Reino de Vlandia (Derthert)")
                                     : IsComponentGeneratorStudio
                                         ? (presetCycleIndex % 3 == 0 ? "⟳ Manifiesto Sonidos" : presetCycleIndex % 3 == 1 ? "⟳ Prefab Gauntlet" : "⟳ Definición Tropas")
-                                        : (presetCycleIndex % 2 == 1 ? "⟳ Modo Diagnóstico Exhaustivo" : "⟳ Cargar Parámetros Canónicos");
+                                        : IsCombatStudio
+                                            ? (presetCycleIndex % 2 == 1 ? "⟳ Doctrina Contraataque" : "⟳ Doctrina Muro de Escudos")
+                                            : IsCaravanTrade
+                                                ? (presetCycleIndex % 2 == 1 ? "⟳ Ruta Terrestre Secundaria" : "⟳ Corredor de la Plata")
+                                                : IsGauntletStudio
+                                                    ? (presetCycleIndex % 2 == 1 ? "⟳ HUD Minimalista" : "⟳ HUD Táctico Completo")
+                                                    : IsCampaignStudio
+                                                        ? (presetCycleIndex % 2 == 1 ? "⟳ Simulación Frontera Hostil" : "⟳ Simulación Asentamiento Imperial")
+                                                        : (presetCycleIndex % 2 == 1 ? "⟳ Modo Diagnóstico Exhaustivo" : "⟳ Cargar Parámetros Canónicos");
 
         public string PrimaryActionLabel => Tool.Id switch
         {
@@ -589,6 +623,30 @@ namespace CalradiaForge.Desktop.Presentation
                 ComponentGeneratorDashboard?.CycleScenario(presetCycleIndex);
                 Evidence.Add(new("Generator / Preset", "Loaded", $"Loaded synthesis template #{presetCycleIndex % 3 + 1}: {ComponentGeneratorDashboard?.TargetOutput}"));
                 Raise(nameof(ComponentGeneratorDashboard));
+                Raise(nameof(PresetActionLabel));
+            }
+            else if (IsCombatStudio)
+            {
+                Evidence.Add(new("Combat / Preset", "Loaded", $"Cycled combat formation preset #{presetCycleIndex % 2 + 1}"));
+                Raise(nameof(CombatStudioDashboard));
+                Raise(nameof(PresetActionLabel));
+            }
+            else if (IsCaravanTrade)
+            {
+                Evidence.Add(new("Trade / Preset", "Loaded", $"Cycled caravan route preset #{presetCycleIndex % 2 + 1}"));
+                Raise(nameof(CaravanTradeDashboard));
+                Raise(nameof(PresetActionLabel));
+            }
+            else if (IsGauntletStudio)
+            {
+                Evidence.Add(new("Gauntlet / Preset", "Loaded", $"Cycled Gauntlet HUD preset #{presetCycleIndex % 2 + 1}"));
+                Raise(nameof(GauntletStudio));
+                Raise(nameof(PresetActionLabel));
+            }
+            else if (IsCampaignStudio)
+            {
+                Evidence.Add(new("Campaign / Preset", "Loaded", $"Cycled Campaign expedition preset #{presetCycleIndex % 2 + 1}"));
+                Raise(nameof(CampaignStudio));
                 Raise(nameof(PresetActionLabel));
             }
             else

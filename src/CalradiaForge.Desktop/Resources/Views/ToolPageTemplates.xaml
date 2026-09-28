@@ -1290,6 +1290,295 @@
          </Border>
         </Grid>
        </Grid></DataTemplate>
+  <!-- 12. Gauntlet UI & HUD Studio -->
+  <DataTemplate x:Key="GauntletStudioViewTemplate"><Grid>
+        <Grid.RowDefinitions>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <!-- Header -->
+        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Grid.Row="0" Margin="0,0,0,6" Padding="0,0,0,6">
+         <Grid>
+          <Grid.ColumnDefinitions>
+           <ColumnDefinition Width="*"/>
+           <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource GameIcon.scroll_unfurled}" Fill="{DynamicResource BrassBrush}" Height="16" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="16"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding GauntletStudio.PrefabName, Mode=OneWay}" VerticalAlignment="Center"/>
+           </StackPanel>
+           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding GauntletStudio.ActiveLayer, Mode=OneWay}"/>
+           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding GauntletStudio.TargetResolution, Mode=OneWay}"/>
+           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding GauntletStudio.StudioCaveat}" TextWrapping="Wrap"/>
+          </StackPanel>
+          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="5 ACTIVE WIDGETS"/>
+           </StackPanel>
+          </Border>
+         </Grid>
+        </Border>
+        <!-- Body: Widgets Hierarchy Grid, Radar Chart, and Draw-Call & Coverage Gauges -->
+        <Grid Grid.Row="1">
+         <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1.4*"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="1.1*"/>
+         </Grid.ColumnDefinitions>
+         <!-- Column 1: Gauntlet Widget Hierarchy -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="8">
+          <DockPanel LastChildFill="True">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="ACTIVE GAUNTLET WIDGET HIERARCHY"/>
+           </Border>
+           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding GauntletStudio.Widgets}">
+             <ItemsControl.ItemTemplate>
+              <DataTemplate>
+               <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,0,5" Padding="6">
+                <StackPanel>
+                 <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding WidgetId}"/>
+                  <Border Background="{DynamicResource DeepPineBrush}" CornerRadius="2" Grid.Column="1" Padding="3,1">
+                   <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{Binding BrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding Status}"/>
+                  </Border>
+                 </Grid>
+                 <TextBlock FontSize="8.5" Foreground="{DynamicResource BrassBrush}" Margin="0,2,0,0" Text="{Binding WidgetType}"/>
+                 <Grid Margin="0,3,0,0">
+                  <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding LayoutBounds}"/>
+                  <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Right" Text="{Binding LayerDepth}"/>
+                 </Grid>
+                 <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,2,0,0" Text="{Binding AlignmentSummary}"/>
+                </StackPanel>
+               </Border>
+              </DataTemplate>
+             </ItemsControl.ItemTemplate>
+            </ItemsControl>
+           </ScrollViewer>
+          </DockPanel>
+         </Border>
+         <!-- Column 2: Gauntlet UI Radar Metrics -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="8">
+          <StackPanel HorizontalAlignment="Center">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="GAUNTLET PROFILE"/>
+           </Border>
+           <presentation:ForgeRadarChart
+               AxisLabels="{Binding GauntletStudio.GauntletRadarAxes}"
+               Values="{Binding GauntletStudio.HudRadarValues}"
+               ComparisonValues="{Binding GauntletStudio.AlternativeHudRadarValues}"
+               Stroke="{DynamicResource BrassBrush}"
+               Fill="{DynamicResource BrassBrush}"
+               ComparisonStroke="{DynamicResource VerdigrisBrush}"
+               ComparisonFill="{DynamicResource VerdigrisBrush}"
+               GridBrush="{DynamicResource BorderBrush}"
+               AxisLabelBrush="{DynamicResource PaperBrush}"
+               Height="130" Width="130" HorizontalAlignment="Center" Margin="0,2"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="■ Primary HUD (Brass)  ■ Alternative (Verdigris)"/>
+          </StackPanel>
+         </Border>
+         <!-- Column 3: Draw-Call Latency Sparkline & Tree / Coverage Gauges -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
+          <StackPanel>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="RENDER TELEMETRY"/>
+           </Border>
+           <TextBlock FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="DRAW-CALL LATENCY (MS)"/>
+           <presentation:ForgeSparkline
+               DataPoints="{Binding GauntletStudio.DrawCallLatencyTrajectory}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource VerdigrisBrush}"
+               ShowGridLines="True"
+               GridBrush="{DynamicResource BorderBrush}"
+               ValueUnit="ms"
+               FormatString="0.0"
+               Height="36" Margin="0,3"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="{Binding GauntletStudio.RenderBudgetStatus, Mode=OneWay}"/>
+           <Grid Margin="0,4,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <!-- Gauge 1: Visual Tree Depth -->
+            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding GauntletStudio.VisualTreeDepthGaugeValue}"
+                 Maximum="100"
+                 Threshold="75"
+                 CenterText="6 / 12"
+                 SubText="DEPTH"
+                 AccentBrush="{DynamicResource BrassBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="DEPTH OPTIMAL"/>
+            </StackPanel>
+            <!-- Gauge 2: Screen Coverage -->
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding GauntletStudio.ScreenCoverageGaugeValue}"
+                 Maximum="100"
+                 Threshold="60"
+                 CenterText="34.5%"
+                 SubText="COVERAGE"
+                 AccentBrush="{DynamicResource VerdigrisBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="VIEW UNOBSTRUCTED"/>
+            </StackPanel>
+           </Grid>
+           <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding GauntletStudio.VisualTreeMetrics, Mode=OneWay}"/>
+          </StackPanel>
+         </Border>
+        </Grid>
+       </Grid></DataTemplate>
+  <!-- 13. Campaign World & Expedition Studio -->
+  <DataTemplate x:Key="CampaignStudioViewTemplate"><Grid>
+        <Grid.RowDefinitions>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <!-- Header -->
+        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Grid.Row="0" Margin="0,0,0,6" Padding="0,0,0,6">
+         <Grid>
+          <Grid.ColumnDefinitions>
+           <ColumnDefinition Width="*"/>
+           <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource Icon.Compass}" Height="16" Margin="0,0,6,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="16"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding CampaignStudio.ProvinceName, Mode=OneWay}" VerticalAlignment="Center"/>
+           </StackPanel>
+           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding CampaignStudio.ExpeditionLeader, Mode=OneWay}"/>
+           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding CampaignStudio.EnvironmentalState, Mode=OneWay}"/>
+           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding CampaignStudio.StudioCaveat}" TextWrapping="Wrap"/>
+          </StackPanel>
+          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource Icon.Flag}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource VerdigrisBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="5 SETTLEMENTS"/>
+           </StackPanel>
+          </Border>
+         </Grid>
+        </Border>
+        <!-- Body: Settlement Expeditions Grid, Radar Chart, and Equilibrium & Threat Gauges -->
+        <Grid Grid.Row="1">
+         <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1.4*"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="1.1*"/>
+         </Grid.ColumnDefinitions>
+         <!-- Column 1: Provincial Settlements -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="8">
+          <DockPanel LastChildFill="True">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="REGIONAL SETTLEMENT EQUILIBRIUM"/>
+           </Border>
+           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding CampaignStudio.Settlements}">
+             <ItemsControl.ItemTemplate>
+              <DataTemplate>
+               <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,0,5" Padding="6">
+                <StackPanel>
+                 <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding SettlementName}"/>
+                  <Border Background="{DynamicResource DeepPineBrush}" CornerRadius="2" Grid.Column="1" Padding="3,1">
+                   <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{Binding BrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding Culture}"/>
+                  </Border>
+                 </Grid>
+                 <TextBlock FontSize="8.5" Foreground="{DynamicResource BrassBrush}" Margin="0,2,0,0" Text="{Binding EquilibriumSummary}"/>
+                 <Grid Margin="0,3,0,0">
+                  <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding WeatherCondition}"/>
+                  <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Right" Text="{Binding GarrisonCount, StringFormat='Garrison: {0}'}"/>
+                 </Grid>
+                </StackPanel>
+               </Border>
+              </DataTemplate>
+             </ItemsControl.ItemTemplate>
+            </ItemsControl>
+           </ScrollViewer>
+          </DockPanel>
+         </Border>
+         <!-- Column 2: Regional Radar Profile -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="8">
+          <StackPanel HorizontalAlignment="Center">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="PROVINCE PROFILE"/>
+           </Border>
+           <presentation:ForgeRadarChart
+               AxisLabels="{Binding CampaignStudio.CampaignRadarAxes}"
+               Values="{Binding CampaignStudio.SettlementRadarValues}"
+               ComparisonValues="{Binding CampaignStudio.FrontierRadarValues}"
+               Stroke="{DynamicResource BrassBrush}"
+               Fill="{DynamicResource BrassBrush}"
+               ComparisonStroke="{DynamicResource EmberBrush}"
+               ComparisonFill="{DynamicResource EmberBrush}"
+               GridBrush="{DynamicResource BorderBrush}"
+               AxisLabelBrush="{DynamicResource PaperBrush}"
+               Height="130" Width="130" HorizontalAlignment="Center" Margin="0,2"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="■ Central Settlements  ■ Frontier Zone"/>
+          </StackPanel>
+         </Border>
+         <!-- Column 3: Prosperity Trajectory Sparkline & Equilibrium / Threat Gauges -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
+          <StackPanel>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="STABILITY TELEMETRY"/>
+           </Border>
+           <TextBlock FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="16-DAY PROSPERITY TRAJECTORY"/>
+           <presentation:ForgeSparkline
+               DataPoints="{Binding CampaignStudio.ProsperityTrajectory}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource VerdigrisBrush}"
+               ShowGridLines="True"
+               GridBrush="{DynamicResource BorderBrush}"
+               ValueUnit="pts"
+               FormatString="0"
+               Height="36" Margin="0,3"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="{Binding CampaignStudio.EquilibriumAssessment, Mode=OneWay}"/>
+           <Grid Margin="0,4,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <!-- Gauge 1: Equilibrium Index -->
+            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding CampaignStudio.EquilibriumGaugeValue}"
+                 Maximum="100"
+                 Threshold="50"
+                 CenterText="78.5%"
+                 SubText="STABLE"
+                 AccentBrush="{DynamicResource VerdigrisBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="CIVIC BALANCE"/>
+            </StackPanel>
+            <!-- Gauge 2: Bandit Threat -->
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding CampaignStudio.BanditThreatGaugeValue}"
+                 Maximum="100"
+                 Threshold="65"
+                 CenterText="32.0%"
+                 SubText="THREAT"
+                 AccentBrush="{DynamicResource EmberBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource VerdigrisBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource EmberBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="PATROLS ACTIVE"/>
+            </StackPanel>
+           </Grid>
+           <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding CampaignStudio.BanditThreatAnalysis, Mode=OneWay}"/>
+          </StackPanel>
+         </Border>
+        </Grid>
+       </Grid></DataTemplate>
   <DataTemplate x:Key="GenericOperationOverviewDashboardTemplate"><Grid>
         <Grid.RowDefinitions>
          <RowDefinition Height="Auto"/>
@@ -1885,6 +2174,12 @@
        <!-- 11. Caravan & Market Trade Hub Dashboard -->
 
        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CaravanTradeViewTemplate}" MinHeight="0" MinWidth="0" Visibility="{Binding IsCaravanTrade, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+       <!-- 12. Gauntlet UI & HUD Studio -->
+       <ContentControl Content="{Binding}" ContentTemplate="{StaticResource GauntletStudioViewTemplate}" MinHeight="0" MinWidth="0" Visibility="{Binding IsGauntletStudio, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+       <!-- 13. Campaign World & Expedition Studio -->
+       <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CampaignStudioViewTemplate}" MinHeight="0" MinWidth="0" Visibility="{Binding IsCampaignStudio, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
       </Grid>
 

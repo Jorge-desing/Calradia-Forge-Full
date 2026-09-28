@@ -422,5 +422,33 @@ internal static class DesktopSimulationServiceTests
         opVm.ConfigureDomainCategory("Assets");
         Check(opVm.ActiveCategoryGroup == "Assets", "Active category group must be Assets.");
         Check(opVm.CategoryHealthGaugeValue == 92.5, "Assets health gauge value must be 92.5.");
+
+        // 9. Gauntlet UI & HUD Studio Dashboard (Rev075)
+        var gauntletVm = new GauntletStudioDashboardViewModel();
+        Check(gauntletVm.GauntletRadarAxes != null && gauntletVm.GauntletRadarAxes.Count == 5, "Gauntlet studio must expose 5 UI telemetry axes.");
+        Check(gauntletVm.HudRadarValues != null && gauntletVm.HudRadarValues.Count == 5, "Gauntlet HUD radar values must have 5 entries.");
+        Check(gauntletVm.AlternativeHudRadarValues != null && gauntletVm.AlternativeHudRadarValues.Count == 5, "Alternative HUD radar values must have 5 entries.");
+        Check(gauntletVm.HudRadarValues.All(v => v >= 0.0 && v <= 1.0), "HUD radar values must be normalized in [0, 1].");
+        Check(gauntletVm.AlternativeHudRadarValues.All(v => v >= 0.0 && v <= 1.0), "Alternative HUD radar values must be normalized in [0, 1].");
+        Check(gauntletVm.DrawCallLatencyTrajectory != null && gauntletVm.DrawCallLatencyTrajectory.Count == 16, "DrawCall trajectory must contain 16 intervals.");
+        Check(gauntletVm.VisualTreeDepthGaugeValue >= 0.0 && gauntletVm.VisualTreeDepthGaugeValue <= 100.0, "Visual tree depth gauge must be bounded in [0, 100].");
+        Check(gauntletVm.ScreenCoverageGaugeValue >= 0.0 && gauntletVm.ScreenCoverageGaugeValue <= 100.0, "Screen coverage gauge must be bounded in [0, 100].");
+        Check(gauntletVm.Widgets != null && gauntletVm.Widgets.Count == 5, "Gauntlet studio must expose 5 active widgets.");
+        Check(!string.IsNullOrWhiteSpace(gauntletVm.StudioDocumentation), "Gauntlet studio must provide forensic documentation.");
+        Check(!string.IsNullOrWhiteSpace(gauntletVm.ArchitecturalInvariants), "Gauntlet studio must declare architectural invariants.");
+
+        // 10. Campaign World & Expedition Studio Dashboard (Rev075)
+        var campaignVm = new CampaignStudioDashboardViewModel();
+        Check(campaignVm.CampaignRadarAxes != null && campaignVm.CampaignRadarAxes.Count == 5, "Campaign studio must expose 5 province profile axes.");
+        Check(campaignVm.SettlementRadarValues != null && campaignVm.SettlementRadarValues.Count == 5, "Settlement radar values must have 5 entries.");
+        Check(campaignVm.FrontierRadarValues != null && campaignVm.FrontierRadarValues.Count == 5, "Frontier radar values must have 5 entries.");
+        Check(campaignVm.SettlementRadarValues.All(v => v >= 0.0 && v <= 1.0), "Settlement radar values must be normalized in [0, 1].");
+        Check(campaignVm.FrontierRadarValues.All(v => v >= 0.0 && v <= 1.0), "Frontier radar values must be normalized in [0, 1].");
+        Check(campaignVm.ProsperityTrajectory != null && campaignVm.ProsperityTrajectory.Count == 16, "Prosperity trajectory must contain 16 intervals.");
+        Check(campaignVm.EquilibriumGaugeValue >= 0.0 && campaignVm.EquilibriumGaugeValue <= 100.0, "Equilibrium gauge must be bounded in [0, 100].");
+        Check(campaignVm.BanditThreatGaugeValue >= 0.0 && campaignVm.BanditThreatGaugeValue <= 100.0, "Bandit threat gauge must be bounded in [0, 100].");
+        Check(campaignVm.Settlements != null && campaignVm.Settlements.Count == 5, "Campaign studio must expose 5 provincial settlements.");
+        Check(!string.IsNullOrWhiteSpace(campaignVm.StudioDocumentation), "Campaign studio must provide forensic documentation.");
+        Check(!string.IsNullOrWhiteSpace(campaignVm.ArchitecturalInvariants), "Campaign studio must declare architectural invariants.");
     }
 }

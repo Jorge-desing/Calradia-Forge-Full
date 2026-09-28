@@ -2585,4 +2585,217 @@ namespace CalradiaForge.Desktop.Presentation
         public string TroubleshootingRemedy => "If ItemRoster.AddToCounts throws an underflow exception, verify that item count is greater than or equal to the quantity being deducted before executing the transaction.";
         public string ProceduralMacroAction => "cf.sim_economy trade && cf.workshop_eval Marunath";
     }
+
+    // =========================================================================
+    // GAUNTLET UI & HUD STUDIO VIEW MODELS (Rev075)
+    // =========================================================================
+
+    internal sealed class GauntletWidgetNodeViewModel
+    {
+        public GauntletWidgetNodeViewModel(string widgetId, string widgetType, string layoutBounds, string alignmentSummary, string activeBrushKey, string layerDepth, string status, string brushKey)
+        {
+            WidgetId = widgetId;
+            WidgetType = widgetType;
+            LayoutBounds = layoutBounds;
+            AlignmentSummary = alignmentSummary;
+            ActiveBrushKey = activeBrushKey;
+            LayerDepth = layerDepth;
+            Status = status;
+            BrushKey = brushKey;
+        }
+
+        public string WidgetId { get; }
+        public string WidgetType { get; }
+        public string LayoutBounds { get; }
+        public string AlignmentSummary { get; }
+        public string ActiveBrushKey { get; }
+        public string LayerDepth { get; }
+        public string Status { get; }
+        public string BrushKey { get; }
+    }
+
+    internal sealed class GauntletStudioDashboardViewModel : ObservableObject
+    {
+        static readonly string[] DefaultGauntletRadarAxes = ["LayoutEff", "AnchorPrec", "BrushCache", "DrawCallCap", "RespScale"];
+        static readonly double[] DefaultHudRadarValues = [0.92, 0.88, 0.84, 0.95, 0.90];
+        static readonly double[] DefaultAlternativeHudRadarValues = [0.75, 0.82, 0.90, 0.78, 0.85];
+        static readonly double[] DefaultDrawCallLatencyTrajectory = [
+            0.8, 1.1, 0.9, 1.4, 1.2, 1.6, 1.3, 1.9,
+            1.5, 1.4, 1.8, 1.6, 2.1, 1.7, 1.5, 1.6
+        ];
+
+        static readonly GauntletWidgetNodeViewModel[] DefaultWidgets = [
+            new("ForgeRootPanel", "Widget", "1920x1080 (Full)", "Center / Center", "Blank.White", "Layer 0", "COMPILED", "BrassBrush"),
+            new("TacticalHudOverlay", "BrushWidget", "640x320 (HUD)", "Top / Center", "Forge.Hud.Frame", "Layer 1", "RENDERED", "VerdigrisBrush"),
+            new("HealthBarSegment", "FillBarWidget", "240x28 (Bar)", "Bottom / Left", "Forge.Health.Red", "Layer 2", "ACTIVE", "VerdigrisBrush"),
+            new("CombatCompassCompass", "CompassWidget", "180x48 (Compass)", "Top / Center", "Forge.Compass.Marker", "Layer 2", "ACTIVE", "BrassBrush"),
+            new("KillfeedListPanel", "ScrollablePanel", "380x260 (Panel)", "Top / Right", "Forge.Panel.Glass", "Layer 3", "SCROLLABLE", "PaperBrush")
+        ];
+
+        string prefabName = "CalradiaForge.Hud.xml · Tactical Battlefield HUD";
+        string activeLayer = "Layer 2 · In-Game Combat MissionView Overlay";
+        string targetResolution = "1920 x 1080 @ 60 FPS (Subpixel Snapped · Scale 1.0x)";
+        string visualTreeMetrics = "Visual Tree Depth: 6 / 12 Layers · 28 Active UI Elements · 0 Overdraw Warnings";
+        string renderBudgetStatus = "DrawCall Budget: 1.6 ms / Frame (Target < 4.0 ms) · 100% GPU Cached Brushes";
+
+        double visualTreeDepthGaugeValue = 50.0;
+        double screenCoverageGaugeValue = 34.5;
+
+        public GauntletStudioDashboardViewModel()
+        {
+            Widgets = DefaultWidgets;
+            GauntletRadarAxes = DefaultGauntletRadarAxes;
+            HudRadarValues = DefaultHudRadarValues;
+            AlternativeHudRadarValues = DefaultAlternativeHudRadarValues;
+            DrawCallLatencyTrajectory = DefaultDrawCallLatencyTrajectory;
+        }
+
+        public string PrefabName { get => prefabName; private set => Set(ref prefabName, value); }
+        public string ActiveLayer { get => activeLayer; private set => Set(ref activeLayer, value); }
+        public string TargetResolution { get => targetResolution; private set => Set(ref targetResolution, value); }
+        public string VisualTreeMetrics { get => visualTreeMetrics; private set => Set(ref visualTreeMetrics, value); }
+        public string RenderBudgetStatus { get => renderBudgetStatus; private set => Set(ref renderBudgetStatus, value); }
+
+        public IReadOnlyList<string> GauntletRadarAxes { get; }
+        public IReadOnlyList<double> HudRadarValues { get; }
+        public IReadOnlyList<double> AlternativeHudRadarValues { get; }
+        public IReadOnlyList<double> DrawCallLatencyTrajectory { get; }
+        public IReadOnlyList<GauntletWidgetNodeViewModel> Widgets { get; }
+
+        public double VisualTreeDepthGaugeValue { get => visualTreeDepthGaugeValue; private set => Set(ref visualTreeDepthGaugeValue, value); }
+        public double ScreenCoverageGaugeValue { get => screenCoverageGaugeValue; private set => Set(ref screenCoverageGaugeValue, value); }
+
+        public string StudioDocumentation => "TaleWorlds Gauntlet UI & HUD Architecture: Inspects declarative Gauntlet XML prefabs, widget visual trees, layout anchoring, subpixel snapping, brush style dictionaries, and MissionView 3D-to-2D projection overlays.";
+        public string ArchitecturalInvariants => "1. All elements referenced with @ in <ItemTemplate> must exist on the child ViewModel with [DataSourceProperty].\n2. Gauntlet widgets must execute layout and draw calls strictly on TaleWorlds UI thread.\n3. Keep brush XML schemas synchronized with sprite-sheet atlas coordinates.\n4. Avoid deep visual tree nesting (> 12 layers) to prevent layout thrashing.";
+        public string StudioCaveat => "Binding an in-game Gauntlet widget to a property that lacks [DataSourceProperty] results in silent UI rendering failure or TaleWorlds binding exceptions.";
+        public string QuickActionCommand => "cf.reload_prefabs";
+        public string QuickActionLabel => "Reload Prefabs";
+        public string ScratchpadNotes { get; set; } = "Notes: Gauntlet UI prefab CalradiaForge.Hud.xml verified with 6 layers, 1.6ms render budget, and 34.5% screen coverage.";
+        public IReadOnlyList<StudioConsoleCommand> CuratedConsoleCommands { get; } =
+        [
+            new("cf.reload_prefabs", "Hot-reload all Gauntlet UI XML prefabs and brush styles.", "Gauntlet UI", true),
+            new("cf.open_workbench", "Open Gauntlet developer workbench overlay in-game (F10).", "Gauntlet UI"),
+            new("ui.reload_all", "Trigger full TaleWorlds engine Gauntlet layout re-evaluation.", "Gauntlet UI"),
+            new("cf.inspect_widget ForgeRootPanel", "Inspect visual tree hierarchy and bounding boxes for widget.", "Gauntlet UI"),
+            new("cf.audit_rules", "Verify CLR assembly rules and anti-shadowing constraints.", "Diagnostics")
+        ];
+        public string PlaybookTitle => "Playbook: Gauntlet HUD Widget Layout & Brush Styling";
+        public IReadOnlyList<string> PlaybookSteps { get; } =
+        [
+            "1. Define layout hierarchy in GUI/Prefabs/<WidgetName>.xml.",
+            "2. Bind properties using @<PropertyName> and verify [DataSourceProperty] in ViewModel.",
+            "3. Register prefab in SubModule.xml under <GauntletMovie> or instantiate via GauntletLayer."
+        ];
+        public string TroubleshootingHeader => "Troubleshooting: Gauntlet XML Binding & Missing Widgets";
+        public string TroubleshootingRemedy => "If Gauntlet UI elements fail to render, verify that all bound properties are marked [DataSourceProperty] and that Brush styles exist in ModuleData/Languages or GUI/Brushes.";
+        public string ProceduralMacroAction => "cf.reload_prefabs && cf.open_workbench";
+    }
+
+    // =========================================================================
+    // CAMPAIGN WORLD & EXPEDITION STUDIO VIEW MODELS (Rev075)
+    // =========================================================================
+
+    internal sealed class SettlementExpeditionViewModel
+    {
+        public SettlementExpeditionViewModel(string settlementName, string culture, int prosperity, int loyalty, int security, int banditThreat, int garrisonCount, string weatherCondition, string brushKey)
+        {
+            SettlementName = settlementName;
+            Culture = culture;
+            Prosperity = prosperity;
+            Loyalty = loyalty;
+            Security = security;
+            BanditThreat = banditThreat;
+            GarrisonCount = garrisonCount;
+            WeatherCondition = weatherCondition;
+            BrushKey = brushKey;
+        }
+
+        public string SettlementName { get; }
+        public string Culture { get; }
+        public int Prosperity { get; }
+        public int Loyalty { get; }
+        public int Security { get; }
+        public int BanditThreat { get; }
+        public int GarrisonCount { get; }
+        public string WeatherCondition { get; }
+        public string BrushKey { get; }
+        public string EquilibriumSummary => $"Prosperity: {Prosperity} · Loyalty: {Loyalty} · Security: {Security}";
+    }
+
+    internal sealed class CampaignStudioDashboardViewModel : ObservableObject
+    {
+        static readonly string[] DefaultCampaignRadarAxes = ["HearthGrow", "LoyaltyStab", "SecurityLev", "BanditSupp", "WeatherRes"];
+        static readonly double[] DefaultSettlementRadarValues = [0.85, 0.78, 0.82, 0.68, 0.90];
+        static readonly double[] DefaultFrontierRadarValues = [0.65, 0.58, 0.70, 0.45, 0.75];
+        static readonly double[] DefaultProsperityTrajectory = [
+            4200.0, 4250.0, 4310.0, 4290.0, 4380.0, 4420.0, 4460.0, 4510.0,
+            4550.0, 4600.0, 4580.0, 4670.0, 4710.0, 4760.0, 4820.0, 4890.0
+        ];
+
+        static readonly SettlementExpeditionViewModel[] DefaultSettlements = [
+            new("Epicrotea", "Empire", 4890, 84, 88, 18, 340, "Clear Sky (Temp 21°C)", "VerdigrisBrush"),
+            new("Marunath", "Battania", 4120, 72, 75, 34, 280, "Misty Rain (Temp 14°C)", "BrassBrush"),
+            new("Pravend", "Vlandia", 5210, 89, 92, 12, 410, "Coastal Breeze (Temp 18°C)", "VerdigrisBrush"),
+            new("Chaikand", "Khuzait", 3840, 68, 70, 42, 260, "Arid Winds (Temp 28°C)", "BrassBrush"),
+            new("Ortysia", "Empire", 6100, 91, 85, 22, 450, "Calm Marine (Temp 22°C)", "VerdigrisBrush")
+        ];
+
+        string provinceName = "Imperial Heartlands Province · Calradia Central Valley";
+        string expeditionLeader = "Proconsul Lucon of the Senate · Legio III Expedition";
+        string environmentalState = "Temperate Autumn · Prevailing Winds NW 14 km/h · No Blizzard Hazards";
+        string equilibriumAssessment = "Provincial Equilibrium: 78.5% STABLE · Net Food Balance: +48 Bushels/Day";
+        string banditThreatAnalysis = "Regional Threat: 32.0% MODERATE · 3 Mountain Bandit Lairs Sighted";
+
+        double equilibriumGaugeValue = 78.5;
+        double banditThreatGaugeValue = 32.0;
+
+        public CampaignStudioDashboardViewModel()
+        {
+            Settlements = DefaultSettlements;
+            CampaignRadarAxes = DefaultCampaignRadarAxes;
+            SettlementRadarValues = DefaultSettlementRadarValues;
+            FrontierRadarValues = DefaultFrontierRadarValues;
+            ProsperityTrajectory = DefaultProsperityTrajectory;
+        }
+
+        public string ProvinceName { get => provinceName; private set => Set(ref provinceName, value); }
+        public string ExpeditionLeader { get => expeditionLeader; private set => Set(ref expeditionLeader, value); }
+        public string EnvironmentalState { get => environmentalState; private set => Set(ref environmentalState, value); }
+        public string EquilibriumAssessment { get => equilibriumAssessment; private set => Set(ref equilibriumAssessment, value); }
+        public string BanditThreatAnalysis { get => banditThreatAnalysis; private set => Set(ref banditThreatAnalysis, value); }
+
+        public IReadOnlyList<string> CampaignRadarAxes { get; }
+        public IReadOnlyList<double> SettlementRadarValues { get; }
+        public IReadOnlyList<double> FrontierRadarValues { get; }
+        public IReadOnlyList<double> ProsperityTrajectory { get; }
+        public IReadOnlyList<SettlementExpeditionViewModel> Settlements { get; }
+
+        public double EquilibriumGaugeValue { get => equilibriumGaugeValue; private set => Set(ref equilibriumGaugeValue, value); }
+        public double BanditThreatGaugeValue { get => banditThreatGaugeValue; private set => Set(ref banditThreatGaugeValue, value); }
+
+        public string StudioDocumentation => "Bannerlord Campaign World, Settlement Equilibrium & Expedition Architecture: Models settlement prosperity, loyalty, village hearths, construction queues, weather simulations, bandit lares, and mobile party expedition routes.";
+        public string ArchitecturalInvariants => "1. Campaign behaviors must remain 100% stateless (zero SaveableTypeDefiner in mod behaviors).\n2. SyncData() must contain zero dataStore serialization.\n3. MobileParty spawners must assign valid PartyComponent and home settlement.\n4. Settlement calculations must check null checks on Town/Village components.";
+        public string StudioCaveat => "Modifying Campaign.Current or Settlement properties during asynchronous background threads causes desynchronization and engine race conditions.";
+        public string QuickActionCommand => "cf.sim_settlements all";
+        public string QuickActionLabel => "Audit Settlements";
+        public string ScratchpadNotes { get; set; } = "Notes: Imperial heartlands province running at 78.5% equilibrium with +48 daily food balance and 4,890 prosperity.";
+        public IReadOnlyList<StudioConsoleCommand> CuratedConsoleCommands { get; } =
+        [
+            new("cf.sim_settlements all", "Audit settlement equilibrium, loyalty drift, and food balances.", "Campaign & World", true),
+            new("campaign.print_settlement_economy Epicrotea", "Print full settlement economic breakdown and hearths.", "Campaign & World"),
+            new("cf.weather_sim clear", "Set campaign map global weather conditions to clear sky.", "Campaign & World"),
+            new("campaign.start_quest EscortMerchantCaravan", "Inject escort merchant caravan quest for nearby notable.", "Campaign & World"),
+            new("cf.audit_rules", "Verify CLR assembly rules and anti-shadowing constraints.", "Diagnostics")
+        ];
+        public string PlaybookTitle => "Playbook: Settlement Equilibrium & Expedition Management";
+        public IReadOnlyList<string> PlaybookSteps { get; } =
+        [
+            "1. Query settlement Town or Village component via Settlement.Find().",
+            "2. Evaluate loyalty, security, and hearth growth modifiers via Decorator GameModels.",
+            "3. Update mobile party expedition orders without mutating persistent save state."
+        ];
+        public string TroubleshootingHeader => "Troubleshooting: Settlement Rebellion or Loyalty Spiral";
+        public string TroubleshootingRemedy => "If settlement loyalty drops below 25%, ensure garrison food stocks are positive and check that governor culture matches settlement culture to avoid culture clash penalties.";
+        public string ProceduralMacroAction => "cf.sim_settlements all && cf.weather_sim clear";
+    }
 }
