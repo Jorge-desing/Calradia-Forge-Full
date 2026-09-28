@@ -823,7 +823,9 @@ Initial developer preview: Gauntlet panel, WPF client, local named pipes, diagno
 
 ### Gauntlet test-results explorer (Rev081) — 2026-09-28
 
-- Added a panel-lifetime inspector for the latest structurally valid `run` or `run-batch` response. A scrollable list displays result ID, status and duration; selecting a result reveals its seed, context, `StartedAt`, steps, error and cleanup error. The result collection is bounded to 51 records and survives navigation between areas until the panel closes.
+- Added a panel-lifetime inspector for the latest structurally valid `run` or `run-batch` response. A scrollable list displays result ID, status and duration; selecting a result reveals its seed, context, `StartedAt`, steps, error and cleanup error. The presentation parser defensively retains at most 51 records; the current `TestEngine` accepts batches of 1–50 tests and rejects larger batches.
 - Opening the inspector or selecting a row is read-only and does not execute or repeat tests. Failed test statuses remain explicit. Raw ledger output, arguments, history, filtering and output comparison are unchanged; no new route, command, public API or protocol surface is introduced.
-- Source, localization parity, structural checks, runtime tests and live in-game inspection remain pending; this entry does not claim they passed.
+- `tools/Run-CalradiaForge-Gauntlet-Visual-Checks.bat --no-pause` passed the sprite and prefab/layout audits with 0 errors and 0 warnings; its Core suite passed 343/343. `tools/Run-CalradiaForge-Tests.bat --core-only --no-pause` passed clean `net472` and `net8.0` builds, Core 343/343 and ForgeWeave 73/73. Structural bindings and all 13 generated language resources passed.
+- The existing F10 rising-edge and GauntletLayer lifecycle telemetry regression passed. It is a source-structure check, not a live input test; the earlier native assertion and live overlay behavior remain unverified, and no code change to `SubModule.cs` was needed.
+- In-game inspection remains pending. The installed TPAC predates the current source atlas; source checks do not establish TPAC import or live Gauntlet rendering.
 - Product version remains 25.2.0; no ZIP is regenerated.

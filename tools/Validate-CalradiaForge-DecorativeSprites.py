@@ -561,7 +561,8 @@ def number(node: ET.Element, key: str, default: Optional[float] = None) -> Optio
 
 def rect_for(node: ET.Element, parent: Rect, stack_x: Optional[float] = None,
              stack_y: Optional[float] = None, workspace_right_margin: float = 24.0,
-             primary_action_button_width: float = 164.0) -> Optional[Rect]:
+             primary_action_button_width: float = 164.0,
+             stretch_width: Optional[float] = None) -> Optional[Rect]:
     ml = number(node, "MarginLeft", 0.0)
     raw_mr = node.get("MarginRight", "0")
     mr = workspace_right_margin if raw_mr == "@WorkspaceRightMargin" else number(node, "MarginRight", 0.0)
@@ -572,7 +573,7 @@ def rect_for(node: ET.Element, parent: Rect, stack_x: Optional[float] = None,
     w = primary_action_button_width if raw_width == "@PrimaryActionButtonWidth" else number(node, "SuggestedWidth")
     h = number(node, "SuggestedHeight")
     if node.get("WidthSizePolicy") == "StretchToParent":
-        w = max(0.0, parent.width - ml - mr)
+        w = max(0.0, stretch_width if stretch_width is not None else parent.width - ml - mr)
     if node.get("HeightSizePolicy") == "StretchToParent":
         h = max(0.0, parent.height - mt - mb)
     max_width, max_height = number(node, "MaxWidth"), number(node, "MaxHeight")
@@ -633,14 +634,49 @@ def layout(parent_node: ET.Element, parent_rect: Rect, path: str = "Shell",
     stack = local_name(parent_node.tag) == "ListPanel" or parent_node.get("StackLayout.LayoutMethod") is not None
     dynamic_list = in_dynamic_list or is_dynamic_list(parent_node)
     method = parent_node.get("StackLayout.LayoutMethod", "")
+    horizontal_stack = "Horizontal" in method
     vertical_stack = "Vertical" in method
     flow_x = parent_rect.x
     flow_y = parent_rect.y
-    for item in layout_items(parent_node):
+    items = list(layout_items(parent_node))
+    stretch_widths = [item for item in items
+                      if horizontal_stack and item.get("WidthSizePolicy") == "StretchToParent"]
+    allocated_stretch_width: Optional[float] = None
+    if stretch_widths:
+        fixed_widths: List[float] = []
+        spacing: List[float] = []
+        for item in items:
+            raw_left = item.get("MarginLeft", "0")
+            raw_right = item.get("MarginRight", "0")
+            left = workspace_right_margin if raw_left == "@WorkspaceRightMargin" else number(item, "MarginLeft", 0.0)
+            right = workspace_right_margin if raw_right == "@WorkspaceRightMargin" else number(item, "MarginRight", 0.0)
+            if left is None or right is None:
+                fixed_widths = []
+                spacing = []
+                break
+            spacing.append(left + right)
+            if item.get("WidthSizePolicy") == "StretchToParent":
+                continue
+            width = primary_action_button_width if item.get("SuggestedWidth") == "@PrimaryActionButtonWidth" \
+                else number(item, "SuggestedWidth")
+            if width is None:
+                fixed_widths = []
+                spacing = []
+                break
+            cap = number(item, "MaxWidth")
+            fixed_widths.append(min(width, cap) if cap is not None else width)
+        if len(spacing) == len(items) and len(fixed_widths) == sum(
+            1 for item in items if item.get("WidthSizePolicy") != "StretchToParent"
+        ):
+            remaining = parent_rect.width - sum(spacing) - sum(fixed_widths)
+            allocated_stretch_width = max(0.0, remaining / len(stretch_widths))
+
+    for item in items:
         current = rect_for(item, parent_rect,
                            flow_x if stack and not vertical_stack else None,
                            flow_y if stack and vertical_stack else None,
-                           workspace_right_margin, primary_action_button_width)
+                           workspace_right_margin, primary_action_button_width,
+                           allocated_stretch_width if item in stretch_widths else None)
         item_path = path + "/{}[{}]".format(local_name(item.tag), item.get("Id", ""))
         rows.append((item, current, item_path, dynamic_list))
         if current is not None:
@@ -1160,10 +1196,11 @@ def validate_prefab(errors: List[str]) -> None:
         overlay_panels.append((panel, panel_rect, panel_id, visible_binding))
 
     def unoccluded_overlaps(decoration_node: ET.Element, decoration_name: str,
+                            decoration_rect: Rect,
                             targets, collision_kind: str, detailed_mode: bool = True,
                             evidence_focused: bool = False):
         uncovered = []
-        visible_decoration_rect = clipped_visible_rect(decoration_node, rect)
+        visible_decoration_rect = clipped_visible_rect(decoration_node, decoration_rect)
         if visible_decoration_rect is None:
             return uncovered
         for target_node, target_rect, target_path in targets:
@@ -1201,7 +1238,7 @@ def validate_prefab(errors: List[str]) -> None:
             print("PASS overlay occlusion: {} ({}) vs {} {}; covered by later sibling {} "
                   "(opaque Sprite=BlankWhiteSquare_9, IsVisible={}, target=descendant, "
                   "collision=({:.1f},{:.1f},{:.1f},{:.1f}), panel=({:.1f},{:.1f},{:.1f},{:.1f}))".format(
-                      decoration_name, element_id, collision_kind, target_path, panel_id, visible_binding,
+                      decoration_name, decoration_node.get("Id", ""), collision_kind, target_path, panel_id, visible_binding,
                       overlap.x, overlap.y, overlap.width, overlap.height,
                       panel_rect.x, panel_rect.y, panel_rect.width, panel_rect.height))
         return uncovered
@@ -1233,21 +1270,21 @@ def validate_prefab(errors: List[str]) -> None:
                     or rect.x + rect.width > workbench_rect.x + workbench_rect.width \
                     or rect.y + rect.height > workbench_rect.y + workbench_rect.height:
                 errors.append("'{}' extends beyond the workbench frame ({})".format(name, path))
-            button_overlaps = unoccluded_overlaps(node, name, buttons, "interactive button")
+            button_overlaps = unoccluded_overlaps(node, name, rect, buttons, "interactive button")
             if button_overlaps:
                 errors.append("'{}' overlaps an interactive button ({})".format(
                     name, button_overlaps[0][2]))
             editable_overlaps = unoccluded_overlaps(
-                node, name, editable_fields, "editable field")
+                node, name, rect, editable_fields, "editable field")
             if editable_overlaps:
                 errors.append("'{}' overlaps an editable field ({})".format(
                     name, editable_overlaps[0][2]))
             input_overlaps = unoccluded_overlaps(
-                node, name, command_inputs, "command input surface")
+                node, name, rect, command_inputs, "command input surface")
             if input_overlaps:
                 errors.append("'{}' overlaps a command input surface ({})".format(
                     name, input_overlaps[0][2]))
-            overlapping_text = unoccluded_overlaps(node, name, text_widgets, "static text")
+            overlapping_text = unoccluded_overlaps(node, name, rect, text_widgets, "static text")
             if overlapping_text:
                 allowed_parent = None
                 if name in TEXT_OVERLAP_ALPHA_MAX and path.startswith((
@@ -1262,8 +1299,12 @@ def validate_prefab(errors: List[str]) -> None:
                             allowed_parent = None
                 alpha_limit = TEXT_OVERLAP_ALPHA_MAX.get(name)
                 if allowed_parent is None or alpha_limit is None or allowed_parent.alpha_max > alpha_limit:
-                    errors.append("'{}' overlaps static text outside its verified low-alpha header/rail exception ({})".format(
-                        name, overlapping_text[0][2]))
+                    target_node, target_rect, target_path = overlapping_text[0]
+                    errors.append("'{}' ({}) overlaps static text outside its verified low-alpha header/rail exception "
+                                  "({}, decoration=({:.1f},{:.1f},{:.1f},{:.1f}), text=({:.1f},{:.1f},{:.1f},{:.1f}))".format(
+                                      name, node.get("Id", ""), target_path,
+                                      rect.x, rect.y, rect.width, rect.height,
+                                      target_rect.x, target_rect.y, target_rect.width, target_rect.height))
                 else:
                     print("PASS low-alpha text overlap exception: {} in bounded {} (alpha max {}/{})".format(
                         name, parent_id, allowed_parent.alpha_max, alpha_limit))

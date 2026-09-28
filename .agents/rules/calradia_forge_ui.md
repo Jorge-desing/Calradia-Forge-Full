@@ -180,3 +180,8 @@ When modifying or creating new UI components for Calradia Forge (both WPF Deskto
   - En los setters de propiedades, invocar siempre Command?.NotifyCanExecuteChanged() con operador de propagación nula para garantizar seguridad ante invocaciones tempranas.
 - **Controles de Telemetría en Pie de Página (AssertFooterFitsShellViewport):**
   - El botón de telemetría IPC (FooterPingButton) debe residir en la columna izquierda del pie de página dentro de un StackPanel horizontal junto al badge de paleta, manteniendo una altura máxima de 18 DIP y respetando estrictamente los márgenes centrales asignados a KeyboardShortcutHint.
+
+## Pipeline de Activos Visuales y Generación de Imágenes de Alta Calidad (Rev082+)
+- **Generación y Normalización de Activos Gráficos:**
+  - Para la creación de nuevos iconos, heráldica, texturas de pergamino o banners de presentación, aplicar la skill [`high-quality-image-generation`](../skills/high-quality-image-generation/SKILL.md) siguiendo la arquitectura de 9 dimensiones de intención visual.
+  - Todo activo destinado al motor TaleWorlds o Gauntlet UI debe someterse a `tools/process_high_quality_asset.py` para garantizar dimensiones Power-of-Two (POT), recorte alfa sin halos oscuros (dilatación de color) y registro de integridad SHA-256.

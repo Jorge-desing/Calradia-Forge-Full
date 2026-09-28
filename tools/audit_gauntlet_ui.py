@@ -301,6 +301,7 @@ def widget_rect(
     flow_x: float | None = None,
     flow_y: float | None = None,
     detailed_mode: bool = False,
+    stretch_width: float | None = None,
 ) -> Rect | None:
     """Resolve one prefab widget into shell coordinates, including stack flow."""
     margins = []
@@ -333,7 +334,15 @@ def widget_rect(
             else:
                 value = None
         if node.attrib.get(policy_key) == "StretchToParent":
-            value = parent_size - before - after
+            # A stretched child in a horizontal/vertical stack fills only the
+            # unconsumed tail of that stack. Using the full parent extent here
+            # made later children appear to overrun their container.
+            if policy_key == "WidthSizePolicy" and flow_x is not None:
+                value = stretch_width if stretch_width is not None else parent_rect.right - flow_x - before - after
+            elif policy_key == "HeightSizePolicy" and flow_y is not None:
+                value = parent_rect.bottom - flow_y - before - after
+            else:
+                value = parent_size - before - after
         cap = number(node.attrib.get("MaxWidth" if policy_key == "WidthSizePolicy" else "MaxHeight"))
         if value is not None and cap is not None:
             value = min(value, cap)
@@ -404,12 +413,42 @@ def shell_layout(
         vertical_stack = "Vertical" in method
         flow_x, flow_y = parent_rect.left, parent_rect.top
         for children in children_groups:
-            for child in children:
+            siblings = list(children)
+            stretch_widths = [
+                child for child in siblings
+                if horizontal_stack and child.attrib.get("WidthSizePolicy") == "StretchToParent"
+            ]
+            allocated_stretch_width: float | None = None
+            if stretch_widths:
+                fixed_widths: list[float] = []
+                spacing: list[float] = []
+                for child in siblings:
+                    left_margin = number(child.attrib.get("MarginLeft", "0"))
+                    right_margin = number(child.attrib.get("MarginRight", "0"))
+                    if left_margin is None or right_margin is None:
+                        fixed_widths = []
+                        break
+                    spacing.append(left_margin + right_margin)
+                    if child.attrib.get("WidthSizePolicy") == "StretchToParent":
+                        continue
+                    width = number(child.attrib.get("SuggestedWidth"))
+                    if width is None:
+                        fixed_widths = []
+                        break
+                    cap = number(child.attrib.get("MaxWidth"))
+                    fixed_widths.append(min(width, cap) if cap is not None else width)
+                if len(spacing) == len(siblings) and len(fixed_widths) == sum(
+                    1 for child in siblings if child.attrib.get("WidthSizePolicy") != "StretchToParent"
+                ):
+                    remaining = parent_rect.width - sum(spacing) - sum(fixed_widths)
+                    allocated_stretch_width = max(0.0, remaining / len(stretch_widths))
+            for child in siblings:
                 rect = widget_rect(
                     child, parent_rect, vm_source, state,
                     flow_x if horizontal_stack else None,
                     flow_y if vertical_stack else None,
                     detailed_mode,
+                    allocated_stretch_width if child in stretch_widths else None,
                 )
                 if rect is None:
                     continue
@@ -596,7 +635,8 @@ def visible_in_evidence_state(
                 return False
         elif visibility in {
             "@IsSdkCatalogOpen", "@IsHistoryVisible", "@IsKeyHelpOpen",
-            "@IsToastVisible", "@IsNavigationPaletteOpen", "@IsCategoryCommandsOpen",
+            "@IsToastVisible", "@IsNavigationPaletteOpen", "@IsTestResultsExplorerOpen",
+            "@IsCategoryCommandsOpen",
         }:
             return False
         current = parents.get(current)
@@ -630,6 +670,8 @@ EXPECTED_SCROLL_PANELS = {
     "ForgeCommandHistoryScroll": "ForgeCommandHistoryScrollBar",
     "ForgeCategoryCommandsScroll": "ForgeCategoryCommandsScrollBar",
     "ForgePlaybookScroll": "ForgePlaybookScrollBar",
+    "TestResultsExplorerScroll": "TestResultsExplorerScrollBar",
+    "TestResultsExplorerDetailScroll": "TestResultsExplorerDetailScrollBar",
     "NavigationPaletteScroll": "NavigationPaletteScrollBar",
 }
 
@@ -1887,6 +1929,179 @@ def validate_navigation_palette_geometry(
                 audit.error(f"Navigation palette favorite button must use {key}={expected}")
 
 
+def validate_test_results_explorer_geometry(
+    audit: Audit,
+    prefab: ET.Element,
+    shell: ET.Element,
+    vm_source: str,
+    viewport: tuple[int, int],
+) -> None:
+    """Audit the test-results modal independently from the closed shell layout."""
+    viewport_name = f"{viewport[0]}x{viewport[1]}"
+    required_ids = (
+        "TestResultsExplorerOverlay", "TestResultsExplorerPanel", "TestResultsExplorerSurface",
+        "TestResultsExplorerHeader", "TestResultsExplorerHeading", "TestResultsExplorerClose",
+        "TestResultsExplorerSummary", "TestResultsExplorerContent", "TestResultsExplorerListFrame",
+        "TestResultsExplorerColumns", "TestResultsExplorerScroll", "TestResultsExplorerScrollBar",
+        "TestResultsExplorerDetailFrame", "TestResultsExplorerSelectedHeading",
+        "TestResultsExplorerDetailScroll", "TestResultsExplorerDetailScrollBar",
+        "TestResultsExplorerEmptyMessage", "TestResultsExplorerDetailEmpty",
+        "TestResults", "SelectedTestResultDetail",
+    )
+    nodes = {element_id: find_by_id(prefab, element_id) for element_id in required_ids}
+    missing = [element_id for element_id, node in nodes.items() if node is None]
+    if missing:
+        audit.error(f"Test-results explorer is missing {', '.join(missing)} in {viewport_name}")
+        return
+
+    overlay = nodes["TestResultsExplorerOverlay"]
+    panel = nodes["TestResultsExplorerPanel"]
+    surface = nodes["TestResultsExplorerSurface"]
+    parents = descendant_map(prefab)
+    if overlay.attrib.get("IsVisible") != "@IsTestResultsExplorerOpen":
+        audit.error("TestResultsExplorerOverlay must bind visibility to @IsTestResultsExplorerOpen")
+    if direct_parent(overlay, parents) is not shell:
+        audit.error("TestResultsExplorerOverlay must be a direct child of ForgeWorkbenchShell")
+    if direct_parent(panel, parents) is not overlay:
+        audit.error("TestResultsExplorerPanel must be a direct child of TestResultsExplorerOverlay")
+    if direct_parent(surface, parents) is not panel:
+        audit.error("TestResultsExplorerSurface must be a direct child of TestResultsExplorerPanel")
+    if panel.attrib.get("Sprite") != "BlankWhiteSquare_9" or not panel.attrib.get("Color", "").endswith("FF"):
+        audit.error("TestResultsExplorerPanel must retain an opaque frame that masks shell decorations")
+    if surface.attrib.get("DoNotAcceptEvents") != "true":
+        audit.error("TestResultsExplorerSurface must remain passive so input reaches its controls")
+
+    rectangles = shell_layout(shell, vm_source, False, viewport)
+    shell_rect = rectangles.get(shell)
+    overlay_rect = rectangles.get(overlay)
+    panel_rect = rectangles.get(panel)
+    surface_rect = rectangles.get(surface)
+    if shell_rect is None or overlay_rect is None or panel_rect is None or surface_rect is None:
+        audit.error(f"Cannot resolve the test-results modal frame in {viewport_name}")
+        return
+    if overlay_rect != shell_rect:
+        audit.error(f"TestResultsExplorerOverlay must cover the shell in {viewport_name}")
+    if panel_rect.width <= 0 or panel_rect.height <= 0 or not contained(overlay_rect, panel_rect):
+        audit.error(f"TestResultsExplorerPanel exceeds the modal overlay in {viewport_name}")
+    if panel_rect.width > 1160 or panel_rect.height > 820:
+        audit.error(f"TestResultsExplorerPanel exceeds its 1160x820 size cap in {viewport_name}")
+    if surface_rect.width <= 0 or surface_rect.height <= 0 or not contained(panel_rect, surface_rect):
+        audit.error(f"TestResultsExplorerSurface exceeds its panel in {viewport_name}")
+
+    section_ids = (
+        "TestResultsExplorerHeader", "TestResultsExplorerSummary",
+        "TestResultsExplorerContent",
+    )
+    section_rects: dict[str, Rect] = {}
+    for element_id in section_ids:
+        node = nodes[element_id]
+        rect = rectangles.get(node)
+        if rect is None or rect.width <= 0 or rect.height <= 0:
+            audit.error(f"Cannot resolve {element_id} in test-results explorer/{viewport_name}")
+            continue
+        if direct_parent(node, parents) is not surface:
+            audit.error(f"{element_id} must be a direct child of TestResultsExplorerSurface")
+        if not contained(surface_rect, rect):
+            audit.error(f"{element_id} exceeds TestResultsExplorerSurface in {viewport_name}")
+        section_rects[element_id] = rect
+
+    header = section_rects.get("TestResultsExplorerHeader")
+    summary = section_rects.get("TestResultsExplorerSummary")
+    content = section_rects.get("TestResultsExplorerContent")
+    if header is not None and summary is not None and intersects(header, summary):
+        audit.error(f"Test-results explorer heading and summary overlap in {viewport_name}")
+    if summary is not None and content is not None and intersects(summary, content):
+        audit.error(f"Test-results explorer summary and result columns overlap in {viewport_name}")
+
+    content_ids = (
+        "TestResultsExplorerHeading", "TestResultsExplorerClose", "TestResultsExplorerListFrame",
+        "TestResultsExplorerColumns", "TestResultsExplorerScroll", "TestResultsExplorerScrollBar",
+        "TestResultsExplorerDetailFrame", "TestResultsExplorerSelectedHeading",
+        "TestResultsExplorerDetailScroll", "TestResultsExplorerDetailScrollBar",
+        "TestResultsExplorerEmptyMessage", "TestResultsExplorerDetailEmpty",
+    )
+    for element_id in content_ids:
+        node = nodes[element_id]
+        rect = rectangles.get(node)
+        if rect is None:
+            audit.error(f"Cannot resolve {element_id} in test-results explorer/{viewport_name}")
+        elif rect.width <= 0 or rect.height <= 0 or not contained(surface_rect, rect):
+            audit.error(f"{element_id} exceeds TestResultsExplorerSurface in {viewport_name}")
+
+    header = nodes["TestResultsExplorerHeader"]
+    close = nodes["TestResultsExplorerClose"]
+    if direct_parent(nodes["TestResultsExplorerHeading"], parents) is not header:
+        audit.error("TestResultsExplorerHeading must be a child of TestResultsExplorerHeader")
+    if direct_parent(close, parents) is not header:
+        audit.error("TestResultsExplorerClose must be a child of TestResultsExplorerHeader")
+    summary_node = nodes["TestResultsExplorerSummary"]
+    summary_rect = rectangles.get(summary_node)
+    if summary_node.attrib.get("VerticalAlignment") != "Top" or (
+        summary_rect is not None and abs(summary_rect.top - surface_rect.top - 54) > 0.01
+    ):
+        audit.error("TestResultsExplorerSummary must remain in its 54-DIP band below the heading")
+
+    list_frame = nodes["TestResultsExplorerListFrame"]
+    detail_frame = nodes["TestResultsExplorerDetailFrame"]
+    list_empty = nodes["TestResultsExplorerEmptyMessage"]
+    detail_empty = nodes["TestResultsExplorerDetailEmpty"]
+    if direct_parent(list_frame, parents) is not nodes["TestResultsExplorerContent"]:
+        audit.error("TestResultsExplorerListFrame must be a child of TestResultsExplorerContent")
+    if direct_parent(detail_frame, parents) is not nodes["TestResultsExplorerContent"]:
+        audit.error("TestResultsExplorerDetailFrame must be a child of TestResultsExplorerContent")
+    if direct_parent(list_empty, parents) is not list_frame:
+        audit.error("TestResultsExplorerEmptyMessage must be confined to the test-results list card")
+    if direct_parent(detail_empty, parents) is not detail_frame:
+        audit.error("TestResultsExplorerDetailEmpty must be confined to the result-detail card")
+    for empty_node in (list_empty, detail_empty):
+        if empty_node.attrib.get("IsVisible") != "@IsTestResultsExplorerEmpty":
+            audit.error(f"{empty_node.attrib.get('Id')} must bind visibility to the shared empty state")
+        if empty_node.attrib.get("DoNotAcceptEvents") != "true":
+            audit.error(f"{empty_node.attrib.get('Id')} must remain passive")
+        if empty_node.attrib.get("HeightSizePolicy") != "StretchToParent":
+            audit.error(f"{empty_node.attrib.get('Id')} must fill only its card's result body")
+    list_rect = rectangles.get(list_frame)
+    detail_rect = rectangles.get(detail_frame)
+    if list_rect is not None and detail_rect is not None:
+        if intersects(list_rect, detail_rect):
+            audit.error(f"Test-results list and detail cards overlap in {viewport_name}")
+        if not contained(section_rects.get("TestResultsExplorerContent", Rect(0, 0, 0, 0)), list_rect) \
+                or not contained(section_rects.get("TestResultsExplorerContent", Rect(0, 0, 0, 0)), detail_rect):
+            audit.error(f"Test-results cards exceed their content region in {viewport_name}")
+
+    columns_rect = rectangles.get(nodes["TestResultsExplorerColumns"])
+    list_scroll_rect = rectangles.get(nodes["TestResultsExplorerScroll"])
+    detail_heading_rect = rectangles.get(nodes["TestResultsExplorerSelectedHeading"])
+    list_empty_rect = rectangles.get(list_empty)
+    detail_empty_rect = rectangles.get(detail_empty)
+    if list_rect is not None and list_empty_rect is not None:
+        if not contained(list_rect, list_empty_rect):
+            audit.error(f"Test-results list empty state exceeds its card in {viewport_name}")
+        if columns_rect is not None and list_empty_rect.top < columns_rect.bottom:
+            audit.error(f"Test-results list empty state overlaps its column headings in {viewport_name}")
+    if detail_rect is not None and detail_empty_rect is not None:
+        if not contained(detail_rect, detail_empty_rect):
+            audit.error(f"Test-results detail empty state exceeds its card in {viewport_name}")
+        if detail_heading_rect is not None and intersects(detail_heading_rect, detail_empty_rect):
+            audit.error(f"Test-results detail empty state overlaps its heading in {viewport_name}")
+    if columns_rect is not None and list_scroll_rect is not None and intersects(columns_rect, list_scroll_rect):
+        audit.error(f"Test-results list headers overlap the scroll viewport in {viewport_name}")
+    detail_scroll_rect = rectangles.get(nodes["TestResultsExplorerDetailScroll"])
+    if detail_heading_rect is not None and detail_scroll_rect is not None \
+            and intersects(detail_heading_rect, detail_scroll_rect):
+        audit.error(f"Test-results detail heading overlaps its scroll viewport in {viewport_name}")
+    detail_heading = nodes["TestResultsExplorerSelectedHeading"]
+    if detail_heading.attrib.get("VerticalAlignment") != "Top":
+        audit.error("TestResultsExplorerSelectedHeading must remain top-aligned above its detail viewport")
+
+    if nodes["TestResults"].attrib.get("DataSource") != "{TestResults}":
+        audit.error("TestResults must bind to {TestResults}")
+    template = nodes["TestResults"].find("ItemTemplate")
+    row = next((child for child in template if local_name(child.tag) == "ButtonWidget"), None) if template is not None else None
+    if row is None or row.attrib.get("Command.Click") != "ExecuteSelect" or row.attrib.get("IsFocusable") != "true":
+        audit.error("Test-results rows must be focusable selection controls with ExecuteSelect")
+
+
 def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
     shell = find_by_id(prefab, "ForgeWorkbenchShell")
     if shell is None or local_name(shell.tag) != "Widget":
@@ -2033,6 +2248,7 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
             audit.error(f"Viewport {viewport[0]}x{viewport[1]} leaves no room for the workbench shell")
             continue
         validate_navigation_palette_geometry(audit, prefab, shell, vm_source, viewport)
+        validate_test_results_explorer_geometry(audit, prefab, shell, vm_source, viewport)
         validate_output_comparison_geometry(audit, prefab, shell, vm_source, viewport)
         if viewport == VIEWPORT_PROFILES[-1] and (shell_rect.width != SHELL_MAX_WIDTH or shell_rect.height != SHELL_MAX_HEIGHT):
             audit.error("The 1920x1080 profile must exercise both centered shell maximums")

@@ -2342,7 +2342,7 @@ namespace MyCustomMod.QuestBehaviors
             string[] requiredProperties =
             {
                 "TestResults", "HasTestResults", "IsTestResultsExplorerOpen", "IsTestResultsExplorerEmpty",
-                "TestResultsExplorerTitle", "TestResultsExplorerSummary", "TestResultsExplorerOpenLabel",
+                "TestResultsExplorerTitle", "TestResultsExplorerSummary", "TestResultsExplorerOpenHint",
                 "TestResultsExplorerCloseLabel", "TestResultsExplorerEmptyLabel", "SelectedTestResultDetail"
             };
             foreach (string property in requiredProperties)
@@ -2382,6 +2382,30 @@ namespace MyCustomMod.QuestBehaviors
                 if (!document.Descendants().Attributes("Command.Click").Any(attribute => attribute.Value == command))
                     throw new Exception("Gauntlet prefab must expose the explorer action " + command + ".");
             }
+
+            XElement listFrame = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "TestResultsExplorerListFrame");
+            XElement detailFrame = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "TestResultsExplorerDetailFrame");
+            XElement listEmpty = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "TestResultsExplorerEmptyMessage");
+            XElement detailEmpty = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "TestResultsExplorerDetailEmpty");
+            XElement detailContent = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "TestResultsExplorerDetailContent");
+            if (listFrame == null || detailFrame == null || listEmpty == null || detailEmpty == null || detailContent == null ||
+                listEmpty.Parent == null || listEmpty.Parent.Parent != listFrame ||
+                detailEmpty.Parent == null || detailEmpty.Parent.Parent != detailFrame)
+                throw new Exception("Each empty-state message must remain inside its own explorer column.");
+            if (listEmpty.Name.LocalName != "TextWidget" || detailEmpty.Name.LocalName != "TextWidget" ||
+                (string)listEmpty.Attribute("DoNotAcceptEvents") != "true" ||
+                (string)detailEmpty.Attribute("DoNotAcceptEvents") != "true" ||
+                (string)listEmpty.Attribute("HeightSizePolicy") != "StretchToParent" ||
+                (string)detailEmpty.Attribute("HeightSizePolicy") != "StretchToParent" ||
+                (string)listEmpty.Attribute("WidthSizePolicy") != "StretchToParent" ||
+                (string)detailEmpty.Attribute("WidthSizePolicy") != "StretchToParent" ||
+                (string)listEmpty.Attribute("IsVisible") != "@IsTestResultsExplorerEmpty" ||
+                (string)detailEmpty.Attribute("IsVisible") != "@IsTestResultsExplorerEmpty")
+                throw new Exception("Column empty states must be passive, bounded overlays within their own cards.");
+            if (detailContent.DescendantsAndSelf().Contains(detailEmpty) ||
+                listEmpty.Ancestors().Any(element => element.Name.LocalName == "ScrollablePanel") ||
+                detailEmpty.Ancestors().Any(element => element.Name.LocalName == "ScrollablePanel"))
+                throw new Exception("Column empty states must stay outside scroll content and the CoverChildren detail subtree.");
 
             XElement resultsList = document.Descendants().SingleOrDefault(element => (string)element.Attribute("DataSource") == "{TestResults}");
             if (resultsList == null || resultsList.Name.LocalName != "ListPanel")

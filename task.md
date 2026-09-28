@@ -514,3 +514,28 @@
   - Validación de sprites decorativos (`Validate-CalradiaForge-DecorativeSprites.py`): 100% aprobado.
 - [x] Fase 6: Empaquetado Automático con `FastPackageEngine` (`package.ps1`): 3 archivos ZIP generados en `artifacts/` (`CalradiaForge-Modules-25.2.0.zip`, `CalradiaForge-Source-SDK-25.2.0.zip`, `CalradiaForge-Desktop-25.2.0.zip`).
 - [x] Fase 7: Sincronización Git y Push a GitHub (`main`): Commit `9e8f0be` sincronizado exitosamente con el repositorio remoto.
+
+## Suite de Generación de Imágenes de Alta Calidad y Pipeline de Activos de Juego (Rev082)
+- [x] Fase 1: Creación de la Skill Especializada `.agents/skills/high-quality-image-generation/SKILL.md`:
+  - Frontmatter con nombre, descripción detallada y disparadores contextuales.
+  - Arquitectura de Prompts de 9 Dimensiones (sujeto histórico, materiales, iluminación, ópticas 85mm, atmósfera medieval).
+  - Dialectos específicos por modelo: Flux.1 Dev/Pro, Midjourney v6.1, Gemini (`generate_image`), DALL-E 3.
+  - Catálogo de arquetipos: Iconos de armas/objetos 512x512, heráldica de reinos, texturas de pergamino UI y banners promocionales 1920x1080 / 4K.
+- [x] Fase 2: Desarrollo de la Utilidad de Procesamiento `tools/process_high_quality_asset.py`:
+  - CLI Python con Pillow para extracción de canal alfa, recorte inteligente y transparencia.
+  - Escalado estricto Power-of-Two (POT: 256, 512, 1024, 2048, 4096) para compatibilidad con TaleWorlds TPAC y GPU mipmaps.
+  - Dilatación de bordes (color bleed/padding) para evitar bleeding en Gauntlet UI.
+  - Normalización de espacio de color sRGB 8-bit y exportación de informe JSON de metadatos.
+- [x] Fase 3: Pruebas Unitarias Automatizadas en `tests/test_high_quality_image_pipeline.py`:
+  - Verificación de procesamiento de canal alfa, escalado POT, padding de bordes y metadatos JSON.
+- [x] Fase 4: Gobernanza, Taxonomía y Aprendizaje:
+  - Actualización de `docs/SKILLS_TAXONOMY.md` con la nueva skill en el clúster de UI & Activos Creativos.
+  - Registro de la Propuesta 36 en `learning_proposal.md`.
+- [x] Fase 5: Verificación Integral del Repositorio:
+  - Compilación Release de `CalradiaForge.sln`: 0 advertencias, 0 errores.
+  - Verificación stateless (`verify_stateless_behavior.ps1`): 4/4 criterios superados.
+  - Suite de pruebas de la solución (`Run-CalradiaForge-Tests.bat`): 343 Core, 73 ForgeWeave, 63 Desktop, 289 WPF Render superados al 100%.
+  - Suite de agentes autónomos (`test_forge_agents.py`): 31/31 pruebas superadas al 100%.
+  - Ejecución de pruebas unitarias del pipeline de imágenes (`test_high_quality_image_pipeline.py`): 5/5 pruebas superadas al 100%.
+- [x] Fase 6: Empaquetado Automático con `FastPackageEngine` (`package.ps1`): 3 archivos ZIP generados en `artifacts/` (`CalradiaForge-Modules-25.2.0.zip`, `CalradiaForge-Source-SDK-25.2.0.zip`, `CalradiaForge-Desktop-25.2.0.zip`).
+- [x] Fase 7: Sincronización y Push a GitHub (`main`) bajo la Regla E.
