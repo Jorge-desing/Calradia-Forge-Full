@@ -852,3 +852,9 @@ Initial developer preview: Gauntlet panel, WPF client, local named pipes, diagno
 - The imported TPAC and collected workspace source TPAC are 539 bytes with SHA-256 `1506C5EAECD4BFC752678C6E6CDB3FA87C4A7A51D8B3B7846B15715276D571EF`. The pre-import installed and source backups were retained and hash-verified. The intermediate `131E6230...` value in Rev083 was not proof of the completed import; TpacTool was not used.
 - After Client and Modding Kit builds completed with zero warnings and errors, one F10 observation at Bannerlord's main menu showed the panel and its header/rail texture ornaments. No assertion or missing-texture placeholder appeared. No campaign, battle, or test was started.
 - Rev083's statement about Escape is corrected: the user closed Computer Use to reduce resource use. Version 25.2.0, API, routes, commands, permissions, and ZIPs remain unchanged.
+
+### Resource Browser atlas re-import confirmation (Rev085) — 2026-09-28
+
+- The user repeated the Resource Browser import. The loaded inspector showed `ui_calradiaforge_1` as a 4096×512 texture, with `B8G8R8A8` source data and DXT5 runtime data at 13 mip levels. The import uses file selection and **Update**; inspector **Save** only stores import settings.
+- The installed Steam TPAC and workspace source TPAC are both 539 bytes and match at SHA-256 `8899A48A407591ADA53573EFC0DD699EA47D2A30F32A0C12C1875003F7993047`. Pre-import and post-import backups remain outside the repository and were hash-verified. TpacTool was not used.
+- No new in-game render or F10 observation followed this repeat import; live rendering remains pending. Product version stays 25.2.0; no API, route, command, permission, dependency, or ZIP changed.

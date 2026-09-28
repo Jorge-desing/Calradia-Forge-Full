@@ -643,3 +643,9 @@ Consulta VALIDATION.md para distinguir las pruebas automáticas, la ejecución d
 - El TPAC importado y el TPAC fuente recopilado tienen 539 bytes y SHA-256 `1506C5EAECD4BFC752678C6E6CDB3FA87C4A7A51D8B3B7846B15715276D571EF`. Se conservaron y verificaron por hash los respaldos anteriores de instalación y fuente. El valor intermedio `131E6230...` de Rev083 no probaba la importación completada; no se usó TpacTool.
 - Tras compilar Client y Modding Kit sin advertencias ni errores, una observación con F10 en el menú principal de Bannerlord mostró el panel y los adornos de textura de cabecera y rail. No apareció una aserción ni un marcador de textura ausente. No se inició campaña, batalla ni prueba.
 - Se corrige la referencia de Rev083 a Escape: el usuario cerró Computer Use para reducir consumo de recursos. La versión 25.2.0, API, rutas, comandos, permisos y ZIPs siguen sin cambios.
+
+### Confirmación de reimportación del atlas en Resource Browser (Rev085) — 28/09/2026
+
+- El usuario repitió la importación mediante Resource Browser. El inspector cargado mostró `ui_calradiaforge_1` como textura 4096×512, con origen `B8G8R8A8` y formato de ejecución DXT5 con 13 niveles mip. La importación se realiza seleccionando el archivo y confirmando **Update**; **Save** en el inspector solo guarda los ajustes.
+- El TPAC instalado de Steam y el TPAC fuente del espacio de trabajo tienen 539 bytes y coinciden en el SHA-256 `8899A48A407591ADA53573EFC0DD699EA47D2A30F32A0C12C1875003F7993047`. Los respaldos previos y posteriores permanecen fuera del repositorio y se verificaron por hash. No se usó TpacTool.
+- No hubo una nueva observación del render en juego ni de F10 después de repetir la importación; el render en vivo sigue pendiente. La versión permanece en 25.2.0; no cambian API, rutas, comandos, permisos, dependencias ni ZIPs.
