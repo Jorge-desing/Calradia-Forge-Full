@@ -37,7 +37,7 @@ IMAGEGEN_TEXTURES = {
     'forge_rail_cartographic_field_v1.png': ((256, 256), 36, False),
     'forge_heraldic_overlay.png': ((256, 48), 112, True),
     'forge_heraldic_header_v2.png': ((256, 48), 88, True),
-    'forge_heraldic_rail_v2.png': ((128, 256), 64, True),
+    'forge_heraldic_rail_v2.png': ((128, 256), 64, False),
     'forge_patina_brass.png': ((128, 16), 88, False),
     'forge_pine_felt.png': ((128, 32), 40, False),
 }
@@ -45,6 +45,16 @@ RETIRED_IMAGEGEN_TEXTURES = (
     'forge_dark_wood.png',
     'forge_inkwash.png',
     'forge_war_table_cloth.png',
+)
+RETIRED_ROUTE_HEADER_TEXTURES = (
+    'forge_header_summary_v1.png',
+    'forge_header_modules_v1.png',
+    'forge_header_logs_v1.png',
+    'forge_header_inspector_v1.png',
+    'forge_header_tests_v1.png',
+    'forge_header_metrics_v1.png',
+    'forge_header_framework_v1.png',
+    'forge_header_extensions_v1.png',
 )
 PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 
@@ -162,6 +172,47 @@ def copy_imagegen_textures():
                 raise ValueError(f'Refusing to remove modified retired texture: {retired_output}')
             retired_output.unlink()
 
+    # Retired route ornaments are removed only when the checked-in dated archive
+    # and its unique checksum record prove the exact SpriteParts bytes are intact.
+    # An already-absent destination is an idempotent no-op; missing or changed
+    # archive evidence always aborts before any file is deleted.
+    archive_dir = ROOT / 'assets' / 'gauntlet-imagegen' / 'archive' / '2026-09-28'
+    archive_manifest = archive_dir / 'SHA256SUMS.txt'
+    for filename in RETIRED_ROUTE_HEADER_TEXTURES:
+        retired_output = target_dir / filename
+        if not retired_output.exists():
+            continue
+        archived_output = archive_dir / f'spriteparts-{filename}'
+        if not archived_output.is_file() or not archive_manifest.is_file():
+            raise ValueError(f'Refusing to remove {retired_output}: dated SpriteParts backup or checksum manifest is missing')
+
+        expected_entry = f'spriteparts-{filename}'
+        checksum_rows = []
+        for line in archive_manifest.read_text(encoding='utf-8-sig').splitlines():
+            parts = line.split(None, 2)
+            if len(parts) >= 2 and parts[1] == expected_entry:
+                checksum_rows.append(parts)
+        if len(checksum_rows) != 1 or len(checksum_rows[0]) != 3:
+            raise ValueError(f'Refusing to remove {retired_output}: expected one checksum/source row for {expected_entry}')
+
+        checksum, _entry, source_annotation = checksum_rows[0]
+        expected_source = str(Path('modules') / 'CalradiaForge' / 'GUI' / 'SpriteParts' / 'ui_calradiaforge' / filename)
+        recorded_source = source_annotation.strip()
+        if not (recorded_source.startswith('[source=') and recorded_source.endswith(']')):
+            raise ValueError(f'Refusing to remove {retired_output}: checksum row has no source annotation')
+        recorded_source = recorded_source[len('[source='):-1].replace('/', '\\').casefold()
+        if recorded_source != expected_source.replace('/', '\\').casefold():
+            raise ValueError(f'Refusing to remove {retired_output}: checksum row points at an unexpected source')
+
+        current_bytes = retired_output.read_bytes()
+        archived_bytes = archived_output.read_bytes()
+        expected_hash = checksum.upper()
+        current_hash = hashlib.sha256(current_bytes).hexdigest().upper()
+        archived_hash = hashlib.sha256(archived_bytes).hexdigest().upper()
+        if current_bytes != archived_bytes or current_hash != expected_hash or archived_hash != expected_hash:
+            raise ValueError(f'Refusing to remove {retired_output}: destination, dated archive, and checksum do not match')
+        retired_output.unlink()
+
 copy_imagegen_textures()
 
 root=E.Element('Prefab'); window=E.SubElement(root,'Window')
@@ -256,9 +307,11 @@ E.SubElement(rail_children,'TextWidget',Id='ForgeRailGuidance',DoNotAcceptEvents
 
 # Active route context and a compact, keyboard-focusable evidence toggle.
 E.SubElement(children,'TextWidget',Id='ForgeCurrentSection',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='35',MaxWidth='512',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='98',Brush='CalradiaForge.HeaderGold',Text='@CurrentSectionLabel',HorizontalAlignment='Left',**{'Brush.FontSize':'28'})
-# Keep the page explanation to a readable two-line band so the ledger can retain
-# 160 DIP at the minimum audited viewport without covering the command row.
-E.SubElement(children,'TextWidget',Id='ForgeSectionHelp',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='40',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='134',Brush='CalradiaForge.Muted',Text='@SectionHelpLabel',HorizontalAlignment='Left',**{'Brush.FontSize':'15'})
+# The 47 SectionHelpLabel strings in PanelViewModel currently have no entries in
+# the 13 localization catalogs, so the game uses their English fallback. Bound
+# this passive text lane 12 DIP before the evidence-toggle row and reserve three
+# lines for the longest source string without moving the command host or ledger.
+E.SubElement(children,'TextWidget',Id='ForgeSectionHelp',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='46',MaxWidth='520',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='134',Brush='CalradiaForge.Muted',Text='@SectionHelpLabel',HorizontalAlignment='Left',**{'Brush.FontSize':'12'})
 focus=E.SubElement(E.SubElement(children,'ListPanel',Id='ForgeEvidenceToggle',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='336',SuggestedHeight='46',MarginTop='97',MarginRight='24',HorizontalAlignment='Right',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
 icon_button(focus,'ToggleEvidenceFocus','calradiaforge_scroll_unfurled','@FocusEvidenceLabel')
 icon_button(focus,'SdkCatalogButton','calradiaforge_open_book','@SdkCatalogHint',command='ExecuteCategorySdk')
@@ -270,7 +323,7 @@ test_results_shortcut=icon_button(focus,'TestResultsExplorerShortcut','calradiaf
 test_results_shortcut.set('IsVisible','@ShowTestActions')
 
 # Context cards are a single visual summary row and disappear with the command deck in evidence-focus mode.
-briefing_row=E.SubElement(children,'ListPanel',Id='ForgeBriefingDeck',IsVisible='@ShowCommandDeck',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='58',MarginLeft='280',MarginRight='24',MarginTop='176',HorizontalAlignment='Center',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
+briefing_row=E.SubElement(children,'ListPanel',Id='ForgeBriefingDeck',IsVisible='@ShowCommandDeck',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='58',MarginLeft='280',MarginRight='24',MarginTop='180',HorizontalAlignment='Center',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
 for i,(label,value,icon,card_suffix) in enumerate([('ContextLabel','ContextValue','calradiaforge_compass','Context'),('TestingLabel','TestingValue','calradiaforge_archery_target','Testing'),('EvidenceCountLabel','EvidenceCountValue','calradiaforge_scroll_unfurled','Evidence'),('TestsLabel','TestCountValue','calradiaforge_crossed_swords','Tests')]):
     card=E.SubElement(E.SubElement(briefing_row,'Children'),'Widget',Id='Briefing'+value,IsVisible='@ShowCommandDeck',DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='208',SuggestedHeight='58',MarginRight='12' if i < 3 else '0',Brush='CalradiaForge.BriefingCard')
     cc=E.SubElement(card,'Children')
@@ -563,8 +616,8 @@ results_list_children=E.SubElement(results_list_frame,'Children')
 results_columns=E.SubElement(results_list_children,'ListPanel',Id='TestResultsExplorerColumns',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='28',MarginLeft='10',MarginRight='10',MarginTop='8',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
 results_column_children=E.SubElement(results_columns,'Children')
 E.SubElement(results_column_children,'TextWidget',Id='TestResultsExplorerTestIdHeader',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.Gold',Text='@TestResultsExplorerTestIdLabel',VerticalAlignment='Center',**{'Brush.FontSize':'13'})
-E.SubElement(results_column_children,'TextWidget',Id='TestResultsExplorerStatusHeader',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='90',Brush='CalradiaForge.Gold',Text='@TestResultsExplorerStatusLabel',VerticalAlignment='Center',**{'Brush.FontSize':'13'})
-E.SubElement(results_column_children,'TextWidget',Id='TestResultsExplorerDurationHeader',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='84',Brush='CalradiaForge.Gold',Text='@TestResultsExplorerDurationLabel',VerticalAlignment='Center',**{'Brush.FontSize':'13'})
+E.SubElement(results_column_children,'TextWidget',Id='TestResultsExplorerStatusHeader',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='90',ClipContents='true',Brush='CalradiaForge.Gold',Text='@TestResultsExplorerStatusLabel',VerticalAlignment='Center',**{'Brush.FontSize':'13'})
+E.SubElement(results_column_children,'TextWidget',Id='TestResultsExplorerDurationHeader',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='96',ClipContents='true',Brush='CalradiaForge.Gold',Text='@TestResultsExplorerDurationLabel',VerticalAlignment='Center',**{'Brush.FontSize':'13'})
 results_scroll=E.SubElement(results_list_children,'ScrollablePanel',Id='TestResultsExplorerScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='8',MarginRight='8',MarginTop='42',MarginBottom='8',ClipRect='TestResultsExplorerClip',InnerPanel='TestResultsExplorerClip\\TestResults',VerticalScrollbar='..\\TestResultsExplorerScrollBar')
 results_scroll_children=E.SubElement(results_scroll,'Children')
 results_clip=E.SubElement(results_scroll_children,'Widget',Id='TestResultsExplorerClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')

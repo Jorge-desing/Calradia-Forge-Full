@@ -74,7 +74,6 @@ RETIRED_DECORATIONS = {
     "forge_dark_wood",
     "forge_inkwash",
     "forge_war_table_cloth",
-    "forge_heraldic_rail_v2",
     "forge_header_summary_v1",
     "forge_header_modules_v1",
     "forge_header_logs_v1",
@@ -897,10 +896,6 @@ def validate_prefab(errors: List[str]) -> None:
             errors.append("{} must be an ImageWidget".format(element_id))
         if node.get("Sprite") != expected_sprite:
             errors.append("{} must reference '{}'".format(element_id, expected_sprite))
-        expected_route_ornament = ROUTE_HEADER_ORNAMENT_BINDINGS.get(element_id)
-        if expected_route_ornament is not None and node.get("IsVisible") != expected_route_ornament[1]:
-            errors.append("{} must be visible only when {} is active".format(
-                element_id, expected_route_ornament[1]))
         parent = direct_widget_parent(shell, node)
         parent_matches = parent is shell if expected_parent_id == "<shell>" else (
             parent is not None and parent.get("Id") == expected_parent_id)
@@ -1006,10 +1001,6 @@ def validate_prefab(errors: List[str]) -> None:
     allowed_new_overlap_pairs = {
         frozenset(("ForgeHeaderCloth", "ForgeHeaderHeraldicOverlay")),
     }
-    route_ornament_ids = tuple(ROUTE_HEADER_ORNAMENT_BINDINGS)
-    for index, element_id in enumerate(route_ornament_ids):
-        for other_id in route_ornament_ids[index + 1:]:
-            allowed_new_overlap_pairs.add(frozenset((element_id, other_id)))
     parent_by_node = {child: parent for parent in root.iter() for child in parent}
 
     def clipped_visible_rect(node: ET.Element, node_rect: Rect) -> Optional[Rect]:

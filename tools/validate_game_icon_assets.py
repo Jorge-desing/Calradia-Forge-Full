@@ -56,14 +56,16 @@ CANONICAL_DECORATION_SIZES = {
 }
 DECORATION_SIZES = {
     **CANONICAL_DECORATION_SIZES,
-    "forge_header_summary_v1": (128, 64),
-    "forge_header_modules_v1": (128, 64),
-    "forge_header_logs_v1": (128, 64),
-    "forge_header_inspector_v1": (128, 64),
-    "forge_header_tests_v1": (128, 64),
-    "forge_header_metrics_v1": (128, 64),
-    "forge_header_framework_v1": (128, 64),
-    "forge_header_extensions_v1": (128, 64),
+}
+RETIRED_ROUTE_ORNAMENTS = {
+    "forge_header_summary_v1",
+    "forge_header_modules_v1",
+    "forge_header_logs_v1",
+    "forge_header_inspector_v1",
+    "forge_header_tests_v1",
+    "forge_header_metrics_v1",
+    "forge_header_framework_v1",
+    "forge_header_extensions_v1",
 }
 CANONICAL_PREFAB_ICONS = {
     "calradiaforge_archery_target",
@@ -81,7 +83,7 @@ CANONICAL_PREFAB_ICONS = {
     "calradiaforge_plug",
 }
 ATLAS_SPRITES = CANONICAL_ATLAS_ICONS | set(DECORATION_SIZES)
-EXPECTED_ATLAS_SPRITE_COUNT = 32
+EXPECTED_ATLAS_SPRITE_COUNT = 24
 REQUIRED_SPRITES = ATLAS_SPRITES
 EXPECTED_SPRITE_COUNT = EXPECTED_ATLAS_SPRITE_COUNT
 EXPECTED_ATLAS_SIZE = (4096, 512)
@@ -136,10 +138,23 @@ def validate_source_inputs(module_path):
     validate_resource_workflow_readme(module_path)
     prefab = ElementTree.parse(module_path / "GUI" / "Prefabs" / "CalradiaForge.xml").getroot()
     sprite_names = {
-        element.attrib.get("Sprite")
+        element.attrib.get(attribute)
         for element in prefab.iter()
-        if element.attrib.get("Sprite")
+        for attribute in ("Sprite", "SpriteName")
+        if element.attrib.get(attribute)
     }
+    retired_prefab_refs = sorted(sprite_names.intersection(RETIRED_ROUTE_ORNAMENTS))
+    if retired_prefab_refs:
+        raise ValueError("The Gauntlet prefab references retired route ornament sprites: " + ", ".join(retired_prefab_refs))
+
+    sprite_parts_directory = module_path / "GUI" / "SpriteParts" / "ui_calradiaforge"
+    stale_route_parts = sorted(
+        name + ".png" for name in RETIRED_ROUTE_ORNAMENTS
+        if (sprite_parts_directory / (name + ".png")).is_file()
+    )
+    if stale_route_parts:
+        raise ValueError("Retired route ornament PNGs must be absent from live SpriteParts: " + ", ".join(stale_route_parts))
+
     if not CANONICAL_PREFAB_ICONS.issubset(sprite_names):
         raise ValueError("The Gauntlet prefab is missing one or more canonical Game-icons references.")
     buttons = {element.attrib.get("Id"): element for element in prefab.iter("ButtonWidget")}
@@ -269,6 +284,11 @@ def validate(require_tpac=False, module_path=MODULE, source_prebuild=False):
     category_parts = [part for part in all_parts if part.findtext("CategoryName") == "ui_calradiaforge"]
     parts = {part.findtext("Name") for part in category_parts}
     sprites = {sprite.findtext("Name") for sprite in sprite_data.findall("./Sprites/GenericSprite")}
+    retired_parts = sorted(parts.intersection(RETIRED_ROUTE_ORNAMENTS))
+    retired_sprites = sorted(sprites.intersection(RETIRED_ROUTE_ORNAMENTS))
+    if retired_parts or retired_sprites:
+        raise ValueError("Generated SpriteData still registers retired route ornament IDs: parts={} sprites={}".format(
+            retired_parts, retired_sprites))
     if len(category_parts) != EXPECTED_SPRITE_COUNT or parts != REQUIRED_SPRITES or \
             len(sprites) != EXPECTED_SPRITE_COUNT or sprites != REQUIRED_SPRITES:
         missing_parts = sorted(REQUIRED_SPRITES.difference(parts))
@@ -387,7 +407,7 @@ if __name__ == "__main__":
         print("Validated source prefab, Config.xml, Game-icons SVG/PNG assets, attribution and Desktop geometries.")
         print("Deferred generated SpriteData/atlas consistency checks until after SpriteSheetGenerator.")
         raise SystemExit(0)
-    print("Validated %d Game-icons and %d decorative sprites (%d total) in a %dx%d single-sheet atlas." % (len(CANONICAL_ATLAS_ICONS), len(DECORATION_SIZES), EXPECTED_SPRITE_COUNT, width, height))
+    print("Validated %d Game-icons and %d active decorative sprites (%d total) in a %dx%d single-sheet atlas." % (len(CANONICAL_ATLAS_ICONS), len(DECORATION_SIZES), EXPECTED_SPRITE_COUNT, width, height))
     print("Runtime TPAC marker: " + ("present (header-only; internal structure not parsed here)" if has_tpac else "pending Resource Browser import"))
     if has_tpac:
         print("Marker check only: preserve the imported Steam TPAC and verify the referenced sprites in the running game.")

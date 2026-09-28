@@ -593,4 +593,27 @@
   - [x] Empaquetar distribución con `tools/package.ps1` (3 archivos ZIP generados en `artifacts/`).
   - [x] Sincronizar y push a GitHub (`main`) bajo la Regla E.
 
+## Gran Ronda de Mejoras Gráficas, Visuales y Telemetría Vectorial WPF (Rev085)
+- [x] Fase 1: Generación y Procesamiento de Activos Tácticos HQ (`high-quality-image-generation`)
+  - [x] Generar sello de cera heráldico imperial con script determinista procedural (`high-quality-image-generation` sin llamar `generate_image`).
+  - [x] Procesar activo con `tools/process_high_quality_asset.py` (POT 512, canal alfa limpio, dilatación de 2px, sRGB).
+  - [x] Integrar textura en `src/CalradiaForge.Desktop/Resources/Textures/` y registrar en `tools/prepare_desktop_textures.py` en `PRESERVED_UNPACKAGED_VARIANTS`.
+- [x] Fase 2: Expansión de Controles de Telemetría Vectorial Directa (`ForgeChartControls.cs`)
+  - [x] Implementar `ForgeAreaChart` con degradado vertical translúcido, línea de cresta, cuadrícula militar de ejes y geometrías congeladas (.Freeze()).
+  - [x] Implementar `ForgeStepProgress` con nodos secuenciales, conectores vectoriales y badges de estado (`DONE`, `ACTIVE`, `PENDING`).
+- [x] Fase 3: Enriquecimiento de Modelos de Vista en `DesktopSimulationViewModels.cs`
+  - [x] Exponer propiedades de pipeline y trayectorias de área en `GenericOperationDashboardViewModel`, `GauntletStudioDashboardViewModel`, `CampaignStudioDashboardViewModel`, `DeliveryStudioDashboardViewModel` y `DiagnosticsStudioDashboardViewModel`.
+- [x] Fase 4: Personalización Diferenciada en XAML (`ToolPageTemplates.xaml` & `WorkbenchWorkspaceControl.xaml`)
+  - [x] Integrar `ForgeStepProgress` y `ForgeAreaChart` en las vistas genéricas (`GenericOperation`, `GauntletStudio`, `CampaignStudio`, `DeliveryStudio`, `DiagnosticsStudio`).
+  - [x] Integrar sello imperial en `ContextDossierPanel` como distintivo de seguridad certificada.
+  - [x] Preservar exactamente el límite de 9 plantillas `*DashboardTemplate` y las dimensiones mínimas 980x680 DIP.
+- [x] Fase 5: Pruebas y Verificación Integral de 6 Capas
+  - [x] Actualizar pruebas de renderizado en `DesktopSimulationServiceTests.cs`.
+  - [x] Validar compilación Release (0 errores), stateless (4/4), Core & ForgeWeave, Desktop MVVM (63), Render (WPF 292), Agentes (31) y Pipeline de Imágenes (5).
+  - [x] Ejecutar smoke test Windows UI Automation (23/23 registros observados).
+- [x] Fase 6: Registro de Aprendizaje, Empaquetado y Sincronización Git
+  - [x] Redactar Propuesta 39 en `learning_proposal.md` (`/learn`).
+  - [x] Empaquetar distribución con `tools/package.ps1` (3 archivos ZIP generados en `artifacts/`).
+  - [ ] Sincronizar y push a GitHub (`main`) bajo la Regla E.
+
 

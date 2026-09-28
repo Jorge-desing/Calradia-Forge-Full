@@ -1527,6 +1527,7 @@
   <DataTemplate x:Key="GauntletStudioViewTemplate"><Grid>
         <Grid.RowDefinitions>
          <RowDefinition Height="Auto"/>
+         <RowDefinition Height="Auto"/>
          <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <!-- Header -->
@@ -1553,8 +1554,28 @@
           </Border>
          </Grid>
         </Border>
+        <!-- Gauntlet Render & Layout Pipeline (Rev085) -->
+        <Border Grid.Row="1" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="4" Margin="0,0,0,6" Padding="6,4">
+         <DockPanel LastChildFill="True">
+          <Border DockPanel.Dock="Left" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,8,0" Padding="6,2" VerticalAlignment="Center">
+           <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="PIPELINE"/>
+          </Border>
+          <presentation:ForgeStepProgress
+              Steps="{Binding GauntletStudio.GauntletRenderPipelineSteps}"
+              ActiveBrush="{DynamicResource BrassBrush}"
+              CompletedBrush="{DynamicResource VerdigrisBrush}"
+              PendingBrush="{DynamicResource CoalBrush}"
+              FailedBrush="{DynamicResource EmberBrush}"
+              ConnectorBrush="{DynamicResource BorderBrush}"
+              TextBrush="{DynamicResource PaperBrush}"
+              SubtitleBrush="{DynamicResource MutedTextBrush}"
+              NodeRadius="9"
+              Height="36"
+              VerticalAlignment="Center"/>
+         </DockPanel>
+        </Border>
         <!-- Body: Widgets Hierarchy Grid, Radar Chart, and Draw-Call & Coverage Gauges -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
          <Grid.ColumnDefinitions>
           <ColumnDefinition Width="1.4*"/>
           <ColumnDefinition Width="*"/>
@@ -1763,16 +1784,20 @@
            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="STABILITY TELEMETRY"/>
            </Border>
-           <TextBlock FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="16-DAY PROSPERITY TRAJECTORY"/>
-           <presentation:ForgeSparkline
-               DataPoints="{Binding CampaignStudio.ProsperityTrajectory}"
+           <TextBlock FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="PROVINCE EQUILIBRIUM TRAJECTORY (%)"/>
+           <presentation:ForgeAreaChart
+               DataPoints="{Binding CampaignStudio.ProvinceEquilibriumTrajectory}"
                Stroke="{DynamicResource VerdigrisBrush}"
                Fill="{DynamicResource VerdigrisBrush}"
                ShowGridLines="True"
                GridBrush="{DynamicResource BorderBrush}"
-               ValueUnit="pts"
-               FormatString="0"
-               Height="36" Margin="0,3"/>
+               AxisLabelBrush="{DynamicResource MutedTextBrush}"
+               ShowMinMaxLabels="True"
+               ShowBaseline="True"
+               ShowDataPoints="True"
+               ValueUnit="%"
+               FormatString="0.0"
+               Height="48" Margin="0,2"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="{Binding CampaignStudio.EquilibriumAssessment, Mode=OneWay}"/>
            <Grid Margin="0,4,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -1961,6 +1986,7 @@
   <DataTemplate x:Key="DeliveryStudioViewTemplate"><Grid>
         <Grid.RowDefinitions>
          <RowDefinition Height="Auto"/>
+         <RowDefinition Height="Auto"/>
          <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <!-- Header -->
@@ -1987,8 +2013,28 @@
           </Border>
          </Grid>
         </Border>
+        <!-- Distribution & Packaging Safety Pipeline (Rev085) -->
+        <Border Grid.Row="1" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="4" Margin="0,0,0,6" Padding="6,4">
+         <DockPanel LastChildFill="True">
+          <Border DockPanel.Dock="Left" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,8,0" Padding="6,2" VerticalAlignment="Center">
+           <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="PIPELINE"/>
+          </Border>
+          <presentation:ForgeStepProgress
+              Steps="{Binding DeliveryStudioDashboard.DeliveryPipelineSteps}"
+              ActiveBrush="{DynamicResource BrassBrush}"
+              CompletedBrush="{DynamicResource VerdigrisBrush}"
+              PendingBrush="{DynamicResource CoalBrush}"
+              FailedBrush="{DynamicResource EmberBrush}"
+              ConnectorBrush="{DynamicResource BorderBrush}"
+              TextBrush="{DynamicResource PaperBrush}"
+              SubtitleBrush="{DynamicResource MutedTextBrush}"
+              NodeRadius="9"
+              Height="36"
+              VerticalAlignment="Center"/>
+         </DockPanel>
+        </Border>
         <!-- Body: Packages List, Radar Chart, and Compression Throughput & Hygiene Gauges -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
          <Grid.ColumnDefinitions>
           <ColumnDefinition Width="1.4*"/>
           <ColumnDefinition Width="*"/>
@@ -2220,16 +2266,20 @@
            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="AUDIT TELEMETRY"/>
            </Border>
-           <TextBlock FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="SCAN LATENCY TRAJECTORY (MS)"/>
-           <presentation:ForgeSparkline
-               DataPoints="{Binding DiagnosticsStudioDashboard.ScanLatencyTrajectory}"
+           <TextBlock FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="DIAGNOSTIC MEMORY ALLOCATION (MB)"/>
+           <presentation:ForgeAreaChart
+               DataPoints="{Binding DiagnosticsStudioDashboard.DiagnosticsMemoryTrajectory}"
                Stroke="{DynamicResource VerdigrisBrush}"
                Fill="{DynamicResource VerdigrisBrush}"
                ShowGridLines="True"
                GridBrush="{DynamicResource BorderBrush}"
-               ValueUnit="ms"
+               AxisLabelBrush="{DynamicResource MutedTextBrush}"
+               ShowMinMaxLabels="True"
+               ShowBaseline="True"
+               ShowDataPoints="True"
+               ValueUnit="MB"
                FormatString="0.0"
-               Height="36" Margin="0,3"/>
+               Height="48" Margin="0,2"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="Real-time static rule scan latency across all AST visitors and schema analyzers."/>
            <Grid Margin="0,4,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -2315,15 +2365,36 @@
           </StackPanel>
          </Grid>
         </Border>
-        <!-- Body: Adaptive Domain Category Bar, 4 Guarded Telemetry Sensors & Live Findings -->
+        <!-- Body: Tactical Execution Pipeline, Adaptive Domain Category Bar, 4 Guarded Telemetry Sensors & Live Findings -->
         <Grid Grid.Row="1">
          <Grid.RowDefinitions>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
           <RowDefinition Height="*"/>
          </Grid.RowDefinitions>
+         <!-- Tactical Execution Pipeline Tracker (Rev085) -->
+         <Border Grid.Row="0" Margin="0,0,0,6" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="4" Padding="6,4">
+          <DockPanel LastChildFill="True">
+           <Border DockPanel.Dock="Left" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,8,0" Padding="6,2" VerticalAlignment="Center">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="PIPELINE"/>
+           </Border>
+           <presentation:ForgeStepProgress
+               Steps="{Binding GenericOperationDashboard.OperationPipelineSteps}"
+               ActiveBrush="{DynamicResource BrassBrush}"
+               CompletedBrush="{DynamicResource VerdigrisBrush}"
+               PendingBrush="{DynamicResource CoalBrush}"
+               FailedBrush="{DynamicResource EmberBrush}"
+               ConnectorBrush="{DynamicResource BorderBrush}"
+               TextBrush="{DynamicResource PaperBrush}"
+               SubtitleBrush="{DynamicResource MutedTextBrush}"
+               NodeRadius="9"
+               Height="36"
+               VerticalAlignment="Center"/>
+          </DockPanel>
+         </Border>
          <!-- Adaptive Domain Category Telemetry Bar (Rev074) -->
-         <Border Grid.Row="0" Margin="0,0,0,6" Background="{DynamicResource DeepPineBrush}" BorderBrush="{Binding Tool.CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="4" Padding="6,4">
+         <Border Grid.Row="1" Margin="0,0,0,6" Background="{DynamicResource DeepPineBrush}" BorderBrush="{Binding Tool.CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="4" Padding="6,4">
           <Grid>
            <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -2375,7 +2446,7 @@
           </Grid>
          </Border>
          <!-- 4 Guarded Telemetry Sensors -->
-         <Grid Grid.Row="1" Margin="0,0,0,6">
+         <Grid Grid.Row="2" Margin="0,0,0,6">
           <Grid.ColumnDefinitions>
            <ColumnDefinition Width="*"/>
            <ColumnDefinition Width="*"/>
@@ -2427,7 +2498,7 @@
           </Border>
          </Grid>
          <!-- Live Findings Flight Deck & Sub-Engine Throughput -->
-         <Grid Grid.Row="2">
+         <Grid Grid.Row="3">
           <Grid.ColumnDefinitions>
            <ColumnDefinition Width="*"/>
            <ColumnDefinition Width="230"/>
@@ -2484,17 +2555,32 @@
            <Border DockPanel.Dock="Top" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,4" Padding="4,1">
             <TextBlock FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="SUB-ENGINE THROUGHPUT"/>
            </Border>
-           <TextBlock DockPanel.Dock="Bottom" FontSize="7" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Ops/Sec · Thread-Isolated Dispatch"/>
-           <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="4">
-            <presentation:ForgeBarChart
-                Bars="{Binding GenericOperationDashboard.OperationThroughputBars}"
-                BarBrush="{DynamicResource VerdigrisBrush}"
-                BackgroundBarBrush="{DynamicResource FrameSurfaceSolidBrush}"
-                LabelBrush="{DynamicResource PaperBrush}"
-                ValueBrush="{DynamicResource BrassBrush}"
-                BarThickness="8"
-                Height="105" Width="205"/>
-           </Border>
+           <TextBlock DockPanel.Dock="Bottom" FontSize="7" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Ops/Sec &amp; Trajectory · Thread-Isolated Dispatch"/>
+           <StackPanel>
+            <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="4" Margin="0,0,0,3">
+             <presentation:ForgeBarChart
+                 Bars="{Binding GenericOperationDashboard.OperationThroughputBars}"
+                 BarBrush="{DynamicResource VerdigrisBrush}"
+                 BackgroundBarBrush="{DynamicResource FrameSurfaceSolidBrush}"
+                 LabelBrush="{DynamicResource PaperBrush}"
+                 ValueBrush="{DynamicResource BrassBrush}"
+                 BarThickness="8"
+                 Height="74" Width="205"/>
+            </Border>
+            <presentation:ForgeAreaChart
+                DataPoints="{Binding GenericOperationDashboard.OperationThroughputTrajectory}"
+                Stroke="{DynamicResource BrassBrush}"
+                Fill="{DynamicResource BrassBrush}"
+                ShowGridLines="True"
+                GridBrush="{DynamicResource BorderBrush}"
+                AxisLabelBrush="{DynamicResource MutedTextBrush}"
+                ShowMinMaxLabels="True"
+                ShowBaseline="True"
+                ShowDataPoints="True"
+                ValueUnit="ops"
+                FormatString="0"
+                Height="46" Width="205"/>
+           </StackPanel>
           </DockPanel>
          </Border>
         </Grid>

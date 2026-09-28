@@ -7,14 +7,6 @@ param(
     [string]$HeraldicFieldJournalOverlayMaster,
     [string]$AgedBrassPatinaMaster,
     [string]$PineFeltMaster,
-    [string]$HeaderSummaryV1Master,
-    [string]$HeaderModulesV1Master,
-    [string]$HeaderLogsV1Master,
-    [string]$HeaderInspectorV1Master,
-    [string]$HeaderTestsV1Master,
-    [string]$HeaderMetricsV1Master,
-    [string]$HeaderFrameworkV1Master,
-    [string]$HeaderExtensionsV1Master,
     [string]$HeraldicHeaderV2Master,
     [string]$HeraldicRailV2Master
 )
@@ -69,38 +61,6 @@ $textures = @(
     [pscustomobject]@{
         Name = 'forge_pine_felt.png'; Master = Resolve-InputPath $PineFeltMaster 'pine_felt.png'
         Width = 128; Height = 32; MaxAlpha = 40; PreserveArtworkBounds = $false; RequireTransparency = $false
-    },
-    [pscustomobject]@{
-        Name = 'forge_header_summary_v1.png'; Master = Resolve-InputPath $HeaderSummaryV1Master 'forge_header_summary_v1.png'
-        Width = 128; Height = 64; MaxAlpha = 112; PreserveArtworkBounds = $true; RequireTransparency = $true
-    },
-    [pscustomobject]@{
-        Name = 'forge_header_modules_v1.png'; Master = Resolve-InputPath $HeaderModulesV1Master 'forge_header_modules_v1.png'
-        Width = 128; Height = 64; MaxAlpha = 112; PreserveArtworkBounds = $true; RequireTransparency = $true
-    },
-    [pscustomobject]@{
-        Name = 'forge_header_logs_v1.png'; Master = Resolve-InputPath $HeaderLogsV1Master 'forge_header_logs_v1.png'
-        Width = 128; Height = 64; MaxAlpha = 112; PreserveArtworkBounds = $true; RequireTransparency = $true
-    },
-    [pscustomobject]@{
-        Name = 'forge_header_inspector_v1.png'; Master = Resolve-InputPath $HeaderInspectorV1Master 'forge_header_inspector_v1.png'
-        Width = 128; Height = 64; MaxAlpha = 112; PreserveArtworkBounds = $true; RequireTransparency = $true
-    },
-    [pscustomobject]@{
-        Name = 'forge_header_tests_v1.png'; Master = Resolve-InputPath $HeaderTestsV1Master 'forge_header_tests_v1.png'
-        Width = 128; Height = 64; MaxAlpha = 112; PreserveArtworkBounds = $true; RequireTransparency = $true
-    },
-    [pscustomobject]@{
-        Name = 'forge_header_metrics_v1.png'; Master = Resolve-InputPath $HeaderMetricsV1Master 'forge_header_metrics_v1.png'
-        Width = 128; Height = 64; MaxAlpha = 112; PreserveArtworkBounds = $true; RequireTransparency = $true
-    },
-    [pscustomobject]@{
-        Name = 'forge_header_framework_v1.png'; Master = Resolve-InputPath $HeaderFrameworkV1Master 'forge_header_framework_v1.png'
-        Width = 128; Height = 64; MaxAlpha = 112; PreserveArtworkBounds = $true; RequireTransparency = $true
-    },
-    [pscustomobject]@{
-        Name = 'forge_header_extensions_v1.png'; Master = Resolve-InputPath $HeaderExtensionsV1Master 'forge_header_extensions_v1.png'
-        Width = 128; Height = 64; MaxAlpha = 112; PreserveArtworkBounds = $true; RequireTransparency = $true
     },
     [pscustomobject]@{
         Name = 'forge_heraldic_header_v2.png'; Master = Resolve-InputPath $HeraldicHeaderV2Master 'forge_heraldic_header_v3_master.png'
@@ -493,7 +453,15 @@ try {
         }
         $published += $record
         if ($wasPresent) {
-            [IO.File]::Replace($temporary, $destination, $null)
+            $replacementBackup = $destination + '.replace.' + [guid]::NewGuid().ToString('N') + '.bak'
+            if (Test-Path -LiteralPath $replacementBackup) {
+                throw "Refusing an existing replacement backup path: '$replacementBackup'"
+            }
+            $temporaryFiles += $replacementBackup
+            [IO.File]::Replace($temporary, $destination, $replacementBackup)
+            if ((Get-Sha256Hex $replacementBackup) -ne $oldHash) {
+                throw "Atomic replacement backup SHA-256 verification failed for '$destination'."
+            }
         }
         else {
             [IO.File]::Move($temporary, $destination)
@@ -501,6 +469,10 @@ try {
         $temporaryFiles = @($temporaryFiles | Where-Object { $_ -ne $temporary })
         if ((Get-Sha256Hex $destination) -ne $report.Sha256) {
             throw "Published output SHA-256 verification failed for '$destination'."
+        }
+        if ($wasPresent) {
+            Remove-Item -LiteralPath $replacementBackup -Force
+            $temporaryFiles = @($temporaryFiles | Where-Object { $_ -ne $replacementBackup })
         }
         Write-Host "Prepared: $($report.Name) ($($report.Sha256))"
     }

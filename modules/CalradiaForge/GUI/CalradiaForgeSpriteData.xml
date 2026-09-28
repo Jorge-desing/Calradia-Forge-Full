@@ -14,7 +14,7 @@
       <Name>calradiaforge_anvil</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>3108</SheetX>
+      <SheetX>3628</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -23,7 +23,7 @@
       <Name>calradiaforge_archery_target</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>2692</SheetX>
+      <SheetX>3420</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -32,7 +32,7 @@
       <Name>calradiaforge_compass</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>2796</SheetX>
+      <SheetX>3316</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -41,7 +41,7 @@
       <Name>calradiaforge_crossed_swords</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>2900</SheetX>
+      <SheetX>3212</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -50,7 +50,7 @@
       <Name>calradiaforge_eye_target</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>3628</SheetX>
+      <SheetX>3108</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -59,7 +59,7 @@
       <Name>calradiaforge_files</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>3212</SheetX>
+      <SheetX>3004</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -68,7 +68,7 @@
       <Name>calradiaforge_gears</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>3316</SheetX>
+      <SheetX>2900</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -77,7 +77,7 @@
       <Name>calradiaforge_gear_hammer</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>3420</SheetX>
+      <SheetX>2796</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -86,7 +86,7 @@
       <Name>calradiaforge_histogram</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>3524</SheetX>
+      <SheetX>2692</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -104,7 +104,7 @@
       <Name>calradiaforge_magnifying_glass</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>3004</SheetX>
+      <SheetX>3524</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -113,7 +113,7 @@
       <Name>calradiaforge_open_book</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>2380</SheetX>
+      <SheetX>2484</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -122,7 +122,7 @@
       <Name>calradiaforge_plug</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>2276</SheetX>
+      <SheetX>2380</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -131,7 +131,7 @@
       <Name>calradiaforge_puzzle</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>2172</SheetX>
+      <SheetX>2276</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -140,7 +140,7 @@
       <Name>calradiaforge_scroll_unfurled</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>2068</SheetX>
+      <SheetX>2172</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -149,7 +149,7 @@
       <Name>calradiaforge_stopwatch</Name>
       <Width>96</Width>
       <Height>96</Height>
-      <SheetX>2484</SheetX>
+      <SheetX>2068</SheetX>
       <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
@@ -160,78 +160,6 @@
       <Height>96</Height>
       <SheetX>1964</SheetX>
       <SheetY>4</SheetY>
-      <CategoryName>ui_calradiaforge</CategoryName>
-    </SpritePart>
-    <SpritePart>
-      <SheetID>1</SheetID>
-      <Name>forge_header_extensions_v1</Name>
-      <Width>128</Width>
-      <Height>64</Height>
-      <SheetX>3732</SheetX>
-      <SheetY>4</SheetY>
-      <CategoryName>ui_calradiaforge</CategoryName>
-    </SpritePart>
-    <SpritePart>
-      <SheetID>1</SheetID>
-      <Name>forge_header_framework_v1</Name>
-      <Width>128</Width>
-      <Height>64</Height>
-      <SheetX>3868</SheetX>
-      <SheetY>4</SheetY>
-      <CategoryName>ui_calradiaforge</CategoryName>
-    </SpritePart>
-    <SpritePart>
-      <SheetID>1</SheetID>
-      <Name>forge_header_inspector_v1</Name>
-      <Width>128</Width>
-      <Height>64</Height>
-      <SheetX>3732</SheetX>
-      <SheetY>76</SheetY>
-      <CategoryName>ui_calradiaforge</CategoryName>
-    </SpritePart>
-    <SpritePart>
-      <SheetID>1</SheetID>
-      <Name>forge_header_logs_v1</Name>
-      <Width>128</Width>
-      <Height>64</Height>
-      <SheetX>3868</SheetX>
-      <SheetY>76</SheetY>
-      <CategoryName>ui_calradiaforge</CategoryName>
-    </SpritePart>
-    <SpritePart>
-      <SheetID>1</SheetID>
-      <Name>forge_header_metrics_v1</Name>
-      <Width>128</Width>
-      <Height>64</Height>
-      <SheetX>1844</SheetX>
-      <SheetY>108</SheetY>
-      <CategoryName>ui_calradiaforge</CategoryName>
-    </SpritePart>
-    <SpritePart>
-      <SheetID>1</SheetID>
-      <Name>forge_header_modules_v1</Name>
-      <Width>128</Width>
-      <Height>64</Height>
-      <SheetX>1436</SheetX>
-      <SheetY>108</SheetY>
-      <CategoryName>ui_calradiaforge</CategoryName>
-    </SpritePart>
-    <SpritePart>
-      <SheetID>1</SheetID>
-      <Name>forge_header_summary_v1</Name>
-      <Width>128</Width>
-      <Height>64</Height>
-      <SheetX>1572</SheetX>
-      <SheetY>148</SheetY>
-      <CategoryName>ui_calradiaforge</CategoryName>
-    </SpritePart>
-    <SpritePart>
-      <SheetID>1</SheetID>
-      <Name>forge_header_tests_v1</Name>
-      <Width>128</Width>
-      <Height>64</Height>
-      <SheetX>1708</SheetX>
-      <SheetY>60</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
     <SpritePart>
@@ -266,8 +194,8 @@
       <Name>forge_patina_brass</Name>
       <Width>128</Width>
       <Height>16</Height>
-      <SheetX>2116</SheetX>
-      <SheetY>108</SheetY>
+      <SheetX>3868</SheetX>
+      <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
     <SpritePart>
@@ -275,8 +203,8 @@
       <Name>forge_pine_felt</Name>
       <Width>128</Width>
       <Height>32</Height>
-      <SheetX>1980</SheetX>
-      <SheetY>148</SheetY>
+      <SheetX>3732</SheetX>
+      <SheetY>4</SheetY>
       <CategoryName>ui_calradiaforge</CategoryName>
     </SpritePart>
     <SpritePart>
@@ -366,38 +294,6 @@
     <GenericSprite>
       <Name>calradiaforge_test_tubes</Name>
       <SpritePartName>calradiaforge_test_tubes</SpritePartName>
-    </GenericSprite>
-    <GenericSprite>
-      <Name>forge_header_extensions_v1</Name>
-      <SpritePartName>forge_header_extensions_v1</SpritePartName>
-    </GenericSprite>
-    <GenericSprite>
-      <Name>forge_header_framework_v1</Name>
-      <SpritePartName>forge_header_framework_v1</SpritePartName>
-    </GenericSprite>
-    <GenericSprite>
-      <Name>forge_header_inspector_v1</Name>
-      <SpritePartName>forge_header_inspector_v1</SpritePartName>
-    </GenericSprite>
-    <GenericSprite>
-      <Name>forge_header_logs_v1</Name>
-      <SpritePartName>forge_header_logs_v1</SpritePartName>
-    </GenericSprite>
-    <GenericSprite>
-      <Name>forge_header_metrics_v1</Name>
-      <SpritePartName>forge_header_metrics_v1</SpritePartName>
-    </GenericSprite>
-    <GenericSprite>
-      <Name>forge_header_modules_v1</Name>
-      <SpritePartName>forge_header_modules_v1</SpritePartName>
-    </GenericSprite>
-    <GenericSprite>
-      <Name>forge_header_summary_v1</Name>
-      <SpritePartName>forge_header_summary_v1</SpritePartName>
-    </GenericSprite>
-    <GenericSprite>
-      <Name>forge_header_tests_v1</Name>
-      <SpritePartName>forge_header_tests_v1</SpritePartName>
     </GenericSprite>
     <GenericSprite>
       <Name>forge_heraldic_header_v2</Name>

@@ -2302,6 +2302,21 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<double> ExecutionLatencyTrajectory { get => executionLatencyTrajectory; private set => Set(ref executionLatencyTrajectory, value); }
         public double BufferUtilizationGaugeValue { get => bufferUtilizationGaugeValue; private set => Set(ref bufferUtilizationGaugeValue, value); }
 
+        public IReadOnlyList<ForgeStepItem> OperationPipelineSteps { get; } =
+        [
+            new("Preflight Sandbox", ForgeStepStatus.Completed, "TopDirectoryOnly · MaxDepth 64", "PASS"),
+            new("Rule Auditor", ForgeStepStatus.Completed, "Anti-shadowing · Stateless contracts", "PASS"),
+            new("IPC Pipe Bridge", ForgeStepStatus.Active, "Zero-lock named pipe · 1.2ms latency", "ACTIVE"),
+            new("Ledger Telemetry", ForgeStepStatus.Pending, "SHA-256 integrity provenance chain", "QUEUED")
+        ];
+
+        static readonly double[] DefaultOperationThroughputTrajectory = [
+            45.0, 52.0, 68.0, 74.0, 70.0, 88.0, 95.0, 102.0,
+            110.0, 108.0, 115.0, 124.0, 128.5, 122.0, 130.0, 134.2
+        ];
+        IReadOnlyList<double> operationThroughputTrajectory = DefaultOperationThroughputTrajectory;
+        public IReadOnlyList<double> OperationThroughputTrajectory { get => operationThroughputTrajectory; private set => Set(ref operationThroughputTrajectory, value); }
+
         public IReadOnlyList<ForgeBarDataPoint> OperationThroughputBars { get; } =
         [
             new("Memory Audit", 128.0, null, "CoALA cognitive slots scanned"),
@@ -2772,6 +2787,13 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<double> AlternativeHudRadarValues { get; }
         public IReadOnlyList<double> DrawCallLatencyTrajectory { get; }
         public IReadOnlyList<GauntletWidgetNodeViewModel> Widgets { get; }
+        public IReadOnlyList<ForgeStepItem> GauntletRenderPipelineSteps { get; } =
+        [
+            new("XML Prefab Parse", ForgeStepStatus.Completed, "SubModule.xml & GUI/Prefabs", "PARSED"),
+            new("Binding Evaluation", ForgeStepStatus.Completed, "[DataSourceProperty] verified", "BOUND"),
+            new("Layout Measure", ForgeStepStatus.Completed, "Subpixel snapped · 6 layers", "OPTIMAL"),
+            new("Draw Calls Dispatch", ForgeStepStatus.Active, "1.6ms render budget · 60 FPS", "ACTIVE")
+        ];
 
         public double VisualTreeDepthGaugeValue { get => visualTreeDepthGaugeValue; private set => Set(ref visualTreeDepthGaugeValue, value); }
         public double ScreenCoverageGaugeValue { get => screenCoverageGaugeValue; private set => Set(ref screenCoverageGaugeValue, value); }
@@ -2879,6 +2901,11 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<double> SettlementRadarValues { get; }
         public IReadOnlyList<double> FrontierRadarValues { get; }
         public IReadOnlyList<double> ProsperityTrajectory { get; }
+        public IReadOnlyList<double> ProvinceEquilibriumTrajectory { get; } =
+        [
+            72.0, 74.5, 71.0, 76.2, 78.0, 77.5, 80.1, 82.4,
+            79.8, 83.2, 85.0, 84.6, 86.2, 88.0, 87.4, 89.5
+        ];
         public IReadOnlyList<SettlementExpeditionViewModel> Settlements { get; }
 
         public double EquilibriumGaugeValue { get => equilibriumGaugeValue; private set => Set(ref equilibriumGaugeValue, value); }
@@ -3085,6 +3112,13 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<double> QuickProfileRadarValues { get; }
         public IReadOnlyList<double> ThroughputTrajectory { get; }
         public IReadOnlyList<PackageArtifactItemViewModel> Packages { get; }
+        public IReadOnlyList<ForgeStepItem> DeliveryPipelineSteps { get; } =
+        [
+            new("Pre-Archive Audit", ForgeStepStatus.Completed, "0 TaleWorlds DLLs · 0 scripts", "CLEAN"),
+            new("Allowlist Filtering", ForgeStepStatus.Completed, "In-memory staging · No disk churn", "STAGED"),
+            new("Multithreaded Zip", ForgeStepStatus.Completed, "Parallel optimal compression", "128 MB/s"),
+            new("SHA-256 Digest", ForgeStepStatus.Active, "Cryptographic hash chain locked", "VERIFIED")
+        ];
 
         public double ArchiveHygieneGaugeValue { get => archiveHygieneGaugeValue; private set => Set(ref archiveHygieneGaugeValue, value); }
         public double CompressionRatioGaugeValue { get => compressionRatioGaugeValue; private set => Set(ref compressionRatioGaugeValue, value); }
@@ -3233,6 +3267,11 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<double> StrictRadarValues { get; }
         public IReadOnlyList<double> SandboxRadarValues { get; }
         public IReadOnlyList<double> ScanLatencyTrajectory { get; }
+        public IReadOnlyList<double> DiagnosticsMemoryTrajectory { get; } =
+        [
+            24.5, 26.2, 28.0, 27.5, 31.2, 34.0, 32.8, 38.5,
+            42.0, 40.5, 45.2, 48.0, 47.1, 51.5, 54.0, 56.2
+        ];
 
         public ObservableCollection<DiagnosticFindingItemViewModel> Findings => findings;
         public ObservableCollection<HexDiffSnippetViewModel> HexDumpSnippets => hexDumpSnippets;

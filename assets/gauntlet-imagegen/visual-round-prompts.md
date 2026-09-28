@@ -56,3 +56,39 @@ Generated with the built-in ImageGen tool for the Calradia Forge 22.0.0 visual r
 **WPF evidence-ledger empty-state illustration**
 
 > Use case: original transparent empty-state illustration for the Evidence Ledger panel of a tactical Windows desktop workbench. Create a compact, warmly illustrated open field journal with one small loose evidence scroll, a fine quill laid diagonally beside it, and a tiny compass medallion tucked near the lower corner. The composition should be calm, inviting, and readable at about 56 pixels square; simple strong silhouette with a few delicate engraved details, no tiny illegible writing. Historical field-note craft in Calradia-inspired palette: aged parchment, muted antique brass, deep pine-green leather, dark ink, restrained verdigris. Front-facing isolated vignette with generous transparent margin, no ground shadow or background. Designed to sit beside localized empty-ledger text at low opacity; no border or frame. True transparent PNG appearance. No text, letters, logos, watermark, banner, extra symbols, complex scene, hard rectangular shapes, or colored backdrop.
+
+## Gauntlet illustrated refresh — 2026-09-28
+
+The original generation prompts for these seven masters were not preserved verbatim in the project text. The following are faithful visual specifications reconstructed from the checked-in PNGs; they document the intended subjects and composition without claiming to be exact prompt transcripts. The three selected source masters are intended for Gauntlet preparation; the four alternatives are provenance-only candidates and are not runtime resources.
+
+### Selected source masters
+
+**`forge_war_table_cloth_v3_master.png` — panoramic header cloth; 2172×724, RGB, opaque**
+
+> Use case: illustrated material master for the Gauntlet header. Create a wide, shallow dark pine-green and charcoal field-cloth surface with fine woven fibers and subdued aged texture. Keep the broad central field calm and open for interface text. Place faint hand-drawn coastlines and map contours toward the outer areas, with partial antique-brass compass/astrolabe details cropped near the upper-right and lower-left corners. Use soft, low-contrast light, muted olive-gold and verdigris accents, and an organic historical map-table character. No text, lettering, invented logo, watermark, hard geometric pattern, or high-contrast mark through the center.
+
+**`forge_heraldic_header_v3_master.png` — header overlay; 2048×768, RGBA, alpha 0–254**
+
+> Use case: wide transparent passive ornament over the Gauntlet header. Place matching engraved compass medallions and restrained oak-leaf flourishes at the far left and right, joined by a fine antique-brass lower rule. Leave the central title area mostly open and transparent. Render crisp but subdued metal engraving in muted brass, pine enamel, and small verdigris accents, with a faint atmospheric edge glow. No words, labels, invented identity, watermark, opaque panel, or control-like shapes.
+
+**`forge_heraldic_rail_v4_master.png` — navigation rail field; 887×1774, RGB, opaque**
+
+> Use case: tall, narrow illustrated material for a Gauntlet navigation rail. Use a dark charcoal/pine woven cloth field with a quiet center, subtle low-contrast cartographic contours, and slim antique-brass rails along both vertical edges. Repeat restrained oak-leaf and acorn engravings symmetrically along those edges while keeping the text-bearing center dark and uncluttered. Flat frontal composition with even subdued illumination. No transparency, large central crest, text, invented logo, watermark, or high-contrast detail behind labels.
+
+### Alternate masters retained for provenance; not runtime
+
+**`forge_heraldic_header_v2_master.png` — centered-shield header alternative; 1855×848, RGBA, alpha 0–255**
+
+> Wide transparent header ornament formed by a thin horizontal brass line, curled oak-leaf terminals, small metal studs, and a centered blank pine-green shield cartouche. Keep the rest transparent; use engraved antique brass and deep-pine enamel. No text, lettering, logo, or watermark.
+
+**`forge_heraldic_rail_v2_master.png` — transparent paired-rail alternative; 887×1774, RGBA, alpha 0–255**
+
+> Tall transparent frame made from two ornate vertical oak-and-acorn side rails. Add slim brass uprights, restrained leaf scrollwork, and small shield cartouches toward the lower portion; leave the center transparent for navigation content. No text, lettering, logo, backdrop, or watermark.
+
+**`forge_heraldic_rail_v3_master.png` — opaque map-cloth rail alternative; 1024×1536, RGB, opaque**
+
+> Tall woven pine-green and charcoal material with subtle gold cartographic coastlines around a calm center, slim vertical border lines, and larger heraldic bird/leaf flourishes cropped toward the outer upper edges. Keep texture low contrast and the text area legible. No labels, text, invented logo, watermark, or repeating geometric pattern.
+
+**`forge_heraldic_frame_v2_master.png` — transparent corner-frame alternative; 2172×724, RGBA, alpha 0–255**
+
+> Wide transparent frame alternative with oversized engraved compass rosettes and oak-leaf scrollwork confined to the far left and right corners. Join the corners with a fine lower brass rule and leave the middle open for content. Use aged brass, dark pine enamel, and restrained verdigris. No text, invented logo, watermark, opaque background, or details crossing the central text area.

@@ -50,15 +50,25 @@ ROUTE_ACTIVE_BINDINGS = {
     "IsExtensionsActive": "extensions",
 }
 ROUTE_CANONICAL_ROUTE_BY_BINDING = {binding: route for binding, route in ROUTE_ACTIVE_BINDINGS.items()}
-ROUTE_ORNAMENTS = {
-    "ForgeHeaderOrnamentSummary": ("forge_header_summary_v1", "IsSummaryActive", "summary"),
-    "ForgeHeaderOrnamentModules": ("forge_header_modules_v1", "IsModulesActive", "modules"),
-    "ForgeHeaderOrnamentLogs": ("forge_header_logs_v1", "IsLogsActive", "logs"),
-    "ForgeHeaderOrnamentInspector": ("forge_header_inspector_v1", "IsInspectorActive", "inspect"),
-    "ForgeHeaderOrnamentTests": ("forge_header_tests_v1", "IsTestsActive", "tests"),
-    "ForgeHeaderOrnamentMetrics": ("forge_header_metrics_v1", "IsMetricsActive", "metrics"),
-    "ForgeHeaderOrnamentFramework": ("forge_header_framework_v1", "IsFrameworkActive", "framework"),
-    "ForgeHeaderOrnamentExtensions": ("forge_header_extensions_v1", "IsExtensionsActive", "extensions"),
+RETIRED_ROUTE_ORNAMENT_IDS = {
+    "ForgeHeaderOrnamentSummary",
+    "ForgeHeaderOrnamentModules",
+    "ForgeHeaderOrnamentLogs",
+    "ForgeHeaderOrnamentInspector",
+    "ForgeHeaderOrnamentTests",
+    "ForgeHeaderOrnamentMetrics",
+    "ForgeHeaderOrnamentFramework",
+    "ForgeHeaderOrnamentExtensions",
+}
+RETIRED_ROUTE_ORNAMENT_SPRITES = {
+    "forge_header_summary_v1",
+    "forge_header_modules_v1",
+    "forge_header_logs_v1",
+    "forge_header_inspector_v1",
+    "forge_header_tests_v1",
+    "forge_header_metrics_v1",
+    "forge_header_framework_v1",
+    "forge_header_extensions_v1",
 }
 
 DECORATIVE_IMAGES = {
@@ -78,11 +88,6 @@ DECORATIVE_IMAGES = {
     "ForgeEvidenceActionBrassRule": ("forge_patina_brass", "<shell>"),
     "ForgeBottomBrassFrameRule": ("forge_patina_brass", "<shell>"),
 }
-DECORATIVE_IMAGES.update(
-    {element_id: (sprite, "<shell>") for element_id, (sprite, _, _) in ROUTE_ORNAMENTS.items()}
-)
-
-
 @dataclass(frozen=True)
 class Rect:
     left: float
@@ -111,15 +116,14 @@ EXPECTED_LOCAL_RECTS = {
     "ForgeBriefingEvidencePatinaRule": Rect(0, 54, 208, 3),
     "ForgeBriefingTestsPatinaRule": Rect(0, 54, 208, 3),
 }
-EXPECTED_LOCAL_RECTS.update(
-    {element_id: Rect(256, 114, 24, 12) for element_id in ROUTE_ORNAMENTS}
-)
-
 VIEWPORT_PROFILES = ((1220, 880), (1280, 720), (1600, 900), (1920, 1080))
 SHELL_MAX_WIDTH = 1760
 SHELL_MAX_HEIGHT = 1024
 SHELL_MARGIN = 24
-MIN_NORMAL_EVIDENCE_LEDGER_HEIGHT = 160
+# ForgeEvidenceFrame includes one-DIP top and bottom insets around the
+# scrollable ledger. Require a 162-DIP outer frame to preserve 160 DIP of
+# usable content at the audited 1280x720 normal profile.
+MIN_NORMAL_EVIDENCE_LEDGER_HEIGHT = 162
 MIN_TEST_RESULT_FIELD_GAP = 6
 
 
@@ -1504,6 +1508,17 @@ def validate_decorative_layers(
         if node.attrib.get("Id"):
             nodes_by_id.setdefault(node.attrib["Id"], []).append(node)
 
+    stale_route_ids = sorted(RETIRED_ROUTE_ORNAMENT_IDS.intersection(nodes_by_id))
+    if stale_route_ids:
+        audit.error("Retired route ornament widget IDs must not return to the prefab: " + ", ".join(stale_route_ids))
+    stale_route_sprites = sorted({
+        node.attrib.get("Sprite", "")
+        for node in prefab.iter()
+        if node.attrib.get("Sprite", "") in RETIRED_ROUTE_ORNAMENT_SPRITES
+    })
+    if stale_route_sprites:
+        audit.error("Retired route ornament sprites must not be referenced by the prefab: " + ", ".join(stale_route_sprites))
+
     decorations: dict[str, ET.Element] = {}
     for element_id, (sprite_name, expected_parent_id) in DECORATIVE_IMAGES.items():
         matches = nodes_by_id.get(element_id, [])
@@ -1593,28 +1608,6 @@ def validate_decorative_layers(
                 and number(node, "SuggestedHeight") == 3
                 and node.get("DoNotAcceptEvents", "").lower() == "true"
                 and node.get("DoNotPassEventsToChildren", "").lower() == "true")
-
-    layout_names = re.search(
-        r"LayoutStatePropertyNames\s*=\s*new\[\]\s*\{(?P<items>.*?)\};",
-        vm_source,
-        re.S,
-    )
-    for element_id, (sprite_name, binding, canonical_route) in ROUTE_ORNAMENTS.items():
-        node = decorations.get(element_id)
-        if node is None:
-            continue
-        if node.attrib.get("IsVisible") != f"@{binding}":
-            audit.error(f"{element_id} must be visible only through @{binding}")
-        if node.attrib.get("Command.Click") or node.attrib.get("IsFocusable", "").lower() == "true":
-            audit.error(f"{element_id} must remain a passive, non-focusable image")
-        active_property = re.search(
-            rf"\[DataSourceProperty\]\s*public\s+bool\s+{re.escape(binding)}\s*=>\s*current\s*==\s*\"([^\"]+)\"\s*;",
-            vm_source,
-        )
-        if active_property is None or active_property.group(1) != canonical_route:
-            audit.error(f"@{binding} must remain tied to the canonical route {canonical_route}")
-        if layout_names is None or f"nameof({binding})" not in layout_names.group("items"):
-            audit.error(f"@{binding} must remain in LayoutStatePropertyNames for route changes")
 
     # Illustrated cloth is a quiet surface underlay. It may sit behind text,
     # but its explicit bounds and the collision audit below keep it clear of
@@ -1754,17 +1747,6 @@ def validate_decorative_layers(
                 profile_name = (f"{viewport[0]}x{viewport[1]} "
                                 f"{'focused' if state else 'normal'} "
                                 f"route={active_route or 'auxiliary'}")
-                expected_ornaments = {
-                    element_id for element_id, (_, _, route) in ROUTE_ORNAMENTS.items()
-                    if route == active_route
-                }
-                visible_ornaments = {
-                    element_id for element_id in ROUTE_ORNAMENTS
-                    if decorations.get(element_id) is not None
-                    and visible_in_evidence_state(decorations[element_id], parents, state, active_route)
-                }
-                if visible_ornaments != expected_ornaments:
-                    audit.error(f"Header ornaments for {profile_name} must be {sorted(expected_ornaments)}; found {sorted(visible_ornaments)}")
                 for node in prefab.iter():
                     protected = (local_name(node.tag) in {"ButtonWidget", "EditableTextWidget"}
                                  or node.attrib.get("Id") in protected_ids)
@@ -2421,9 +2403,10 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
                     audit.error("Cannot resolve the normal evidence ledger at 1280x720")
                 elif evidence_rect.height < MIN_NORMAL_EVIDENCE_LEDGER_HEIGHT:
                     audit.error(
-                        "Normal ForgeEvidenceFrame must provide at least "
-                        f"{MIN_NORMAL_EVIDENCE_LEDGER_HEIGHT} DIP at 1280x720 "
-                        f"(found {evidence_rect.height:g} DIP)"
+                        "Normal ForgeEvidenceFrame must be at least "
+                        f"{MIN_NORMAL_EVIDENCE_LEDGER_HEIGHT} DIP tall at 1280x720 "
+                        "to preserve 160 DIP of usable ledger content after its "
+                        f"two one-DIP insets (found {evidence_rect.height:g} DIP)"
                     )
             if profile_name in {"regular", "detailed"}:
                 primary_host = top_nodes.get("ForgePrimaryCommandHost")

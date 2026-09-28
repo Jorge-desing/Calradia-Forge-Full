@@ -365,6 +365,7 @@ namespace CalradiaForge.Tests
             test("ForgeDetour restores original instruction bytes on unpatch", TestForgeDetourUnpatch);
             test("ForgeUI clears extension-page handlers", TestForgeUI_Clear);
             test("PanelViewModel & CalradiaForge.xml UI telemetry, clear output, and empty-state placeholder", TestPanelViewModelAndPrefabPolish);
+            test("Gauntlet evidence ledger retains 160 DIP at 1280x720 without colliding with controls", TestGauntletEvidenceLedgerGeometry);
             test("Gauntlet live output filter preserves source, argument, wrapping, and paging", TestGauntletLiveOutputFilter);
             test("Gauntlet output comparison is deterministic, filtered, paged, and bounded", TestGauntletOutputComparison);
             test("Gauntlet test-results explorer parses individual and bounded batch results", TestGauntletTestResultsExplorerParser);
@@ -993,6 +994,108 @@ namespace MyCustomMod.QuestBehaviors
                 throw new Exception("PanelViewModel.cs missing ExecuteClearOutput method.");
             if (!vmContent.Contains("case \"ForgeClear\": ExecuteClearOutput(); break;"))
                 throw new Exception("PanelViewModel.cs ExecuteKeyboardControl missing ForgeClear mapping.");
+        }
+
+        private static void TestGauntletEvidenceLedgerGeometry()
+        {
+            string prefabPath = Path.GetFullPath("modules/CalradiaForge/GUI/Prefabs/CalradiaForge.xml");
+            string generatorPath = Path.GetFullPath("tools/generate_assets.py");
+            string viewModelPath = Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.cs");
+            if (!File.Exists(prefabPath)) throw new FileNotFoundException("CalradiaForge.xml not found", prefabPath);
+            if (!File.Exists(generatorPath)) throw new FileNotFoundException("Gauntlet asset generator not found", generatorPath);
+            if (!File.Exists(viewModelPath)) throw new FileNotFoundException("PanelViewModel.cs not found", viewModelPath);
+
+            XDocument prefab = XDocument.Load(prefabPath);
+            string generator = File.ReadAllText(generatorPath);
+            string viewModel = File.ReadAllText(viewModelPath);
+
+            // Tie this regression to both the checked-in output and its generator so
+            // an updated source cannot silently leave the native prefab stale.
+            if (!generator.Contains("Id='ForgeEvidenceFrame'") ||
+                !generator.Contains("MarginTop='@EvidenceTop'") ||
+                !generator.Contains("MarginBottom='178'"))
+                throw new Exception("The Gauntlet generator must continue to emit the evidence frame between EvidenceTop and its 178-DIP bottom reserve.");
+
+            XElement shell = prefab.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeWorkbenchShell");
+            XElement evidence = prefab.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeEvidenceFrame");
+            XElement evidenceBody = evidence?.Elements("Children").Elements().SingleOrDefault();
+            if (shell == null || evidence == null || evidenceBody == null)
+                throw new Exception("The active prefab must contain the workbench shell and the inset evidence ledger frame.");
+            if ((string)shell.Attribute("HeightSizePolicy") != "StretchToParent" ||
+                (string)shell.Attribute("MarginTop") != "24" || (string)shell.Attribute("MarginBottom") != "24" ||
+                (string)evidence.Attribute("HeightSizePolicy") != "StretchToParent" ||
+                (string)evidence.Attribute("MarginTop") != "@EvidenceTop" ||
+                (string)evidence.Attribute("MarginBottom") != "178" ||
+                (string)evidenceBody.Attribute("HeightSizePolicy") != "StretchToParent" ||
+                (string)evidenceBody.Attribute("MarginTop") != "1" ||
+                (string)evidenceBody.Attribute("MarginBottom") != "1")
+                throw new Exception("The active prefab must preserve the 24-DIP shell margins, 178-DIP action reserve, and one-DIP ledger insets.");
+
+            const int viewportHeight = 720;
+            float shellHeight = viewportHeight - ReadDip(shell, "MarginTop") - ReadDip(shell, "MarginBottom");
+            const string evidenceProperty = "public float EvidenceTop =>";
+            int evidencePropertyStart = viewModel.IndexOf(evidenceProperty, StringComparison.Ordinal);
+            if (evidencePropertyStart < 0)
+                throw new Exception("PanelViewModel.cs must define the evidence top edge used by the native prefab.");
+            int expressionStart = evidencePropertyStart + evidenceProperty.Length;
+            int expressionEnd = viewModel.IndexOf(';', expressionStart);
+            if (expressionEnd < 0)
+                throw new Exception("PanelViewModel.cs evidence top expression is incomplete.");
+            string expression = viewModel.Substring(expressionStart, expressionEnd - expressionStart).Trim();
+            int normalModeSeparator = expression.LastIndexOf(':');
+            if (normalModeSeparator < 0 ||
+                !float.TryParse(expression.Substring(normalModeSeparator + 1).Trim().TrimEnd('f', 'F'),
+                    System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float normalEvidenceTop) ||
+                normalEvidenceTop < 0 || normalEvidenceTop > int.MaxValue)
+                throw new Exception("PanelViewModel.cs must expose a numeric normal-mode EvidenceTop for geometry validation.");
+
+            float frameHeight = shellHeight - normalEvidenceTop - ReadDip(evidence, "MarginBottom");
+            float usefulLedgerHeight = frameHeight - ReadDip(evidenceBody, "MarginTop") - ReadDip(evidenceBody, "MarginBottom");
+            if (frameHeight < 162 || usefulLedgerHeight < 160)
+                throw new Exception("At 1280x720, the normal evidence ledger must retain at least 162 DIP of frame and 160 DIP of usable interior; got " +
+                    frameHeight + " / " + usefulLedgerHeight + " DIP.");
+
+            // The navigation rail stays to the left, the last command lane ends
+            // above the ledger, and the anchored action/pagination decks begin below it.
+            XElement rail = prefab.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeNavigationRail");
+            if (rail == null) throw new Exception("The native route rail must remain available beside the ledger.");
+            float railRight = ReadDip(rail, "MarginLeft") + ReadDip(rail, "SuggestedWidth");
+            float evidenceLeft = ReadDip(evidence, "MarginLeft");
+            if (evidenceLeft < railRight)
+                throw new Exception("At 1280x720, the evidence ledger must not overlap the navigation rail.");
+
+            foreach (string id in new[]
+            {
+                "ForgeCurrentSection", "ForgeSectionHelp", "ForgeEvidenceToggle", "ForgeBriefingDeck",
+                "ForgeInputRow", "ForgePrimaryCommandHost"
+            })
+            {
+                XElement control = prefab.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == id);
+                if (control == null) throw new Exception("The evidence geometry regression could not find control " + id + ".");
+                float controlTop = ReadDip(control, "MarginTop");
+                float controlBottom = controlTop + ReadDip(control, "SuggestedHeight");
+                if (controlBottom > normalEvidenceTop)
+                    throw new Exception(id + " overlaps the normal evidence ledger at 1280x720.");
+            }
+
+            float evidenceBottom = shellHeight - ReadDip(evidence, "MarginBottom");
+            foreach (string id in new[] { "ForgeSecondaryActionDeck", "ForgePaginationAndUtilityDeck", "ForgeNavigationFooter" })
+            {
+                XElement control = prefab.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == id);
+                if (control == null) throw new Exception("The evidence geometry regression could not find bottom control " + id + ".");
+                float controlTop = shellHeight - ReadDip(control, "MarginBottom") - ReadDip(control, "SuggestedHeight");
+                if (evidenceBottom > controlTop)
+                    throw new Exception("ForgeEvidenceFrame overlaps bottom control " + id + " at 1280x720.");
+            }
+
+            static float ReadDip(XElement element, string attributeName)
+            {
+                string raw = (string)element.Attribute(attributeName);
+                if (!float.TryParse(raw, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out float dip) || dip < 0)
+                    throw new Exception("Expected a non-negative numeric " + attributeName + " on " + (string)element.Attribute("Id") + ".");
+                return dip;
+            }
         }
 
         private static void TestUiErrorCorrectionsAndSafety()

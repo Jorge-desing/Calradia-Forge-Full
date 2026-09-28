@@ -100,6 +100,25 @@
          </Border>
         </Grid>
         <TextBlock AutomationProperties.AutomationId="ClipboardCopyFeedback" AutomationProperties.LiveSetting="Polite" FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="0,5,0,0" Text="{Binding CopyFeedback}" TextWrapping="Wrap"/>
+
+        <!-- Imperial Wax Seal Stateless Certification Badge (Rev085) -->
+        <Border AutomationProperties.AutomationId="DossierStatelessCertificationBadge" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Margin="0,8,0,0" Padding="8,5">
+         <Grid>
+          <Grid.ColumnDefinitions>
+           <ColumnDefinition Width="Auto"/>
+           <ColumnDefinition Width="*"/>
+           <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <Image AutomationProperties.AutomationId="ImperialWaxSealImage" Focusable="False" Height="36" IsHitTestVisible="False" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/imperial-wax-seal-rev085.png" Stretch="Uniform" VerticalAlignment="Center" Width="36"/>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center">
+           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="CERTIFIED STATELESS · SANDBOX SECURE"/>
+           <TextBlock FontSize="7.5" Foreground="{DynamicResource PaperBrush}" Text="Zero SaveableTypeDefiner · In-memory isolation · Calradia Forge Core SDK"/>
+          </StackPanel>
+          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Grid.Column="2" Padding="6,2" VerticalAlignment="Center">
+           <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="IMPERIAL AUDIT PASSED"/>
+          </Border>
+         </Grid>
+        </Border>
        </StackPanel>
       </Border>
 </ScrollViewer>

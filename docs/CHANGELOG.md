@@ -829,3 +829,12 @@ Initial developer preview: Gauntlet panel, WPF client, local named pipes, diagno
 - The existing F10 rising-edge and GauntletLayer lifecycle telemetry regression passed. It is a source-structure check, not a live input test; the earlier native assertion and live overlay behavior remain unverified, and no code change to `SubModule.cs` was needed.
 - In-game inspection remains pending. The installed TPAC predates the current source atlas; source checks do not establish TPAC import or live Gauntlet rendering.
 - Product version remains 25.2.0; no ZIP is regenerated.
+
+### Illustrated Gauntlet layout corrections and F10 source review (Rev082) — 2026-09-28
+
+- Rebalanced the normal evidence ledger so the 1280×720 audit viewport reserves at least 160 DIPs for evidence. Separated the test-results status and duration cells, clipped their text to each column, and enforced at least 6 DIPs of clearance.
+- Retired the eight legacy `forge_header_*_v1` ornaments, authored at 128×64 but drawn at 24×12, from active sprite generation. Their master, prepared, and SpriteParts copies remain preserved in `assets/gauntlet-imagegen/archive/2026-09-28/` with a SHA-256 manifest. Added three local ImageGen masters for cartographic cloth, the vertical heraldic rail, and the transparent header treatment; the project texture-preparation check is deterministic.
+- Reviewed the existing F10 rising-edge fallback and `GauntletLayer` telemetry path. The source-level regression required no `SubModule.cs` change; this does not establish live input or resolve the historical native assertion.
+- `tools/Prepare-CalradiaForge-ImageGenTextures.bat --check --no-pause` passed. The reported Core/ForgeWeave run passed Core 343/343 and ForgeWeave 73/73 without build warnings. The full Gauntlet visual audit and source-atlas regeneration remain pending for this revision.
+- Resource Browser import and live Gauntlet rendering remain pending; no current source check proves either. No live F10 observation, campaign, or battle was performed for this revision.
+- Product version remains 25.2.0; public API, routes, commands, permissions, and ZIPs are unchanged.

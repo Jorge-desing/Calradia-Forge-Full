@@ -79,6 +79,7 @@ PRESERVED_UNPACKAGED_VARIANTS = {
     "calradia-heraldic-crest-rev083.png",
     "parchment-tactical-map-rev083.png",
     "tactical-dial-plate-rev084.png",
+    "imperial-wax-seal-rev085.png",
 }
 
 

@@ -436,6 +436,7 @@ internal static class DesktopSimulationServiceTests
         Check(gauntletVm.VisualTreeDepthGaugeValue >= 0.0 && gauntletVm.VisualTreeDepthGaugeValue <= 100.0, "Visual tree depth gauge must be bounded in [0, 100].");
         Check(gauntletVm.ScreenCoverageGaugeValue >= 0.0 && gauntletVm.ScreenCoverageGaugeValue <= 100.0, "Screen coverage gauge must be bounded in [0, 100].");
         Check(gauntletVm.Widgets != null && gauntletVm.Widgets.Count == 5, "Gauntlet studio must expose 5 active widgets.");
+        Check(gauntletVm.GauntletRenderPipelineSteps != null && gauntletVm.GauntletRenderPipelineSteps.Count == 4, "Gauntlet studio must expose 4 render pipeline steps.");
         Check(!string.IsNullOrWhiteSpace(gauntletVm.StudioDocumentation), "Gauntlet studio must provide forensic documentation.");
         Check(!string.IsNullOrWhiteSpace(gauntletVm.ArchitecturalInvariants), "Gauntlet studio must declare architectural invariants.");
 
@@ -447,6 +448,7 @@ internal static class DesktopSimulationServiceTests
         Check(campaignVm.SettlementRadarValues.All(v => v >= 0.0 && v <= 1.0), "Settlement radar values must be normalized in [0, 1].");
         Check(campaignVm.FrontierRadarValues.All(v => v >= 0.0 && v <= 1.0), "Frontier radar values must be normalized in [0, 1].");
         Check(campaignVm.ProsperityTrajectory != null && campaignVm.ProsperityTrajectory.Count == 16, "Prosperity trajectory must contain 16 intervals.");
+        Check(campaignVm.ProvinceEquilibriumTrajectory != null && campaignVm.ProvinceEquilibriumTrajectory.Count == 16, "Province equilibrium trajectory must contain 16 intervals.");
         Check(campaignVm.EquilibriumGaugeValue >= 0.0 && campaignVm.EquilibriumGaugeValue <= 100.0, "Equilibrium gauge must be bounded in [0, 100].");
         Check(campaignVm.BanditThreatGaugeValue >= 0.0 && campaignVm.BanditThreatGaugeValue <= 100.0, "Bandit threat gauge must be bounded in [0, 100].");
         Check(campaignVm.Settlements != null && campaignVm.Settlements.Count == 5, "Campaign studio must expose 5 provincial settlements.");
@@ -478,6 +480,7 @@ internal static class DesktopSimulationServiceTests
         Check(deliveryVm.ArchiveHygieneGaugeValue >= 0.0 && deliveryVm.ArchiveHygieneGaugeValue <= 100.0, "Archive hygiene gauge must be bounded in [0, 100].");
         Check(deliveryVm.CompressionRatioGaugeValue >= 0.0 && deliveryVm.CompressionRatioGaugeValue <= 100.0, "Compression ratio gauge must be bounded in [0, 100].");
         Check(deliveryVm.Packages != null && deliveryVm.Packages.Count == 4, "Delivery studio must expose 4 package artifacts.");
+        Check(deliveryVm.DeliveryPipelineSteps != null && deliveryVm.DeliveryPipelineSteps.Count == 4, "Delivery studio must expose 4 distribution pipeline steps.");
         Check(!string.IsNullOrWhiteSpace(deliveryVm.StudioDocumentation), "Delivery studio must provide forensic documentation.");
         Check(!string.IsNullOrWhiteSpace(deliveryVm.ArchitecturalInvariants), "Delivery studio must declare architectural invariants.");
 
@@ -489,6 +492,7 @@ internal static class DesktopSimulationServiceTests
         Check(diagVm.StrictRadarValues.All(v => v >= 0.0 && v <= 1.0), "Strict radar values must be normalized in [0, 1].");
         Check(diagVm.SandboxRadarValues.All(v => v >= 0.0 && v <= 1.0), "Sandbox radar values must be normalized in [0, 1].");
         Check(diagVm.ScanLatencyTrajectory != null && diagVm.ScanLatencyTrajectory.Count == 16, "Scan latency trajectory must contain 16 intervals.");
+        Check(diagVm.DiagnosticsMemoryTrajectory != null && diagVm.DiagnosticsMemoryTrajectory.Count == 16, "Diagnostics memory trajectory must contain 16 intervals.");
         Check(diagVm.ComplianceScoreGaugeValue >= 0.0 && diagVm.ComplianceScoreGaugeValue <= 100.0, "Compliance score gauge must be bounded in [0, 100].");
         Check(diagVm.FaultRiskGaugeValue >= 0.0 && diagVm.FaultRiskGaugeValue <= 100.0, "Fault risk gauge must be bounded in [0, 100].");
         Check(diagVm.Findings != null && diagVm.Findings.Count == 4, "Diagnostics studio must expose 4 initial strict findings.");
@@ -526,10 +530,12 @@ internal static class DesktopSimulationServiceTests
         Check(kingdomVm.KingdomPowerComparisonBars != null && kingdomVm.KingdomPowerComparisonBars.Count == 6, "Kingdom diplomacy must expose 6 power comparison bars.");
         Check(kingdomVm.KingdomPowerComparisonBars.Any(b => b.Label == "Vlandia"), "Kingdom power bars must include Vlandia.");
 
-        // 4. Operation throughput bars
+        // 4. Operation throughput bars, pipeline steps & trajectory
         var genericVm = new GenericOperationDashboardViewModel();
         Check(genericVm.OperationThroughputBars != null && genericVm.OperationThroughputBars.Count == 5, "Generic operation must expose 5 throughput bars.");
         Check(genericVm.OperationThroughputBars.Any(b => b.Label == "Memory Audit"), "Generic operation bars must include Memory Audit.");
+        Check(genericVm.OperationPipelineSteps != null && genericVm.OperationPipelineSteps.Count == 4, "Generic operation must expose 4 execution pipeline steps.");
+        Check(genericVm.OperationThroughputTrajectory != null && genericVm.OperationThroughputTrajectory.Count == 16, "Generic operation must expose 16-point throughput trajectory.");
 
         // 5. Combat studio weapon breakdown & formation heatmap
         var combatVm = new CombatStudioDashboardViewModel();

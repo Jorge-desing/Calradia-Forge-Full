@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -1290,6 +1291,724 @@ namespace CalradiaForge.Desktop.Presentation
 
             dc.DrawText(ftVal, new Point(cx - ftVal.Width / 2.0, textStartY));
             dc.DrawText(ftUnt, new Point(cx - ftUnt.Width / 2.0, textStartY + ftVal.Height - 1.0));
+        }
+    }
+
+    // =========================================================================
+    // FORGE AREA CHART (TACTICAL VERTICAL GRADIENT AREA CHART WITH GRID & LABELS)
+    // =========================================================================
+
+    public sealed class ForgeAreaChart : FrameworkElement
+    {
+        public static readonly DependencyProperty DataPointsProperty =
+            DependencyProperty.Register(nameof(DataPoints), typeof(IReadOnlyList<double>), typeof(ForgeAreaChart),
+                new FrameworkPropertyMetadata(Array.Empty<double>(), FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty StrokeProperty =
+            DependencyProperty.Register(nameof(Stroke), typeof(Brush), typeof(ForgeAreaChart),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty FillProperty =
+            DependencyProperty.Register(nameof(Fill), typeof(Brush), typeof(ForgeAreaChart),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty StrokeThicknessProperty =
+            DependencyProperty.Register(nameof(StrokeThickness), typeof(double), typeof(ForgeAreaChart),
+                new FrameworkPropertyMetadata(1.8, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ShowGridLinesProperty =
+            DependencyProperty.Register(nameof(ShowGridLines), typeof(bool), typeof(ForgeAreaChart),
+                new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty GridBrushProperty =
+            DependencyProperty.Register(nameof(GridBrush), typeof(Brush), typeof(ForgeAreaChart),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty AxisLabelBrushProperty =
+            DependencyProperty.Register(nameof(AxisLabelBrush), typeof(Brush), typeof(ForgeAreaChart),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ShowMinMaxLabelsProperty =
+            DependencyProperty.Register(nameof(ShowMinMaxLabels), typeof(bool), typeof(ForgeAreaChart),
+                new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ShowBaselineProperty =
+            DependencyProperty.Register(nameof(ShowBaseline), typeof(bool), typeof(ForgeAreaChart),
+                new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ShowDataPointsProperty =
+            DependencyProperty.Register(nameof(ShowDataPoints), typeof(bool), typeof(ForgeAreaChart),
+                new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty HighlightPointBrushProperty =
+            DependencyProperty.Register(nameof(HighlightPointBrush), typeof(Brush), typeof(ForgeAreaChart),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ValueUnitProperty =
+            DependencyProperty.Register(nameof(ValueUnit), typeof(string), typeof(ForgeAreaChart),
+                new PropertyMetadata(string.Empty));
+
+        public static readonly DependencyProperty FormatStringProperty =
+            DependencyProperty.Register(nameof(FormatString), typeof(string), typeof(ForgeAreaChart),
+                new PropertyMetadata("N0"));
+
+        public IReadOnlyList<double> DataPoints
+        {
+            get => (IReadOnlyList<double>)GetValue(DataPointsProperty);
+            set => SetValue(DataPointsProperty, value);
+        }
+
+        public Brush Stroke
+        {
+            get => (Brush)GetValue(StrokeProperty);
+            set => SetValue(StrokeProperty, value);
+        }
+
+        public Brush Fill
+        {
+            get => (Brush)GetValue(FillProperty);
+            set => SetValue(FillProperty, value);
+        }
+
+        public double StrokeThickness
+        {
+            get => (double)GetValue(StrokeThicknessProperty);
+            set => SetValue(StrokeThicknessProperty, value);
+        }
+
+        public bool ShowGridLines
+        {
+            get => (bool)GetValue(ShowGridLinesProperty);
+            set => SetValue(ShowGridLinesProperty, value);
+        }
+
+        public Brush GridBrush
+        {
+            get => (Brush)GetValue(GridBrushProperty);
+            set => SetValue(GridBrushProperty, value);
+        }
+
+        public Brush AxisLabelBrush
+        {
+            get => (Brush)GetValue(AxisLabelBrushProperty);
+            set => SetValue(AxisLabelBrushProperty, value);
+        }
+
+        public bool ShowMinMaxLabels
+        {
+            get => (bool)GetValue(ShowMinMaxLabelsProperty);
+            set => SetValue(ShowMinMaxLabelsProperty, value);
+        }
+
+        public bool ShowBaseline
+        {
+            get => (bool)GetValue(ShowBaselineProperty);
+            set => SetValue(ShowBaselineProperty, value);
+        }
+
+        public bool ShowDataPoints
+        {
+            get => (bool)GetValue(ShowDataPointsProperty);
+            set => SetValue(ShowDataPointsProperty, value);
+        }
+
+        public Brush HighlightPointBrush
+        {
+            get => (Brush)GetValue(HighlightPointBrushProperty);
+            set => SetValue(HighlightPointBrushProperty, value);
+        }
+
+        public string ValueUnit
+        {
+            get => (string)GetValue(ValueUnitProperty);
+            set => SetValue(ValueUnitProperty, value);
+        }
+
+        public string FormatString
+        {
+            get => (string)GetValue(FormatStringProperty);
+            set => SetValue(FormatStringProperty, value);
+        }
+
+        static readonly Typeface LabelTypeface = new(new FontFamily("Consolas, Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            var points = DataPoints;
+            if (points == null || points.Count < 2 || ActualWidth <= 16)
+            {
+                ToolTip = null;
+                return;
+            }
+
+            var padLeft = ShowMinMaxLabels ? 36.0 : 8.0;
+            const double padRight = 8.0;
+            var w = Math.Max(1.0, ActualWidth - padLeft - padRight);
+            var pos = e.GetPosition(this);
+            var step = w / (points.Count - 1);
+            var idx = (int)Math.Clamp(Math.Round((pos.X - padLeft) / step), 0, points.Count - 1);
+            var val = points[idx];
+            var unit = string.IsNullOrEmpty(ValueUnit) ? string.Empty : " " + ValueUnit;
+            ToolTip = $"Sample #{idx + 1}: {val.ToString(FormatString, CultureInfo.InvariantCulture)}{unit}";
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            base.OnRender(dc);
+            var w = ActualWidth;
+            var h = ActualHeight;
+            if (w <= 16 || h <= 16) return;
+
+            var points = DataPoints;
+            var effectiveStroke = Stroke ?? Brushes.Goldenrod;
+            var effectiveGrid = GridBrush ?? new SolidColorBrush(Color.FromArgb(35, 200, 200, 200));
+            var effectiveLabel = AxisLabelBrush ?? new SolidColorBrush(Color.FromArgb(160, 220, 215, 200));
+            effectiveGrid.Freeze();
+            effectiveLabel.Freeze();
+
+            var padLeft = ShowMinMaxLabels ? 34.0 : 8.0;
+            const double padRight = 8.0;
+            const double padTop = 8.0;
+            const double padBottom = 16.0;
+
+            var usableW = Math.Max(1.0, w - padLeft - padRight);
+            var usableH = Math.Max(1.0, h - padTop - padBottom);
+
+            // Compute Min and Max
+            double min = double.MaxValue;
+            double max = double.MinValue;
+            if (points != null && points.Count > 0)
+            {
+                for (int i = 0; i < points.Count; i++)
+                {
+                    var v = points[i];
+                    if (v < min) min = v;
+                    if (v > max) max = v;
+                }
+            }
+            if (min >= max)
+            {
+                max = min + 1.0;
+            }
+
+            var range = Math.Max(0.001, max - min);
+
+            // Subtle Grid lines (0%, 33%, 66%, 100%)
+            if (ShowGridLines && usableH > 20)
+            {
+                var gridPen = new Pen(effectiveGrid, 0.8) { DashStyle = DashStyles.Dash };
+                gridPen.Freeze();
+                for (int g = 0; g <= 3; g++)
+                {
+                    var frac = g / 3.0;
+                    var gy = padTop + usableH * (1.0 - frac);
+                    dc.DrawLine(gridPen, new Point(padLeft, gy), new Point(w - padRight, gy));
+                }
+
+                // Vertical graduation markers
+                if (points != null && points.Count >= 4)
+                {
+                    var vertPen = new Pen(effectiveGrid, 0.6) { DashStyle = DashStyles.Dot };
+                    vertPen.Freeze();
+                    var numVert = Math.Min(6, points.Count);
+                    for (int v = 1; v < numVert - 1; v++)
+                    {
+                        var vx = padLeft + (v / (double)(numVert - 1)) * usableW;
+                        dc.DrawLine(vertPen, new Point(vx, padTop), new Point(vx, padTop + usableH));
+                    }
+                }
+            }
+
+            // Baseline
+            if (ShowBaseline)
+            {
+                var basePen = new Pen(effectiveGrid, 1.0);
+                basePen.Freeze();
+                dc.DrawLine(basePen, new Point(padLeft, padTop + usableH), new Point(w - padRight, padTop + usableH));
+            }
+
+            // Min/Max Text Labels
+            var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            if (ShowMinMaxLabels && usableH > 24)
+            {
+                var maxStr = max.ToString(FormatString, CultureInfo.InvariantCulture);
+                var minStr = min.ToString(FormatString, CultureInfo.InvariantCulture);
+
+                var ftMax = new FormattedText(maxStr, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                    LabelTypeface, 7.5, effectiveLabel, dpi)
+                {
+                    MaxTextWidth = padLeft - 4.0,
+                    Trimming = TextTrimming.CharacterEllipsis,
+                    TextAlignment = TextAlignment.Right
+                };
+                var ftMin = new FormattedText(minStr, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                    LabelTypeface, 7.5, effectiveLabel, dpi)
+                {
+                    MaxTextWidth = padLeft - 4.0,
+                    Trimming = TextTrimming.CharacterEllipsis,
+                    TextAlignment = TextAlignment.Right
+                };
+
+                dc.DrawText(ftMax, new Point(0, padTop - 2));
+                dc.DrawText(ftMin, new Point(0, padTop + usableH - ftMin.Height));
+            }
+
+            if (points == null || points.Count < 2) return;
+
+            var stepX = usableW / (points.Count - 1);
+            Point MapPoint(int i)
+            {
+                var x = padLeft + i * stepX;
+                var norm = (points[i] - min) / range;
+                var y = padTop + (1.0 - norm) * usableH;
+                return new Point(x, y);
+            }
+
+            var firstPt = MapPoint(0);
+            var lastPt = MapPoint(points.Count - 1);
+
+            // Shaded Area (Linear Gradient Brush)
+            var areaBrush = Fill;
+            if (areaBrush == null)
+            {
+                var sc = (effectiveStroke as SolidColorBrush)?.Color ?? Color.FromRgb(212, 175, 55);
+                var grad = new LinearGradientBrush(
+                    Color.FromArgb(90, sc.R, sc.G, sc.B),
+                    Color.FromArgb(8, sc.R, sc.G, sc.B),
+                    new Point(0, 0),
+                    new Point(0, 1));
+                grad.Freeze();
+                areaBrush = grad;
+            }
+
+            var areaGeom = new StreamGeometry();
+            using (var ctx = areaGeom.Open())
+            {
+                ctx.BeginFigure(new Point(padLeft, padTop + usableH), true, true);
+                ctx.LineTo(firstPt, true, false);
+                for (int i = 1; i < points.Count; i++)
+                {
+                    ctx.LineTo(MapPoint(i), true, false);
+                }
+                ctx.LineTo(new Point(lastPt.X, padTop + usableH), true, false);
+            }
+            areaGeom.Freeze();
+            dc.DrawGeometry(areaBrush, null, areaGeom);
+
+            // Stroke Polyline
+            var lineGeom = new StreamGeometry();
+            using (var ctx = lineGeom.Open())
+            {
+                ctx.BeginFigure(firstPt, false, false);
+                for (int i = 1; i < points.Count; i++)
+                {
+                    ctx.LineTo(MapPoint(i), true, false);
+                }
+            }
+            lineGeom.Freeze();
+            var linePen = new Pen(effectiveStroke, StrokeThickness)
+            {
+                StartLineCap = PenLineCap.Round,
+                EndLineCap = PenLineCap.Round,
+                LineJoin = PenLineJoin.Round
+            };
+            linePen.Freeze();
+            dc.DrawGeometry(null, linePen, lineGeom);
+
+            // Markers on Data Points
+            if (ShowDataPoints && points.Count <= 32)
+            {
+                var ptBrush = HighlightPointBrush ?? effectiveStroke;
+                var ptPen = new Pen(new SolidColorBrush(Color.FromArgb(200, 20, 24, 28)), 1.0);
+                ptPen.Freeze();
+
+                for (int i = 0; i < points.Count; i++)
+                {
+                    var pt = MapPoint(i);
+                    var radius = (i == points.Count - 1) ? 3.5 : 2.0;
+                    dc.DrawEllipse(ptBrush, ptPen, pt, radius, radius);
+                }
+
+                // Prominent outer halo ring on last point
+                var haloPen = new Pen(effectiveStroke, 1.2) { DashStyle = DashStyles.Dash };
+                haloPen.Freeze();
+                dc.DrawEllipse(null, haloPen, lastPt, 6.0, 6.0);
+            }
+        }
+    }
+
+    // =========================================================================
+    // FORGE STEP PROGRESS (TACTICAL SEQUENTIAL PIPELINE & WORKFLOW TRACKER)
+    // =========================================================================
+
+    public enum ForgeStepStatus
+    {
+        Pending = 0,
+        Active = 1,
+        Completed = 2,
+        Failed = 3
+    }
+
+    public sealed class ForgeStepItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Subtitle { get; set; }
+        public ForgeStepStatus Status { get; set; } = ForgeStepStatus.Pending;
+        public string? BadgeText { get; set; }
+
+        public ForgeStepItem() { }
+
+        public ForgeStepItem(string title, ForgeStepStatus status, string? subtitle = null, string? badgeText = null)
+        {
+            Title = title;
+            Status = status;
+            Subtitle = subtitle;
+            BadgeText = badgeText;
+        }
+    }
+
+    public sealed class ForgeStepProgress : FrameworkElement
+    {
+        public static readonly DependencyProperty StepsProperty =
+            DependencyProperty.Register(nameof(Steps), typeof(IReadOnlyList<ForgeStepItem>), typeof(ForgeStepProgress),
+                new FrameworkPropertyMetadata(Array.Empty<ForgeStepItem>(), FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ActiveBrushProperty =
+            DependencyProperty.Register(nameof(ActiveBrush), typeof(Brush), typeof(ForgeStepProgress),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty CompletedBrushProperty =
+            DependencyProperty.Register(nameof(CompletedBrush), typeof(Brush), typeof(ForgeStepProgress),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty PendingBrushProperty =
+            DependencyProperty.Register(nameof(PendingBrush), typeof(Brush), typeof(ForgeStepProgress),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty FailedBrushProperty =
+            DependencyProperty.Register(nameof(FailedBrush), typeof(Brush), typeof(ForgeStepProgress),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ConnectorBrushProperty =
+            DependencyProperty.Register(nameof(ConnectorBrush), typeof(Brush), typeof(ForgeStepProgress),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty TextBrushProperty =
+            DependencyProperty.Register(nameof(TextBrush), typeof(Brush), typeof(ForgeStepProgress),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty SubtitleBrushProperty =
+            DependencyProperty.Register(nameof(SubtitleBrush), typeof(Brush), typeof(ForgeStepProgress),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty NodeRadiusProperty =
+            DependencyProperty.Register(nameof(NodeRadius), typeof(double), typeof(ForgeStepProgress),
+                new FrameworkPropertyMetadata(10.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty OrientationProperty =
+            DependencyProperty.Register(nameof(Orientation), typeof(Orientation), typeof(ForgeStepProgress),
+                new FrameworkPropertyMetadata(Orientation.Horizontal, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public IReadOnlyList<ForgeStepItem> Steps
+        {
+            get => (IReadOnlyList<ForgeStepItem>)GetValue(StepsProperty);
+            set => SetValue(StepsProperty, value);
+        }
+
+        public Brush ActiveBrush
+        {
+            get => (Brush)GetValue(ActiveBrushProperty);
+            set => SetValue(ActiveBrushProperty, value);
+        }
+
+        public Brush CompletedBrush
+        {
+            get => (Brush)GetValue(CompletedBrushProperty);
+            set => SetValue(CompletedBrushProperty, value);
+        }
+
+        public Brush PendingBrush
+        {
+            get => (Brush)GetValue(PendingBrushProperty);
+            set => SetValue(PendingBrushProperty, value);
+        }
+
+        public Brush FailedBrush
+        {
+            get => (Brush)GetValue(FailedBrushProperty);
+            set => SetValue(FailedBrushProperty, value);
+        }
+
+        public Brush ConnectorBrush
+        {
+            get => (Brush)GetValue(ConnectorBrushProperty);
+            set => SetValue(ConnectorBrushProperty, value);
+        }
+
+        public Brush TextBrush
+        {
+            get => (Brush)GetValue(TextBrushProperty);
+            set => SetValue(TextBrushProperty, value);
+        }
+
+        public Brush SubtitleBrush
+        {
+            get => (Brush)GetValue(SubtitleBrushProperty);
+            set => SetValue(SubtitleBrushProperty, value);
+        }
+
+        public double NodeRadius
+        {
+            get => (double)GetValue(NodeRadiusProperty);
+            set => SetValue(NodeRadiusProperty, value);
+        }
+
+        public Orientation Orientation
+        {
+            get => (Orientation)GetValue(OrientationProperty);
+            set => SetValue(OrientationProperty, value);
+        }
+
+        static readonly Typeface TitleTypeface = new(new FontFamily("Segoe UI, Arial"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+        static readonly Typeface SubtitleTypeface = new(new FontFamily("Segoe UI, Arial"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+        static readonly Typeface GlyphTypeface = new(new FontFamily("Consolas, Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            var steps = Steps;
+            if (steps == null || steps.Count == 0)
+            {
+                ToolTip = null;
+                return;
+            }
+
+            var pos = e.GetPosition(this);
+            var count = steps.Count;
+            var isHoriz = Orientation == Orientation.Horizontal;
+            var totalLength = isHoriz ? ActualWidth : ActualHeight;
+            var pad = NodeRadius + 14.0;
+            var usable = Math.Max(1.0, totalLength - 2 * pad);
+            var stepDist = count > 1 ? usable / (count - 1) : 0.0;
+
+            for (int i = 0; i < count; i++)
+            {
+                var center = count == 1 ? totalLength / 2.0 : pad + i * stepDist;
+                var dist = isHoriz ? Math.Abs(pos.X - center) : Math.Abs(pos.Y - center);
+                if (dist <= NodeRadius * 2.0)
+                {
+                    var item = steps[i];
+                    var sub = string.IsNullOrEmpty(item.Subtitle) ? string.Empty : $" — {item.Subtitle}";
+                    ToolTip = $"[Step {i + 1}/{count}] {item.Title} ({item.Status}){sub}";
+                    return;
+                }
+            }
+            ToolTip = null;
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            base.OnRender(dc);
+            var w = ActualWidth;
+            var h = ActualHeight;
+            if (w < 20 || h < 20) return;
+
+            var steps = Steps;
+            if (steps == null || steps.Count == 0) return;
+
+            var count = steps.Count;
+            var isHoriz = Orientation == Orientation.Horizontal;
+            var r = Math.Clamp(NodeRadius, 6.0, 20.0);
+
+            var effActive = ActiveBrush ?? new SolidColorBrush(Color.FromRgb(212, 175, 55));      // Brass/Gold
+            var effCompleted = CompletedBrush ?? new SolidColorBrush(Color.FromRgb(46, 139, 87)); // SeaGreen / Verdigris
+            var effPending = PendingBrush ?? new SolidColorBrush(Color.FromArgb(90, 160, 160, 160)); // Muted
+            var effFailed = FailedBrush ?? new SolidColorBrush(Color.FromRgb(178, 34, 34));       // Crimson / Ember
+            var effConn = ConnectorBrush ?? new SolidColorBrush(Color.FromArgb(60, 200, 200, 200));
+            var effText = TextBrush ?? new SolidColorBrush(Color.FromRgb(230, 225, 215));         // Paper
+            var effSub = SubtitleBrush ?? new SolidColorBrush(Color.FromArgb(180, 170, 165, 155));
+
+            effActive.Freeze();
+            effCompleted.Freeze();
+            effPending.Freeze();
+            effFailed.Freeze();
+            effConn.Freeze();
+            effText.Freeze();
+            effSub.Freeze();
+
+            var coalBg = new SolidColorBrush(Color.FromRgb(24, 28, 32));
+            coalBg.Freeze();
+
+            var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+
+            // Layout coordinates
+            var pad = r + 14.0;
+            var totalLength = isHoriz ? w : h;
+            var usable = Math.Max(1.0, totalLength - 2 * pad);
+            var stepDist = count > 1 ? usable / (count - 1) : 0.0;
+
+            var nodeCenterY = isHoriz ? r + 6.0 : h / 2.0;
+            var nodeCenterX = isHoriz ? w / 2.0 : r + 6.0;
+
+            Point GetNodeCenter(int i)
+            {
+                if (count == 1)
+                {
+                    return isHoriz ? new Point(w / 2.0, nodeCenterY) : new Point(nodeCenterX, h / 2.0);
+                }
+                var coord = pad + i * stepDist;
+                return isHoriz ? new Point(coord, nodeCenterY) : new Point(nodeCenterX, coord);
+            }
+
+            // 1. Draw Connecting Lines between steps
+            for (int i = 0; i < count - 1; i++)
+            {
+                var ptA = GetNodeCenter(i);
+                var ptB = GetNodeCenter(i + 1);
+
+                var stepA = steps[i];
+                var stepB = steps[i + 1];
+
+                Brush connBrush;
+                if (stepA.Status == ForgeStepStatus.Completed && (stepB.Status == ForgeStepStatus.Completed || stepB.Status == ForgeStepStatus.Active))
+                {
+                    connBrush = effCompleted;
+                }
+                else if (stepA.Status == ForgeStepStatus.Failed || stepB.Status == ForgeStepStatus.Failed)
+                {
+                    connBrush = effFailed;
+                }
+                else
+                {
+                    connBrush = effConn;
+                }
+
+                var pen = new Pen(connBrush, 2.0)
+                {
+                    StartLineCap = PenLineCap.Round,
+                    EndLineCap = PenLineCap.Round
+                };
+                pen.Freeze();
+
+                if (isHoriz)
+                {
+                    dc.DrawLine(pen, new Point(ptA.X + r + 2.0, ptA.Y), new Point(ptB.X - r - 2.0, ptB.Y));
+                }
+                else
+                {
+                    dc.DrawLine(pen, new Point(ptA.X, ptA.Y + r + 2.0), new Point(ptB.X, ptB.Y - r - 2.0));
+                }
+            }
+
+            // 2. Draw Nodes and Labels
+            for (int i = 0; i < count; i++)
+            {
+                var pt = GetNodeCenter(i);
+                var item = steps[i];
+
+                Brush nodeStroke;
+                Brush nodeFill;
+                string glyph;
+                Brush glyphBrush;
+
+                switch (item.Status)
+                {
+                    case ForgeStepStatus.Completed:
+                        nodeStroke = effCompleted;
+                        nodeFill = effCompleted;
+                        glyph = "✓";
+                        glyphBrush = Brushes.White;
+                        break;
+                    case ForgeStepStatus.Active:
+                        nodeStroke = effActive;
+                        nodeFill = coalBg;
+                        glyph = (i + 1).ToString(CultureInfo.InvariantCulture);
+                        glyphBrush = effActive;
+                        break;
+                    case ForgeStepStatus.Failed:
+                        nodeStroke = effFailed;
+                        nodeFill = effFailed;
+                        glyph = "✕";
+                        glyphBrush = Brushes.White;
+                        break;
+                    case ForgeStepStatus.Pending:
+                    default:
+                        nodeStroke = effPending;
+                        nodeFill = coalBg;
+                        glyph = (i + 1).ToString(CultureInfo.InvariantCulture);
+                        glyphBrush = effPending;
+                        break;
+                }
+
+                // If active, draw outer glowing ring
+                if (item.Status == ForgeStepStatus.Active)
+                {
+                    var haloPen = new Pen(effActive, 1.2) { DashStyle = DashStyles.Dash };
+                    haloPen.Freeze();
+                    dc.DrawEllipse(null, haloPen, pt, r + 4.0, r + 4.0);
+                }
+
+                var nodePen = new Pen(nodeStroke, 1.6);
+                nodePen.Freeze();
+                dc.DrawEllipse(nodeFill, nodePen, pt, r, r);
+
+                // Glyph inside node
+                glyphBrush.Freeze();
+                var ftGlyph = new FormattedText(glyph, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                    GlyphTypeface, r * 1.1, glyphBrush, dpi);
+                dc.DrawText(ftGlyph, new Point(pt.X - ftGlyph.Width / 2.0, pt.Y - ftGlyph.Height / 2.0));
+
+                // Text labels
+                if (isHoriz)
+                {
+                    var maxLabelW = Math.Max(40.0, stepDist > 0 ? stepDist - 4.0 : 90.0);
+                    var labelY = pt.Y + r + 4.0;
+
+                    var ftTitle = new FormattedText(item.Title, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                        TitleTypeface, 8.5, effText, dpi)
+                    {
+                        MaxTextWidth = maxLabelW,
+                        TextAlignment = TextAlignment.Center,
+                        Trimming = TextTrimming.CharacterEllipsis
+                    };
+                    dc.DrawText(ftTitle, new Point(pt.X - ftTitle.Width / 2.0, labelY));
+
+                    if (!string.IsNullOrEmpty(item.Subtitle))
+                    {
+                        var ftSub = new FormattedText(item.Subtitle, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                            SubtitleTypeface, 7.5, effSub, dpi)
+                        {
+                            MaxTextWidth = maxLabelW,
+                            TextAlignment = TextAlignment.Center,
+                            Trimming = TextTrimming.CharacterEllipsis
+                        };
+                        dc.DrawText(ftSub, new Point(pt.X - ftSub.Width / 2.0, labelY + ftTitle.Height));
+                    }
+                }
+                else
+                {
+                    var labelX = pt.X + r + 8.0;
+                    var ftTitle = new FormattedText(item.Title, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                        TitleTypeface, 9.0, effText, dpi)
+                    {
+                        MaxTextWidth = Math.Max(40.0, w - labelX - 6.0),
+                        Trimming = TextTrimming.CharacterEllipsis
+                    };
+                    dc.DrawText(ftTitle, new Point(labelX, pt.Y - ftTitle.Height / 2.0 - (string.IsNullOrEmpty(item.Subtitle) ? 0 : 4.0)));
+
+                    if (!string.IsNullOrEmpty(item.Subtitle))
+                    {
+                        var ftSub = new FormattedText(item.Subtitle, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                            SubtitleTypeface, 7.5, effSub, dpi)
+                        {
+                            MaxTextWidth = Math.Max(40.0, w - labelX - 6.0),
+                            Trimming = TextTrimming.CharacterEllipsis
+                        };
+                        dc.DrawText(ftSub, new Point(labelX, pt.Y + (ftTitle.Height / 2.0) - 2.0));
+                    }
+                }
+            }
         }
     }
 }

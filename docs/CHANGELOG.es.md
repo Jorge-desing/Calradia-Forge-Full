@@ -620,3 +620,12 @@ Consulta VALIDATION.md para distinguir las pruebas automáticas, la ejecución d
 - Pasó la regresión existente de flanco ascendente F10 y ciclo de vida/telemetría de GauntletLayer. Es una comprobación de estructura de código fuente, no una prueba de entrada en vivo; la aserción nativa anterior y el comportamiento del overlay en el juego siguen sin verificarse, y no fue necesario modificar `SubModule.cs`.
 - La inspección dentro del juego sigue pendiente. El TPAC instalado es anterior al atlas fuente actual; las comprobaciones de fuente no demuestran la importación del TPAC ni el render de Gauntlet en vivo.
 - La versión del producto sigue en 25.2.0; no se regenera ningún ZIP.
+
+### Correcciones de disposición Gauntlet y revisión de fuente F10 (Rev082) — 28/09/2026
+
+- Se reajustó el ledger normal de evidencia para reservar al menos 160 DIP en el viewport de auditoría 1280×720. Se separaron las celdas de estado y duración del explorador de resultados, se limitó el texto a cada columna y se exigieron al menos 6 DIP de separación.
+- Se retiraron de la generación activa de sprites los ocho adornos heredados `forge_header_*_v1`, creados a 128×64 y dibujados a 24×12. Sus copias master, preparadas y de SpriteParts se conservan en `assets/gauntlet-imagegen/archive/2026-09-28/` con un manifiesto SHA-256. Se añadieron tres masters locales de ImageGen para la tela cartográfica, el rail heráldico vertical y el tratamiento transparente de cabecera; la comprobación del flujo de preparación de texturas es determinista.
+- Se revisaron el flanco ascendente existente de F10 y la ruta de telemetría de `GauntletLayer`. La regresión de fuente no requirió cambios en `SubModule.cs`; esto no demuestra entrada en vivo ni resuelve la aserción nativa histórica.
+- Pasó `tools/Prepare-CalradiaForge-ImageGenTextures.bat --check --no-pause`. La ejecución reportada de Core/ForgeWeave pasó Core 343/343 y ForgeWeave 73/73 sin advertencias de compilación. La auditoría visual Gauntlet completa y la regeneración del atlas fuente siguen pendientes para esta revisión.
+- La importación por Resource Browser y el render Gauntlet en vivo siguen pendientes; ninguna comprobación actual de fuente demuestra esos resultados. En esta revisión no se observó F10 en vivo ni se cargó campaña o batalla.
+- La versión del producto sigue en 25.2.0; no cambian API pública, rutas, comandos, permisos ni ZIPs.

@@ -6,17 +6,17 @@ The two large material masters are full-coverage RGB images. Their prepared spri
 
 | Current master | Prepared sprite | Prepared size | Maximum alpha | Intended placement | Master SHA-256 |
 | --- | --- | ---: | ---: | --- | --- |
-| `forge_war_table_cloth_v2.png` | `forge_war_table_cloth_v2.png` | 1024×128 | 24/255 | Panoramic header surface | `A4C19F089FC3879FC4D4A3990D9171D306A47848B5C57F73B328C85FABE06F47` |
+| `forge_war_table_cloth_v3_master.png` | `forge_war_table_cloth_v2.png` | 1024×128 | 24/255 | Panoramic header surface | `32206FCD23A74379412DAC373CB26984553A6404CB9A732495D10700C2ADF552` |
 | `forge_rail_cartographic_field_v1.png` | `forge_rail_cartographic_field_v1.png` | 256×256 | 36/255 | Cartographic navigation-rail field | `479A16D70CDF76677D02958287E4F042CCCD8695986E4C8B8368E474E46CC728` |
 | `heraldic_field_journal_overlay_v1.png` | `forge_heraldic_overlay.png` | 256×48 | 112/255 | Passive header ornament | `70E619A85CB15BB87BA8E87EE67BFEAEF28FB2F458C5559DA8431E4B71189E20` |
 | `aged_brass_patina.png` | `forge_patina_brass.png` | 128×16 | 88/255 | Thin passive divider rules | `AA7782E9DB476D773F934AB05321CB359BF7D7713345D53129A6216216FA11DA` |
 | `pine_felt.png` | `forge_pine_felt.png` | 128×32 | 40/255 | Card-edge and rail trim | `6D39A23E36912169D1C7FE988971864B8CF7C262E9708010C74B96EAC70B2316` |
 
-## Current route header ornament masters
+## Archived first-round route header ornament masters — retired, not runtime
 
-ImageGen produced one transparent master for each primary route. The exact prompts are recorded in [`prompts.md`](prompts.md), and the source-master SHA-256 values below are also stored in [`SHA256SUMS.txt`](SHA256SUMS.txt). Each source is prepared with the same deterministic crop and alpha-cap pipeline as the material masters; the runtime crop is RGBA8 at 128×64 with a maximum alpha of 112/255.
+ImageGen produced one transparent master for each primary route in the earlier design. These eight ornaments are retired from the current Gauntlet sprite set; this table preserves their source history, prompts, hashes, and former placements only. The exact prompts are recorded in [`prompts.md`](prompts.md), and source-master SHA-256 values are also stored in [`SHA256SUMS.txt`](SHA256SUMS.txt). During that earlier design, each source was prepared with the deterministic crop and alpha-cap pipeline as an RGBA8 128×64 sprite with a maximum alpha of 112/255. The historical prepared crops and SpriteParts copies are retained in the dated archive, not as active runtime resources.
 
-| Route | Source master | Prepared sprite | Runtime placement | Master SHA-256 |
+| Route | Historical source master | Historical prepared sprite | Former placement (historical) | Master SHA-256 |
 | --- | --- | --- | --- | --- |
 | Summary | `forge_header_summary_v1.png` (1774×887 RGBA) | `forge_header_summary_v1.png` (128×64) | x=256, y=114, 24×12; `IsSummaryActive` | `09799A47B4F53A499DCFBE00E698AC23A2915902D0A79DDF361165419191EF17` |
 | Modules | `forge_header_modules_v1.png` (1774×887 RGBA) | `forge_header_modules_v1.png` (128×64) | x=256, y=114, 24×12; `IsModulesActive` | `9E25D780607FE385AF5387691642CB857992CF91CD5EB2135C3A75CAA1315B40` |
@@ -27,7 +27,7 @@ ImageGen produced one transparent master for each primary route. The exact promp
 | Framework | `forge_header_framework_v1.png` (1774×887 RGBA) | `forge_header_framework_v1.png` (128×64) | x=256, y=114, 24×12; `IsFrameworkActive` | `13225DEDF61E3465DFE560DE2C58C7F4138088E26A16029BE74731A791C901FC` |
 | Extensions | `forge_header_extensions_v1.png` (1774×887 RGBA) | `forge_header_extensions_v1.png` (128×64) | x=256, y=114, 24×12; `IsExtensionsActive` | `9EBDA29EBB2ADF306AAC42FCD53FED6F96DFD5215397B1F3FA1E9721EE4BD71` |
 
-The ornaments are passive image layers. They are visible only on their matching primary route and are hidden on auxiliary and SDK destinations; they never receive pointer or keyboard input. The page title begins at x=282 to retain a two-pixel gap around the 24-pixel ornament.
+In the former UI iteration, these passive image layers were visible only on their matching primary route and hidden on auxiliary and SDK destinations; they did not receive pointer or keyboard input. Those placement details are historical and do not describe the current runtime atlas or prefab.
 
 `--check` performs two isolated preparations and compares output hashes without modifying `prepared/`; `--prepare` backs up any changed output and publishes the deterministic crops there. SpriteParts synchronization and atlas/SpriteData generation are separate steps. The official `SpriteSheetGenerator` owns atlas packing and SpriteData rectangles; until it is run and its output passes validation, registration and live rendering remain pending. Do not edit the atlas or SpriteData by hand.
 
@@ -87,3 +87,17 @@ The Desktop-only empty-ledger artwork is a separate local WPF resource; it is no
 | `C:/Users/Alex/.codex/generated_images/01a0729a-9f57-7173-9f44-d03d3737b50f/exec-5f692a76-c349-4d03-ab53-8cf8deb29e73.png` | `src/CalradiaForge.Desktop/Resources/Textures/evidence-ledger-empty-v1.png` | 1254×1254, RGBA, alpha 0–255 | `69C6CA93CEFCE9615D9F73D924236F042668909D64564DB39F9AABF83B9F5B2C` | Low-emphasis empty-ledger illustration beside localized empty-state text |
 
 The source master and packaged resource were checked to have matching SHA-256 hashes. The exact generation prompt is appended to `visual-round-prompts.md`.
+
+## Gauntlet illustrated refresh masters — 2026-09-28
+
+The following seven original PNG masters are retained as provenance for the Gauntlet visual refresh. The three marked **selected** are the intended source masters for the refreshed header cloth, header ornament, and navigation rail. The other four are retained design variants and are not runtime assets. All dimensions, PNG color modes, sampled alpha ranges, and SHA-256 values below were read from the master files in this directory; hashes are also recorded in [`SHA256SUMS.txt`](SHA256SUMS.txt). The descriptive specifications in [`visual-round-prompts.md`](visual-round-prompts.md) are faithful reconstructions from the rendered images, not verbatim model prompts.
+
+| Master | Use | Status | Dimensions | PNG mode; alpha range | SHA-256 |
+| --- | --- | --- | ---: | --- | --- |
+| `forge_war_table_cloth_v3_master.png` | Panoramic woven map cloth with a quiet center and cartographic/compass detail toward the outer corners | Selected source for Gauntlet header cloth | 2172×724 | RGB; 255–255 (implicit opaque alpha) | `32206FCD23A74379412DAC373CB26984553A6404CB9A732495D10700C2ADF552` |
+| `forge_heraldic_header_v3_master.png` | Transparent, bilateral compass-and-leaf header ornament with a narrow lower rule | Selected source for heraldic header overlay | 2048×768 | RGBA; 0–254 | `FA854C634D051EBD9D98909DD9F332963FD09FA78A628B69FFE6DFF78CAC0083` |
+| `forge_heraldic_rail_v4_master.png` | Vertical dark woven field with narrow brass/leaf side rails and subtle cartographic marks | Selected source for navigation rail | 887×1774 | RGB; 255–255 (implicit opaque alpha) | `9EA66B7F9F91828539D637EC2EE939E61BD7A8B66238CF7426C8420EE7F80FCF` |
+| `forge_heraldic_header_v2_master.png` | Transparent thin brass line, oak-leaf ends, and a centered blank shield | Alternate header composition; not runtime | 1855×848 | RGBA; 0–255 | `AD69BF538E2642BC0F292AA80BE987EBD8587B69DE8852C4612DA04B7A735CAA` |
+| `forge_heraldic_rail_v2_master.png` | Transparent paired vertical oak/acorn scrollwork rails with shield cartouches | Alternate rail composition; not runtime | 887×1774 | RGBA; 0–255 | `FC0418E803B644AF1795DBA3A33882E2AC914938911AC08632A8409EEF3C4D28` |
+| `forge_heraldic_rail_v3_master.png` | Vertical opaque woven field with map contours and heraldic side flourishes | Alternate rail material; not runtime | 1024×1536 | RGB; 255–255 (implicit opaque alpha) | `A73379FDD92FD77422C3E5F18268831538494B37E96CDB77220BAD600568E7E3` |
+| `forge_heraldic_frame_v2_master.png` | Transparent oversized compass-and-leaf corner flourishes joined by a fine lower rule | Alternate wide frame composition; not runtime | 2172×724 | RGBA; 0–255 | `BC7F143C490F5A13BBB0A74D53602378B77323AA1A45664AB731130DCAB6B5C9` |

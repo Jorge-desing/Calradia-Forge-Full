@@ -8,14 +8,6 @@ set "RAIL_ARGS="
 set "OVERLAY_ARGS="
 set "BRASS_ARGS="
 set "FELT_ARGS="
-set "HEADER_SUMMARY_ARGS="
-set "HEADER_MODULES_ARGS="
-set "HEADER_LOGS_ARGS="
-set "HEADER_INSPECTOR_ARGS="
-set "HEADER_TESTS_ARGS="
-set "HEADER_METRICS_ARGS="
-set "HEADER_FRAMEWORK_ARGS="
-set "HEADER_EXTENSIONS_ARGS="
 set "HERALDIC_HEADER_V2_ARGS="
 set "HERALDIC_RAIL_V2_ARGS="
 set "SHOW_HELP=0"
@@ -80,62 +72,6 @@ if /I "%~1"=="--pine-felt" (
     shift
     goto parse_args
 )
-if /I "%~1"=="--header-summary-v1" (
-    if "%~2"=="" goto missing_value
-    set "HEADER_SUMMARY_ARGS=-HeaderSummaryV1Master "%~2""
-    shift
-    shift
-    goto parse_args
-)
-if /I "%~1"=="--header-modules-v1" (
-    if "%~2"=="" goto missing_value
-    set "HEADER_MODULES_ARGS=-HeaderModulesV1Master "%~2""
-    shift
-    shift
-    goto parse_args
-)
-if /I "%~1"=="--header-logs-v1" (
-    if "%~2"=="" goto missing_value
-    set "HEADER_LOGS_ARGS=-HeaderLogsV1Master "%~2""
-    shift
-    shift
-    goto parse_args
-)
-if /I "%~1"=="--header-inspector-v1" (
-    if "%~2"=="" goto missing_value
-    set "HEADER_INSPECTOR_ARGS=-HeaderInspectorV1Master "%~2""
-    shift
-    shift
-    goto parse_args
-)
-if /I "%~1"=="--header-tests-v1" (
-    if "%~2"=="" goto missing_value
-    set "HEADER_TESTS_ARGS=-HeaderTestsV1Master "%~2""
-    shift
-    shift
-    goto parse_args
-)
-if /I "%~1"=="--header-metrics-v1" (
-    if "%~2"=="" goto missing_value
-    set "HEADER_METRICS_ARGS=-HeaderMetricsV1Master "%~2""
-    shift
-    shift
-    goto parse_args
-)
-if /I "%~1"=="--header-framework-v1" (
-    if "%~2"=="" goto missing_value
-    set "HEADER_FRAMEWORK_ARGS=-HeaderFrameworkV1Master "%~2""
-    shift
-    shift
-    goto parse_args
-)
-if /I "%~1"=="--header-extensions-v1" (
-    if "%~2"=="" goto missing_value
-    set "HEADER_EXTENSIONS_ARGS=-HeaderExtensionsV1Master "%~2""
-    shift
-    shift
-    goto parse_args
-)
 if /I "%~1"=="--heraldic-header-v2" (
     if "%~2"=="" goto missing_value
     set "HERALDIC_HEADER_V2_ARGS=-HeraldicHeaderV2Master "%~2""
@@ -166,7 +102,7 @@ if errorlevel 1 (
     goto finish
 )
 
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%" %MODE_ARGS% %CLOTH_ARGS% %RAIL_ARGS% %OVERLAY_ARGS% %BRASS_ARGS% %FELT_ARGS% %HEADER_SUMMARY_ARGS% %HEADER_MODULES_ARGS% %HEADER_LOGS_ARGS% %HEADER_INSPECTOR_ARGS% %HEADER_TESTS_ARGS% %HEADER_METRICS_ARGS% %HEADER_FRAMEWORK_ARGS% %HEADER_EXTENSIONS_ARGS% %HERALDIC_HEADER_V2_ARGS% %HERALDIC_RAIL_V2_ARGS%
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%" %MODE_ARGS% %CLOTH_ARGS% %RAIL_ARGS% %OVERLAY_ARGS% %BRASS_ARGS% %FELT_ARGS% %HERALDIC_HEADER_V2_ARGS% %HERALDIC_RAIL_V2_ARGS%
 set "RESULT=%ERRORLEVEL%"
 goto finish
 
@@ -188,14 +124,6 @@ echo   --rail-cartographic-field-v1 ^<path^> Override forge_rail_cartographic_fi
 echo   --heraldic-field-journal-overlay ^<path^> Override heraldic_field_journal_overlay_v1.png
 echo   --aged-brass-patina ^<path^> Override aged_brass_patina.png
 echo   --pine-felt ^<path^>       Override pine_felt.png
-echo   --header-summary-v1 ^<path^>   Override forge_header_summary_v1.png
-echo   --header-modules-v1 ^<path^>   Override forge_header_modules_v1.png
-echo   --header-logs-v1 ^<path^>      Override forge_header_logs_v1.png
-echo   --header-inspector-v1 ^<path^> Override forge_header_inspector_v1.png
-echo   --header-tests-v1 ^<path^>     Override forge_header_tests_v1.png
-echo   --header-metrics-v1 ^<path^>   Override forge_header_metrics_v1.png
-echo   --header-framework-v1 ^<path^> Override forge_header_framework_v1.png
-echo   --header-extensions-v1 ^<path^> Override forge_header_extensions_v1.png
 echo   --heraldic-header-v2 ^<path^>  Override forge_heraldic_header_v2.png
 echo   --heraldic-rail-v2 ^<path^>    Override forge_heraldic_rail_v2.png
 echo Relative master paths resolve from the repository root.
