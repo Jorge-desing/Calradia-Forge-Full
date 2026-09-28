@@ -2108,7 +2108,9 @@ namespace MyCustomMod.QuestBehaviors
             string exactLineLimit = string.Join("\n", Enumerable.Range(0, OutputLineComparison.MaxLines).Select(index => "L" + index.ToString("D4")));
             string aboveLineLimit = string.Join("\n", Enumerable.Range(0, OutputLineComparison.MaxLines + 1).Select(index => "L" + index.ToString("D4")));
             if (OutputLineComparison.ValidateOutput(exactLineLimit) != OutputLineComparisonStatus.Available ||
-                OutputLineComparison.ValidateOutput(aboveLineLimit) != OutputLineComparisonStatus.TooManyLines)
+                OutputLineComparison.ValidateOutput(aboveLineLimit) != OutputLineComparisonStatus.TooManyLines ||
+                OutputLineComparison.ValidateOutput(new string('\n', OutputLineComparison.MaxLines - 1)) != OutputLineComparisonStatus.Available ||
+                OutputLineComparison.ValidateOutput(new string('\n', OutputLineComparison.MaxCharacters)) != OutputLineComparisonStatus.TooManyLines)
                 throw new Exception("The line limit must accept its exact boundary and reject the first value above it.");
             OutputLineComparisonResult exactLines = OutputLineComparison.Compare(exactLineLimit, exactLineLimit, "", 64, 64, 0);
             AssertOutputComparison(exactLines, OutputLineComparisonStatus.Available, OutputLineComparison.MaxLines,

@@ -170,6 +170,27 @@ def class_tail(source: str, class_name: str) -> str | None:
     return source[match.start():] if match else None
 
 
+def zero_arg_method_body(source: str, method_name: str) -> str | None:
+    """Return a public parameterless void method through the next method declaration."""
+    start = re.search(
+        rf"^\s*public\s+void\s+{re.escape(method_name)}\s*\(\s*\)\s*\{{",
+        source,
+        re.MULTILINE,
+    )
+    if start is None:
+        return None
+    body_start = start.end()
+    following = re.search(
+        r"^\s*(?:public|private|protected|internal)\s+"
+        r"(?:static\s+|async\s+|virtual\s+|override\s+)*"
+        r"[\w.<>,?\[\]]+\s+\w+\s*\(",
+        source[body_start:],
+        re.MULTILINE,
+    )
+    body_end = body_start + following.start() if following is not None else len(source)
+    return source[body_start:body_end]
+
+
 def item_template_for(
     node: ET.Element,
     parents: dict[ET.Element, ET.Element],
@@ -438,22 +459,32 @@ def validate_output_comparison_geometry(
             return None
         return Rect(rect.left - frame_rect.left - 1, rect.top - frame_rect.top - 1, rect.width, rect.height)
 
-    node_ids = (
+    base_node_ids = (
         "ForgeOutputFilterRow", "ForgePinOutputBaseline", "ForgeCompareOutput",
-        "ForgeClearOutputBaseline", "ForgeOutputComparisonBaselineHeader",
-        "ForgeOutputComparisonCurrentHeader", "ForgeEvidenceScroll",
+        "ForgeClearOutputBaseline", "ForgeEvidenceScroll",
+    )
+    comparison_node_ids = (
+        "ForgeOutputComparisonBaselineHeader", "ForgeOutputComparisonCurrentHeader",
         "ForgeOutputComparisonScroll",
     )
-    nodes = {element_id: find_by_id(prefab, element_id) for element_id in node_ids}
+    nodes = {
+        element_id: find_by_id(prefab, element_id)
+        for element_id in (*base_node_ids, *comparison_node_ids)
+    }
     for focused in (False, True):
         layout = shell_layout(shell, vm_source, focused, viewport)
         frame_rect = layout.get(frame)
         if frame_rect is None:
             audit.error(f"Cannot resolve ForgeEvidenceFrame geometry for output comparison in {viewport[0]}x{viewport[1]}")
             return
+        # Activating output comparison expands the evidence region in the
+        # ViewModel before rendering. In the compact unfocused shell at
+        # 1280x720 there is intentionally no room for the extra paired header;
+        # ordinary controls and the normal ledger still require valid bounds.
+        measured_ids = (*base_node_ids, *comparison_node_ids) if focused else base_node_ids
         rects = {
-            element_id: relative_rect(node, layout, frame_rect)
-            for element_id, node in nodes.items()
+            element_id: relative_rect(nodes[element_id], layout, frame_rect)
+            for element_id in measured_ids
         }
         suffix = f"{viewport[0]}x{viewport[1]}/focused={focused}"
         missing = [element_id for element_id, rect in rects.items() if rect is None]
@@ -473,7 +504,7 @@ def validate_output_comparison_geometry(
             rects["ForgeClearOutputBaseline"],
         ]
         valid_actions = [rect for rect in actions if rect is not None]
-        for action_id, action_rect in zip(node_ids[1:4], actions):
+        for action_id, action_rect in zip(base_node_ids[1:4], actions):
             if action_rect is not None and (
                 abs(action_rect.top - 42) > 0.01 or abs(action_rect.height - 32) > 0.01
             ):
@@ -485,48 +516,50 @@ def validate_output_comparison_geometry(
                 if intersects(first, second):
                     audit.error(f"Output comparison action buttons overlap in {suffix}")
 
-        baseline_header = rects["ForgeOutputComparisonBaselineHeader"]
-        current_header = rects["ForgeOutputComparisonCurrentHeader"]
-        for element_id, header_rect in (
-            ("ForgeOutputComparisonBaselineHeader", baseline_header),
-            ("ForgeOutputComparisonCurrentHeader", current_header),
-        ):
-            if header_rect is not None and (
-                abs(header_rect.top - 78) > 0.01 or abs(header_rect.height - 24) > 0.01
-            ):
-                audit.error(f"{element_id} must occupy y=78 h=24 in {suffix}")
-            if header_rect is not None and intersects(filter_rect, header_rect):
-                audit.error(f"{element_id} overlaps ForgeOutputFilterRow in {suffix}")
-            if header_rect is not None and any(intersects(action, header_rect) for action in valid_actions):
-                audit.error(f"{element_id} overlaps the output action band in {suffix}")
-        if baseline_header is not None and current_header is not None \
-                and intersects(baseline_header, current_header):
-            audit.error(f"Comparison column headers overlap in {suffix}")
-
         normal_viewport = rects["ForgeEvidenceScroll"]
-        comparison_viewport = rects["ForgeOutputComparisonScroll"]
         if normal_viewport is not None and abs(normal_viewport.top - 78) > 0.01:
             audit.error(f"ForgeEvidenceScroll must start at y=78 in {suffix}")
-        if comparison_viewport is not None and abs(comparison_viewport.top - 106) > 0.01:
-            audit.error(f"ForgeOutputComparisonScroll must start at y=106 in {suffix}")
-        if comparison_viewport is not None:
-            if any(intersects(action, comparison_viewport) for action in valid_actions):
-                audit.error(f"ForgeOutputComparisonScroll overlaps output actions in {suffix}")
-            if any(
-                header is not None and intersects(header, comparison_viewport)
-                for header in (baseline_header, current_header)
-            ):
-                audit.error(f"ForgeOutputComparisonScroll overlaps its column headers in {suffix}")
         if normal_viewport is not None and any(intersects(action, normal_viewport) for action in valid_actions):
             audit.error(f"ForgeEvidenceScroll overlaps output actions in {suffix}")
 
+        if focused:
+            baseline_header = rects["ForgeOutputComparisonBaselineHeader"]
+            current_header = rects["ForgeOutputComparisonCurrentHeader"]
+            for element_id, header_rect in (
+                ("ForgeOutputComparisonBaselineHeader", baseline_header),
+                ("ForgeOutputComparisonCurrentHeader", current_header),
+            ):
+                if header_rect is not None and (
+                    abs(header_rect.top - 78) > 0.01 or abs(header_rect.height - 24) > 0.01
+                ):
+                    audit.error(f"{element_id} must occupy y=78 h=24 in {suffix}")
+                if header_rect is not None and intersects(filter_rect, header_rect):
+                    audit.error(f"{element_id} overlaps ForgeOutputFilterRow in {suffix}")
+                if header_rect is not None and any(intersects(action, header_rect) for action in valid_actions):
+                    audit.error(f"{element_id} overlaps the output action band in {suffix}")
+            if baseline_header is not None and current_header is not None \
+                    and intersects(baseline_header, current_header):
+                audit.error(f"Comparison column headers overlap in {suffix}")
+
+            comparison_viewport = rects["ForgeOutputComparisonScroll"]
+            if comparison_viewport is not None and abs(comparison_viewport.top - 106) > 0.01:
+                audit.error(f"ForgeOutputComparisonScroll must start at y=106 in {suffix}")
+            if comparison_viewport is not None:
+                if any(intersects(action, comparison_viewport) for action in valid_actions):
+                    audit.error(f"ForgeOutputComparisonScroll overlaps output actions in {suffix}")
+                if any(
+                    header is not None and intersects(header, comparison_viewport)
+                    for header in (baseline_header, current_header)
+                ):
+                    audit.error(f"ForgeOutputComparisonScroll overlaps its column headers in {suffix}")
+
         # The viewports are expected to occupy the same evidence ledger, but
-        # only one may be visible at a time. Their visibility and scrollbar
-        # contracts are checked separately above.
-        for element_id, rect in (
-            ("ForgeEvidenceScroll", normal_viewport),
-            ("ForgeOutputComparisonScroll", comparison_viewport),
-        ):
+        # only one may be visible at a time. Comparison mode is measured in
+        # the focused layout it requests; normal scrolling is measured in both.
+        checked_viewports = [("ForgeEvidenceScroll", normal_viewport)]
+        if focused:
+            checked_viewports.append(("ForgeOutputComparisonScroll", rects["ForgeOutputComparisonScroll"]))
+        for element_id, rect in checked_viewports:
             if rect is not None and (rect.width <= 0 or rect.height <= 0):
                 audit.error(f"{element_id} has empty geometry in {suffix}")
 
