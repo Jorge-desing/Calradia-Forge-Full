@@ -1579,6 +1579,296 @@
          </Border>
         </Grid>
        </Grid></DataTemplate>
+  <!-- 12. Live Session & Memory APM Telemetry Studio (Rev076) -->
+  <DataTemplate x:Key="LiveSessionViewTemplate"><Grid>
+        <Grid.RowDefinitions>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <!-- Header -->
+        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Grid.Row="0" Margin="0,0,0,6" Padding="0,0,0,6">
+         <Grid>
+          <Grid.ColumnDefinitions>
+           <ColumnDefinition Width="*"/>
+           <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource Icon.Connection}" Height="16" Margin="0,0,6,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="16"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding LiveSessionDashboard.SessionTitle, Mode=OneWay}" VerticalAlignment="Center"/>
+           </StackPanel>
+           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding LiveSessionDashboard.ActivePipeUri, Mode=OneWay}"/>
+           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding LiveSessionDashboard.ConnectionMetrics, Mode=OneWay}"/>
+           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding LiveSessionDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+          </StackPanel>
+          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="PIPE STREAM ONLINE"/>
+           </StackPanel>
+          </Border>
+         </Grid>
+        </Border>
+        <!-- Body: Telemetry Events List, Radar Chart, and IPC Latency Sparkline & Gauges -->
+        <Grid Grid.Row="1">
+         <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1.4*"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="1.1*"/>
+         </Grid.ColumnDefinitions>
+         <!-- Column 1: Live Event Stream -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="8">
+          <DockPanel LastChildFill="True">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="FORGEWEAVE EVENT BUS STREAM"/>
+           </Border>
+           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding LiveSessionDashboard.Events}">
+             <ItemsControl.ItemTemplate>
+              <DataTemplate>
+               <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,0,5" Padding="6">
+                <StackPanel>
+                 <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding EventTopic}"/>
+                  <Border Background="{DynamicResource DeepPineBrush}" CornerRadius="2" Grid.Column="1" Padding="3,1">
+                   <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{Binding BrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding Status}"/>
+                  </Border>
+                 </Grid>
+                 <TextBlock FontSize="8.5" Foreground="{DynamicResource BrassBrush}" Margin="0,2,0,0" Text="{Binding SourceSubsystem}"/>
+                 <Grid Margin="0,3,0,0">
+                  <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding PayloadSummary}"/>
+                  <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Right" Text="{Binding LatencyMs}"/>
+                 </Grid>
+                 <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,2,0,0" Text="{Binding EventDetail}"/>
+                </StackPanel>
+               </Border>
+              </DataTemplate>
+             </ItemsControl.ItemTemplate>
+            </ItemsControl>
+           </ScrollViewer>
+          </DockPanel>
+         </Border>
+         <!-- Column 2: Live APM Radar Profile -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="8">
+          <StackPanel HorizontalAlignment="Center">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="APM BUS METRICS"/>
+           </Border>
+           <presentation:ForgeRadarChart
+               AxisLabels="{Binding LiveSessionDashboard.LiveSessionRadarAxes}"
+               Values="{Binding LiveSessionDashboard.ActiveSessionRadarValues}"
+               ComparisonValues="{Binding LiveSessionDashboard.HighConcurrencyRadarValues}"
+               Stroke="{DynamicResource BrassBrush}"
+               Fill="{DynamicResource BrassBrush}"
+               ComparisonStroke="{DynamicResource VerdigrisBrush}"
+               ComparisonFill="{DynamicResource VerdigrisBrush}"
+               GridBrush="{DynamicResource BorderBrush}"
+               AxisLabelBrush="{DynamicResource PaperBrush}"
+               Height="130" Width="130" HorizontalAlignment="Center" Margin="0,2"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="■ Interactive Stream  ■ High Concurrency"/>
+          </StackPanel>
+         </Border>
+         <!-- Column 3: IPC Roundtrip Sparkline & Memory / Ring Buffer Gauges -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
+          <StackPanel>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="IPC APM TELEMETRY"/>
+           </Border>
+           <TextBlock FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="ROUND-TRIP IPC LATENCY (MS)"/>
+           <presentation:ForgeSparkline
+               DataPoints="{Binding LiveSessionDashboard.PipeLatencyTrajectory}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource VerdigrisBrush}"
+               ShowGridLines="True"
+               GridBrush="{DynamicResource BorderBrush}"
+               ValueUnit="ms"
+               FormatString="0.0"
+               Height="36" Margin="0,3"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="{Binding LiveSessionDashboard.EventBusStatus, Mode=OneWay}"/>
+           <Grid Margin="0,4,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <!-- Gauge 1: Heap Allocation Ratio -->
+            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding LiveSessionDashboard.MemoryGaugeValue}"
+                 Maximum="100"
+                 Threshold="75"
+                 CenterText="42.5%"
+                 SubText="HEAP"
+                 AccentBrush="{DynamicResource BrassBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="WORKING SET"/>
+            </StackPanel>
+            <!-- Gauge 2: Ring Buffer Saturation -->
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding LiveSessionDashboard.RingBufferGaugeValue}"
+                 Maximum="100"
+                 Threshold="85"
+                 CenterText="68.0%"
+                 SubText="BUFFER"
+                 AccentBrush="{DynamicResource VerdigrisBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="HEADROOM OK"/>
+            </StackPanel>
+           </Grid>
+           <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding LiveSessionDashboard.ThreadIsolationMetrics, Mode=OneWay}"/>
+          </StackPanel>
+         </Border>
+        </Grid>
+       </Grid></DataTemplate>
+  <!-- 13. Delivery & Distribution Studio (Rev076) -->
+  <DataTemplate x:Key="DeliveryStudioViewTemplate"><Grid>
+        <Grid.RowDefinitions>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <!-- Header -->
+        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Grid.Row="0" Margin="0,0,0,6" Padding="0,0,0,6">
+         <Grid>
+          <Grid.ColumnDefinitions>
+           <ColumnDefinition Width="*"/>
+           <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource GameIcon.files}" Fill="{DynamicResource BrassBrush}" Height="16" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="16"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding DeliveryStudioDashboard.DistributionTitle, Mode=OneWay}" VerticalAlignment="Center"/>
+           </StackPanel>
+           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding DeliveryStudioDashboard.EngineTargetVersion, Mode=OneWay}"/>
+           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding DeliveryStudioDashboard.HygieneAuditMetrics, Mode=OneWay}"/>
+           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding DeliveryStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+          </StackPanel>
+          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="HYGIENE 100% PASS"/>
+           </StackPanel>
+          </Border>
+         </Grid>
+        </Border>
+        <!-- Body: Packages List, Radar Chart, and Compression Throughput & Hygiene Gauges -->
+        <Grid Grid.Row="1">
+         <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1.4*"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="1.1*"/>
+         </Grid.ColumnDefinitions>
+         <!-- Column 1: Package Artifacts Registry -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="8">
+          <DockPanel LastChildFill="True">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="DISTRIBUTION ARCHIVES"/>
+           </Border>
+           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding DeliveryStudioDashboard.Packages}">
+             <ItemsControl.ItemTemplate>
+              <DataTemplate>
+               <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,0,5" Padding="6">
+                <StackPanel>
+                 <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding PackageId}"/>
+                  <Border Background="{DynamicResource DeepPineBrush}" CornerRadius="2" Grid.Column="1" Padding="3,1">
+                   <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{Binding BrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding Status}"/>
+                  </Border>
+                 </Grid>
+                 <TextBlock FontSize="8.5" Foreground="{DynamicResource BrassBrush}" Margin="0,2,0,0" Text="{Binding TargetScope}"/>
+                 <Grid Margin="0,3,0,0">
+                  <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding FileCount}"/>
+                  <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Right" Text="{Binding ArchiveSize}"/>
+                 </Grid>
+                 <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,2,0,0" Text="{Binding PackageSummary}"/>
+                </StackPanel>
+               </Border>
+              </DataTemplate>
+             </ItemsControl.ItemTemplate>
+            </ItemsControl>
+           </ScrollViewer>
+          </DockPanel>
+         </Border>
+         <!-- Column 2: Delivery Safety Radar Profile -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="8">
+          <StackPanel HorizontalAlignment="Center">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="DISTRIBUTION RADAR"/>
+           </Border>
+           <presentation:ForgeRadarChart
+               AxisLabels="{Binding DeliveryStudioDashboard.DeliveryRadarAxes}"
+               Values="{Binding DeliveryStudioDashboard.ReleaseRadarValues}"
+               ComparisonValues="{Binding DeliveryStudioDashboard.QuickProfileRadarValues}"
+               Stroke="{DynamicResource BrassBrush}"
+               Fill="{DynamicResource BrassBrush}"
+               ComparisonStroke="{DynamicResource VerdigrisBrush}"
+               ComparisonFill="{DynamicResource VerdigrisBrush}"
+               GridBrush="{DynamicResource BorderBrush}"
+               AxisLabelBrush="{DynamicResource PaperBrush}"
+               Height="130" Width="130" HorizontalAlignment="Center" Margin="0,2"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="■ Release Profile  ■ CI/CD Quick Profile"/>
+          </StackPanel>
+         </Border>
+         <!-- Column 3: Compression Throughput Sparkline & Hygiene / Compression Gauges -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
+          <StackPanel>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="PIPELINE TELEMETRY"/>
+           </Border>
+           <TextBlock FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="COMPRESSION THROUGHPUT (MB/S)"/>
+           <presentation:ForgeSparkline
+               DataPoints="{Binding DeliveryStudioDashboard.ThroughputTrajectory}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource VerdigrisBrush}"
+               ShowGridLines="True"
+               GridBrush="{DynamicResource BorderBrush}"
+               ValueUnit="MB/s"
+               FormatString="0.0"
+               Height="36" Margin="0,3"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="{Binding DeliveryStudioDashboard.CompressionEngineMetrics, Mode=OneWay}"/>
+           <Grid Margin="0,4,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <!-- Gauge 1: Archive Hygiene -->
+            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding DeliveryStudioDashboard.ArchiveHygieneGaugeValue}"
+                 Maximum="100"
+                 Threshold="95"
+                 CenterText="100%"
+                 SubText="HYGIENE"
+                 AccentBrush="{DynamicResource VerdigrisBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="ZERO LEAKS"/>
+            </StackPanel>
+            <!-- Gauge 2: Compression Ratio -->
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding DeliveryStudioDashboard.CompressionRatioGaugeValue}"
+                 Maximum="100"
+                 Threshold="70"
+                 CenterText="78.4%"
+                 SubText="RATIO"
+                 AccentBrush="{DynamicResource BrassBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="OPTIMAL LEVEL"/>
+            </StackPanel>
+           </Grid>
+           <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding DeliveryStudioDashboard.ManifestIntegrityMetrics, Mode=OneWay}"/>
+          </StackPanel>
+         </Border>
+        </Grid>
+       </Grid></DataTemplate>
   <DataTemplate x:Key="GenericOperationOverviewDashboardTemplate"><Grid>
         <Grid.RowDefinitions>
          <RowDefinition Height="Auto"/>
@@ -2180,6 +2470,12 @@
 
        <!-- 13. Campaign World & Expedition Studio -->
        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CampaignStudioViewTemplate}" MinHeight="0" MinWidth="0" Visibility="{Binding IsCampaignStudio, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+       <!-- 14. Live Session & Memory APM Telemetry Studio -->
+       <ContentControl Content="{Binding}" ContentTemplate="{StaticResource LiveSessionViewTemplate}" MinHeight="0" MinWidth="0" Visibility="{Binding IsLiveSession, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+       <!-- 15. Delivery & Distribution Studio -->
+       <ContentControl Content="{Binding}" ContentTemplate="{StaticResource DeliveryStudioViewTemplate}" MinHeight="0" MinWidth="0" Visibility="{Binding IsDeliveryStudio, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
       </Grid>
 

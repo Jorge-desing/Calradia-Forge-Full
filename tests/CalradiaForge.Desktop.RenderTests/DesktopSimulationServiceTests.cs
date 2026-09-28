@@ -450,5 +450,33 @@ internal static class DesktopSimulationServiceTests
         Check(campaignVm.Settlements != null && campaignVm.Settlements.Count == 5, "Campaign studio must expose 5 provincial settlements.");
         Check(!string.IsNullOrWhiteSpace(campaignVm.StudioDocumentation), "Campaign studio must provide forensic documentation.");
         Check(!string.IsNullOrWhiteSpace(campaignVm.ArchitecturalInvariants), "Campaign studio must declare architectural invariants.");
+
+        // 11. Live Session & Memory APM Telemetry Studio Dashboard (Rev076)
+        var liveVm = new LiveSessionDashboardViewModel();
+        Check(liveVm.LiveSessionRadarAxes != null && liveVm.LiveSessionRadarAxes.Count == 5, "Live session studio must expose 5 APM telemetry axes.");
+        Check(liveVm.ActiveSessionRadarValues != null && liveVm.ActiveSessionRadarValues.Count == 5, "Active session radar values must have 5 entries.");
+        Check(liveVm.HighConcurrencyRadarValues != null && liveVm.HighConcurrencyRadarValues.Count == 5, "High concurrency radar values must have 5 entries.");
+        Check(liveVm.ActiveSessionRadarValues.All(v => v >= 0.0 && v <= 1.0), "Active session radar values must be normalized in [0, 1].");
+        Check(liveVm.HighConcurrencyRadarValues.All(v => v >= 0.0 && v <= 1.0), "High concurrency radar values must be normalized in [0, 1].");
+        Check(liveVm.PipeLatencyTrajectory != null && liveVm.PipeLatencyTrajectory.Count == 16, "Pipe latency trajectory must contain 16 intervals.");
+        Check(liveVm.MemoryGaugeValue >= 0.0 && liveVm.MemoryGaugeValue <= 100.0, "Memory gauge must be bounded in [0, 100].");
+        Check(liveVm.RingBufferGaugeValue >= 0.0 && liveVm.RingBufferGaugeValue <= 100.0, "Ring buffer gauge must be bounded in [0, 100].");
+        Check(liveVm.Events != null && liveVm.Events.Count == 5, "Live session studio must expose 5 default events.");
+        Check(!string.IsNullOrWhiteSpace(liveVm.StudioDocumentation), "Live session studio must provide forensic documentation.");
+        Check(!string.IsNullOrWhiteSpace(liveVm.ArchitecturalInvariants), "Live session studio must declare architectural invariants.");
+
+        // 12. Delivery & Distribution Studio Dashboard (Rev076)
+        var deliveryVm = new DeliveryStudioDashboardViewModel();
+        Check(deliveryVm.DeliveryRadarAxes != null && deliveryVm.DeliveryRadarAxes.Count == 5, "Delivery studio must expose 5 delivery radar axes.");
+        Check(deliveryVm.ReleaseRadarValues != null && deliveryVm.ReleaseRadarValues.Count == 5, "Release profile radar values must have 5 entries.");
+        Check(deliveryVm.QuickProfileRadarValues != null && deliveryVm.QuickProfileRadarValues.Count == 5, "Quick profile radar values must have 5 entries.");
+        Check(deliveryVm.ReleaseRadarValues.All(v => v >= 0.0 && v <= 1.0), "Release radar values must be normalized in [0, 1].");
+        Check(deliveryVm.QuickProfileRadarValues.All(v => v >= 0.0 && v <= 1.0), "Quick profile radar values must be normalized in [0, 1].");
+        Check(deliveryVm.ThroughputTrajectory != null && deliveryVm.ThroughputTrajectory.Count == 16, "Throughput trajectory must contain 16 intervals.");
+        Check(deliveryVm.ArchiveHygieneGaugeValue >= 0.0 && deliveryVm.ArchiveHygieneGaugeValue <= 100.0, "Archive hygiene gauge must be bounded in [0, 100].");
+        Check(deliveryVm.CompressionRatioGaugeValue >= 0.0 && deliveryVm.CompressionRatioGaugeValue <= 100.0, "Compression ratio gauge must be bounded in [0, 100].");
+        Check(deliveryVm.Packages != null && deliveryVm.Packages.Count == 4, "Delivery studio must expose 4 package artifacts.");
+        Check(!string.IsNullOrWhiteSpace(deliveryVm.StudioDocumentation), "Delivery studio must provide forensic documentation.");
+        Check(!string.IsNullOrWhiteSpace(deliveryVm.ArchitecturalInvariants), "Delivery studio must declare architectural invariants.");
     }
 }

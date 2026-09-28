@@ -23,7 +23,9 @@ namespace CalradiaForge.Desktop.Presentation
         CombatStudio,
         CaravanTrade,
         GauntletStudio,
-        CampaignStudio
+        CampaignStudio,
+        LiveSession,
+        DeliveryStudio
     }
 
     internal sealed class ToolDefinition : INotifyPropertyChanged
@@ -86,16 +88,48 @@ namespace CalradiaForge.Desktop.Presentation
 
             Studio = id switch
             {
-                "TroopTreeVisualizer" => DesktopStudioKind.TroopTree,
+                "TroopTreeVisualizer" or "PerkTreeCalculator" => DesktopStudioKind.TroopTree,
                 "AudioFmodMixerInspector" => DesktopStudioKind.AudioMixer,
                 "WorkshopEnterpriseSimulator" => DesktopStudioKind.Workshop,
                 "SaveInspector" or "ForgeAgentMemoryInspector" or "AgentMemoryInspector" => DesktopStudioKind.AgentMemory,
                 "SaveTypeDefinerAuditor" or "CampaignNamespaceGuard" or "AssemblyInspector" or "AssemblyVersionPatchLab" => DesktopStudioKind.CodeSecurity,
                 "ModConflictMatrix" or "DependencySorter" => DesktopStudioKind.ModuleHierarchy,
-                "DiplomaticMatrix" or "WarCasusBelliEngine" or "DynasticSuccessionEvaluator" or "SDK_ForgeDiplomacyEngine" => DesktopStudioKind.KingdomDiplomacy,
-                "SoundXmlSynthesizer" or "TroopXmlSynthesizer" or "ItemXmlSynthesizer" or "WeaponCraftingForge" or "BrushSynthesizer" or "XmlSnippetForge" => DesktopStudioKind.ComponentGenerator,
-                "ForgeFormationController" or "ForgeSiegeEngineManager" or "ForgeDamageModifier" or "ForgeArmorPenetration" or "ForgeMoraleShock" or "ForgeCavalryCharge" or "ForgeArcherVolley" or "ForgeAmbushTactics" or "ForgeCleaveStrike" or "ForgeShieldBash" or "TacticalCombatSimulator" or "CombatAiAuditor" or "SDK_ForgeCombatAi" => DesktopStudioKind.CombatStudio,
-                "ForgeCaravanController" or "ForgeMarketFluctuation" or "ForgeTaxesController" or "ForgeSmugglingSystem" or "ForgeLoanSystem" or "ForgeInflationController" or "ForgeTradeRouteOptimizer" or "ForgeBlackMarket" or "ForgeSupplyChainManager" or "CaravanTradeHub" or "MarketPriceSpreadInspector" or "SDK_ForgeEconomyTrade" => DesktopStudioKind.CaravanTrade,
+                "DiplomaticMatrix" or "WarCasusBelliEngine" or "DynasticSuccessionEvaluator" or "SDK_ForgeDiplomacyEngine"
+                or "SDK_ForgeKingdomManager" or "SDK_ForgeClanManager" or "SDK_ForgeRebellionSystem" or "SDK_ForgePolicyEnforcer"
+                or "SDK_ForgeVassalRelations" or "SDK_ForgeMarriageArranger" or "SDK_ForgeHeirDesignator" or "SDK_ForgeElectionRigger"
+                or "SDK_ForgeTreasonSystem" or "SDK_ForgeCivilWarTrigger" or "SDK_ForgeAllianceBuilder" or "SDK_ForgeTruceNegotiator"
+                or "SDK_ForgeCasusBelli" or "SDK_ForgeSpyNetwork" or "SDK_ForgeAssassinationPlot" or "SDK_ForgeInfluenceMarket"
+                or "SDK_ForgeRenownTracker" or "SDK_ForgeTitleGranter" or "SDK_ForgeFactionSplitter" or "SDK_ForgeNobleCourt" => DesktopStudioKind.KingdomDiplomacy,
+                "SoundXmlSynthesizer" or "TroopXmlSynthesizer" or "ItemXmlSynthesizer" or "WeaponCraftingForge"
+                or "BrushSynthesizer" or "XmlSnippetForge" or "LocalizationHashGenerator" or "LocalizationMatrix"
+                or "HarmonyPatcher" or "HarmonyTranspiler" or "QuestDialogBuilder"
+                or "NoviceBehavior" or "NoviceTroop" or "NoviceQuest" or "NoviceItem" or "NoviceSubmodule"
+                or "NoviceChecklist" or "NoviceEvents" or "NoviceHint" or "NoviceWorkshop" or "NoviceParty"
+                or "NoviceBuilding" or "NoviceCombatAi" => DesktopStudioKind.ComponentGenerator,
+                "ItemBalanceAnalyzer" or "CombatAgentSpawner" or "SiegeNavmeshTactician"
+                or "SDK_ForgeFormationController" or "SDK_ForgeSiegeEngineManager" or "SDK_ForgeDamageModifier"
+                or "SDK_ForgeArmorPenetration" or "SDK_ForgeWeaponBreakage" or "SDK_ForgeMoraleShock" or "SDK_ForgeFleeLogic"
+                or "SDK_ForgeCavalryCharge" or "SDK_ForgePikemanBrace" or "SDK_ForgeArcherVolley" or "SDK_ForgeFriendlyFireAvoidance"
+                or "SDK_ForgeWeatherCombatMod" or "SDK_ForgeNightVisionPenalties" or "SDK_ForgeBleedEffect" or "SDK_ForgePoisonEffect"
+                or "SDK_ForgeStunEffect" or "SDK_ForgeCleaveStrike" or "SDK_ForgeHeadshotBonus" or "SDK_ForgeDismountChance"
+                or "SDK_ForgeShieldBash" or "SDK_ForgeExecutionMoves" or "SDK_ForgeAmbushTactics" or "SDK_ForgeLootingBehavior"
+                or "SDK_ForgeBodyguardAssignment" or "SDK_ForgeDuellingSystem" or "SDK_ForgeTargetPriority" or "SDK_ForgeWeaponSwapLogic"
+                or "SDK_ForgeFormationSpacing"
+                or "TacticalCombatSimulator" or "CombatAiAuditor" or "SDK_ForgeCombatAi"
+                or "ForgeFormationController" or "ForgeSiegeEngineManager" or "ForgeDamageModifier" or "ForgeArmorPenetration"
+                or "ForgeMoraleShock" or "ForgeCavalryCharge" or "ForgeArcherVolley" or "ForgeAmbushTactics"
+                or "ForgeCleaveStrike" or "ForgeShieldBash" => DesktopStudioKind.CombatStudio,
+                "UnderworldCrimeSimulator"
+                or "SDK_ForgeTradeManager" or "SDK_ForgeCaravanController" or "SDK_ForgeWorkshopManager" or "SDK_ForgeMarketFluctuation"
+                or "SDK_ForgeTaxesController" or "SDK_ForgeSmugglingSystem" or "SDK_ForgeBlackMarket" or "SDK_ForgeLoanSystem"
+                or "SDK_ForgeBankSystem" or "SDK_ForgeInvestmentTracker" or "SDK_ForgeResourceDepletion" or "SDK_ForgeInflationController"
+                or "SDK_ForgeTradeRouteOptimizer" or "SDK_ForgeMerchantGuilds" or "SDK_ForgeCurrencyExchange" or "SDK_ForgePricePegging"
+                or "SDK_ForgeBribeManager" or "SDK_ForgeEconomicCrisis" or "SDK_ForgeProsperityBooster" or "SDK_ForgeFamineSimulator"
+                or "SDK_ForgeSupplyChainManager"
+                or "CaravanTradeHub" or "MarketPriceSpreadInspector" or "SDK_ForgeEconomyTrade"
+                or "ForgeCaravanController" or "ForgeMarketFluctuation" or "ForgeTaxesController" or "ForgeSmugglingSystem"
+                or "ForgeLoanSystem" or "ForgeInflationController" or "ForgeTradeRouteOptimizer" or "ForgeBlackMarket"
+                or "ForgeSupplyChainManager" => DesktopStudioKind.CaravanTrade,
                 "GauntletInspector" or "GauntletLivePreview" or "GauntletEventPassChecker" or "SpritePackageAuditor"
                 or "SDK_ForgeFloatingDamage" or "SDK_ForgeCustomCrosshair" or "SDK_ForgeMinimapOverlay" or "SDK_ForgeHealthBars"
                 or "SDK_ForgeCombatCompass" or "SDK_ForgeAdvancedKillfeed" or "SDK_ForgeInventorySort" or "SDK_ForgePartyFilter"
@@ -112,6 +146,10 @@ namespace CalradiaForge.Desktop.Presentation
                 or "SDK_ForgeRandomEventTrigger" or "SDK_ForgePlagueSimulator" or "SDK_ForgeBanditInvasion" or "SDK_ForgeBountyHunting"
                 or "SDK_ForgeSlaveTrade" or "SDK_ForgeTournamentGenerator" or "SDK_ForgeCustomSettlementBuilder" or "SDK_ForgeNavalTravel"
                 or "SDK_ForgeCampingSystem" or "SDK_ForgeHuntingSystem" or "SDK_ForgeForagingSystem" or "SDK_ForgeCompanionSpawner" => DesktopStudioKind.CampaignStudio,
+                "LiveConsole" or "ObjectInspector" or "SaveBinaryParser" or "MemoryProfiler"
+                or "PartyInventory" or "MapPathfindingDebugger" or "MockEngine" => DesktopStudioKind.LiveSession,
+                "ModPackager" or "RecentExports" or "SdkCheatSheet" or "ShortcutGuide"
+                or "ConsoleReference" or "FbxAsciiPreflight" => DesktopStudioKind.DeliveryStudio,
                 _ => DesktopStudioKind.Generic
             };
 
@@ -322,6 +360,8 @@ namespace CalradiaForge.Desktop.Presentation
             "TroopXmlSynthesizer" => "Sintetizador de definiciones de personajes y tropas (NPCCharacters.xml). Genera árboles de tropas válidos con niveles de habilidad, plantillas de equipo (body, gloves, boots, weapons) y etiquetas de facción/cultura.",
             "GauntletInspector" or "GauntletLivePreview" => "Estudio táctico de Gauntlet UI y HUD. Modela la jerarquía de widgets, resolución de anclajes, presupuesto de draw calls, estilos de brochas y capas visuales del HUD in-game.",
             "SettlementCalculator" or "SDK_ForgeWeatherController" => "Estudio de expedición y equilibrio de campaña de Calradia. Modela el crecimiento de hogares, estabilidad de lealtad, guarniciones, seguridad cívica y variaciones meteorológicas.",
+            "LiveConsole" or "MemoryProfiler" or "ObjectInspector" => "Estudio de telemetría y sesión interactiva en tiempo real (Live Session). Monitorea el bus de eventos de ForgeWeave por Named Pipes, latencia IPC de ida y vuelta, saturación del buffer en anillo y cuotas de memoria sin interferir con el hilo del juego.",
+            "ModPackager" or "RecentExports" or "FbxAsciiPreflight" => "Estudio de empaquetado y entrega de producción (Delivery & Deployment). Ejecuta auditorías preflight de FastPackageEngine, verificación de firmas e integridad SHA-256, saneamiento de streams Zone.Identifier y generación paralela multihilo.",
                 _ => $"{Purpose} Opera de forma estrictamente acotada (bounded) y aislada del hilo de renderizado, garantizando cero efectos colaterales persistentes en partidas guardadas ni en la instalación del juego."
             };
 

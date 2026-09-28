@@ -2798,4 +2798,210 @@ namespace CalradiaForge.Desktop.Presentation
         public string TroubleshootingRemedy => "If settlement loyalty drops below 25%, ensure garrison food stocks are positive and check that governor culture matches settlement culture to avoid culture clash penalties.";
         public string ProceduralMacroAction => "cf.sim_settlements all && cf.weather_sim clear";
     }
+
+    // =========================================================================
+    // LIVE SESSION & MEMORY APM STUDIO VIEW MODELS (Rev076)
+    // =========================================================================
+
+    internal sealed class LivePipeTelemetryEventViewModel
+    {
+        public LivePipeTelemetryEventViewModel(string eventTopic, string sourceSubsystem, string payloadSummary, string latencyMs, string status, string brushKey)
+        {
+            EventTopic = eventTopic;
+            SourceSubsystem = sourceSubsystem;
+            PayloadSummary = payloadSummary;
+            LatencyMs = latencyMs;
+            Status = status;
+            BrushKey = brushKey;
+        }
+
+        public string EventTopic { get; }
+        public string SourceSubsystem { get; }
+        public string PayloadSummary { get; }
+        public string LatencyMs { get; }
+        public string Status { get; }
+        public string BrushKey { get; }
+        public string EventDetail => $"{SourceSubsystem} · Latency: {LatencyMs} · {PayloadSummary}";
+    }
+
+    internal sealed class LiveSessionDashboardViewModel : ObservableObject
+    {
+        static readonly string[] DefaultLiveRadarAxes = ["DispatchRate", "BufferHeadroom", "ThreadAffinity", "ReplayIntegrity", "CircuitBreaker"];
+        static readonly double[] DefaultActiveSessionRadarValues = [0.94, 0.88, 0.96, 0.92, 0.98];
+        static readonly double[] DefaultHighConcurrencyRadarValues = [0.82, 0.74, 0.90, 0.85, 0.88];
+        static readonly double[] DefaultPipeLatencyTrajectory = [
+            0.4, 0.6, 0.5, 0.8, 0.7, 0.9, 0.6, 1.2,
+            0.8, 0.7, 1.0, 0.8, 1.1, 0.9, 0.7, 0.8
+        ];
+
+        static readonly LivePipeTelemetryEventViewModel[] DefaultEvents = [
+            new("cf.forgeweave.tick", "Simulation Engine", "SubModule Tick Sync #4820 · dt=0.016s", "0.4 ms", "STREAMING", "VerdigrisBrush"),
+            new("cf.ipc.sync", "Named Pipe Host", "Bidirectional IPC Handshake (PID 14820)", "0.6 ms", "ACTIVE", "BrassBrush"),
+            new("cf.memory.compact", "CoALA Memory", "Semantic Fact TTL Expiration Sweep (6 slots freed)", "1.1 ms", "COMPACTED", "VerdigrisBrush"),
+            new("cf.forgeweave.replay", "Replay Buffer", "Event Verification Checkpoint #120 · 0 dropped", "0.5 ms", "VERIFIED", "PaperBrush"),
+            new("cf.game.session", "TaleWorlds Hook", "Campaign GameSession Bound · Thread Affinity OK", "0.7 ms", "SYNCHRONIZED", "BrassBrush")
+        ];
+
+        string sessionTitle = "CalradiaForge.Pipe.Live · Named Pipe APM Mesh";
+        string activePipeUri = @"\\.\pipe\CalradiaForge.Live (IPC Stream Mode)";
+        string connectionMetrics = "Connected Clients: 1 Active · Protocol: ForgeProtocol v2 · TLS/Auth: Local Loopback";
+        string eventBusStatus = "Event Bus: 2,048 Slot Ring Buffer · 68.0% Saturation · 0 Overflows / Dropped Events";
+        string threadIsolationMetrics = "Thread Affinity: Isolated ThreadPool Worker · Game Thread Contention: 0.0%";
+
+        double memoryGaugeValue = 42.5;
+        double ringBufferGaugeValue = 68.0;
+
+        public LiveSessionDashboardViewModel()
+        {
+            Events = DefaultEvents;
+            LiveSessionRadarAxes = DefaultLiveRadarAxes;
+            ActiveSessionRadarValues = DefaultActiveSessionRadarValues;
+            HighConcurrencyRadarValues = DefaultHighConcurrencyRadarValues;
+            PipeLatencyTrajectory = DefaultPipeLatencyTrajectory;
+        }
+
+        public string SessionTitle { get => sessionTitle; private set => Set(ref sessionTitle, value); }
+        public string ActivePipeUri { get => activePipeUri; private set => Set(ref activePipeUri, value); }
+        public string ConnectionMetrics { get => connectionMetrics; private set => Set(ref connectionMetrics, value); }
+        public string EventBusStatus { get => eventBusStatus; private set => Set(ref eventBusStatus, value); }
+        public string ThreadIsolationMetrics { get => threadIsolationMetrics; private set => Set(ref threadIsolationMetrics, value); }
+
+        public IReadOnlyList<string> LiveSessionRadarAxes { get; }
+        public IReadOnlyList<double> ActiveSessionRadarValues { get; }
+        public IReadOnlyList<double> HighConcurrencyRadarValues { get; }
+        public IReadOnlyList<double> PipeLatencyTrajectory { get; }
+        public IReadOnlyList<LivePipeTelemetryEventViewModel> Events { get; }
+
+        public double MemoryGaugeValue { get => memoryGaugeValue; private set => Set(ref memoryGaugeValue, value); }
+        public double RingBufferGaugeValue { get => ringBufferGaugeValue; private set => Set(ref ringBufferGaugeValue, value); }
+
+        public string StudioDocumentation => "Calradia Forge Live Session & IPC Telemetry Architecture: Connects standalone desktop tools to in-game Bannerlord via low-latency Named Pipes. Features real-time APM profiling, ForgeWeave event bus streaming, threadpool isolation, and zero game-thread contention.";
+        public string ArchitecturalInvariants => "1. Named Pipe handlers must never block the game simulation thread.\n2. Ring buffer operations must employ zero-allocation interlocked index advancement.\n3. Disconnections or timeouts must trigger immediate circuit breakers without throwing.\n4. Event payloads must be deserialized into pooled or immutable records.";
+        public string StudioCaveat => "Attempting to invoke state-changing operations across the Named Pipe while the game engine is paused in a loading screen will be rejected by the circuit breaker.";
+        public string QuickActionCommand => "cf.forgeweave_replay";
+        public string QuickActionLabel => "Sync Replay Buffer";
+        public string ScratchpadNotes { get; set; } = "Notes: Named Pipe APM session active with 0.8ms average latency, 68% buffer headroom, and zero dropped frames.";
+        public IReadOnlyList<StudioConsoleCommand> CuratedConsoleCommands { get; } =
+        [
+            new("cf.forgeweave_replay", "Dump recent event stream from ForgeWeave in-memory ring buffer.", "Live session", true),
+            new("cf.ipc_ping", "Send ping beacon through Named Pipe to measure round-trip latency.", "Live session"),
+            new("cf.coala_status", "Query active CoALA cognitive memory slot occupancy and TTL facts.", "Live session"),
+            new("cf.memory_compact", "Force immediate episodic memory pruning and garbage collection pass.", "Live session"),
+            new("cf.audit_rules", "Verify CLR assembly rules and anti-shadowing constraints.", "Diagnostics")
+        ];
+        public string PlaybookTitle => "Playbook: Live Session IPC Diagnostic & Telemetry Capture";
+        public IReadOnlyList<string> PlaybookSteps { get; } =
+        [
+            "1. Verify Bannerlord instance is running with Calradia Forge module enabled.",
+            "2. Establish Named Pipe client handshake via \\\\.\\pipe\\CalradiaForge.Live.",
+            "3. Stream event bus packets and verify zero allocation in hot dispatch loop."
+        ];
+        public string TroubleshootingHeader => "Troubleshooting: Pipe Timeout or Disconnection";
+        public string TroubleshootingRemedy => "If the pipe fails to connect, ensure Bannerlord is not running as Administrator if the desktop workbench is un-elevated, and check that port/pipe name is not blocked by antivirus.";
+        public string ProceduralMacroAction => "cf.ipc_ping && cf.forgeweave_replay";
+    }
+
+    // =========================================================================
+    // DELIVERY & DISTRIBUTION STUDIO VIEW MODELS (Rev076)
+    // =========================================================================
+
+    internal sealed class PackageArtifactItemViewModel
+    {
+        public PackageArtifactItemViewModel(string packageId, string targetScope, string fileCount, string archiveSize, string sha256Prefix, string status, string brushKey)
+        {
+            PackageId = packageId;
+            TargetScope = targetScope;
+            FileCount = fileCount;
+            ArchiveSize = archiveSize;
+            Sha256Prefix = sha256Prefix;
+            Status = status;
+            BrushKey = brushKey;
+        }
+
+        public string PackageId { get; }
+        public string TargetScope { get; }
+        public string FileCount { get; }
+        public string ArchiveSize { get; }
+        public string Sha256Prefix { get; }
+        public string Status { get; }
+        public string BrushKey { get; }
+        public string PackageSummary => $"{TargetScope} · {FileCount} · SHA: {Sha256Prefix}...";
+    }
+
+    internal sealed class DeliveryStudioDashboardViewModel : ObservableObject
+    {
+        static readonly string[] DefaultDeliveryRadarAxes = ["ArchiveInteg", "ZeroNative", "ManifestVal", "ZoneStripped", "Sha256Audit"];
+        static readonly double[] DefaultReleaseRadarValues = [0.98, 1.00, 0.95, 1.00, 0.99];
+        static readonly double[] DefaultQuickProfileRadarValues = [0.90, 1.00, 0.88, 0.95, 0.92];
+        static readonly double[] DefaultThroughputTrajectory = [
+            42.0, 58.0, 64.0, 72.0, 68.0, 85.0, 92.0, 98.0,
+            105.0, 112.0, 108.0, 118.0, 124.0, 116.0, 122.0, 128.5
+        ];
+
+        static readonly PackageArtifactItemViewModel[] DefaultPackages = [
+            new("CalradiaForge-Modules-25.2.0.zip", "Bannerlord In-Game Mod Module", "148 files", "12.4 MB", "AC7C141D", "AUDITED", "VerdigrisBrush"),
+            new("CalradiaForge-Source-SDK-25.2.0.zip", "Developer SDK & DocFX Site", "312 files", "18.6 MB", "24320259", "AUDITED", "BrassBrush"),
+            new("CalradiaForge-Desktop-25.2.0.zip", "Standalone WPF Workbench", "86 files", "28.2 MB", "AF7594B2", "AUDITED", "VerdigrisBrush"),
+            new("package-audit-2520.json", "Cryptographic Manifest Ledger", "1 file", "4.2 KB", "SHA256OK", "VERIFIED", "PaperBrush")
+        ];
+
+        string distributionTitle = "FastPackageEngine v2 · Multi-Threaded Distribution Pipeline";
+        string engineTargetVersion = "Target: Mount & Blade II: Bannerlord v1.2.9 - v1.2.11+";
+        string hygieneAuditMetrics = "Distribution Hygiene: 100% Verified · 0 TaleWorlds DLLs · 0 Scripts · 0 Zone Streams";
+        string compressionEngineMetrics = "Compression Engine: Parallel.Invoke Multi-Core · Optimal Level · 128.5 MB/s Peak";
+        string manifestIntegrityMetrics = "Manifest Integrity: SubModule.xml Schema Valid · SHA-256 Hash Chain Locked";
+
+        double archiveHygieneGaugeValue = 100.0;
+        double compressionRatioGaugeValue = 78.4;
+
+        public DeliveryStudioDashboardViewModel()
+        {
+            Packages = DefaultPackages;
+            DeliveryRadarAxes = DefaultDeliveryRadarAxes;
+            ReleaseRadarValues = DefaultReleaseRadarValues;
+            QuickProfileRadarValues = DefaultQuickProfileRadarValues;
+            ThroughputTrajectory = DefaultThroughputTrajectory;
+        }
+
+        public string DistributionTitle { get => distributionTitle; private set => Set(ref distributionTitle, value); }
+        public string EngineTargetVersion { get => engineTargetVersion; private set => Set(ref engineTargetVersion, value); }
+        public string HygieneAuditMetrics { get => hygieneAuditMetrics; private set => Set(ref hygieneAuditMetrics, value); }
+        public string CompressionEngineMetrics { get => compressionEngineMetrics; private set => Set(ref compressionEngineMetrics, value); }
+        public string ManifestIntegrityMetrics { get => manifestIntegrityMetrics; private set => Set(ref manifestIntegrityMetrics, value); }
+
+        public IReadOnlyList<string> DeliveryRadarAxes { get; }
+        public IReadOnlyList<double> ReleaseRadarValues { get; }
+        public IReadOnlyList<double> QuickProfileRadarValues { get; }
+        public IReadOnlyList<double> ThroughputTrajectory { get; }
+        public IReadOnlyList<PackageArtifactItemViewModel> Packages { get; }
+
+        public double ArchiveHygieneGaugeValue { get => archiveHygieneGaugeValue; private set => Set(ref archiveHygieneGaugeValue, value); }
+        public double CompressionRatioGaugeValue { get => compressionRatioGaugeValue; private set => Set(ref compressionRatioGaugeValue, value); }
+
+        public string StudioDocumentation => "Calradia Forge Delivery & FastPackageEngine Architecture: Manages distribution safety, multi-threaded parallel compression, cryptographic SHA-256 ledger hashing, Mark-of-the-Web (:Zone.Identifier) stream stripping, and strict exclusion of proprietary game binaries.";
+        public string ArchitecturalInvariants => "1. Zero proprietary TaleWorlds assemblies in distribution archives.\n2. Never include .bat or .ps1 scripts in public distribution zips.\n3. Strip all NTFS :Zone.Identifier streams prior to compression.\n4. Every package must be audited by audit_package.py and recorded in SHA-256 ledger.";
+        public string StudioCaveat => "Distributing unstripped assemblies with Zone.Identifier will cause dynamic CLR Assembly.LoadFrom failures with HRESULT 0x80131515 on end-user machines.";
+        public string QuickActionCommand => "powershell -File tools/package.ps1";
+        public string QuickActionLabel => "Package Release";
+        public string ScratchpadNotes { get; set; } = "Notes: FastPackageEngine staged 3 archives with 100% hygiene score, 78.4% compression ratio, and zero proprietary leaks.";
+        public IReadOnlyList<StudioConsoleCommand> CuratedConsoleCommands { get; } =
+        [
+            new("powershell -File tools/package.ps1", "Execute full multi-threaded production packaging pipeline.", "Delivery", true),
+            new("python tools/audit_package.py", "Perform deep binary and manifest hygiene audit on output archives.", "Delivery"),
+            new("cf.preflight_check", "Verify assembly metadata, copyright strings, and SubModule versions.", "Delivery"),
+            new("cf.strip_zone_streams", "Recursively strip NTFS Zone.Identifier streams from output files.", "Delivery"),
+            new("cf.audit_rules", "Verify CLR assembly rules and anti-shadowing constraints.", "Diagnostics")
+        ];
+        public string PlaybookTitle => "Playbook: Distribution Packaging & Release Preflight";
+        public IReadOnlyList<string> PlaybookSteps { get; } =
+        [
+            "1. Compile Release assemblies with 0 warnings (dotnet build -c Release).",
+            "2. Execute FastPackageEngine multi-threaded parallel packaging (tools/package.ps1).",
+            "3. Audit SHA-256 hashes and verify exclusion of TaleWorlds DLLs and scripts."
+        ];
+        public string TroubleshootingHeader => "Troubleshooting: Antivirus Heuristics or False Positives";
+        public string TroubleshootingRemedy => "If antivirus flags output DLLs, verify assembly metadata in Directory.Build.props (Company, Product, Copyright) and set UseAppHost=false to prevent executable false alarms.";
+        public string ProceduralMacroAction => "cf.preflight_check && python tools/audit_package.py";
+    }
 }
+
