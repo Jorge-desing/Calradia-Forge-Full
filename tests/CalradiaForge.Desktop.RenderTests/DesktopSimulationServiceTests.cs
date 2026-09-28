@@ -40,6 +40,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies vector bar charts and tactical correlation heatmaps (Rev083)");
         Rev086StudioEnrichmentAndTimelineTelemetry();
         Console.WriteLine("PASS Desktop simulation verifies Rev086 pipeline steps, timeline ruler, and studio trajectories");
+        Rev087SpecializedStudiosAndAquilaSealTelemetry();
+        Console.WriteLine("PASS Desktop simulation verifies Rev087 specialized studio pipelines, area trajectories, and aquila seal telemetry");
     }
 
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
@@ -600,5 +602,56 @@ internal static class DesktopSimulationServiceTests
         Check(ruler.CurrentTime == 42.5, "Timeline ruler CurrentTime must be 42.5.");
         Check(ruler.MajorInterval == 10, "Timeline ruler MajorInterval must be 10.");
         Check(ruler.MinorInterval == 2, "Timeline ruler MinorInterval must be 2.");
+    }
+
+    static void Rev087SpecializedStudiosAndAquilaSealTelemetry()
+    {
+        // 1. AudioStudioDashboardViewModel
+        var audioVm = new AudioStudioDashboardViewModel();
+        Check(audioVm.AudioDspPipelineSteps != null && audioVm.AudioDspPipelineSteps.Count == 4,
+            "AudioStudio dashboard must expose 4 DSP pipeline steps.");
+        Check(audioVm.AudioSpectralDensityTrajectory != null && audioVm.AudioSpectralDensityTrajectory.Count == 16,
+            "AudioStudio dashboard must expose 16-point spectral density trajectory.");
+        Check(audioVm.CurrentPlaybackTimestamp > 0.0,
+            "AudioStudio dashboard must expose non-zero current playback timestamp.");
+        audioVm.ApplyEqualizerPreset("Voice Clarity");
+        Check(audioVm.AudioDspPipelineSteps.Any(s => s.Title == "Parametric EQ" && s.Status == ForgeStepStatus.Active),
+            "Equalizer preset must update DSP pipeline step status.");
+
+        // 2. WorkshopDashboardViewModel
+        var workshopVm = new WorkshopDashboardViewModel();
+        Check(workshopVm.ProductionChainPipelineSteps != null && workshopVm.ProductionChainPipelineSteps.Count == 4,
+            "Workshop dashboard must expose 4 production chain pipeline steps.");
+        Check(workshopVm.EnterpriseProfitMarginTrajectory != null && workshopVm.EnterpriseProfitMarginTrajectory.Count == 16,
+            "Workshop dashboard must expose 16-point profit margin trajectory.");
+        Check(workshopVm.EconomicCycleTimelineDays > 0.0,
+            "Workshop dashboard must expose non-zero economic cycle timeline days.");
+        workshopVm.HorizonDays = 7;
+        Check(workshopVm.ProductionChainPipelineSteps.Any(s => s.Title == "Artisan Forge" && s.Status == ForgeStepStatus.Active),
+            "Changing workshop horizon must update pipeline steps.");
+
+        // 3. AgentMemoryDashboardViewModel
+        var memoryVm = new AgentMemoryDashboardViewModel();
+        Check(memoryVm.CognitiveConsolidationPipelineSteps != null && memoryVm.CognitiveConsolidationPipelineSteps.Count == 4,
+            "AgentMemory dashboard must expose 4 cognitive consolidation pipeline steps.");
+        Check(memoryVm.MemoryUtilityDecayCurve != null && memoryVm.MemoryUtilityDecayCurve.Count == 16,
+            "AgentMemory dashboard must expose 16-point utility decay curve.");
+        Check(memoryVm.EpisodicTimelineHours > 0.0,
+            "AgentMemory dashboard must expose non-zero episodic timeline hours.");
+        memoryVm.CycleScenario(1);
+        Check(memoryVm.CognitiveConsolidationPipelineSteps.Any(s => s.Title == "Schema Consolidation" && s.Status == ForgeStepStatus.Active),
+            "Cycling agent memory scenario must update consolidation pipeline steps.");
+
+        // 4. KingdomDiplomacyDashboardViewModel
+        var kingdomVm = new KingdomDiplomacyDashboardViewModel();
+        Check(kingdomVm.DiplomaticResolutionPipelineSteps != null && kingdomVm.DiplomaticResolutionPipelineSteps.Count == 4,
+            "KingdomDiplomacy dashboard must expose 4 diplomatic resolution pipeline steps.");
+        Check(kingdomVm.GeopoliticalTensionTrajectory != null && kingdomVm.GeopoliticalTensionTrajectory.Count == 16,
+            "KingdomDiplomacy dashboard must expose 16-point geopolitical tension trajectory.");
+        Check(kingdomVm.TreatyTruceTimelineDays >= 0.0,
+            "KingdomDiplomacy dashboard must expose valid treaty truce timeline days.");
+        kingdomVm.CycleScenario(1);
+        Check(kingdomVm.GeopoliticalTensionTrajectory.Any(p => p > 0.50),
+            "Cycling kingdom scenario must update tension trajectory.");
     }
 }

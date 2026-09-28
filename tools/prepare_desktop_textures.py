@@ -81,6 +81,7 @@ PRESERVED_UNPACKAGED_VARIANTS = {
     "tactical-dial-plate-rev084.png",
     "imperial-wax-seal-rev085.png",
     "calradia-astrolabe-dial-rev086.png",
+    "calradia-aquila-seal-rev087.png",
 }
 
 

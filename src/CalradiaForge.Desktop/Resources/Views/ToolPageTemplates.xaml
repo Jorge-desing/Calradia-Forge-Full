@@ -310,6 +310,7 @@
             <Button Command="{Binding AudioStudioDashboard.ApplyPresetCommand}" CommandParameter="Combat Punch" Content="Punch" FontSize="7.5" Padding="4,1" Margin="0,0,4,0"/>
             <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" VerticalAlignment="Center" Text="{Binding AudioStudioDashboard.ActivePreset, StringFormat='Active: {0}'}"/>
            </StackPanel>
+           <presentation:ForgeStepProgress Steps="{Binding AudioStudioDashboard.AudioDspPipelineSteps}" Height="40" Margin="22,4,0,0"/>
           </StackPanel>
           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
            <StackPanel Orientation="Horizontal">
@@ -357,9 +358,26 @@
             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Audio.Waveform}"/>
             <TextBlock FontSize="9" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Right"><Run Text="{DynamicResource Viz.Audio.PeakLabel}"/><Run Text=" -1.4 dBFS"/></TextBlock>
            </Grid>
-           <TextBlock DockPanel.Dock="Bottom" FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="0.0s ──────────────────────── 1.42s"/>
-           <Grid Height="90" VerticalAlignment="Center">
-            <Line Stroke="{DynamicResource SteelBorderBrush}" StrokeDashArray="2,2" StrokeThickness="1" X1="0" X2="400" Y1="45" Y2="45"/>
+           <presentation:ForgeTimelineRuler
+               DockPanel.Dock="Bottom"
+               TotalDuration="1.42"
+               CurrentTime="{Binding AudioStudioDashboard.CurrentPlaybackTimestamp, Mode=OneWay}"
+               MajorInterval="0.25"
+               MinorInterval="0.05"
+               UnitLabel="s"
+               Height="32"
+               Margin="0,4,0,0"/>
+           <presentation:ForgeAreaChart
+               DockPanel.Dock="Top"
+               DataPoints="{Binding AudioStudioDashboard.AudioSpectralDensityTrajectory}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource VerdigrisBrush}"
+               StrokeThickness="1.5"
+               ValueUnit="dB"
+               Height="34"
+               Margin="0,0,0,4"/>
+           <Grid Height="56" VerticalAlignment="Center">
+            <Line Stroke="{DynamicResource SteelBorderBrush}" StrokeDashArray="2,2" StrokeThickness="1" X1="0" X2="400" Y1="28" Y2="28"/>
             <ItemsControl HorizontalAlignment="Center" ItemsSource="{Binding AudioStudioDashboard.Waveform}">
              <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate><StackPanel Orientation="Horizontal" VerticalAlignment="Center"/></ItemsPanelTemplate>
@@ -441,6 +459,7 @@
             <Button Command="{Binding WorkshopDashboard.RecalculateEconomyCommand}" Content="⚡ Recalc" FontSize="7.5" Padding="4,1" Margin="0,0,4,0"/>
             <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" VerticalAlignment="Center" Text="{Binding WorkshopDashboard.SimulationSummary}"/>
            </StackPanel>
+           <presentation:ForgeStepProgress Steps="{Binding WorkshopDashboard.ProductionChainPipelineSteps}" Height="40" Margin="22,4,0,0"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
            <presentation:ForgeArcGauge
@@ -494,6 +513,26 @@
              <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" Grid.Column="2" VerticalAlignment="Center" Text="{Binding WorkshopDashboard.CalculatedNetProfit, StringFormat='Net: +{0}d/day'}"/>
             </Grid>
            </Border>
+           <!-- Economic Cycle Timeline Ruler -->
+           <presentation:ForgeTimelineRuler
+               DockPanel.Dock="Top"
+               TotalDuration="30.0"
+               CurrentTime="{Binding WorkshopDashboard.EconomicCycleTimelineDays, Mode=OneWay}"
+               MajorInterval="5.0"
+               MinorInterval="1.0"
+               UnitLabel="d"
+               Height="32"
+               Margin="0,0,0,5"/>
+           <!-- Profit Margin & Yield Area Chart -->
+           <presentation:ForgeAreaChart
+               DockPanel.Dock="Top"
+               DataPoints="{Binding WorkshopDashboard.EnterpriseProfitMarginTrajectory}"
+               Stroke="{DynamicResource BrassBrush}"
+               Fill="{DynamicResource BrassBrush}"
+               StrokeThickness="1.5"
+               ValueUnit="%"
+               Height="34"
+               Margin="0,0,0,6"/>
            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
            <ItemsControl ItemsSource="{Binding WorkshopDashboard.Enterprises}">
             <ItemsControl.ItemTemplate>
@@ -612,9 +651,14 @@
              <Run Text="{Binding AgentMemoryDashboard.FilteredFactsSummary, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding AgentMemoryDashboard.ConsolidationFeedback, Mode=OneWay}"/>
             </TextBlock>
            </StackPanel>
+           <presentation:ForgeStepProgress Steps="{Binding AgentMemoryDashboard.CognitiveConsolidationPipelineSteps}" Height="40" Margin="22,4,0,0"/>
           </StackPanel>
           <!-- Cognitive Slot Telemetry & Agent Switcher -->
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <!-- Imperial Authenticated Aquila Seal Badge -->
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,6,0" Padding="3" Width="40" Height="40" ToolTip="Imperial CoALA Seal Authenticated">
+            <Image Source="pack://application:,,,/Resources/Textures/calradia-aquila-seal-rev087.png" Stretch="Uniform"/>
+           </Border>
            <!-- Memory Slot Gauge -->
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,6,0" Padding="4,2">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -671,6 +715,15 @@
            <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,4" Padding="5,3">
             <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="{Binding AgentMemoryDashboard.SelectedAgent.WorkingMemory}" TextWrapping="Wrap"/>
            </Border>
+           <presentation:ForgeAreaChart
+               DockPanel.Dock="Top"
+               DataPoints="{Binding AgentMemoryDashboard.MemoryUtilityDecayCurve}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource VerdigrisBrush}"
+               StrokeThickness="1.5"
+               ValueUnit="U"
+               Height="34"
+               Margin="0,0,0,4"/>
            <ItemsControl ItemsSource="{Binding AgentMemoryDashboard.FilteredSemanticFacts}">
             <ItemsControl.ItemTemplate>
              <DataTemplate>
@@ -695,6 +748,15 @@
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="8">
           <DockPanel LastChildFill="True">
             <TextBlock DockPanel.Dock="Top" FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,5" Text="{DynamicResource Viz.Memory.Episodic}"/>
+           <presentation:ForgeTimelineRuler
+               DockPanel.Dock="Top"
+               TotalDuration="72.0"
+               CurrentTime="{Binding AgentMemoryDashboard.EpisodicTimelineHours, Mode=OneWay}"
+               MajorInterval="12.0"
+               MinorInterval="3.0"
+               UnitLabel="h"
+               Height="32"
+               Margin="0,0,0,4"/>
            <ItemsControl ItemsSource="{Binding AgentMemoryDashboard.FilteredEpisodicEvents}">
             <ItemsControl.ItemTemplate>
              <DataTemplate>
@@ -1018,8 +1080,13 @@
              <Run Text="{Binding KingdomDiplomacyDashboard.SenateVoteOutcome, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding KingdomDiplomacyDashboard.SimulatedSenateConsensus, Mode=OneWay}"/>
             </TextBlock>
            </StackPanel>
+           <presentation:ForgeStepProgress Steps="{Binding KingdomDiplomacyDashboard.DiplomaticResolutionPipelineSteps}" Height="40" Margin="21,4,0,0"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <!-- Imperial Aquila War Seal Badge -->
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,6,0" Padding="2" Width="44" Height="44" ToolTip="Imperial Calradic Aquila War Seal (Authenticated)">
+            <Image Source="pack://application:,,,/Resources/Textures/calradia-aquila-seal-rev087.png" Stretch="Uniform"/>
+           </Border>
            <presentation:ForgeArcGauge
                Value="{Binding KingdomDiplomacyDashboard.ImperialStabilityGauge}"
                MinValue="0"
@@ -1093,6 +1160,24 @@
          <!-- Right Column: Geopolitical Balance Radar & Senatorial Gauges -->
          <Border Grid.Column="1" Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6">
           <StackPanel>
+           <!-- Geopolitical Truce & Treaty Timeline -->
+           <presentation:ForgeTimelineRuler
+               TotalDuration="120.0"
+               CurrentTime="{Binding KingdomDiplomacyDashboard.TreatyTruceTimelineDays, Mode=OneWay}"
+               MajorInterval="30.0"
+               MinorInterval="10.0"
+               UnitLabel="d"
+               Height="32"
+               Margin="0,0,0,4"/>
+           <!-- Tension Trajectory Area Chart -->
+           <presentation:ForgeAreaChart
+               DataPoints="{Binding KingdomDiplomacyDashboard.GeopoliticalTensionTrajectory}"
+               Stroke="{DynamicResource EmberBrush}"
+               Fill="{DynamicResource EmberBrush}"
+               StrokeThickness="1.5"
+               ValueUnit="Ten"
+               Height="34"
+               Margin="0,0,0,4"/>
            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,4" Padding="4,1">
              <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="REALM POWER BALANCE"/>
            </Border>

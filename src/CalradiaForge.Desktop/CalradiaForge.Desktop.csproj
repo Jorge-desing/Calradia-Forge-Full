@@ -30,6 +30,7 @@
     <Resource Include="Resources/Textures/Optimized/workbench-heraldic-shield-v1.png" />
     <Resource Include="Resources/Textures/imperial-wax-seal-rev085.png" />
     <Resource Include="Resources/Textures/calradia-astrolabe-dial-rev086.png" />
+    <Resource Include="Resources/Textures/calradia-aquila-seal-rev087.png" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />

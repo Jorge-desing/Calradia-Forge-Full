@@ -382,6 +382,37 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<AudioWavePoint> Waveform { get; }
         public RelayCommand ApplyPresetCommand { get; }
 
+        IReadOnlyList<ForgeStepItem> audioDspPipelineSteps = new List<ForgeStepItem>
+        {
+            new("Vorbis Ingest", "44.1kHz 16-bit PCM", ForgeStepStatus.Completed, "DECODED"),
+            new("Channel DSP", "Stereo Panning Matrix", ForgeStepStatus.Completed, "ROUTED"),
+            new("Parametric EQ", "5-Band Spectral Filter", ForgeStepStatus.Active, "FILTERING"),
+            new("DSP Limiter", "-0.4 dBFS Headroom", ForgeStepStatus.Pending, "BUFFERED")
+        };
+        IReadOnlyList<double> audioSpectralDensityTrajectory = new List<double>
+        {
+            0.15, 0.42, 0.78, 0.95, 0.88, 0.72, 0.65, 0.58, 0.48, 0.38, 0.28, 0.22, 0.18, 0.12, 0.08, 0.04
+        };
+        double currentPlaybackTimestamp = 0.85;
+
+        public IReadOnlyList<ForgeStepItem> AudioDspPipelineSteps
+        {
+            get => audioDspPipelineSteps;
+            set => Set(ref audioDspPipelineSteps, value);
+        }
+
+        public IReadOnlyList<double> AudioSpectralDensityTrajectory
+        {
+            get => audioSpectralDensityTrajectory;
+            set => Set(ref audioSpectralDensityTrajectory, value);
+        }
+
+        public double CurrentPlaybackTimestamp
+        {
+            get => currentPlaybackTimestamp;
+            set => Set(ref currentPlaybackTimestamp, value);
+        }
+
         public void ApplyEqualizerPreset(string presetName)
         {
             ActivePreset = presetName ?? "Default Flat";
@@ -390,24 +421,72 @@ namespace CalradiaForge.Desktop.Presentation
                 PeakDbfs = "-0.8 dBFS (Optimized Bass Resonance)";
                 RmsDbfs = "-12.2 dBFS (Heavy Siege Resonance)";
                 Headroom = "+0.8 dB Headroom (Low-End Punch)";
+                AudioDspPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Vorbis Ingest", "44.1kHz 16-bit PCM", ForgeStepStatus.Completed, "DECODED"),
+                    new("Channel DSP", "Stereo Panning Matrix", ForgeStepStatus.Completed, "SUB-BASS"),
+                    new("Parametric EQ", "Bass Boost Shelf (+6dB)", ForgeStepStatus.Active, "BOOSTED"),
+                    new("DSP Limiter", "-0.8 dBFS Headroom", ForgeStepStatus.Pending, "HEADROOM")
+                };
+                AudioSpectralDensityTrajectory = new List<double>
+                {
+                    0.88, 0.98, 0.92, 0.82, 0.65, 0.50, 0.38, 0.30, 0.22, 0.18, 0.14, 0.10, 0.07, 0.05, 0.03, 0.02
+                };
+                CurrentPlaybackTimestamp = 0.45;
             }
             else if (presetName == "Voice Clarity")
             {
                 PeakDbfs = "-2.1 dBFS (Dialogue Enhanced)";
                 RmsDbfs = "-16.4 dBFS (Consonant Articulation)";
                 Headroom = "+2.1 dB Headroom (Speech Intelligibility)";
+                AudioDspPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Vorbis Ingest", "44.1kHz 16-bit PCM", ForgeStepStatus.Completed, "DECODED"),
+                    new("Channel DSP", "Center Vocal Isolation", ForgeStepStatus.Completed, "MONO-CTR"),
+                    new("Parametric EQ", "Midrange Articulation", ForgeStepStatus.Active, "VOICE EQ"),
+                    new("DSP Limiter", "-2.1 dBFS Headroom", ForgeStepStatus.Pending, "CLEAR")
+                };
+                AudioSpectralDensityTrajectory = new List<double>
+                {
+                    0.08, 0.15, 0.28, 0.45, 0.72, 0.94, 0.98, 0.89, 0.75, 0.58, 0.42, 0.30, 0.20, 0.12, 0.08, 0.04
+                };
+                CurrentPlaybackTimestamp = 0.65;
             }
             else if (presetName == "Combat Punch")
             {
                 PeakDbfs = "-0.4 dBFS (Transient Saturated)";
                 RmsDbfs = "-10.8 dBFS (Maximum Impact Punch)";
                 Headroom = "+0.4 dB Headroom (Sharp Edge Clash)";
+                AudioDspPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Vorbis Ingest", "44.1kHz 16-bit PCM", ForgeStepStatus.Completed, "DECODED"),
+                    new("Channel DSP", "3D Spatial Emitter", ForgeStepStatus.Completed, "SPATIAL"),
+                    new("Parametric EQ", "High Transient Saturation", ForgeStepStatus.Completed, "SATURATED"),
+                    new("DSP Limiter", "Fast-Attack Peak Limiter", ForgeStepStatus.Active, "LIMITING")
+                };
+                AudioSpectralDensityTrajectory = new List<double>
+                {
+                    0.45, 0.78, 0.95, 0.82, 0.60, 0.72, 0.88, 0.96, 0.90, 0.76, 0.65, 0.52, 0.40, 0.28, 0.18, 0.10
+                };
+                CurrentPlaybackTimestamp = 1.15;
             }
             else
             {
                 PeakDbfs = "-1.4 dBFS (0 Digital Clipping)";
                 RmsDbfs = "-14.8 dBFS (High Punch)";
                 Headroom = "+1.4 dB Headroom (Full Dynamic Range)";
+                AudioDspPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Vorbis Ingest", "44.1kHz 16-bit PCM", ForgeStepStatus.Completed, "DECODED"),
+                    new("Channel DSP", "Stereo Panning Matrix", ForgeStepStatus.Completed, "ROUTED"),
+                    new("Parametric EQ", "5-Band Spectral Filter", ForgeStepStatus.Active, "FILTERING"),
+                    new("DSP Limiter", "-0.4 dBFS Headroom", ForgeStepStatus.Pending, "BUFFERED")
+                };
+                AudioSpectralDensityTrajectory = new List<double>
+                {
+                    0.15, 0.42, 0.78, 0.95, 0.88, 0.72, 0.65, 0.58, 0.48, 0.38, 0.28, 0.22, 0.18, 0.12, 0.08, 0.04
+                };
+                CurrentPlaybackTimestamp = 0.85;
             }
         }
 
@@ -580,6 +659,37 @@ namespace CalradiaForge.Desktop.Presentation
         public RelayCommand CycleCostMultiplierCommand { get; }
         public RelayCommand RecalculateEconomyCommand { get; }
 
+        IReadOnlyList<ForgeStepItem> productionChainPipelineSteps = new List<ForgeStepItem>
+        {
+            new("Raw Ingestion", "Silver Ore & Fuel", ForgeStepStatus.Completed, "STOCKED"),
+            new("Artisan Forge", "Smelting & Casting", ForgeStepStatus.Active, "PROCESSING"),
+            new("Caravan Transit", "Export Routes", ForgeStepStatus.Pending, "EN ROUTE"),
+            new("Ledger P&L", "+340d Profit Accrual", ForgeStepStatus.Pending, "SETTLED")
+        };
+        IReadOnlyList<double> enterpriseProfitMarginTrajectory = new List<double>
+        {
+            0.35, 0.42, 0.50, 0.58, 0.68, 0.75, 0.82, 0.88, 0.85, 0.89, 0.92, 0.94, 0.91, 0.93, 0.95, 0.96
+        };
+        double economicCycleTimelineDays = 18.0;
+
+        public IReadOnlyList<ForgeStepItem> ProductionChainPipelineSteps
+        {
+            get => productionChainPipelineSteps;
+            set => Set(ref productionChainPipelineSteps, value);
+        }
+
+        public IReadOnlyList<double> EnterpriseProfitMarginTrajectory
+        {
+            get => enterpriseProfitMarginTrajectory;
+            set => Set(ref enterpriseProfitMarginTrajectory, value);
+        }
+
+        public double EconomicCycleTimelineDays
+        {
+            get => economicCycleTimelineDays;
+            set => Set(ref economicCycleTimelineDays, value);
+        }
+
         void RecalculateEconomy()
         {
             var baseProfit = 340.0;
@@ -603,6 +713,50 @@ namespace CalradiaForge.Desktop.Presentation
             }
             CumulativeProfitTrajectory = traj;
             RebellionRiskGaugeValue = compositeRisk;
+
+            // Dynamic 4-step pipeline and trajectory update
+            var normProfit = Math.Clamp(calculatedNetProfit / 400.0, 0.15, 0.98);
+            if (horizonDays <= 14)
+            {
+                ProductionChainPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Raw Ingestion", "Silver Ore & Fuel", ForgeStepStatus.Completed, "STOCKED"),
+                    new("Artisan Forge", "Rapid Smelt Cycle", ForgeStepStatus.Active, "PROCESSING"),
+                    new("Caravan Transit", "Local Market Transit", ForgeStepStatus.Pending, "SHORT ROUTE"),
+                    new("Ledger P&L", $"+{calculatedNetProfit}d Accrual", ForgeStepStatus.Pending, "PENDING")
+                };
+                EconomicCycleTimelineDays = Math.Min(horizonDays, 8.5);
+            }
+            else if (horizonDays <= 30)
+            {
+                ProductionChainPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Raw Ingestion", "Silver Ore & Fuel", ForgeStepStatus.Completed, "STOCKED"),
+                    new("Artisan Forge", "Smelting & Casting", ForgeStepStatus.Completed, "REFINED"),
+                    new("Caravan Transit", "Export Routes", ForgeStepStatus.Active, "EN ROUTE"),
+                    new("Ledger P&L", $"+{calculatedNetProfit}d Accrual", ForgeStepStatus.Pending, "AUDITING")
+                };
+                EconomicCycleTimelineDays = Math.Min(horizonDays, 18.0 * costMultiplier);
+            }
+            else
+            {
+                ProductionChainPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Raw Ingestion", "Silver Ore & Fuel", ForgeStepStatus.Completed, "STOCKED"),
+                    new("Artisan Forge", "Smelting & Casting", ForgeStepStatus.Completed, "REFINED"),
+                    new("Caravan Transit", "Multi-City Network", ForgeStepStatus.Completed, "DELIVERED"),
+                    new("Ledger P&L", $"+{calculatedNetProfit}d Realized", ForgeStepStatus.Active, "SETTLED")
+                };
+                EconomicCycleTimelineDays = Math.Min(horizonDays, 45.0);
+            }
+
+            var profitPts = new List<double>(16);
+            for (int i = 0; i < 16; i++)
+            {
+                var pt = normProfit * (0.65 + 0.35 * Math.Sin((i + 1) * 0.42));
+                profitPts.Add(Math.Round(Math.Clamp(pt, 0.05, 0.98), 2));
+            }
+            EnterpriseProfitMarginTrajectory = profitPts;
 
             Raise(nameof(CalculatedNetProfit));
             Raise(nameof(CalculatedPaybackPeriod));
@@ -1260,6 +1414,37 @@ namespace CalradiaForge.Desktop.Presentation
             UpdateDecayTrajectory();
         }
 
+        IReadOnlyList<ForgeStepItem> cognitiveConsolidationPipelineSteps = new List<ForgeStepItem>
+        {
+            new("Perception Ingest", "World Events & Ticks", ForgeStepStatus.Completed, "CAPTURED"),
+            new("Working Focus", "Active Salience Slots", ForgeStepStatus.Completed, "INDEXED"),
+            new("Episodic Trace", "FIFO Ring Buffer", ForgeStepStatus.Active, "RECORDING"),
+            new("Schema Consolidation", "Semantic Schema", ForgeStepStatus.Pending, "QUEUED")
+        };
+        IReadOnlyList<double> memoryUtilityDecayCurve = new List<double>
+        {
+            0.95, 0.92, 0.88, 0.84, 0.79, 0.74, 0.69, 0.64, 0.59, 0.54, 0.49, 0.45, 0.41, 0.38, 0.35, 0.32
+        };
+        double episodicTimelineHours = 24.0;
+
+        public IReadOnlyList<ForgeStepItem> CognitiveConsolidationPipelineSteps
+        {
+            get => cognitiveConsolidationPipelineSteps;
+            set => Set(ref cognitiveConsolidationPipelineSteps, value);
+        }
+
+        public IReadOnlyList<double> MemoryUtilityDecayCurve
+        {
+            get => memoryUtilityDecayCurve;
+            set => Set(ref memoryUtilityDecayCurve, value);
+        }
+
+        public double EpisodicTimelineHours
+        {
+            get => episodicTimelineHours;
+            set => Set(ref episodicTimelineHours, value);
+        }
+
         void UpdateDecayTrajectory()
         {
             var points = new double[24];
@@ -1273,6 +1458,50 @@ namespace CalradiaForge.Desktop.Presentation
                 points[t] = Math.Round(u, 3);
             }
             MemoryDecayTrajectory = points;
+
+            if (activeScenarioIndex == 0)
+            {
+                CognitiveConsolidationPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Perception Ingest", "World Events & Ticks", ForgeStepStatus.Completed, "CAPTURED"),
+                    new("Working Focus", "Active Salience Slots", ForgeStepStatus.Completed, "INDEXED"),
+                    new("Episodic Trace", "FIFO Ring Buffer", ForgeStepStatus.Active, "RECORDING"),
+                    new("Schema Consolidation", "Semantic Schema", ForgeStepStatus.Pending, "QUEUED")
+                };
+                EpisodicTimelineHours = 8.0;
+            }
+            else if (activeScenarioIndex == 1)
+            {
+                CognitiveConsolidationPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Perception Ingest", "World Events & Ticks", ForgeStepStatus.Completed, "CAPTURED"),
+                    new("Working Focus", "Active Salience Slots", ForgeStepStatus.Completed, "INDEXED"),
+                    new("Episodic Trace", "FIFO Ring Buffer", ForgeStepStatus.Completed, "BUFFERED"),
+                    new("Schema Consolidation", "Semantic Schema", ForgeStepStatus.Active, "CONSOLIDATING")
+                };
+                EpisodicTimelineHours = 24.0;
+            }
+            else
+            {
+                CognitiveConsolidationPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Perception Ingest", "World Events & Ticks", ForgeStepStatus.Completed, "CAPTURED"),
+                    new("Working Focus", "Active Salience Slots", ForgeStepStatus.Completed, "INDEXED"),
+                    new("Episodic Trace", "FIFO Ring Buffer", ForgeStepStatus.Completed, "PRUNED"),
+                    new("Schema Consolidation", "Permanent Anchor", ForgeStepStatus.Completed, "CONSOLIDATED")
+                };
+                EpisodicTimelineHours = 72.0;
+            }
+
+            var curve16 = new List<double>(16);
+            for (int i = 0; i < 16; i++)
+            {
+                var rec = Math.Exp(-decayRate * (i * 2.5));
+                var u = (0.4 * rec) + (0.3 * baseF) + (0.3 * baseI);
+                curve16.Add(Math.Round(Math.Clamp(u, 0.10, 1.0), 3));
+            }
+            MemoryUtilityDecayCurve = curve16;
+
             Raise(nameof(MemorySlotUtilizationGaugeValue));
         }
         public string StudioDocumentation => "CoALA / MIRIX Cognitive Memory Architecture: Real-time working memory, episodic event recording, semantic knowledge graph with multi-dimensional utility decay score U = 0.4*R + 0.3*F + 0.3*I, and universal cognitive dialogues.";
@@ -1973,6 +2202,37 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<string> DiplomaticRadarAxes => DefaultDiplomaticRadarAxes;
         public IReadOnlyList<double> FactionPowerRadarValues { get => factionPowerRadarValues; private set => Set(ref factionPowerRadarValues, value); }
 
+        IReadOnlyList<ForgeStepItem> diplomaticResolutionPipelineSteps = new List<ForgeStepItem>
+        {
+            new("Imperial Envoy", "Diplomatic Courier", ForgeStepStatus.Completed, "DESPATCHED"),
+            new("Senate Chamber", "Council Ballot", ForgeStepStatus.Active, "DEBATING"),
+            new("Treaty Draft", "Territorial Accord", ForgeStepStatus.Pending, "DRAFTING"),
+            new("Aquila Ratification", "Porphyry Wax Seal", ForgeStepStatus.Pending, "RATIFIED")
+        };
+        IReadOnlyList<double> geopoliticalTensionTrajectory = new List<double>
+        {
+            0.45, 0.52, 0.58, 0.64, 0.70, 0.74, 0.79, 0.82, 0.85, 0.88, 0.84, 0.80, 0.76, 0.72, 0.68, 0.65
+        };
+        double treatyTruceTimelineDays = 45.0;
+
+        public IReadOnlyList<ForgeStepItem> DiplomaticResolutionPipelineSteps
+        {
+            get => diplomaticResolutionPipelineSteps;
+            set => Set(ref diplomaticResolutionPipelineSteps, value);
+        }
+
+        public IReadOnlyList<double> GeopoliticalTensionTrajectory
+        {
+            get => geopoliticalTensionTrajectory;
+            set => Set(ref geopoliticalTensionTrajectory, value);
+        }
+
+        public double TreatyTruceTimelineDays
+        {
+            get => treatyTruceTimelineDays;
+            set => Set(ref treatyTruceTimelineDays, value);
+        }
+
         void RecalculateDiplomacy()
         {
             var baseRisk = factionName.Contains("Western") ? 58 : factionName.Contains("Vlandia") ? 40 : 24;
@@ -1991,6 +2251,49 @@ namespace CalradiaForge.Desktop.Presentation
             var stab = Math.Clamp(1.0 - (adjustedRisk / 100.0), 0.10, 0.95);
             var casus = Math.Clamp(adjustedRisk / 100.0, 0.10, 0.95);
             FactionPowerRadarValues = [mil, clans, trib, stab, casus];
+
+            if (adjustedRisk >= 75)
+            {
+                DiplomaticResolutionPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Imperial Envoy", "Diplomatic Courier", ForgeStepStatus.Completed, "DESPATCHED"),
+                    new("Senate Chamber", "Veto Enacted", ForgeStepStatus.Failed, "REJECTED"),
+                    new("Treaty Draft", "Hostile Breakdown", ForgeStepStatus.Failed, "WAR"),
+                    new("Aquila Ratification", "Casus Belli Mobilized", ForgeStepStatus.Failed, "CANCELLED")
+                };
+                TreatyTruceTimelineDays = 0.0;
+            }
+            else if (adjustedRisk >= 40)
+            {
+                DiplomaticResolutionPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Imperial Envoy", "Diplomatic Courier", ForgeStepStatus.Completed, "DESPATCHED"),
+                    new("Senate Chamber", "Senate Debate Active", ForgeStepStatus.Active, "CONTESTED"),
+                    new("Treaty Draft", "Territorial Accord", ForgeStepStatus.Pending, "DRAFTING"),
+                    new("Aquila Ratification", "Imperial Porphyry Seal", ForgeStepStatus.Pending, "AWAITING")
+                };
+                TreatyTruceTimelineDays = Math.Clamp(60.0 - (tensionModifier * 2.0), 5.0, 120.0);
+            }
+            else
+            {
+                DiplomaticResolutionPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Imperial Envoy", "Diplomatic Courier", ForgeStepStatus.Completed, "DESPATCHED"),
+                    new("Senate Chamber", "Noble Accord Passed", ForgeStepStatus.Completed, "RATIFIED"),
+                    new("Treaty Draft", "Non-Aggression Accord", ForgeStepStatus.Completed, "TRUCE"),
+                    new("Aquila Ratification", "Aquila Imperial Seal", ForgeStepStatus.Active, "ENFORCED")
+                };
+                TreatyTruceTimelineDays = Math.Clamp(95.0 - (tensionModifier * 1.5), 10.0, 120.0);
+            }
+
+            var baseTen = adjustedRisk / 100.0;
+            var tenPts = new List<double>(16);
+            for (int i = 0; i < 16; i++)
+            {
+                var val = baseTen + 0.12 * Math.Sin((i + 1) * 0.48);
+                tenPts.Add(Math.Round(Math.Clamp(val, 0.05, 0.98), 2));
+            }
+            GeopoliticalTensionTrajectory = tenPts;
 
             Raise(nameof(SimulatedSenateConsensus));
             Raise(nameof(SenateChamberStatus));
