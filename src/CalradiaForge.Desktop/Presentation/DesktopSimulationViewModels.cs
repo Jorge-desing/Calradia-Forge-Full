@@ -194,6 +194,37 @@ namespace CalradiaForge.Desktop.Presentation
         double troopReadinessIndex = 94.2;
         public double TroopReadinessIndex { get => troopReadinessIndex; set => Set(ref troopReadinessIndex, value); }
 
+        IReadOnlyList<ForgeStepItem> troopProgressionPipelineSteps = new List<ForgeStepItem>
+        {
+            new("Levy Conscription", "Village Militia Pool", ForgeStepStatus.Completed, "TIER 1"),
+            new("Drill & Conditioning", "Regimental Formations", ForgeStepStatus.Completed, "TIER 2-3"),
+            new("Armory Outfitting", "Imperial Mail & Kontos", ForgeStepStatus.Active, "TIER 4-5"),
+            new("Elite Banner Veteran", "Cataphract & Legionary", ForgeStepStatus.Pending, "TIER 6")
+        };
+        double battleSimulationTimestamp = 36.5;
+        IReadOnlyList<double> troopStatCurveTrajectory = new List<double>
+        {
+            0.20, 0.28, 0.35, 0.44, 0.52, 0.61, 0.70, 0.78, 0.84, 0.88, 0.91, 0.93, 0.94, 0.95, 0.96, 0.98
+        };
+
+        public IReadOnlyList<ForgeStepItem> TroopProgressionPipelineSteps
+        {
+            get => troopProgressionPipelineSteps;
+            set => Set(ref troopProgressionPipelineSteps, value);
+        }
+
+        public double BattleSimulationTimestamp
+        {
+            get => battleSimulationTimestamp;
+            set => Set(ref battleSimulationTimestamp, value);
+        }
+
+        public IReadOnlyList<double> TroopStatCurveTrajectory
+        {
+            get => troopStatCurveTrajectory;
+            set => Set(ref troopStatCurveTrajectory, value);
+        }
+
         void RecalculateBattleShock()
         {
             var troop = SelectedTroop ?? CanonicalDefaultSelected;
@@ -223,6 +254,32 @@ namespace CalradiaForge.Desktop.Presentation
                 Math.Clamp(cohVal + 0.05, 0.1, 1.0),
                 Math.Clamp(costVal + 0.10, 0.1, 1.0)
             ];
+
+            var s1Status = ForgeStepStatus.Completed;
+            var s2Status = troop.Tier >= 3 ? ForgeStepStatus.Completed : (troop.Tier == 2 ? ForgeStepStatus.Active : ForgeStepStatus.Pending);
+            var s3Status = troop.Tier >= 5 ? ForgeStepStatus.Completed : (troop.Tier == 4 ? ForgeStepStatus.Active : ForgeStepStatus.Pending);
+            var s4Status = troop.Tier >= 6 ? ForgeStepStatus.Completed : (troop.Tier == 5 ? ForgeStepStatus.Active : ForgeStepStatus.Pending);
+            TroopProgressionPipelineSteps = new List<ForgeStepItem>
+            {
+                new("Levy Conscription", "Village Militia Pool", s1Status, "TIER 1"),
+                new("Drill & Conditioning", "Regimental Formations", s2Status, "TIER 2-3"),
+                new("Armory Outfitting", "Imperial Mail & Kontos", s3Status, "TIER 4-5"),
+                new("Elite Banner Veteran", "Cataphract & Legionary", s4Status, "TIER 6")
+            };
+
+            BattleSimulationTimestamp = Math.Round(Math.Clamp(18.0 + (troop.Tier * 6.5) + (CaptainPerksActive ? 5.0 : 0.0), 10.0, 58.0), 1);
+
+            var curve = new List<double>(16);
+            var baseVal = Math.Clamp(cohesionBase / 100.0 * 0.40, 0.15, 0.50);
+            var peakVal = Math.Clamp(baseVal + (troop.Tier * 0.08) + (CaptainPerksActive ? 0.06 : 0.0), 0.30, 0.98);
+            for (int i = 0; i < 16; i++)
+            {
+                double t = i / 15.0;
+                double s = t * t * (3.0 - 2.0 * t);
+                double val = baseVal + (peakVal - baseVal) * s;
+                curve.Add(Math.Round(Math.Clamp(val, 0.10, 1.0), 3));
+            }
+            TroopStatCurveTrajectory = curve;
 
             Raise(nameof(SimulatedFrontlineCohesion));
             Raise(nameof(SimulatedArmyCostEstimate));
@@ -2889,6 +2946,20 @@ namespace CalradiaForge.Desktop.Presentation
 
         double moraleCohesionGaugeValue = 78.5;
         double siegeBreachGaugeValue = 64.0;
+        double battlePhaseElapsedMinutes = 8.5;
+
+        IReadOnlyList<ForgeStepItem> battleDoctrinePipelineSteps = new List<ForgeStepItem>
+        {
+            new("Reconnaissance & Skirmish", "Screening Ranged Volley", ForgeStepStatus.Completed, "PHASE I"),
+            new("Shield Wall Advance", "Locked Scutum Wedge", ForgeStepStatus.Active, "PHASE II"),
+            new("Flank Shock Cavalry", "Cataphract Encirclement", ForgeStepStatus.Pending, "PHASE III"),
+            new("Decisive Breakthrough", "Breach & Rout Exploitation", ForgeStepStatus.Pending, "PHASE IV")
+        };
+
+        IReadOnlyList<double> combatPressureTrajectory = new List<double>
+        {
+            0.15, 0.22, 0.34, 0.48, 0.65, 0.78, 0.88, 0.94, 0.91, 0.86, 0.82, 0.79, 0.75, 0.72, 0.68, 0.65
+        };
 
         public CombatStudioDashboardViewModel()
         {
@@ -2912,6 +2983,79 @@ namespace CalradiaForge.Desktop.Presentation
         public double MoraleCohesionGaugeValue { get => moraleCohesionGaugeValue; private set => Set(ref moraleCohesionGaugeValue, value); }
         public double SiegeBreachGaugeValue { get => siegeBreachGaugeValue; private set => Set(ref siegeBreachGaugeValue, value); }
         public double CombatReadinessGauge => 89.2;
+
+        public IReadOnlyList<ForgeStepItem> BattleDoctrinePipelineSteps
+        {
+            get => battleDoctrinePipelineSteps;
+            set => Set(ref battleDoctrinePipelineSteps, value);
+        }
+
+        public double BattlePhaseElapsedMinutes
+        {
+            get => battlePhaseElapsedMinutes;
+            set => Set(ref battlePhaseElapsedMinutes, value);
+        }
+
+        public IReadOnlyList<double> CombatPressureTrajectory
+        {
+            get => combatPressureTrajectory;
+            set => Set(ref combatPressureTrajectory, value);
+        }
+
+        public void CycleScenario(int index)
+        {
+            if (index % 2 == 1)
+            {
+                RegimentName = "Legio II Augusta · Heavy Assault Cohort";
+                TacticalDoctrine = "Aggressive Cavalry Wedge with Bodkin Archer Enfilade";
+                DeploymentTerrain = "Valley of Veron (Chokepoint Defile · 24° Ridge · River Crossing)";
+                TacticalShockEfficiency = "Shock Cohesion: 96.5% · Kinetic Momentum: 6.2x (Hammer & Anvil)";
+                CasualtyEnvelope = "Projected 15-Minute Combat Loss: 18.2% (Decisive 4.8:1 Kill Ratio)";
+                MoraleCohesionGaugeValue = 88.0;
+                SiegeBreachGaugeValue = 82.5;
+                BattlePhaseElapsedMinutes = 12.0;
+                BattleDoctrinePipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Reconnaissance & Skirmish", "Target Acquired", ForgeStepStatus.Completed, "PHASE I"),
+                    new("Shield Wall Advance", "Shieldwall Impact", ForgeStepStatus.Completed, "PHASE II"),
+                    new("Flank Shock Cavalry", "Cavalry Shock Charge", ForgeStepStatus.Active, "PHASE III"),
+                    new("Decisive Breakthrough", "Rout In Progress", ForgeStepStatus.Pending, "PHASE IV")
+                };
+                CombatPressureTrajectory = new List<double>
+                {
+                    0.25, 0.38, 0.52, 0.68, 0.82, 0.92, 0.98, 0.95, 0.90, 0.85, 0.80, 0.76, 0.74, 0.70, 0.66, 0.62
+                };
+            }
+            else
+            {
+                RegimentName = "Legio I Calradica · Vanguard Strike Cohort";
+                TacticalDoctrine = "Heavy Infantry Shieldwall with Cataphract Flanking Reserves";
+                DeploymentTerrain = "Plains of Penton (Open Grassy Field · Mild Defilade · 18° Slope)";
+                TacticalShockEfficiency = "Shock Cohesion: 92.4% · Kinetic Momentum: 4.8x (Wedge Assault)";
+                CasualtyEnvelope = "Projected 15-Minute Combat Loss: 25.4% (Favorable 3.4:1 Kill Ratio)";
+                MoraleCohesionGaugeValue = 78.5;
+                SiegeBreachGaugeValue = 64.0;
+                BattlePhaseElapsedMinutes = 8.5;
+                BattleDoctrinePipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Reconnaissance & Skirmish", "Screening Ranged Volley", ForgeStepStatus.Completed, "PHASE I"),
+                    new("Shield Wall Advance", "Locked Scutum Wedge", ForgeStepStatus.Active, "PHASE II"),
+                    new("Flank Shock Cavalry", "Cataphract Encirclement", ForgeStepStatus.Pending, "PHASE III"),
+                    new("Decisive Breakthrough", "Breach & Rout Exploitation", ForgeStepStatus.Pending, "PHASE IV")
+                };
+                CombatPressureTrajectory = new List<double>
+                {
+                    0.15, 0.22, 0.34, 0.48, 0.65, 0.78, 0.88, 0.94, 0.91, 0.86, 0.82, 0.79, 0.75, 0.72, 0.68, 0.65
+                };
+            }
+            Raise(nameof(RegimentName));
+            Raise(nameof(TacticalDoctrine));
+            Raise(nameof(DeploymentTerrain));
+            Raise(nameof(TacticalShockEfficiency));
+            Raise(nameof(CasualtyEnvelope));
+            Raise(nameof(MoraleCohesionGaugeValue));
+            Raise(nameof(SiegeBreachGaugeValue));
+        }
 
         public IReadOnlyList<ForgeBarDataPoint> WeaponDamageBreakdownBars { get; } =
         [
@@ -3013,6 +3157,20 @@ namespace CalradiaForge.Desktop.Presentation
 
         double caravanSurvivalGaugeValue = 84.5;
         double tariffFrictionGaugeValue = 18.2;
+        double routeTransitDays = 14.2;
+
+        IReadOnlyList<ForgeStepItem> caravanExpeditionPipelineSteps = new List<ForgeStepItem>
+        {
+            new("Caravan Outfitting", "Master Guild Escort & Wagons", ForgeStepStatus.Completed, "DEPARTURE"),
+            new("Distant Transit", "Highland Passes & Waystations", ForgeStepStatus.Active, "EN ROUTE"),
+            new("Market Arbitrage", "Bulk Cargo Spot Liquidation", ForgeStepStatus.Pending, "TRADING"),
+            new("Vault Liquidation", "Net Denar Accrual & Return", ForgeStepStatus.Pending, "SETTLED")
+        };
+
+        IReadOnlyList<double> arbitrageYieldTrajectory = new List<double>
+        {
+            0.12, 0.20, 0.28, 0.38, 0.49, 0.60, 0.72, 0.81, 0.89, 0.94, 0.97, 1.00, 1.05, 1.12, 1.16, 1.18
+        };
 
         public CaravanTradeDashboardViewModel()
         {
@@ -3039,6 +3197,79 @@ namespace CalradiaForge.Desktop.Presentation
         public double TariffFrictionGaugeValue { get => tariffFrictionGaugeValue; private set => Set(ref tariffFrictionGaugeValue, value); }
         public double RouteSecurityGauge => 84.5;
         public double MarketLiquidityGauge => 78.0;
+
+        public IReadOnlyList<ForgeStepItem> CaravanExpeditionPipelineSteps
+        {
+            get => caravanExpeditionPipelineSteps;
+            set => Set(ref caravanExpeditionPipelineSteps, value);
+        }
+
+        public double RouteTransitDays
+        {
+            get => routeTransitDays;
+            set => Set(ref routeTransitDays, value);
+        }
+
+        public IReadOnlyList<double> ArbitrageYieldTrajectory
+        {
+            get => arbitrageYieldTrajectory;
+            set => Set(ref arbitrageYieldTrajectory, value);
+        }
+
+        public void CycleScenario(int index)
+        {
+            if (index % 2 == 1)
+            {
+                RouteName = "Southern Silk & Spice Route · Askar -> Pravend";
+                OperatingCapital = "75,000 Denars (Aserai Royal Merchant Escort)";
+                RouteTerrain = "Nahasa Desert Dunes to Coastline Ports (680 km · 6.2 Days Travel)";
+                ArbitrageSummary = "Average Cargo Spread: +146.2% · Estimated Roundtrip Net Yield: +26,400 Denars";
+                SecurityRiskAssessment = "Route Security: 76.0% · Bandit Threat: MODERATE (Desert Nomads / Steppe Raiders)";
+                CaravanSurvivalGaugeValue = 76.0;
+                TariffFrictionGaugeValue = 24.5;
+                RouteTransitDays = 28.5;
+                CaravanExpeditionPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Caravan Outfitting", "Pack Camels Loaded", ForgeStepStatus.Completed, "DEPARTURE"),
+                    new("Distant Transit", "Desert Crossing Clear", ForgeStepStatus.Completed, "EN ROUTE"),
+                    new("Market Arbitrage", "Port Spot Liquidation", ForgeStepStatus.Active, "TRADING"),
+                    new("Vault Liquidation", "Returning to Hub", ForgeStepStatus.Pending, "SETTLED")
+                };
+                ArbitrageYieldTrajectory = new List<double>
+                {
+                    0.20, 0.32, 0.45, 0.60, 0.75, 0.88, 1.02, 1.15, 1.28, 1.35, 1.40, 1.44, 1.46, 1.48, 1.50, 1.52
+                };
+            }
+            else
+            {
+                RouteName = "Imperial Silver Corridor · Marunath -> Zeonica";
+                OperatingCapital = "50,000 Denars (Master Guild Caravan Escort)";
+                RouteTerrain = "Highland Passes to Lowland Plains (420 km · 3.8 Days Travel)";
+                ArbitrageSummary = "Average Cargo Spread: +118.4% · Estimated Roundtrip Net Yield: +14,800 Denars";
+                SecurityRiskAssessment = "Route Security: 84.5% · Bandit Threat: LOW (Patrolled by Imperial Legions)";
+                CaravanSurvivalGaugeValue = 84.5;
+                TariffFrictionGaugeValue = 18.2;
+                RouteTransitDays = 14.2;
+                CaravanExpeditionPipelineSteps = new List<ForgeStepItem>
+                {
+                    new("Caravan Outfitting", "Master Guild Escort & Wagons", ForgeStepStatus.Completed, "DEPARTURE"),
+                    new("Distant Transit", "Highland Passes & Waystations", ForgeStepStatus.Active, "EN ROUTE"),
+                    new("Market Arbitrage", "Bulk Cargo Spot Liquidation", ForgeStepStatus.Pending, "TRADING"),
+                    new("Vault Liquidation", "Net Denar Accrual & Return", ForgeStepStatus.Pending, "SETTLED")
+                };
+                ArbitrageYieldTrajectory = new List<double>
+                {
+                    0.12, 0.20, 0.28, 0.38, 0.49, 0.60, 0.72, 0.81, 0.89, 0.94, 0.97, 1.00, 1.05, 1.12, 1.16, 1.18
+                };
+            }
+            Raise(nameof(RouteName));
+            Raise(nameof(OperatingCapital));
+            Raise(nameof(RouteTerrain));
+            Raise(nameof(ArbitrageSummary));
+            Raise(nameof(SecurityRiskAssessment));
+            Raise(nameof(CaravanSurvivalGaugeValue));
+            Raise(nameof(TariffFrictionGaugeValue));
+        }
 
         public IReadOnlyList<ForgeBarDataPoint> CommodityProfitMarginBars { get; } =
         [

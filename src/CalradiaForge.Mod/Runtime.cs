@@ -430,6 +430,7 @@ namespace CalradiaForge.Mod
                     case "novice-checklist":  data = CalradiaForge.Core.NoviceScaffoldEngine.Generate("checklist",  s.Argument); break;
                     case "novice-events":     data = CalradiaForge.Core.NoviceScaffoldEngine.Generate("events",     s.Argument); break;
                     case "novice-hint":       data = CalradiaForge.Core.NoviceScaffoldEngine.Generate("hint",       s.Argument); break;
+                    case "novice-gauntlet":   data = CalradiaForge.Core.NoviceScaffoldEngine.Generate("gauntlet-page", s.Argument); break;
                     case "novice-workshop":   data = CalradiaForge.Core.NoviceScaffoldEngine.Generate("workshop",   s.Argument); break;
                     case "novice-party":      data = CalradiaForge.Core.NoviceScaffoldEngine.Generate("party",      s.Argument); break;
                     case "novice-building":   data = CalradiaForge.Core.NoviceScaffoldEngine.Generate("building",   s.Argument); break;

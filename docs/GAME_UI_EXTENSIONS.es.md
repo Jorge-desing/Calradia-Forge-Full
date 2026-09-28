@@ -49,6 +49,12 @@ El host comprueba el contexto de la página y sus comandos antes de abrirla. Los
 
 Consulta `CalradiaForgeExamples/GUI/Prefabs/ForgeExamplesPage.xml` y `ForgeExamplesPageViewModel` para ver un ejemplo completo y mínimo. Al descargar el módulo, el propietario elimina sus páginas con `ForgeApi.UnregisterUiPages("MyMod")`.
 
+## Plano de página Gauntlet dentro del juego
+
+Abre la paleta de navegación con `Ctrl+P`, selecciona **Plano de página Gauntlet** en el grupo de principiantes, escribe el título de la página y usa la acción normal de generar. La salida incluye un ViewModel, un prefab XML para `GUI/Prefabs`, manejadores `Command.Click` y fragmentos de registro y baja basados en `ForgeUiPage`, `ForgeUiCommand`, `ForgeApi.RegisterWhenAvailable` y `ForgeUI.OpenPage`.
+
+El título se reduce a letras, números y espacios y se limita a 48 caracteres antes de usarse en identificadores o textos de localización generados. El plano es solo texto: no crea ni sobrescribe archivos del módulo del usuario. Sustituye el propietario `MyMod` por el ID exacto de la carpeta del módulo en `AutoRegister` y `UnregisterUiPages`; tras compilar, el catálogo SDK realiza sus comprobaciones habituales de propiedad del prefab y enlaces.
+
 ## Ayuda contextual e iconos
 
 La acción Help presenta resúmenes breves sin conexión derivados de los comentarios XML del SDK y traducidos al idioma activo de Bannerlord. DocFX solo se utiliza al compilar. Modules incluye el SVG original de Game-icons.net y PNG transparentes atribuidos para sprites; SpriteSheetGenerator y Resource Browser de Bannerlord deben empaquetarlos en los recursos gráficos del juego antes de que un prefab Gauntlet los referencie.

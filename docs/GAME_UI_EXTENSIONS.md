@@ -49,6 +49,12 @@ The host checks page and command contexts before opening. A declared state-chang
 
 See the packaged `CalradiaForgeExamples/GUI/Prefabs/ForgeExamplesPage.xml` and `ForgeExamplesPageViewModel` for a complete, minimal sample. Owners unregister their pages on module unload with `ForgeApi.UnregisterUiPages("MyMod")`.
 
+## In-game Gauntlet Page Blueprint
+
+Open the navigation palette with `Ctrl+P`, select **Gauntlet Page Blueprint** in the Novice group, enter a page title, and use the normal Generate action. The output contains a ViewModel, a `GUI/Prefabs` XML prefab, `Command.Click` handlers, and registration/unregistration snippets based on `ForgeUiPage`, `ForgeUiCommand`, `ForgeApi.RegisterWhenAvailable`, and `ForgeUI.OpenPage`.
+
+The title is reduced to letters, digits, and spaces and capped at 48 characters before it is used in generated identifiers or localization fallbacks. The blueprint is text only: it does not create or overwrite files in the user's module. Replace the `MyMod` owner placeholder with the exact module folder ID used by `AutoRegister` and `UnregisterUiPages`; after compilation, the SDK catalog performs its normal prefab ownership and binding checks.
+
 ## Contextual help and icons
 
 The in-game Help action shows short offline summaries derived from SDK XML documentation and localized in Bannerlord's active language. DocFX is used at build time only. Game-icons.net SVG source and attributed transparent sprite-part PNGs are included with Modules; Bannerlord's SpriteSheetGenerator and Resource Browser must pack those PNGs into the game's sprite resources before a Gauntlet prefab references them.

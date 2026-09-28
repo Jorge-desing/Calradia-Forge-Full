@@ -2925,6 +2925,52 @@ namespace MyCustomMod.QuestBehaviors
             if (!engineHint.Contains("Attack Order") || !engineHint.Contains("Gauntlet Hint & Tooltip Scaffold"))
                 throw new Exception("NoviceScaffoldEngine failed to route 'hint' tool.");
 
+            string pageBlueprint = NoviceScaffoldEngine.Generate("gauntlet-page", "Inventory Panel");
+            if (!pageBlueprint.Contains("[ForgeUiPage(\"my_mod.inventorypanel\", \"ForgeInventoryPanelPage\", \"my_mod_ui_inventorypanel_title\""))
+                throw new Exception("Gauntlet page blueprint has incorrect page ID, prefab, or title key.");
+            if (!pageBlueprint.Contains("using CalradiaForge.Sdk;")
+                || !pageBlueprint.Contains("using TaleWorlds.Library;")
+                || !pageBlueprint.Contains("public sealed class ForgeInventoryPanelPageViewModel : ViewModel")
+                || !pageBlueprint.Contains("Context = Context.Any)]"))
+                throw new Exception("Gauntlet page blueprint does not satisfy the ForgeUiPage ViewModel contract.");
+            if (!pageBlueprint.Contains("[DataSourceProperty]") || !pageBlueprint.Contains("public string StatusText"))
+                throw new Exception("Gauntlet page blueprint is missing its ViewModel bindings.");
+            if (!pageBlueprint.Contains("[ForgeUiCommand(\"refresh\", nameof(ExecuteRefresh)")
+                || !pageBlueprint.Contains("[ForgeUiCommand(\"close\", nameof(ExecuteClose)"))
+                throw new Exception("Gauntlet page blueprint is missing its command declarations.");
+            if (!pageBlueprint.Contains("Context = Context.Any, ChangesState = false)]\n        public void ExecuteRefresh()")
+                || !pageBlueprint.Contains("Context = Context.Any, ChangesState = false)]\n        public void ExecuteClose()"))
+                throw new Exception("Gauntlet page commands must remain parameterless, non-state-changing ViewModel methods.");
+            if (!pageBlueprint.Contains("Command.Click=\"ExecuteRefresh\"")
+                || !pageBlueprint.Contains("Command.Click=\"ExecuteClose\"")
+                || !pageBlueprint.Contains("ForgeApi.RegisterWhenAvailable(RegisterForgeUi)")
+                || !pageBlueprint.Contains("ForgeApi.UnregisterWhenAvailable(RegisterForgeUi)")
+                || !pageBlueprint.Contains("ForgeApi.UnregisterUiPages(\"MyMod\")")
+                || !pageBlueprint.Contains("private void RegisterForgeUi(IForgeRegistry registry) => ForgeApi.AutoRegister(typeof(ForgeInventoryPanelPageViewModel).Assembly, \"MyMod\");")
+                || !pageBlueprint.Contains("ForgeUI.OpenPage(\"my_mod.inventorypanel\")"))
+                throw new Exception("Gauntlet page blueprint is missing prefab bindings or module lifecycle steps.");
+            int prefabStart = pageBlueprint.IndexOf("<Prefab>", StringComparison.Ordinal);
+            int prefabEnd = pageBlueprint.IndexOf("</Prefab>", prefabStart, StringComparison.Ordinal);
+            if (prefabStart < 0 || prefabEnd < 0)
+                throw new Exception("Gauntlet page blueprint is missing a complete XML prefab.");
+            XDocument.Parse(pageBlueprint.Substring(prefabStart, prefabEnd + "</Prefab>".Length - prefabStart));
+            string hostilePageBlueprint = NoviceScaffoldEngine.Generate("gauntlet-page", "../Bad\"<Prefab>");
+            if (hostilePageBlueprint.Contains("../") || hostilePageBlueprint.Contains("Bad\"<Prefab>"))
+                throw new Exception("Gauntlet page blueprint did not normalize an unsafe title.");
+            string boundaryPageBlueprint = NoviceScaffoldEngine.Generate("gauntlet-page", new string('A', 47) + " B");
+            const string pageTitleContextMarker = " Context: ";
+            int pageTitleContextStart = boundaryPageBlueprint.IndexOf(pageTitleContextMarker, StringComparison.Ordinal);
+            if (pageTitleContextStart < 0)
+                throw new Exception("Gauntlet page blueprint is missing its title context line.");
+            int pageTitleContextEnd = boundaryPageBlueprint.IndexOf('\n', pageTitleContextStart);
+            if (pageTitleContextEnd < 0)
+                throw new Exception("Gauntlet page blueprint is missing its title context line.");
+            string normalizedBoundaryTitle = boundaryPageBlueprint.Substring(
+                pageTitleContextStart + pageTitleContextMarker.Length,
+                pageTitleContextEnd - pageTitleContextStart - pageTitleContextMarker.Length).TrimEnd('\r');
+            if (normalizedBoundaryTitle.Length > 48 || normalizedBoundaryTitle != new string('A', 47))
+                throw new Exception("Gauntlet page blueprint did not keep a title and page token within 48 characters.");
+
             // 4. Source File Parity Checks
             string[] runtimeCandidates = new[]
             {
@@ -2937,6 +2983,8 @@ namespace MyCustomMod.QuestBehaviors
             string runtimeContent = File.ReadAllText(runtimePath);
             if (!runtimeContent.Contains("case \"novice-hint\":"))
                 throw new Exception("Runtime.cs missing case \"novice-hint\".");
+            if (!runtimeContent.Contains("case \"novice-gauntlet\":"))
+                throw new Exception("Runtime.cs missing case \"novice-gauntlet\".");
 
             string[] panelCandidates = new[]
             {
@@ -2956,6 +3004,11 @@ namespace MyCustomMod.QuestBehaviors
             if (!panelContent.Contains("TelemetryHint")) throw new Exception("PanelViewModel.cs missing TelemetryHint property.");
             if (!panelContent.Contains("ExecuteNoviceHint")) throw new Exception("PanelViewModel.cs missing ExecuteNoviceHint method.");
             if (!panelContent.Contains("case \"ForgeNoviceHint\":")) throw new Exception("PanelViewModel.cs missing ForgeNoviceHint keyboard control.");
+            if (!panelContent.Contains("AddNavigationPaletteRoute(\"novice-gauntlet\"")
+                || !panelContent.Contains("case \"novice-gauntlet\": return \"Gauntlet Page Blueprint\""))
+                throw new Exception("PanelViewModel.cs missing the Gauntlet Page Blueprint route.");
+            if (!panelContent.Contains("case \"novice-gauntlet\": return NoviceGauntletHint;"))
+                throw new Exception("PanelViewModel.cs missing Gauntlet Page Blueprint help text.");
 
             string[] subModuleCandidates = new[]
             {
@@ -3235,7 +3288,7 @@ namespace MyCustomMod.QuestBehaviors
                 throw new Exception("ForgeAudioInspector AuditSoundManifest failed on valid audio manifest.");
 
             // 5. Validate NoviceScaffoldEngine Integration
-            foreach (var tool in new[] { "workshop", "party", "building", "combat" })
+            foreach (var tool in new[] { "workshop", "party", "building", "combat", "gauntlet-page" })
             {
                 string result = NoviceScaffoldEngine.Generate(tool, "Test");
                 if (string.IsNullOrWhiteSpace(result) || result.Contains("Unknown novice tool"))

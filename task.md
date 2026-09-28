@@ -616,4 +616,10 @@
   - [x] Empaquetar distribución con `tools/package.ps1` (3 archivos ZIP generados en `artifacts/`).
   - [ ] Sincronizar y push a GitHub (`main`) bajo la Regla E.
 
+## Nuevo generador in-game de Gauntlet Page Blueprint — 2026-09-28
+- [ ] Añadir al Novice Hub un generador copiable de una página Gauntlet completa: ViewModel, prefab, comandos y registro del módulo.
+- [ ] Validar límites y el cableado entre `Command.Click`, métodos anotados e IDs de página; no escribir archivos del usuario.
+- [ ] Traducir nombre y ayuda en todos los catálogos actuales; actualizar la guía EN/ES.
+- [ ] Ejecutar compilación Release, gate stateless y suites requeridas; comprobar la función en Bannerlord si el flujo live está disponible.
+
 

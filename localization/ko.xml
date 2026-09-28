@@ -25,6 +25,8 @@
   <string key="Extension diagnostics" value="Extension diagnostics" />
   <string key="Fix XML" value="Fix XML" />
   <string key="Fix manifest" value="Fix manifest" />
+  <string key="Gauntlet Page Blueprint" value="Gauntlet 페이지 청사진" />
+  <string key="Generate a complete, self-contained Gauntlet page with a bound ViewModel, XML prefab, commands, and registration notes." value="바인딩된 ViewModel, XML 프리팹, 명령 및 등록 안내가 포함된 완전한 Gauntlet 페이지를 생성합니다." />
   <string key="Import log" value="로그 가져오기" />
   <string key="Inspector" value="검사기" />
   <string key="Inspect framework" value="Inspect framework" />

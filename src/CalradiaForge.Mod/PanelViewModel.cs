@@ -426,6 +426,7 @@ namespace CalradiaForge.Mod
             AddNavigationPaletteRoute("novice-checklist", NoviceChecklistLabel, noviceGroup, NoviceChecklistHint);
             AddNavigationPaletteRoute("novice-events", NoviceEventsLabel, noviceGroup, NoviceEventsHint);
             AddNavigationPaletteRoute("novice-hint", NoviceHintLabel, noviceGroup, NoviceHintHint);
+            AddNavigationPaletteRoute("novice-gauntlet", NoviceGauntletLabel, noviceGroup, NoviceGauntletHint);
             AddNavigationPaletteRoute("novice-workshop", NoviceWorkshopLabel, noviceGroup, NoviceWorkshopHint);
             AddNavigationPaletteRoute("novice-party", NovicePartyLabel, noviceGroup, NovicePartyHint);
             AddNavigationPaletteRoute("novice-building", NoviceBuildingLabel, noviceGroup, NoviceBuildingHint);
@@ -469,7 +470,7 @@ namespace CalradiaForge.Mod
                 case "siege-tactics": case "casus-belli": case "rule-auditor": case "model-audit": case "dump-diagnostics":
                 case "audit-localization": case "audit-save": case "audit-audio": case "novice-behavior": case "novice-troop":
                 case "novice-quest": case "novice-item": case "novice-submodule": case "novice-checklist": case "novice-events":
-                case "novice-hint": case "novice-workshop": case "novice-party": case "novice-building": case "novice-combat":
+                case "novice-hint": case "novice-gauntlet": case "novice-workshop": case "novice-party": case "novice-building": case "novice-combat":
                     return true;
                 default:
                     return false;
@@ -875,6 +876,7 @@ namespace CalradiaForge.Mod
                     case "novice-checklist": return s + "MyFirstMod, CalradiaForge, (your mod folder name)";
                     case "novice-events": return s + "OnSessionLaunchedEvent, HourlyTickEvent, OnHeroKilledEvent, all";
                     case "novice-hint": return s + "RecruitVolunteers, CloseButton, QuickSave, AttackOrder";
+                    case "novice-gauntlet": return s + "InventoryPanel, PartyOverview, KingdomDashboard, DialoguePage";
                     case "novice-workshop": return s + "apothecary, brewery, smithy, silversmith, linen_weaver";
                     case "novice-party": return s + "mountain_raiders, desert_nomads, sea_plunderers, forest_outlaws";
                     case "novice-building": return s + "granary_vault, fortified_bastion, aqueduct_extension, training_grounds";
@@ -934,6 +936,7 @@ namespace CalradiaForge.Mod
                     case "novice-checklist": return T("Mod Readiness Checklist: Verify your mod is ready to distribute — folder structure, save safety, XML registration, and more.");
                     case "novice-events": return T("CampaignEvent Explainer: Learn when each CampaignEvent fires and how to use it. Enter an event name (e.g. 'HourlyTickEvent') or 'all' for the full catalog.");
                     case "novice-hint": return T("Gauntlet Hint Forge: Generates C# [DataSourceProperty] ViewModel hints, Gauntlet Hint.HintText XML attributes, and localization XML. Enter a button title above.");
+                    case "novice-gauntlet": return NoviceGauntletHint;
                     case "novice-workshop": return T("Workshop Scaffold: Generate valid workshops.xml + CampaignBehaviorBase with production cycle and underflow safety.");
                     case "novice-party": return T("Bandit Party Spawner: Generate partyTemplates.xml + MobileParty save-safe spawner logic. Enter a clan name above.");
                     case "novice-building": return T("Settlement Building: Generate buildings.xml (3 tiers) + SettlementFoodModel/BuildingDevelopmentModel Decorator.");
@@ -995,6 +998,7 @@ namespace CalradiaForge.Mod
                     case "novice-checklist": return "Mod Checklist";
                     case "novice-events": return "Event Explainer";
                     case "novice-hint": return "Gauntlet Hint Forge";
+                    case "novice-gauntlet": return "Gauntlet Page Blueprint";
                     case "novice-workshop": return "Workshop Scaffold";
                     case "novice-party": return "Bandit Spawner";
                     case "novice-building": return "Building Architect";
@@ -1183,6 +1187,8 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string NoviceEventsHint => T("Explain CampaignEvents in plain language: when they fire, what parameters they pass, and usage examples.");
         [DataSourceProperty] public string NoviceHintLabel => T("🎨 Hint Forge");
         [DataSourceProperty] public string NoviceHintHint => T("Gauntlet Hint Forge: Generate ViewModel hint properties and Hint.HintText XML attributes.");
+        [DataSourceProperty] public string NoviceGauntletLabel => T("Gauntlet Page Blueprint");
+        [DataSourceProperty] public string NoviceGauntletHint => T("Generate a complete, self-contained Gauntlet page with a bound ViewModel, XML prefab, commands, and registration notes.");
         [DataSourceProperty] public string NoviceWorkshopLabel => T("⚒️ Workshop Scaffold");
         [DataSourceProperty] public string NoviceWorkshopHint => T("Generate valid workshops.xml + CampaignBehaviorBase with production cycle and underflow safety.");
         [DataSourceProperty] public string NovicePartyLabel => T("🏕️ Bandit Spawner");
@@ -1414,6 +1420,7 @@ namespace CalradiaForge.Mod
             nameof(CategorySdkLabel), nameof(CategorySdkHint), nameof(SearchText), nameof(SdkTools), nameof(IsSimDynastyActive),
             nameof(SimDynastyLabel), nameof(SimDynastyHint), nameof(IsSimCrimeActive), nameof(SimCrimeLabel), nameof(SimCrimeHint),
             nameof(CategoryMissionDescription), nameof(CategoryEngineRules), nameof(ActiveModderRoleLabel),
+            nameof(NoviceGauntletLabel), nameof(NoviceGauntletHint),
             nameof(ActiveModderRoleColor), nameof(ActiveModderRoleBadgeText),
             nameof(CoALAMemoryStatusText), nameof(ForgeWeaveStatusBadge),
             nameof(ActiveModderRoleHint), nameof(HasPinnedCommands), nameof(CategorySuggestedCommands), nameof(PinnedCommands),
@@ -1503,7 +1510,7 @@ namespace CalradiaForge.Mod
             }
             if (action == "novice-behavior" || action == "novice-troop" || action == "novice-quest" ||
                 action == "novice-item" || action == "novice-submodule" || action == "novice-checklist" ||
-                action == "novice-events" || action == "novice-hint" || action == "novice-workshop" ||
+                action == "novice-events" || action == "novice-hint" || action == "novice-gauntlet" || action == "novice-workshop" ||
                 action == "novice-party" || action == "novice-building" || action == "novice-combat")
             {
                 RunNoviceTool(action, effectiveArg);
@@ -1887,6 +1894,7 @@ namespace CalradiaForge.Mod
                 case "novice-checklist":
                 case "novice-events":
                 case "novice-hint":
+                case "novice-gauntlet":
                 case "novice-workshop":
                 case "novice-party":
                 case "novice-building":
@@ -1944,6 +1952,7 @@ namespace CalradiaForge.Mod
         public void ExecuteNoviceChecklist()  { SelectSection("novice-checklist"); }
         public void ExecuteNoviceEvents()     { SelectSection("novice-events"); }
         public void ExecuteNoviceHint()       { SelectSection("novice-hint"); }
+        public void ExecuteNoviceGauntlet()   { SelectSection("novice-gauntlet"); }
         public void ExecuteNoviceWorkshop()   { SelectSection("novice-workshop"); }
         public void ExecuteNoviceParty()      { SelectSection("novice-party"); }
         public void ExecuteNoviceBuilding()   { SelectSection("novice-building"); }
@@ -3952,6 +3961,7 @@ namespace CalradiaForge.Mod
                 case "ForgeNoviceChecklist": ExecuteNoviceChecklist(); break;
                 case "ForgeNoviceEvents": ExecuteNoviceEvents(); break;
                 case "ForgeNoviceHint": ExecuteNoviceHint(); break;
+                case "ForgeNoviceGauntlet": ExecuteNoviceGauntlet(); break;
                 case "ForgeRunNovice": { if (currentCategory == "novice") Send(current, Argument); } break;
                 case "ForgeCategoryHelp": ExecuteCategoryHelp(); break;
                 case "ForgeCycleModderRole": ExecuteCycleModderRole(); break;

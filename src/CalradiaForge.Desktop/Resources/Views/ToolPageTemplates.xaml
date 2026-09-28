@@ -30,13 +30,17 @@
              <Run Text="Cohesion: "/><Run Text="{Binding TroopTreeDashboard.SimulatedFrontlineCohesion, Mode=OneWay}"/><Run Text=" · Cost: "/><Run Text="{Binding TroopTreeDashboard.SimulatedArmyCostEstimate, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding TroopTreeDashboard.PerkBonusSummary, Mode=OneWay}"/>
             </TextBlock>
            </StackPanel>
+           <presentation:ForgeStepProgress Steps="{Binding TroopTreeDashboard.TroopProgressionPipelineSteps}" Height="40" Margin="22,4,0,0"/>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
-           <StackPanel Orientation="Horizontal">
-            <Path Data="{StaticResource Icon.Shield}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
-            <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Troop.CountBadge}"/>
-           </StackPanel>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+             <Path Data="{StaticResource Icon.Shield}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Troop.CountBadge}"/>
+            </StackPanel>
+           </Border>
+           <Image Source="/CalradiaForge.Desktop;component/Resources/calradia-aquila-seal-rev087.png" Width="36" Height="36" Margin="8,0,0,0" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Body: Troop Tree Branches -->
@@ -277,6 +281,34 @@
                 ValueFormat="0.0" UnitsText="%" GaugeTitle="COHESION"
                 Height="130" Width="145"/>
             <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="Dynamic Cohesion Index" TextWrapping="Wrap"/>
+           </StackPanel>
+          </Border>
+          <!-- Column: Battle Shock Chrono & Progression Envelope -->
+          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Width="210" Margin="0,0,4,0">
+           <StackPanel>
+            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,1">
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="BATTLE SHOCK CHRONO" TextWrapping="Wrap"/>
+            </Border>
+            <presentation:ForgeTimelineRuler
+                TotalDuration="60.0"
+                CurrentTime="{Binding TroopTreeDashboard.BattleSimulationTimestamp, Mode=OneWay}"
+                MajorInterval="10.0"
+                MinorInterval="2.0"
+                UnitLabel="s"
+                Height="32"
+                Margin="0,0,0,4"/>
+            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,4,0,4" Padding="4,1">
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="PROGRESSION ENVELOPE" TextWrapping="Wrap"/>
+            </Border>
+            <presentation:ForgeAreaChart
+                DataPoints="{Binding TroopTreeDashboard.TroopStatCurveTrajectory}"
+                Stroke="{DynamicResource BrassBrush}"
+                Fill="{DynamicResource BrassBrush}"
+                StrokeThickness="1.5"
+                ValueUnit="%"
+                Height="54"
+                Margin="0,0,0,4"/>
+            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="16-Interval Battle Shock Trajectory" TextWrapping="Wrap"/>
            </StackPanel>
           </Border>
          </StackPanel>
@@ -1398,6 +1430,7 @@
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding CombatStudioDashboard.TacticalDoctrine, Mode=OneWay}"/>
             <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,3,0,0" Text="{Binding CombatStudioDashboard.DeploymentTerrain, Mode=OneWay}"/>
             <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="22,4,0,0" Text="{Binding CombatStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+            <presentation:ForgeStepProgress Steps="{Binding CombatStudioDashboard.BattleDoctrinePipelineSteps}" Height="40" Margin="22,4,0,0"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
            <presentation:ForgeArcGauge
@@ -1421,6 +1454,7 @@
              <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="4 BATTLE COHORTS"/>
             </StackPanel>
            </Border>
+           <Image Source="/CalradiaForge.Desktop;component/Resources/calradia-aquila-seal-rev087.png" Width="36" Height="36" Margin="8,0,0,0" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
           </StackPanel>
          </Grid>
         </Border>
@@ -1511,7 +1545,23 @@
                ValueUnit="%"
                FormatString="0.0"
                Height="36" Margin="0,3"/>
-           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="{Binding CombatStudioDashboard.CasualtyEnvelope, Mode=OneWay}"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,4" TextWrapping="Wrap" Text="{Binding CombatStudioDashboard.CasualtyEnvelope, Mode=OneWay}"/>
+           <presentation:ForgeTimelineRuler
+               TotalDuration="15.0"
+               CurrentTime="{Binding CombatStudioDashboard.BattlePhaseElapsedMinutes, Mode=OneWay}"
+               MajorInterval="3.0"
+               MinorInterval="0.5"
+               UnitLabel="min"
+               Height="30"
+               Margin="0,2,0,2"/>
+           <presentation:ForgeAreaChart
+               DataPoints="{Binding CombatStudioDashboard.CombatPressureTrajectory}"
+               Stroke="{DynamicResource EmberBrush}"
+               Fill="{DynamicResource EmberBrush}"
+               StrokeThickness="1.5"
+               ValueUnit="%"
+               Height="32"
+               Margin="0,0,0,3"/>
            <Grid Margin="0,4,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <!-- Gauge 1: Morale -->
@@ -1581,6 +1631,7 @@
            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding CaravanTradeDashboard.OperatingCapital, Mode=OneWay}"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding CaravanTradeDashboard.RouteTerrain, Mode=OneWay}"/>
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding CaravanTradeDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+           <presentation:ForgeStepProgress Steps="{Binding CaravanTradeDashboard.CaravanExpeditionPipelineSteps}" Height="40" Margin="22,4,0,0"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
            <presentation:ForgeArcGauge
@@ -1604,6 +1655,7 @@
              <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="5 ARBITRAGE GOODS"/>
             </StackPanel>
            </Border>
+           <Image Source="/CalradiaForge.Desktop;component/Resources/calradia-aquila-seal-rev087.png" Width="36" Height="36" Margin="8,0,0,0" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
           </StackPanel>
          </Grid>
         </Border>
@@ -1694,7 +1746,23 @@
                ValueUnit="d"
                FormatString="0.0"
                Height="36" Margin="0,3"/>
-           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="{Binding CaravanTradeDashboard.ArbitrageSummary, Mode=OneWay}"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,4" TextWrapping="Wrap" Text="{Binding CaravanTradeDashboard.ArbitrageSummary, Mode=OneWay}"/>
+           <presentation:ForgeTimelineRuler
+               TotalDuration="45.0"
+               CurrentTime="{Binding CaravanTradeDashboard.RouteTransitDays, Mode=OneWay}"
+               MajorInterval="5.0"
+               MinorInterval="1.0"
+               UnitLabel="d"
+               Height="30"
+               Margin="0,2,0,2"/>
+           <presentation:ForgeAreaChart
+               DataPoints="{Binding CaravanTradeDashboard.ArbitrageYieldTrajectory}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource VerdigrisBrush}"
+               StrokeThickness="1.5"
+               ValueUnit="%"
+               Height="32"
+               Margin="0,0,0,3"/>
            <Grid Margin="0,4,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <!-- Gauge 1: Caravan Survival -->

@@ -671,13 +671,15 @@ namespace CalradiaForge.Desktop.Presentation
             }
             else if (IsCombatStudio)
             {
-                Evidence.Add(new("Combat / Preset", "Loaded", $"Cycled combat formation preset #{presetCycleIndex % 2 + 1}"));
+                CombatStudioDashboard?.CycleScenario(presetCycleIndex);
+                Evidence.Add(new("Combat / Preset", "Loaded", $"Cycled combat formation preset #{presetCycleIndex % 2 + 1}: {CombatStudioDashboard?.RegimentName}"));
                 Raise(nameof(CombatStudioDashboard));
                 Raise(nameof(PresetActionLabel));
             }
             else if (IsCaravanTrade)
             {
-                Evidence.Add(new("Trade / Preset", "Loaded", $"Cycled caravan route preset #{presetCycleIndex % 2 + 1}"));
+                CaravanTradeDashboard?.CycleScenario(presetCycleIndex);
+                Evidence.Add(new("Trade / Preset", "Loaded", $"Cycled caravan route preset #{presetCycleIndex % 2 + 1}: {CaravanTradeDashboard?.RouteName}"));
                 Raise(nameof(CaravanTradeDashboard));
                 Raise(nameof(PresetActionLabel));
             }

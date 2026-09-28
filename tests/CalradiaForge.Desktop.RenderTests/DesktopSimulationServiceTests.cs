@@ -42,6 +42,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies Rev086 pipeline steps, timeline ruler, and studio trajectories");
         Rev087SpecializedStudiosAndAquilaSealTelemetry();
         Console.WriteLine("PASS Desktop simulation verifies Rev087 specialized studio pipelines, area trajectories, and aquila seal telemetry");
+        Rev088TroopCombatTradeVisualTelemetry();
+        Console.WriteLine("PASS Desktop simulation verifies Rev088 troop progression, combat doctrine, and caravan trade visual telemetry");
     }
 
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
@@ -653,5 +655,51 @@ internal static class DesktopSimulationServiceTests
         kingdomVm.CycleScenario(1);
         Check(kingdomVm.GeopoliticalTensionTrajectory.Any(p => p > 0.50),
             "Cycling kingdom scenario must update tension trajectory.");
+    }
+
+    static void Rev088TroopCombatTradeVisualTelemetry()
+    {
+        // 1. TroopTreeDashboardViewModel
+        var troopVm = new TroopTreeDashboardViewModel();
+        Check(troopVm.TroopProgressionPipelineSteps != null && troopVm.TroopProgressionPipelineSteps.Count == 4,
+            "TroopTree dashboard must expose 4 progression pipeline steps.");
+        Check(troopVm.TroopStatCurveTrajectory != null && troopVm.TroopStatCurveTrajectory.Count == 16,
+            "TroopTree dashboard must expose 16-point stat curve trajectory.");
+        Check(troopVm.BattleSimulationTimestamp > 0.0,
+            "TroopTree dashboard must expose non-zero battle simulation timestamp.");
+        troopVm.ToggleCaptainPerksCommand.Execute(null);
+        Check(troopVm.TroopStatCurveTrajectory.Count == 16,
+            "Toggling captain perks must recalculate stat curve trajectory.");
+        troopVm.SetDynasticNobleScenario();
+        Check(troopVm.TroopProgressionPipelineSteps.Any(s => s.Title == "Elite Banner Veteran" && (s.Status == ForgeStepStatus.Active || s.Status == ForgeStepStatus.Completed)),
+            "Setting dynastic noble scenario must update progression pipeline steps to advanced tier.");
+
+        // 2. CombatStudioDashboardViewModel
+        var combatVm = new CombatStudioDashboardViewModel();
+        Check(combatVm.BattleDoctrinePipelineSteps != null && combatVm.BattleDoctrinePipelineSteps.Count == 4,
+            "CombatStudio dashboard must expose 4 battle doctrine pipeline steps.");
+        Check(combatVm.CombatPressureTrajectory != null && combatVm.CombatPressureTrajectory.Count == 16,
+            "CombatStudio dashboard must expose 16-point combat pressure trajectory.");
+        Check(combatVm.BattlePhaseElapsedMinutes > 0.0,
+            "CombatStudio dashboard must expose non-zero elapsed battle minutes.");
+        combatVm.CycleScenario(1);
+        Check(combatVm.BattleDoctrinePipelineSteps.Any(s => s.Title == "Flank Shock Cavalry" && s.Status == ForgeStepStatus.Active),
+            "Cycling combat scenario must activate cavalry shock doctrine phase.");
+        Check(combatVm.CombatPressureTrajectory.Count == 16,
+            "Cycled combat scenario must maintain 16-point combat pressure trajectory.");
+
+        // 3. CaravanTradeDashboardViewModel
+        var tradeVm = new CaravanTradeDashboardViewModel();
+        Check(tradeVm.CaravanExpeditionPipelineSteps != null && tradeVm.CaravanExpeditionPipelineSteps.Count == 4,
+            "CaravanTrade dashboard must expose 4 caravan expedition pipeline steps.");
+        Check(tradeVm.ArbitrageYieldTrajectory != null && tradeVm.ArbitrageYieldTrajectory.Count == 16,
+            "CaravanTrade dashboard must expose 16-point arbitrage yield trajectory.");
+        Check(tradeVm.RouteTransitDays > 0.0,
+            "CaravanTrade dashboard must expose non-zero route transit days.");
+        tradeVm.CycleScenario(1);
+        Check(tradeVm.CaravanExpeditionPipelineSteps.Any(s => s.Title == "Market Arbitrage" && s.Status == ForgeStepStatus.Active),
+            "Cycling trade scenario must advance expedition to market arbitrage phase.");
+        Check(tradeVm.ArbitrageYieldTrajectory.Count == 16,
+            "Cycled trade scenario must maintain 16-point yield trajectory.");
     }
 }

@@ -15,6 +15,7 @@
       <TextBlock FontSize="{DynamicResource Token.LabelFont}" Style="{StaticResource KickerText}" Text="{DynamicResource Ui.Context}" TextWrapping="Wrap"/>
       <TextBlock FontSize="12" Style="{StaticResource OrderValue}" Text="{Binding WorkOrderContext}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" ToolTip="{Binding WorkOrderContext}"/>
      </StackPanel>
+     <Border Background="{DynamicResource BrassBrush}" CornerRadius="0,0,3,3" Height="2" HorizontalAlignment="Stretch" Opacity="0.45" VerticalAlignment="Bottom"/>
     </Grid>
    </Border>
    <Border AutomationProperties.AutomationId="WorkOrderPermissionStatus" Margin="6,0" MinWidth="0" Style="{StaticResource OrderCard}" ToolTip="{Binding TestingPermission}" Width="178">
@@ -24,6 +25,7 @@
       <TextBlock FontSize="{DynamicResource Token.LabelFont}" Style="{StaticResource KickerText}" Text="{DynamicResource Ui.TestPermission}" TextWrapping="Wrap"/>
       <TextBlock FontSize="12" Style="{StaticResource OrderValue}" Text="{Binding TestingPermission}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" ToolTip="{Binding TestingPermission}"/>
      </StackPanel>
+     <Border Background="{DynamicResource VerdigrisBrush}" CornerRadius="0,0,3,3" Height="2" HorizontalAlignment="Stretch" Opacity="0.45" VerticalAlignment="Bottom"/>
     </Grid>
    </Border>
    <Border AutomationProperties.AutomationId="WorkOrderReportStatus" Margin="6,0" MinWidth="0" Style="{StaticResource OrderCard}" ToolTip="{Binding ReportState}" Width="178">
@@ -33,6 +35,7 @@
       <TextBlock FontSize="{DynamicResource Token.LabelFont}" Style="{StaticResource KickerText}" Text="{DynamicResource Ui.ReportState}" TextWrapping="Wrap"/>
       <TextBlock FontSize="12" Style="{StaticResource OrderValue}" Text="{Binding ReportState}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" ToolTip="{Binding ReportState}"/>
      </StackPanel>
+     <Border Background="{DynamicResource BrassBrush}" CornerRadius="0,0,3,3" Height="2" HorizontalAlignment="Stretch" Opacity="0.45" VerticalAlignment="Bottom"/>
     </Grid>
    </Border>
    <Border AutomationProperties.AutomationId="WorkOrderApplicationStatus" AutomationProperties.Name="{Binding Status}" Margin="6,0" MinWidth="0" Style="{StaticResource OrderCard}" ToolTip="{Binding Status}" Width="178">
@@ -50,6 +53,7 @@
        </TextBlock.Style>
       </TextBlock>
      </StackPanel>
+     <Border Background="{DynamicResource EmberBrush}" CornerRadius="0,0,3,3" Height="2" HorizontalAlignment="Stretch" Opacity="0.45" VerticalAlignment="Bottom"/>
     </Grid>
    </Border>
    <Border AutomationProperties.AutomationId="RetainedEvidenceSummary" Margin="6,0,0,0" MinWidth="0" Style="{StaticResource OrderCard}" Width="178">
@@ -65,6 +69,7 @@
        </Button>
       </Grid>
      </StackPanel>
+     <Border Background="{DynamicResource BrassBrush}" CornerRadius="0,0,3,3" Height="2" HorizontalAlignment="Stretch" Opacity="0.45" VerticalAlignment="Bottom"/>
     </Grid>
    </Border>
   </WrapPanel>

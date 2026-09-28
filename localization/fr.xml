@@ -25,6 +25,8 @@
   <string key="Extension diagnostics" value="Extension diagnostics" />
   <string key="Fix XML" value="Fix XML" />
   <string key="Fix manifest" value="Fix manifest" />
+  <string key="Gauntlet Page Blueprint" value="Plan de page Gauntlet" />
+  <string key="Generate a complete, self-contained Gauntlet page with a bound ViewModel, XML prefab, commands, and registration notes." value="Génère une page Gauntlet complète et autonome avec ViewModel lié, prefab XML, commandes et instructions d’enregistrement." />
   <string key="Import log" value="Importer le journal" />
   <string key="Inspector" value="Inspecteur" />
   <string key="Inspect framework" value="Inspect framework" />
