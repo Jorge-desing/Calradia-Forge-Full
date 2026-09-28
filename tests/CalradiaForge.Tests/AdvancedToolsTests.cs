@@ -2199,6 +2199,12 @@ namespace MyCustomMod.QuestBehaviors
                 !clearBaseline.Contains("_isOutputComparisonActive = false;"))
                 throw new Exception("The explicit clear-baseline action must release the pin and exit comparison.");
 
+            string compareAction = vm.Substring(pinEnd, clearBaselineStart - pinEnd);
+            if (!compareAction.Contains("ExpandEvidenceForOutputComparison();") ||
+                !compareAction.Contains("RestoreEvidenceFocusAfterOutputComparison();") ||
+                !vm.Contains("public void ExecutePrevious() { page = Math.Max(0, page - 1); Render(); }"))
+                throw new Exception("Comparison must expose its paired viewport in compact layouts, restore the prior evidence mode on exit, and clamp previous-page navigation.");
+
             int closeStart = vm.IndexOf("public void CancelPendingWork()", StringComparison.Ordinal);
             int closeEnd = vm.IndexOf("public void ExecuteRemove()", closeStart, StringComparison.Ordinal);
             if (closeStart < 0 || closeEnd <= closeStart ||
