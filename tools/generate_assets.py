@@ -36,6 +36,8 @@ IMAGEGEN_TEXTURES = {
     'forge_war_table_cloth_v2.png': ((1024, 128), 24, False),
     'forge_rail_cartographic_field_v1.png': ((256, 256), 36, False),
     'forge_heraldic_overlay.png': ((256, 48), 112, True),
+    'forge_heraldic_header_v2.png': ((256, 48), 88, True),
+    'forge_heraldic_rail_v2.png': ((128, 256), 64, True),
     'forge_patina_brass.png': ((128, 16), 88, False),
     'forge_pine_felt.png': ((128, 32), 40, False),
 }
@@ -228,7 +230,7 @@ seal_frame=E.SubElement(header_children,'Widget',WidthSizePolicy='Fixed',HeightS
 E.SubElement(E.SubElement(seal_frame,'Children'),'ImageWidget',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='44',SuggestedHeight='44',MarginTop='6',MarginLeft='6',Sprite='calradiaforge_knight_banner',Color='#FFFFFFFF')
 E.SubElement(header_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='550',SuggestedHeight='38',MarginTop='10',MarginLeft='84',Brush='GameTip.Title.Text',Text='@Title')
 E.SubElement(header_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='550',SuggestedHeight='23',MarginTop='46',MarginLeft='87',Brush='GameTip.Text',Text='@HeaderSubtitle',**{'Brush.FontSize':'15','Brush.FontColor':'#6FB183FF'})
-E.SubElement(header_children,'ImageWidget',Id='ForgeHeaderHeraldicOverlay',DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='220',SuggestedHeight='42',MarginTop='17',MarginLeft='650',Sprite='forge_heraldic_overlay',Color='#FFFFFFFF')
+E.SubElement(header_children,'ImageWidget',Id='ForgeHeaderHeraldicOverlay',DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='220',SuggestedHeight='42',MarginTop='17',MarginLeft='650',Sprite='forge_heraldic_header_v2',Color='#FFFFFFFF')
 E.SubElement(header_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='118',SuggestedHeight='22',MarginTop='11',MarginRight='16',Brush='CalradiaForge.Gold',Text='@VersionLabel',HorizontalAlignment='Right',**{'Brush.FontSize':'17'})
 E.SubElement(header_children,'Widget',Id='ForgeSessionStatusMark',DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='12',SuggestedHeight='12',MarginTop='48',MarginRight='235',Sprite='BlankWhiteSquare_9',Color='@SessionStatusColor',HorizontalAlignment='Right')
 E.SubElement(header_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='223',SuggestedHeight='27',MarginTop='40',MarginRight='6',Brush='CalradiaForge.Muted',Text='@MemoryHealthText',HorizontalAlignment='Right',**{'Brush.FontSize':'13'})
@@ -246,7 +248,7 @@ routes=[('Summary','Summary','calradiaforge_open_book','IsSummaryActive'),('Modu
 for cmd,label,icon,active in routes:
     button(nav,cmd,'@'+label+'Label',202,icon,height=42,selected=active,brush='CalradiaForge.CategoryTab',margin_right=0,margin_bottom=4)
 E.SubElement(rail_children,'ImageWidget',Id='ForgeRailPineFelt',DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='198',SuggestedHeight='8',MarginLeft='16',MarginTop='394',Sprite='forge_pine_felt',Color='#FFFFFFFF')
-E.SubElement(rail_children,'ImageWidget',Id='ForgeRailCloth',DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='228',MaxHeight='256',MarginLeft='1',MarginTop='425',MarginBottom='5',Sprite='forge_rail_cartographic_field_v1',Color='#FFFFFFFF')
+E.SubElement(rail_children,'ImageWidget',Id='ForgeRailCloth',DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='128',MaxHeight='256',HorizontalAlignment='Center',MarginLeft='0',MarginTop='425',MarginBottom='5',Sprite='forge_heraldic_rail_v2',Color='#FFFFFFFF')
 E.SubElement(rail_children,'TextWidget',Id='ForgeRailGuidance',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='198',MaxHeight='125',MarginLeft='16',MarginTop='433',MarginBottom='12',Brush='CalradiaForge.Muted',Text='@QuickGuide',**{'Brush.FontSize':'15'})
 
 # A route-specific heraldic marker sits in the 24-DIP gutter beside the

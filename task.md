@@ -420,3 +420,15 @@
 - [x] Ejecución de la suite de pruebas de Desktop MVVM (63 pruebas) y suite completa de Render WPF (289 casos en 3 temas y 4 escalas).
 - [x] Ejecución de verificación UI Automation de la ventana WPF.
 - [x] Sincronización y push a GitHub (`main`) bajo la Regla E.
+
+## Gran Ronda de Mejoras Visuales al Shell Global, Navegación, Dossier y Footer WPF (Rev069)
+- [x] Fase 1: Refinamiento del Encabezado Táctico (`WorkbenchHeaderControl.xaml`) y Barra de Navegación (`WorkbenchNavigationControl.xaml`, `App.xaml`).
+- [x] Fase 2: Perfeccionamiento del Centro de Acción, Tool Dossier (`ToolDossierControl.xaml`) y Split Deck (`WorkbenchWorkspaceControl.xaml`).
+- [x] Fase 3: Modernización de la Cinta de Estado Táctica Inferior (`WorkbenchFooterControl.xaml`) y Modal de Paleta de Comandos (`CommandPaletteControl.xaml`).
+- [x] Fase 4: Armonización de Paletas y Materiales Tácticos (`TacticalPalette.xaml`, Parchment, HighContrast) y Flight Deck Genérico (`ToolPageTemplates.xaml`).
+- [x] Fase 5: Verificación de compilación limpia de la solución en Release (0 errores / 0 advertencias).
+- [x] Fase 6: Verificación de 4/4 criterios sin estado (`verify_stateless_behavior.ps1`).
+- [x] Fase 7: Pruebas de contrato Desktop MVVM (63 pruebas) y suite de Renderizado WPF (289 casos).
+- [x] Fase 8: Benchmarking de rendimiento profundo con harness de renderizado en 5 pasadas comparativas.
+- [x] Fase 9: Suite de pruebas de agentes y UI Automation (`test_forge_agents.py` 31/31 pasadas).
+- [x] Fase 10: Documentación de aprendizajes (`learning_proposal.md`), sincronización y push a GitHub (`main`) bajo la Regla E.

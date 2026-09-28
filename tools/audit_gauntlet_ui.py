@@ -60,9 +60,9 @@ ROUTE_ORNAMENTS = {
 
 DECORATIVE_IMAGES = {
     "ForgeHeaderCloth": ("forge_war_table_cloth_v2", "ForgeHeader"),
-    "ForgeHeaderHeraldicOverlay": ("forge_heraldic_overlay", "ForgeHeader"),
+    "ForgeHeaderHeraldicOverlay": ("forge_heraldic_header_v2", "ForgeHeader"),
     "ForgeRailPineFelt": ("forge_pine_felt", "ForgeNavigationRail"),
-    "ForgeRailCloth": ("forge_rail_cartographic_field_v1", "ForgeNavigationRail"),
+    "ForgeRailCloth": ("forge_heraldic_rail_v2", "ForgeNavigationRail"),
     "ForgeBriefingContextPineFelt": ("forge_pine_felt", "BriefingContextValue"),
     "ForgeBriefingTestingPineFelt": ("forge_pine_felt", "BriefingTestingValue"),
     "ForgeBriefingEvidencePineFelt": ("forge_pine_felt", "BriefingEvidenceCountValue"),
@@ -1186,6 +1186,11 @@ def validate_decorative_layers(
     overlay = decorations.get("ForgeHeaderHeraldicOverlay")
     if overlay is not None and fixed_rect(overlay, vm_source) != Rect(650, 17, 220, 42):
         audit.error("ForgeHeaderHeraldicOverlay must stay inside the reserved header identity gap")
+    header_overlay_alpha = png_max_alpha("forge_heraldic_header_v2")
+    if header_overlay_alpha is None:
+        audit.error("Cannot verify forge_heraldic_header_v2 alpha; expected an RGBA8 sprite PNG")
+    elif header_overlay_alpha > 88:
+        audit.error(f"forge_heraldic_header_v2 alpha must be at most 88/255 in the header identity gap (found {header_overlay_alpha})")
     header_cloth = decorations.get("ForgeHeaderCloth")
     if header_cloth is not None:
         expected_header_attrs = {
@@ -1209,20 +1214,21 @@ def validate_decorative_layers(
         expected_rail_attrs = {
             "WidthSizePolicy": "Fixed",
             "HeightSizePolicy": "StretchToParent",
-            "SuggestedWidth": "228",
+            "SuggestedWidth": "128",
             "MaxHeight": "256",
-            "MarginLeft": "1",
+            "HorizontalAlignment": "Center",
+            "MarginLeft": "0",
             "MarginTop": "425",
             "MarginBottom": "5",
         }
         for key, expected_value in expected_rail_attrs.items():
             if rail_cloth.attrib.get(key) != expected_value:
-                audit.error(f"ForgeRailCloth must use {key}={expected_value} for top/bottom anchored scaling")
-    rail_cloth_alpha = png_max_alpha("forge_rail_cartographic_field_v1")
+                audit.error(f"ForgeRailCloth must use {key}={expected_value} for centered, bounded rail artwork")
+    rail_cloth_alpha = png_max_alpha("forge_heraldic_rail_v2")
     if rail_cloth_alpha is None:
-        audit.error("Cannot verify forge_rail_cartographic_field_v1 alpha; expected an RGBA8 sprite PNG")
-    elif rail_cloth_alpha > 36:
-        audit.error(f"forge_rail_cartographic_field_v1 alpha must be at most 36/255 (found {rail_cloth_alpha})")
+        audit.error("Cannot verify forge_heraldic_rail_v2 alpha; expected an RGBA8 sprite PNG")
+    elif rail_cloth_alpha > 64:
+        audit.error(f"forge_heraldic_rail_v2 alpha must be at most 64/255 for rail guidance underlay (found {rail_cloth_alpha})")
     rail_felt = decorations.get("ForgeRailPineFelt")
     if rail_felt is not None and fixed_rect(rail_felt, vm_source) != Rect(16, 394, 198, 8):
         audit.error("ForgeRailPineFelt must remain in the rail divider gap")
@@ -1805,6 +1811,31 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
                     child_rect = rectangles.get(actual_child)
                     if child_rect is not None and not contained(parent_rect, child_rect):
                         audit.error(f"Child {actual_child.attrib.get('Id', local_name(actual_child.tag))} exceeds {parent_id} in {viewport[0]}x{viewport[1]}")
+            if parent_id == "ForgeNavigationRail":
+                rail_art = find_by_id(prefab, "ForgeRailCloth")
+                rail_art_rect = rectangles.get(rail_art) if rail_art is not None else None
+                if rail_art_rect is None:
+                    audit.error(f"Cannot resolve centered ForgeRailCloth in {viewport[0]}x{viewport[1]}")
+                else:
+                    expected_width = 128
+                    expected_height = min(256, max(0, parent_rect.height - 425 - 5))
+                    expected_left = parent_rect.left + (parent_rect.width - expected_width) / 2
+                    expected_top = parent_rect.top + 425
+                    if expected_height <= 0:
+                        audit.error(f"ForgeNavigationRail has no height for the heraldic underlay in {viewport[0]}x{viewport[1]}")
+                    elif any((
+                        abs(rail_art_rect.left - expected_left) > 0.01,
+                        abs(rail_art_rect.top - expected_top) > 0.01,
+                        abs(rail_art_rect.width - expected_width) > 0.01,
+                        abs(rail_art_rect.height - expected_height) > 0.01,
+                    )):
+                        audit.error(
+                            f"ForgeRailCloth must be centered at native width and capped below rail guidance "
+                            f"in {viewport[0]}x{viewport[1]} (expected x={expected_left:g}, y={expected_top:g}, "
+                            f"w={expected_width}, h={expected_height}; found "
+                            f"x={rail_art_rect.left:g}, y={rail_art_rect.top:g}, "
+                            f"w={rail_art_rect.width:g}, h={rail_art_rect.height:g})"
+                        )
 
     validate_decorative_layers(audit, prefab, shell, vm_source)
 

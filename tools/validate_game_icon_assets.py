@@ -49,6 +49,8 @@ CANONICAL_DECORATION_SIZES = {
     "forge_war_table_cloth_v2": (1024, 128),
     "forge_rail_cartographic_field_v1": (256, 256),
     "forge_heraldic_overlay": (256, 48),
+    "forge_heraldic_header_v2": (256, 48),
+    "forge_heraldic_rail_v2": (128, 256),
     "forge_patina_brass": (128, 16),
     "forge_pine_felt": (128, 32),
 }
@@ -79,7 +81,7 @@ CANONICAL_PREFAB_ICONS = {
     "calradiaforge_plug",
 }
 ATLAS_SPRITES = CANONICAL_ATLAS_ICONS | set(DECORATION_SIZES)
-EXPECTED_ATLAS_SPRITE_COUNT = 30
+EXPECTED_ATLAS_SPRITE_COUNT = 32
 REQUIRED_SPRITES = ATLAS_SPRITES
 EXPECTED_SPRITE_COUNT = EXPECTED_ATLAS_SPRITE_COUNT
 EXPECTED_ATLAS_SIZE = (4096, 512)

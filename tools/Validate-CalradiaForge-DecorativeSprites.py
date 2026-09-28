@@ -28,6 +28,8 @@ DECORATION_SIZES = {
     "forge_war_table_cloth_v2": (1024, 128),
     "forge_rail_cartographic_field_v1": (256, 256),
     "forge_heraldic_overlay": (256, 48),
+    "forge_heraldic_header_v2": (256, 48),
+    "forge_heraldic_rail_v2": (128, 256),
     "forge_patina_brass": (128, 16),
     "forge_pine_felt": (128, 32),
     "forge_header_summary_v1": (128, 64),
@@ -45,6 +47,8 @@ MAX_ALPHA = {
     "forge_war_table_cloth_v2": 24,
     "forge_rail_cartographic_field_v1": 36,
     "forge_heraldic_overlay": 112,
+    "forge_heraldic_header_v2": 88,
+    "forge_heraldic_rail_v2": 64,
     "forge_patina_brass": 88,
     "forge_pine_felt": 40,
     "forge_header_summary_v1": 112,
@@ -60,9 +64,12 @@ MIN_VISIBLE_COLORS = {name: 2 for name in DECORATIONS}
 TEXT_OVERLAP_ALPHA_MAX = {
     "forge_war_table_cloth_v2": 24,
     "forge_rail_cartographic_field_v1": 36,
+    "forge_heraldic_rail_v2": 64,
 }
 TRANSPARENT_DECORATIONS = {
     "forge_heraldic_overlay",
+    "forge_heraldic_header_v2",
+    "forge_heraldic_rail_v2",
     "forge_header_summary_v1",
     "forge_header_modules_v1",
     "forge_header_logs_v1",
@@ -72,7 +79,7 @@ TRANSPARENT_DECORATIONS = {
     "forge_header_framework_v1",
     "forge_header_extensions_v1",
 }
-EDGE_ART_DECORATIONS = {"forge_heraldic_overlay"}
+EDGE_ART_DECORATIONS = {"forge_heraldic_overlay", "forge_heraldic_header_v2"}
 RETIRED_DECORATIONS = {
     "forge_header_filigree",
     "forge_map_contours",
@@ -143,8 +150,8 @@ EXPECTED_DECORATIVE_PLACEMENTS = {
     # Positions are validated from the responsive prefab at a concrete viewport;
     # keeping fixed design-time rectangles here would reintroduce 1220x880 assumptions.
     "ForgeHeaderCloth": ("forge_war_table_cloth_v2", "ForgeHeader", None),
-    "ForgeRailCloth": ("forge_rail_cartographic_field_v1", "ForgeNavigationRail", None),
-    "ForgeHeaderHeraldicOverlay": ("forge_heraldic_overlay", "ForgeHeader", None),
+    "ForgeRailCloth": ("forge_heraldic_rail_v2", "ForgeNavigationRail", None),
+    "ForgeHeaderHeraldicOverlay": ("forge_heraldic_header_v2", "ForgeHeader", None),
     "ForgeTopBrassFrameRule": ("forge_patina_brass", "<shell>", None),
     "ForgeEvidenceActionBrassRule": ("forge_patina_brass", "<shell>", None),
     "ForgeBottomBrassFrameRule": ("forge_patina_brass", "<shell>", None),
@@ -193,8 +200,9 @@ DECORATIVE_LAYOUT_CONTRACTS = {
     },
     "ForgeRailCloth": {
         "WidthSizePolicy": "Fixed", "HeightSizePolicy": "StretchToParent",
-        "SuggestedWidth": 228, "MaxHeight": 256,
-        "MarginLeft": 1, "MarginTop": 425, "MarginBottom": 5,
+        "SuggestedWidth": 128, "MaxHeight": 256,
+        "HorizontalAlignment": "Center", "MarginLeft": 0,
+        "MarginTop": 425, "MarginBottom": 5,
     },
     "ForgePlaybookBrassRule1": {
         "WidthSizePolicy": "StretchToParent", "SuggestedHeight": 3,
@@ -805,9 +813,13 @@ def validate_prefab(errors: List[str]) -> None:
         for attr in ("Sprite", "SpriteName"):
             if node.get(attr) in refs:
                 refs[node.get(attr)].append(node)
-    for name, nodes in refs.items():
-        if not nodes:
-            errors.append("prefab does not reference '{}'".format(name))
+    # Some generated sprites remain registered for compatibility and source history
+    # after a visual replacement. Require active prefab references only for sprites
+    # represented by a deliberate placement contract above.
+    active_sprites = {sprite for sprite, _parent, _rect in EXPECTED_DECORATIVE_PLACEMENTS.values()}
+    for name in sorted(active_sprites):
+        if not refs.get(name):
+            errors.append("prefab does not reference active decorative sprite '{}'".format(name))
     shells = [node for node in root.iter() if local_name(node.tag) == "Widget"
               and node.get("Id") == "ForgeWorkbenchShell"]
     if len(shells) != 1:

@@ -13,10 +13,34 @@
        <Grid>
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
         <StackPanel>
-         <TextBlock Style="{StaticResource SectionHeading}" Text="{DynamicResource Ui.CommandPalette}"/>
-         <TextBlock Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,10" Text="{DynamicResource Ui.SearchHint}" TextWrapping="Wrap"/>
+         <StackPanel Orientation="Horizontal">
+          <Path Data="{StaticResource GameIcon.magnifying_glass}" Fill="{DynamicResource BrassBrush}" Height="15" Margin="0,0,7,0" Stretch="Uniform" VerticalAlignment="Center" Width="15"/>
+          <TextBlock Style="{StaticResource SectionHeading}" Text="{DynamicResource Ui.CommandPalette}" VerticalAlignment="Center"/>
+          <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="8,0,0,0" Padding="4,1" VerticalAlignment="Center">
+           <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="194 TOOLS"/>
+          </Border>
+         </StackPanel>
+         <TextBlock Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,6" Text="{DynamicResource Ui.SearchHint}" TextWrapping="Wrap"/>
+         <!-- Quick Prefix Selector Chips -->
+         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+          <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="4,1" Margin="0,0,4,0">
+           <TextBlock FontSize="7.5" FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="ALL"/>
+          </Border>
+          <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Padding="4,1" Margin="0,0,4,0">
+           <TextBlock FontSize="7.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text=">live"/>
+          </Border>
+          <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Padding="4,1" Margin="0,0,4,0">
+           <TextBlock FontSize="7.5" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text=">diag"/>
+          </Border>
+          <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="4,1" Margin="0,0,4,0">
+           <TextBlock FontSize="7.5" FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text=">asset"/>
+          </Border>
+          <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="4,1">
+           <TextBlock FontSize="7.5" FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text=">sim"/>
+          </Border>
+         </StackPanel>
         </StackPanel>
-        <Button AutomationProperties.AutomationId="CloseCommandPaletteButton" AutomationProperties.Name="{DynamicResource Ui.Close}" Command="{Binding ClosePaletteCommand}" Content="{DynamicResource Ui.Close}" Grid.Column="1" MinHeight="34" MinWidth="72" Padding="8,4"/>
+        <Button AutomationProperties.AutomationId="CloseCommandPaletteButton" AutomationProperties.Name="{DynamicResource Ui.Close}" Command="{Binding ClosePaletteCommand}" Content="{DynamicResource Ui.Close}" Grid.Column="1" MinHeight="34" MinWidth="72" Padding="8,4" VerticalAlignment="Top"/>
        </Grid>
        <TextBox AutomationProperties.AutomationId="CommandPaletteSearch" AutomationProperties.Name="{DynamicResource Ui.Search}" MinHeight="42" Padding="12,6" Text="{Binding PaletteFilter, UpdateSourceTrigger=PropertyChanged}" ToolTip="{DynamicResource Ui.Search}" VerticalContentAlignment="Center">
         <TextBox.InputBindings>
@@ -28,11 +52,21 @@
        <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling"/></ItemsPanelTemplate></ListBox.ItemsPanel>
        <ListBox.ItemTemplate>
         <DataTemplate>
-         <Grid Margin="0,5">
-          <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-          <StackPanel><TextBlock FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Title}"/><TextBlock FontSize="10" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding Id}"/></StackPanel>
-          <TextBlock FontSize="10" Foreground="{DynamicResource BrassBrush}" Grid.Column="1" Text="{Binding KindLabel}" VerticalAlignment="Center"/>
-         </Grid>
+         <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="4,6">
+          <Grid>
+           <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+           <StackPanel>
+            <StackPanel Orientation="Horizontal">
+             <Ellipse Width="6" Height="6" Fill="{DynamicResource VerdigrisBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+             <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Title}"/>
+            </StackPanel>
+            <TextBlock FontSize="9.5" Foreground="{DynamicResource MutedTextBrush}" Margin="12,2,0,0" Text="{Binding Id}"/>
+           </StackPanel>
+           <Border Grid.Column="1" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Padding="5,2" VerticalAlignment="Center">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding KindLabel}"/>
+           </Border>
+          </Grid>
+         </Border>
         </DataTemplate>
        </ListBox.ItemTemplate>
       </ListBox>

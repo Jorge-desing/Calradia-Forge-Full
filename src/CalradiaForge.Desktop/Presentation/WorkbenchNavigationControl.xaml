@@ -44,11 +44,17 @@
        <Grid Margin="0,0,0,4">
         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
         <TextBlock Margin="0,0,6,0" Style="{StaticResource KickerText}" Text="{DynamicResource Ui.RoleLabel}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-        <Button AutomationProperties.AutomationId="ModderRolePresetButton" AutomationProperties.Name="{Binding ActiveModderRoleLabel}" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" Command="{Binding CycleModderRoleCommand}" Cursor="Hand" Grid.Column="1" HorizontalContentAlignment="Left" Padding="6,3" ToolTip="{Binding ActiveModderRoleHint}">
-         <StackPanel Orientation="Horizontal">
-          <Path Data="{StaticResource GameIcon.knight_banner}" Fill="{DynamicResource BrassBrush}" Height="12" Margin="0,0,5,0" Stretch="Uniform" VerticalAlignment="Center" Width="12"/>
-          <TextBlock FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding ActiveModderRoleLabel}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-         </StackPanel>
+        <Button AutomationProperties.AutomationId="ModderRolePresetButton" AutomationProperties.Name="{Binding ActiveModderRoleLabel}" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" Command="{Binding CycleModderRoleCommand}" Cursor="Hand" Grid.Column="1" HorizontalContentAlignment="Stretch" Padding="6,3" ToolTip="{Binding ActiveModderRoleHint}">
+         <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+           <Path Data="{StaticResource GameIcon.knight_banner}" Fill="{DynamicResource BrassBrush}" Height="12" Margin="0,0,5,0" Stretch="Uniform" VerticalAlignment="Center" Width="12"/>
+           <TextBlock FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding ActiveModderRoleLabel}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+          </StackPanel>
+          <Border Grid.Column="1" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="3,1" VerticalAlignment="Center">
+           <TextBlock FontSize="7" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" Text="CYCLE ➔"/>
+          </Border>
+         </Grid>
         </Button>
        </Grid>
       </StackPanel>

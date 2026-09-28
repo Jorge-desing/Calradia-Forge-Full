@@ -14,7 +14,9 @@ param(
     [string]$HeaderTestsV1Master,
     [string]$HeaderMetricsV1Master,
     [string]$HeaderFrameworkV1Master,
-    [string]$HeaderExtensionsV1Master
+    [string]$HeaderExtensionsV1Master,
+    [string]$HeraldicHeaderV2Master,
+    [string]$HeraldicRailV2Master
 )
 
 $ErrorActionPreference = 'Stop'
@@ -92,6 +94,14 @@ $textures = @(
     [pscustomobject]@{
         Name = 'forge_header_extensions_v1.png'; Master = Resolve-InputPath $HeaderExtensionsV1Master 'forge_header_extensions_v1.png'
         Width = 128; Height = 64; MaxAlpha = 112; PreserveArtworkBounds = $true; RequireTransparency = $true
+    },
+    [pscustomobject]@{
+        Name = 'forge_heraldic_header_v2.png'; Master = Resolve-InputPath $HeraldicHeaderV2Master 'forge_heraldic_header_v2_master.png'
+        Width = 256; Height = 48; MaxAlpha = 88; PreserveArtworkBounds = $false; RequireTransparency = $true
+    },
+    [pscustomobject]@{
+        Name = 'forge_heraldic_rail_v2.png'; Master = Resolve-InputPath $HeraldicRailV2Master 'forge_heraldic_rail_v2_master.png'
+        Width = 128; Height = 256; MaxAlpha = 64; PreserveArtworkBounds = $false; RequireTransparency = $true
     }
 )
 
@@ -328,7 +338,7 @@ function New-OutputSet([object[]]$TextureSpecs, [string]$OutputDirectory) {
         if ($texture.RequireTransparency -and $facts.MinAlpha -ne 0) {
             throw "Generated '$($texture.Name)' must retain transparent pixels."
         }
-        if ($texture.PreserveArtworkBounds -and
+        if (($texture.PreserveArtworkBounds -or $texture.Name -eq 'forge_heraldic_header_v2.png') -and
             ($facts.LeftEdgeVisiblePixels -le 0 -or $facts.RightEdgeVisiblePixels -le 0)) {
             throw "Generated '$($texture.Name)' lost visible art at one or both horizontal ends."
         }
@@ -353,7 +363,7 @@ function Write-Reports([object[]]$Reports) {
         Write-Host ('{0}: {1}x{2}, alpha {3}-{4}, visible {5}, SHA256 {6}' -f
             $report.Name, $report.Width, $report.Height, $report.MinAlpha, $report.MaxAlpha,
             $report.VisiblePixels, $report.Sha256)
-        if ($report.Name -eq 'forge_heraldic_overlay.png') {
+        if ($report.Name -eq 'forge_heraldic_overlay.png' -or $report.Name -eq 'forge_heraldic_header_v2.png') {
             Write-Host ('  visible art in left/right edge bands: {0}/{1}' -f
                 $report.LeftEdgeVisiblePixels, $report.RightEdgeVisiblePixels)
         }

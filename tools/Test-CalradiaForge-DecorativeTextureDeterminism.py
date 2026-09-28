@@ -21,6 +21,8 @@ TEXTURES = {
     "forge_war_table_cloth_v2.png": ((1024, 128), 24, False, False),
     "forge_rail_cartographic_field_v1.png": ((256, 256), 36, False, False),
     "forge_heraldic_overlay.png": ((256, 48), 112, True, True),
+    "forge_heraldic_header_v2.png": ((256, 48), 88, True, True),
+    "forge_heraldic_rail_v2.png": ((128, 256), 64, True, True),
     "forge_patina_brass.png": ((128, 16), 88, False, False),
     "forge_pine_felt.png": ((128, 32), 40, False, False),
     "forge_header_summary_v1.png": ((128, 64), 112, True, False),
@@ -207,8 +209,8 @@ def main() -> int:
     if changed:
         raise AssertionError("Preparation check modified project textures: " + ", ".join(changed))
 
-    print("PASS: thirteen ImageGen-derived textures match deterministic preparation hashes and RGBA8 contracts.")
-    print("PASS: the heraldic overlay retains transparent pixels and artwork at both horizontal ends.")
+    print("PASS: fifteen ImageGen-derived textures match deterministic preparation hashes and RGBA8 contracts.")
+    print("PASS: both heraldic v2 assets retain transparency, alpha limits, and artwork at both horizontal ends.")
     print("PASS: dimensions and alpha maxima match the preparation report; source PNGs remained unchanged.")
     return 0
 

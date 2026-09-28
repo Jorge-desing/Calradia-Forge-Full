@@ -32,20 +32,20 @@
     </Layers>
     <Styles>
       <Style Name="Default">
-        <BrushLayer Name="Border" Color="#455A4BFF" />
-        <BrushLayer Name="Fill"   Color="#101814FF" />
+        <BrushLayer Name="Border" Color="#5A523BFF" />
+        <BrushLayer Name="Fill"   Color="#111814FF" />
       </Style>
       <Style Name="Hovered">
-        <BrushLayer Name="Border" Color="#D4B66FFF" />
-        <BrushLayer Name="Fill"   Color="#1A2A20FF" />
+        <BrushLayer Name="Border" Color="#E1C177FF" />
+        <BrushLayer Name="Fill"   Color="#1B2A20FF" />
       </Style>
       <Style Name="Pressed">
         <BrushLayer Name="Border" Color="#A98748FF" />
         <BrushLayer Name="Fill"   Color="#090D0AFF" />
       </Style>
       <Style Name="Selected">
-        <BrushLayer Name="Border" Color="#D4B66FFF" />
-        <BrushLayer Name="Fill"   Color="#284331FF" />
+        <BrushLayer Name="Border" Color="#E1C177FF" />
+        <BrushLayer Name="Fill"   Color="#2D4636FF" />
       </Style>
       <Style Name="Disabled">
         <BrushLayer Name="Border" Color="#2D3A31FF" />
@@ -134,20 +134,20 @@
     </Layers>
     <Styles>
       <Style Name="Default">
-        <BrushLayer Name="Border" Color="#33483AFF" />
-        <BrushLayer Name="Fill"   Color="#111A15FF" />
+        <BrushLayer Name="Border" Color="#3B473CFF" />
+        <BrushLayer Name="Fill"   Color="#101713FF" />
       </Style>
       <Style Name="Hovered">
-        <BrushLayer Name="Border" Color="#84B992FF" />
-        <BrushLayer Name="Fill"   Color="#20392CFF" />
+        <BrushLayer Name="Border" Color="#9FC39AFF" />
+        <BrushLayer Name="Fill"   Color="#203529FF" />
       </Style>
       <Style Name="Selected">
         <BrushLayer Name="Border" Color="#F0D18AFF" />
-        <BrushLayer Name="Fill"   Color="#365744FF" />
+        <BrushLayer Name="Fill"   Color="#2F4A38FF" />
       </Style>
       <Style Name="Pressed">
         <BrushLayer Name="Border" Color="#D7BA73FF" />
-        <BrushLayer Name="Fill"   Color="#223A2DFF" />
+        <BrushLayer Name="Fill"   Color="#24352BFF" />
       </Style>
       <Style Name="Disabled">
         <BrushLayer Name="Border" Color="#26332AFF" />
@@ -174,8 +174,8 @@
     </Layers>
     <Styles>
       <Style Name="Default">
-        <BrushLayer Name="Border" Color="#B99A5B77" />
-        <BrushLayer Name="Fill" Color="#17241DFF" />
+        <BrushLayer Name="Border" Color="#D4B66F88" />
+        <BrushLayer Name="Fill" Color="#142019FF" />
       </Style>
     </Styles>
   </Brush>

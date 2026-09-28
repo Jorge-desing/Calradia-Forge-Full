@@ -16,6 +16,8 @@ set "HEADER_TESTS_ARGS="
 set "HEADER_METRICS_ARGS="
 set "HEADER_FRAMEWORK_ARGS="
 set "HEADER_EXTENSIONS_ARGS="
+set "HERALDIC_HEADER_V2_ARGS="
+set "HERALDIC_RAIL_V2_ARGS="
 set "SHOW_HELP=0"
 set "RESULT=0"
 
@@ -134,6 +136,20 @@ if /I "%~1"=="--header-extensions-v1" (
     shift
     goto parse_args
 )
+if /I "%~1"=="--heraldic-header-v2" (
+    if "%~2"=="" goto missing_value
+    set "HERALDIC_HEADER_V2_ARGS=-HeraldicHeaderV2Master "%~2""
+    shift
+    shift
+    goto parse_args
+)
+if /I "%~1"=="--heraldic-rail-v2" (
+    if "%~2"=="" goto missing_value
+    set "HERALDIC_RAIL_V2_ARGS=-HeraldicRailV2Master "%~2""
+    shift
+    shift
+    goto parse_args
+)
 echo ERROR: Unknown option: %~1
 goto usage_error
 
@@ -150,7 +166,7 @@ if errorlevel 1 (
     goto finish
 )
 
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%" %MODE_ARGS% %CLOTH_ARGS% %RAIL_ARGS% %OVERLAY_ARGS% %BRASS_ARGS% %FELT_ARGS% %HEADER_SUMMARY_ARGS% %HEADER_MODULES_ARGS% %HEADER_LOGS_ARGS% %HEADER_INSPECTOR_ARGS% %HEADER_TESTS_ARGS% %HEADER_METRICS_ARGS% %HEADER_FRAMEWORK_ARGS% %HEADER_EXTENSIONS_ARGS%
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%" %MODE_ARGS% %CLOTH_ARGS% %RAIL_ARGS% %OVERLAY_ARGS% %BRASS_ARGS% %FELT_ARGS% %HEADER_SUMMARY_ARGS% %HEADER_MODULES_ARGS% %HEADER_LOGS_ARGS% %HEADER_INSPECTOR_ARGS% %HEADER_TESTS_ARGS% %HEADER_METRICS_ARGS% %HEADER_FRAMEWORK_ARGS% %HEADER_EXTENSIONS_ARGS% %HERALDIC_HEADER_V2_ARGS% %HERALDIC_RAIL_V2_ARGS%
 set "RESULT=%ERRORLEVEL%"
 goto finish
 
@@ -180,6 +196,8 @@ echo   --header-tests-v1 ^<path^>     Override forge_header_tests_v1.png
 echo   --header-metrics-v1 ^<path^>   Override forge_header_metrics_v1.png
 echo   --header-framework-v1 ^<path^> Override forge_header_framework_v1.png
 echo   --header-extensions-v1 ^<path^> Override forge_header_extensions_v1.png
+echo   --heraldic-header-v2 ^<path^>  Override forge_heraldic_header_v2.png
+echo   --heraldic-rail-v2 ^<path^>    Override forge_heraldic_rail_v2.png
 echo Relative master paths resolve from the repository root.
 goto finish
 

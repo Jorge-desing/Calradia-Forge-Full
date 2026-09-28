@@ -397,8 +397,13 @@ namespace CalradiaForge.Mod
             vm=new PanelViewModel(runtime,Close);layer=new GauntletLayer("CalradiaForge",500,true);
             runtime.Register("CalradiaForge","Info","Panel GauntletLayer created.");
             try {
+                runtime.Register("CalradiaForge","Info","Loading panel brush file.");
                 layer.UIContext.BrushFactory.LoadBrushFile("CalradiaForge");
-                layer.LoadMovie("CalradiaForge",vm);layer.IsFocusLayer=true;layer.InputRestrictions.SetInputRestrictions();owner.AddLayer(layer);
+                runtime.Register("CalradiaForge","Info","Panel brush file loaded.");
+                runtime.Register("CalradiaForge","Info","Loading panel movie.");
+                layer.LoadMovie("CalradiaForge",vm);
+                runtime.Register("CalradiaForge","Info","Panel movie loaded.");
+                layer.IsFocusLayer=true;layer.InputRestrictions.SetInputRestrictions();owner.AddLayer(layer);
                 runtime.Register("CalradiaForge","Info","Panel GauntletLayer attached to owner.");
                 ScreenManager.TrySetFocus(layer);
                 runtime.Register("CalradiaForge","Info","Panel movie loaded and layer attached");

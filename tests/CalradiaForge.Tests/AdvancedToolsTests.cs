@@ -235,9 +235,9 @@ namespace CalradiaForge.Tests
             string[][] materialTextures = new[]
             {
                 new[] { "ForgeHeaderCloth", "forge_war_table_cloth_v2" },
-                new[] { "ForgeHeaderHeraldicOverlay", "forge_heraldic_overlay" },
+                new[] { "ForgeHeaderHeraldicOverlay", "forge_heraldic_header_v2" },
                 new[] { "ForgeRailPineFelt", "forge_pine_felt" },
-                new[] { "ForgeRailCloth", "forge_rail_cartographic_field_v1" },
+                new[] { "ForgeRailCloth", "forge_heraldic_rail_v2" },
                 new[] { "ForgeBriefingContextPineFelt", "forge_pine_felt" },
                 new[] { "ForgeBriefingContextPatinaRule", "forge_patina_brass" },
                 new[] { "ForgeBriefingTestingPineFelt", "forge_pine_felt" },
@@ -1887,7 +1887,12 @@ namespace MyCustomMod.QuestBehaviors
             {
                 "new GauntletLayer(",
                 "Panel GauntletLayer created.",
+                "Loading panel brush file.",
+                "layer.UIContext.BrushFactory.LoadBrushFile(\"CalradiaForge\")",
+                "Panel brush file loaded.",
+                "Loading panel movie.",
                 "layer.LoadMovie(\"CalradiaForge\",vm)",
+                "Panel movie loaded.",
                 "owner.AddLayer(layer)",
                 "Panel GauntletLayer attached to owner.",
                 "ScreenManager.TrySetFocus(layer)",
