@@ -233,4 +233,21 @@
   <string key="Clear output filter." value="Effacer le filtre de sortie." />
   <string key="No output lines match this filter." value="Aucune ligne de sortie ne correspond à ce filtre." />
   <string key="Evidence" value="Preuves" />
+  <string key="Pin output baseline" value="Épingler la sortie de référence" />
+  <string key="Compare outputs" value="Comparer les sorties" />
+  <string key="Clear output baseline" value="Effacer la sortie de référence" />
+  <string key="Baseline output" value="Sortie de référence" />
+  <string key="Current output" value="Sortie actuelle" />
+  <string key="Output baseline pinned." value="Sortie de référence épinglée." />
+  <string key="Pin an output baseline before comparing." value="Épinglez une sortie de référence avant de comparer." />
+  <string key="No current output to compare." value="Aucune sortie actuelle à comparer." />
+  <string key="No output matches the filter on either side." value="Aucune sortie ne correspond au filtre de part et d’autre." />
+  <string key="Output comparison unavailable because a configured input or work limit was reached." value="Comparaison indisponible : une limite configurée d’entrée ou de calcul a été atteinte." />
+  <string key="Output exceeds comparison limits; the baseline was not changed." value="La sortie dépasse les limites de comparaison ; la référence n’a pas été modifiée." />
+  <string key="Show current output" value="Afficher la sortie actuelle" />
+  <string key="Pin current output as the comparison baseline." value="Épingler la sortie actuelle comme référence de comparaison." />
+  <string key="Show the baseline and current outputs side by side." value="Afficher côte à côte les sorties de référence et actuelle." />
+  <string key="Return to the current output without removing the baseline." value="Revenir à la sortie actuelle sans retirer la référence." />
+  <string key="Clear the pinned output baseline." value="Effacer la référence de sortie épinglée." />
+  <string key="Output baseline cleared." value="Sortie de référence effacée." />
 </strings>

@@ -23,6 +23,23 @@ SOURCE_LOCALIZED_PANEL_KEYS = (
     "Filter output lines...",
     "Clear output filter.",
     "No output lines match this filter.",
+    "Pin output baseline",
+    "Compare outputs",
+    "Clear output baseline",
+    "Baseline output",
+    "Current output",
+    "Output baseline pinned.",
+    "Pin an output baseline before comparing.",
+    "No current output to compare.",
+    "No output matches the filter on either side.",
+    "Output comparison unavailable because a configured input or work limit was reached.",
+    "Output exceeds comparison limits; the baseline was not changed.",
+    "Show current output",
+    "Pin current output as the comparison baseline.",
+    "Show the baseline and current outputs side by side.",
+    "Return to the current output without removing the baseline.",
+    "Clear the pinned output baseline.",
+    "Output baseline cleared.",
 )
 
 

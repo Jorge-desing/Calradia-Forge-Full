@@ -233,4 +233,21 @@
   <string key="Clear output filter." value="출력 필터 지우기." />
   <string key="No output lines match this filter." value="이 필터와 일치하는 출력 줄이 없습니다." />
   <string key="Evidence" value="증거" />
+  <string key="Pin output baseline" value="출력 기준선 고정" />
+  <string key="Compare outputs" value="출력 비교" />
+  <string key="Clear output baseline" value="출력 기준선 지우기" />
+  <string key="Baseline output" value="기준 출력" />
+  <string key="Current output" value="현재 출력" />
+  <string key="Output baseline pinned." value="출력 기준선을 고정했습니다." />
+  <string key="Pin an output baseline before comparing." value="비교하기 전에 출력 기준선을 고정하세요." />
+  <string key="No current output to compare." value="비교할 현재 출력이 없습니다." />
+  <string key="No output matches the filter on either side." value="양쪽 모두 필터와 일치하는 출력이 없습니다." />
+  <string key="Output comparison unavailable because a configured input or work limit was reached." value="구성된 입력 또는 작업 한도에 도달하여 출력을 비교할 수 없습니다." />
+  <string key="Output exceeds comparison limits; the baseline was not changed." value="출력이 비교 한도를 초과했습니다. 기준선은 변경되지 않았습니다." />
+  <string key="Show current output" value="현재 출력 표시" />
+  <string key="Pin current output as the comparison baseline." value="현재 출력을 비교 기준선으로 고정합니다." />
+  <string key="Show the baseline and current outputs side by side." value="기준 출력과 현재 출력을 나란히 표시합니다." />
+  <string key="Return to the current output without removing the baseline." value="기준선을 유지하고 현재 출력으로 돌아갑니다." />
+  <string key="Clear the pinned output baseline." value="고정된 출력 기준선을 지웁니다." />
+  <string key="Output baseline cleared." value="출력 기준선을 지웠습니다." />
 </strings>

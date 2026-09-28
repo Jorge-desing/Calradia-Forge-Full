@@ -415,6 +415,122 @@ def contained(parent: Rect, child: Rect) -> bool:
             and parent.right >= child.right and parent.bottom >= child.bottom)
 
 
+def validate_output_comparison_geometry(
+    audit: Audit,
+    prefab: ET.Element,
+    shell: ET.Element,
+    vm_source: str,
+    viewport: tuple[int, int],
+) -> None:
+    """Check the filter, comparison action band, headers, and viewports.
+
+    The IDs are nested below the one-pixel inset inside ForgeEvidenceFrame, so
+    geometry is reported relative to that inner surface. The normal ledger and
+    comparison viewport share the same evidence area but are mutually exclusive.
+    """
+    frame = find_by_id(prefab, "ForgeEvidenceFrame")
+    if frame is None:
+        return
+
+    def relative_rect(node: ET.Element | None, layout: dict[ET.Element, Rect], frame_rect: Rect) -> Rect | None:
+        rect = layout.get(node) if node is not None else None
+        if rect is None:
+            return None
+        return Rect(rect.left - frame_rect.left - 1, rect.top - frame_rect.top - 1, rect.width, rect.height)
+
+    node_ids = (
+        "ForgeOutputFilterRow", "ForgePinOutputBaseline", "ForgeCompareOutput",
+        "ForgeClearOutputBaseline", "ForgeOutputComparisonBaselineHeader",
+        "ForgeOutputComparisonCurrentHeader", "ForgeEvidenceScroll",
+        "ForgeOutputComparisonScroll",
+    )
+    nodes = {element_id: find_by_id(prefab, element_id) for element_id in node_ids}
+    for focused in (False, True):
+        layout = shell_layout(shell, vm_source, focused, viewport)
+        frame_rect = layout.get(frame)
+        if frame_rect is None:
+            audit.error(f"Cannot resolve ForgeEvidenceFrame geometry for output comparison in {viewport[0]}x{viewport[1]}")
+            return
+        rects = {
+            element_id: relative_rect(node, layout, frame_rect)
+            for element_id, node in nodes.items()
+        }
+        suffix = f"{viewport[0]}x{viewport[1]}/focused={focused}"
+        missing = [element_id for element_id, rect in rects.items() if rect is None]
+        if missing:
+            audit.error(f"Cannot resolve output comparison geometry for {missing} in {suffix}")
+            continue
+
+        filter_rect = rects["ForgeOutputFilterRow"]
+        if filter_rect is None:
+            continue
+        if abs(filter_rect.top - 5) > 0.01 or abs(filter_rect.height - 32) > 0.01:
+            audit.error(f"ForgeOutputFilterRow must remain at y=5 h=32 in {suffix}")
+
+        actions = [
+            rects["ForgePinOutputBaseline"],
+            rects["ForgeCompareOutput"],
+            rects["ForgeClearOutputBaseline"],
+        ]
+        valid_actions = [rect for rect in actions if rect is not None]
+        for action_id, action_rect in zip(node_ids[1:4], actions):
+            if action_rect is not None and (
+                abs(action_rect.top - 42) > 0.01 or abs(action_rect.height - 32) > 0.01
+            ):
+                audit.error(f"{action_id} must fit the y=42 h=32 output action band in {suffix}")
+            if action_rect is not None and intersects(filter_rect, action_rect):
+                audit.error(f"{action_id} overlaps ForgeOutputFilterRow in {suffix}")
+        for index, first in enumerate(valid_actions):
+            for second in valid_actions[index + 1:]:
+                if intersects(first, second):
+                    audit.error(f"Output comparison action buttons overlap in {suffix}")
+
+        baseline_header = rects["ForgeOutputComparisonBaselineHeader"]
+        current_header = rects["ForgeOutputComparisonCurrentHeader"]
+        for element_id, header_rect in (
+            ("ForgeOutputComparisonBaselineHeader", baseline_header),
+            ("ForgeOutputComparisonCurrentHeader", current_header),
+        ):
+            if header_rect is not None and (
+                abs(header_rect.top - 78) > 0.01 or abs(header_rect.height - 24) > 0.01
+            ):
+                audit.error(f"{element_id} must occupy y=78 h=24 in {suffix}")
+            if header_rect is not None and intersects(filter_rect, header_rect):
+                audit.error(f"{element_id} overlaps ForgeOutputFilterRow in {suffix}")
+            if header_rect is not None and any(intersects(action, header_rect) for action in valid_actions):
+                audit.error(f"{element_id} overlaps the output action band in {suffix}")
+        if baseline_header is not None and current_header is not None \
+                and intersects(baseline_header, current_header):
+            audit.error(f"Comparison column headers overlap in {suffix}")
+
+        normal_viewport = rects["ForgeEvidenceScroll"]
+        comparison_viewport = rects["ForgeOutputComparisonScroll"]
+        if normal_viewport is not None and abs(normal_viewport.top - 78) > 0.01:
+            audit.error(f"ForgeEvidenceScroll must start at y=78 in {suffix}")
+        if comparison_viewport is not None and abs(comparison_viewport.top - 106) > 0.01:
+            audit.error(f"ForgeOutputComparisonScroll must start at y=106 in {suffix}")
+        if comparison_viewport is not None:
+            if any(intersects(action, comparison_viewport) for action in valid_actions):
+                audit.error(f"ForgeOutputComparisonScroll overlaps output actions in {suffix}")
+            if any(
+                header is not None and intersects(header, comparison_viewport)
+                for header in (baseline_header, current_header)
+            ):
+                audit.error(f"ForgeOutputComparisonScroll overlaps its column headers in {suffix}")
+        if normal_viewport is not None and any(intersects(action, normal_viewport) for action in valid_actions):
+            audit.error(f"ForgeEvidenceScroll overlaps output actions in {suffix}")
+
+        # The viewports are expected to occupy the same evidence ledger, but
+        # only one may be visible at a time. Their visibility and scrollbar
+        # contracts are checked separately above.
+        for element_id, rect in (
+            ("ForgeEvidenceScroll", normal_viewport),
+            ("ForgeOutputComparisonScroll", comparison_viewport),
+        ):
+            if rect is not None and (rect.width <= 0 or rect.height <= 0):
+                audit.error(f"{element_id} has empty geometry in {suffix}")
+
+
 def visible_in_evidence_state(
     node: ET.Element,
     parents: dict[ET.Element, ET.Element],
@@ -476,6 +592,7 @@ def custom_sprite_name(name: str) -> bool:
 
 EXPECTED_SCROLL_PANELS = {
     "ForgeEvidenceScroll": "ForgeEvidenceScrollBar",
+    "ForgeOutputComparisonScroll": "ForgeOutputComparisonScrollBar",
     "ForgeSdkCatalogScroll": "ForgeSdkCatalogScrollBar",
     "ForgeCommandHistoryScroll": "ForgeCommandHistoryScrollBar",
     "ForgeCategoryCommandsScroll": "ForgeCategoryCommandsScrollBar",
@@ -530,7 +647,10 @@ def validate_scrollbar_contracts(audit: Audit, prefab: ET.Element) -> None:
             details.append(f"missing {missing}")
         if unexpected:
             details.append(f"unexpected {unexpected}")
-        audit.error("ScrollablePanel inventory must match the six supported surfaces: " + "; ".join(details))
+        audit.error(
+            f"ScrollablePanel inventory must match the {len(expected_panel_ids)} supported surfaces: "
+            + "; ".join(details)
+        )
 
     for panel_id, expected_bar_id in EXPECTED_SCROLL_PANELS.items():
         panel = find_by_id(prefab, panel_id)
@@ -994,8 +1114,18 @@ def validate_contracts(
         elif node.attrib.get(attribute) != expected_value:
             audit.error(f"{element_id} must bind {attribute}={expected_value}")
     empty = find_by_id(evidence, "ForgeEmptyEvidence")
-    if empty is not None and empty.attrib.get("IsVisible") != "@IsContentEmpty":
-        audit.error("ForgeEmptyEvidence must bind visibility to @IsContentEmpty")
+    if empty is not None and empty.attrib.get("IsVisible") != "@IsNormalContentEmpty":
+        audit.error("ForgeEmptyEvidence must bind visibility to @IsNormalContentEmpty")
+    normal_clip = find_by_id(evidence, "ForgeEvidenceClip")
+    evidence_parents = descendant_map(evidence)
+    if empty is not None:
+        empty_wrapper = evidence_parents.get(empty)
+        empty_parent = evidence_parents.get(empty_wrapper) if empty_wrapper is not None else None
+        if empty_parent is not normal_clip or empty.attrib.get("HeightSizePolicy") != "StretchToParent" \
+                or empty.attrib.get("VerticalAlignment") != "Center" \
+                or empty.attrib.get("DoNotAcceptEvents", "").lower() != "true" \
+                or empty.attrib.get("ClipContents", "").lower() != "true":
+            audit.error("ForgeEmptyEvidence must be a passive, centered placeholder clipped to ForgeEvidenceClip")
     content = find_by_id(evidence, "ForgeEvidenceContent")
     if content is not None and content.attrib.get("ClipContents", "").lower() != "true":
         audit.error("ForgeEvidenceContent must clip long raw evidence to its viewport")
@@ -1029,9 +1159,147 @@ def validate_contracts(
             or filter_clear.attrib.get("Command.Click") != "ExecuteClearOutputFilter" \
             or filter_clear.attrib.get("Hint.HintText") != "@ClearOutputFilterHint":
         audit.error("ForgeOutputFilterClear must expose its localized command only when a query is present")
-    if scroll is None or scroll.attrib.get("MarginTop") != "44" \
-            or scrollbar is None or scrollbar.attrib.get("MarginTop") != "44":
-        audit.error("Evidence scrolling and its scrollbar must begin below the inline evidence header")
+
+    # The output-comparison controls are a separate presentation of raw output.
+    # Keep their public bindings, commands, and visibility states explicit so
+    # the regular ledger and the paired view cannot be shown together.
+    comparison_bindings = {
+        "ForgeOutputComparisonStatus": ("Text", "@OutputComparisonStatus"),
+        "ForgeOutputComparisonBaselineHeader": ("Text", "@OutputComparisonBaselineHeading"),
+        "ForgeOutputComparisonCurrentHeader": ("Text", "@OutputComparisonCurrentHeading"),
+    }
+    comparison_nodes: dict[str, ET.Element | None] = {}
+    for element_id, (attribute, expected_value) in comparison_bindings.items():
+        node = find_by_id(evidence, element_id)
+        comparison_nodes[element_id] = node
+        if node is None:
+            audit.error(f"Evidence comparison is missing {element_id}")
+        elif local_name(node.tag) != "TextWidget" or node.attrib.get(attribute) != expected_value:
+            audit.error(f"{element_id} must be a TextWidget bound to {attribute}={expected_value}")
+        elif node.attrib.get("DoNotAcceptEvents", "").lower() != "true" \
+                or node.attrib.get("IsFocusable", "").lower() == "true":
+            audit.error(f"{element_id} must remain passive and non-focusable")
+
+    comparison_status = comparison_nodes.get("ForgeOutputComparisonStatus")
+    if comparison_status is not None and comparison_status.attrib.get("IsVisible") != "@IsOutputComparisonStatusVisible":
+        audit.error("ForgeOutputComparisonStatus must be visible only for a comparison empty/error state")
+    comparison_clip_for_status = find_by_id(evidence, "ForgeOutputComparisonClip")
+    if comparison_status is not None:
+        status_wrapper = evidence_parents.get(comparison_status)
+        status_parent = evidence_parents.get(status_wrapper) if status_wrapper is not None else None
+        if status_parent is not comparison_clip_for_status \
+                or comparison_status.attrib.get("HeightSizePolicy") != "StretchToParent" \
+                or comparison_status.attrib.get("VerticalAlignment") != "Center" \
+                or comparison_status.attrib.get("DoNotAcceptEvents", "").lower() != "true" \
+                or comparison_status.attrib.get("ClipContents", "").lower() != "true":
+            audit.error("ForgeOutputComparisonStatus must be a passive centered message clipped to ForgeOutputComparisonClip")
+    baseline_status = find_by_id(evidence, "ForgeOutputBaselinePinnedStatus")
+    if baseline_status is None or baseline_status.attrib.get("Text") != "@OutputComparisonStatus" \
+            or baseline_status.attrib.get("IsVisible") != "@IsOutputBaselineStatusVisible" \
+            or baseline_status.attrib.get("DoNotAcceptEvents", "").lower() != "true":
+        audit.error("ForgeOutputBaselinePinnedStatus must be a passive localized status only while the baseline is inactive")
+
+    comparison_actions = {
+        "ForgePinOutputBaseline": "ExecutePinOutputBaseline",
+        "ForgeCompareOutput": "ExecuteCompareOutput",
+        "ForgeClearOutputBaseline": "ExecuteClearOutputBaseline",
+    }
+    action_nodes: list[ET.Element] = []
+    evidence_parents = descendant_map(evidence)
+    for element_id, command in comparison_actions.items():
+        node = find_by_id(evidence, element_id)
+        if node is None:
+            audit.error(f"Evidence comparison is missing {element_id}")
+            continue
+        action_nodes.append(node)
+        if local_name(node.tag) != "ButtonWidget" \
+                or node.attrib.get("Command.Click") != command \
+                or node.attrib.get("IsFocusable", "").lower() != "true":
+            audit.error(f"{element_id} must be a focusable button bound to {command}")
+        hint = node.attrib.get("Hint.HintText", "")
+        if not hint.startswith("@"):
+            audit.error(f"{element_id} must expose a localized Hint.HintText binding")
+        labels = [
+            child for child in node.iter()
+            if local_name(child.tag) == "TextWidget" and child.attrib.get("Text", "").startswith("@")
+        ]
+        if not labels:
+            audit.error(f"{element_id} must display a localized label binding")
+    action_rows = {direct_parent(node, evidence_parents) for node in action_nodes}
+    if len(action_nodes) == len(comparison_actions) and len(action_rows) != 1:
+        audit.error("Output comparison actions must share one dedicated action row")
+
+    comparison_scroll = find_by_id(evidence, "ForgeOutputComparisonScroll")
+    comparison_clip = find_by_id(evidence, "ForgeOutputComparisonClip")
+    comparison_rows = find_by_id(evidence, "ForgeOutputComparisonRows")
+    comparison_bar = find_by_id(evidence, "ForgeOutputComparisonScrollBar")
+    if comparison_scroll is None or local_name(comparison_scroll.tag) != "ScrollablePanel" \
+            or comparison_scroll.attrib.get("IsVisible") != "@IsOutputComparisonActive":
+        audit.error("ForgeOutputComparisonScroll must be a ScrollablePanel visible only while comparison is active")
+    if comparison_clip is None or local_name(comparison_clip.tag) != "Widget" \
+            or comparison_clip.attrib.get("ClipContents", "").lower() != "true" \
+            or comparison_clip.attrib.get("DoNotAcceptEvents", "").lower() != "true":
+        audit.error("ForgeOutputComparisonClip must clip the paired result rows without accepting events")
+    if comparison_scroll is not None:
+        if comparison_scroll.attrib.get("ClipRect") != "ForgeOutputComparisonClip" \
+                or comparison_scroll.attrib.get("InnerPanel") != "ForgeOutputComparisonClip\\ForgeOutputComparisonRows" \
+                or comparison_scroll.attrib.get("VerticalScrollbar") != "..\\ForgeOutputComparisonScrollBar":
+            audit.error("ForgeOutputComparisonScroll must wire its clip, row list, and sibling scrollbar")
+    if comparison_rows is None or local_name(comparison_rows.tag) != "ListPanel" \
+            or comparison_rows.attrib.get("DataSource") != "{OutputComparisonRows}":
+        audit.error("ForgeOutputComparisonRows must be a ListPanel bound to {OutputComparisonRows}")
+    else:
+        item_template = comparison_rows.find("ItemTemplate")
+        template_nodes = list(item_template.iter()) if item_template is not None else []
+        for binding in ("@BaselineText", "@CurrentText"):
+            cells = [
+                node for node in template_nodes
+                if local_name(node.tag) == "TextWidget" and node.attrib.get("Text") == binding
+            ]
+            if len(cells) != 1:
+                audit.error(f"Output comparison row template must contain exactly one passive {binding} cell")
+                continue
+            cell = cells[0]
+            if cell.attrib.get("DoNotAcceptEvents", "").lower() != "true" \
+                    or cell.attrib.get("IsFocusable", "").lower() == "true" \
+                    or cell.attrib.get("Command.Click"):
+                audit.error(f"Output comparison cell {binding} must be passive and non-interactive")
+        interactive_template_nodes = [
+            node for node in template_nodes
+            if local_name(node.tag) in {"ButtonWidget", "EditableTextWidget"}
+            or node.attrib.get("Command.Click")
+        ]
+        if interactive_template_nodes:
+            audit.error("Output comparison rows must not contain interactive controls")
+    if comparison_bar is None or not is_scrollbar_widget(comparison_bar) \
+            or comparison_bar.attrib.get("IsVisible") != "@IsOutputComparisonActive":
+        audit.error("ForgeOutputComparisonScrollBar must be a visible sibling scrollbar only in comparison mode")
+
+    if scroll is None or scroll.attrib.get("MarginTop") != "78" \
+            or scroll.attrib.get("IsVisible") != "@IsOutputComparisonInactive" \
+            or scrollbar is None or scrollbar.attrib.get("MarginTop") != "78" \
+            or scrollbar.attrib.get("IsVisible") != "@IsOutputComparisonInactive":
+        audit.error("Normal evidence scrolling and its scrollbar must begin at y=78 and hide during comparison")
+    if comparison_scroll is not None and comparison_scroll.attrib.get("MarginTop") != "106":
+        audit.error("ForgeOutputComparisonScroll must begin below the paired column headers at y=106")
+    if comparison_bar is not None and comparison_bar.attrib.get("MarginTop") != "106":
+        audit.error("ForgeOutputComparisonScrollBar must begin with its paired viewport at y=106")
+    header_container = find_by_id(evidence, "ForgeOutputComparisonColumnHeaders")
+    if header_container is None or local_name(header_container.tag) != "ListPanel" \
+            or header_container.attrib.get("IsVisible") != "@IsOutputComparisonActive" \
+            or header_container.attrib.get("MarginTop") != "78" \
+            or header_container.attrib.get("SuggestedHeight") != "24":
+        audit.error("ForgeOutputComparisonColumnHeaders must be a 24-DIP row at y=78 visible only during comparison")
+    for element_id in ("ForgeOutputComparisonBaselineHeader", "ForgeOutputComparisonCurrentHeader"):
+        node = comparison_nodes.get(element_id)
+        if node is not None and (
+            node.attrib.get("IsVisible") != "@IsOutputComparisonActive"
+            or node.attrib.get("DoNotAcceptEvents", "").lower() != "true"
+        ):
+            audit.error(f"{element_id} must be a passive header visible only during comparison")
+    status = comparison_nodes.get("ForgeOutputComparisonStatus")
+    if status is not None and not status.attrib.get("Text", "").startswith("@"):
+        audit.error("ForgeOutputComparisonStatus must remain localized")
     if filter_row is not None and scroll is not None \
             and number(filter_row.attrib.get("MarginTop")) is not None \
             and number(filter_row.attrib.get("SuggestedHeight")) is not None \
@@ -1717,6 +1985,7 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
             audit.error(f"Viewport {viewport[0]}x{viewport[1]} leaves no room for the workbench shell")
             continue
         validate_navigation_palette_geometry(audit, prefab, shell, vm_source, viewport)
+        validate_output_comparison_geometry(audit, prefab, shell, vm_source, viewport)
         if viewport == VIEWPORT_PROFILES[-1] and (shell_rect.width != SHELL_MAX_WIDTH or shell_rect.height != SHELL_MAX_HEIGHT):
             audit.error("The 1920x1080 profile must exercise both centered shell maximums")
 

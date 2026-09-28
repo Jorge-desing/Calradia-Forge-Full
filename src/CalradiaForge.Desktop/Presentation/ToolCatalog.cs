@@ -19,7 +19,9 @@ namespace CalradiaForge.Desktop.Presentation
         CodeSecurity,
         ModuleHierarchy,
         KingdomDiplomacy,
-        ComponentGenerator
+        ComponentGenerator,
+        CombatStudio,
+        CaravanTrade
     }
 
     internal sealed class ToolDefinition : INotifyPropertyChanged
@@ -90,6 +92,8 @@ namespace CalradiaForge.Desktop.Presentation
                 "ModConflictMatrix" or "DependencySorter" => DesktopStudioKind.ModuleHierarchy,
                 "DiplomaticMatrix" or "WarCasusBelliEngine" or "DynasticSuccessionEvaluator" or "SDK_ForgeDiplomacyEngine" => DesktopStudioKind.KingdomDiplomacy,
                 "SoundXmlSynthesizer" or "TroopXmlSynthesizer" or "ItemXmlSynthesizer" or "WeaponCraftingForge" or "BrushSynthesizer" or "XmlSnippetForge" => DesktopStudioKind.ComponentGenerator,
+                "ForgeFormationController" or "ForgeSiegeEngineManager" or "ForgeDamageModifier" or "ForgeArmorPenetration" or "ForgeMoraleShock" or "ForgeCavalryCharge" or "ForgeArcherVolley" or "ForgeAmbushTactics" or "ForgeCleaveStrike" or "ForgeShieldBash" or "TacticalCombatSimulator" or "CombatAiAuditor" or "SDK_ForgeCombatAi" => DesktopStudioKind.CombatStudio,
+                "ForgeCaravanController" or "ForgeMarketFluctuation" or "ForgeTaxesController" or "ForgeSmugglingSystem" or "ForgeLoanSystem" or "ForgeInflationController" or "ForgeTradeRouteOptimizer" or "ForgeBlackMarket" or "ForgeSupplyChainManager" or "CaravanTradeHub" or "MarketPriceSpreadInspector" or "SDK_ForgeEconomyTrade" => DesktopStudioKind.CaravanTrade,
                 _ => DesktopStudioKind.Generic
             };
 

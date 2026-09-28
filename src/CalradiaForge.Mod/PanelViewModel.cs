@@ -15,6 +15,7 @@ namespace CalradiaForge.Mod
     {
         const int LinesPerPage = 16;
         const int OutputWrapWidth = 112;
+        const int OutputComparisonWrapWidth = 32;
         readonly Runtime runtime; readonly Action close; string argument = ""; string content = ""; string current = "summary"; string currentCategory = "overview"; string full = ""; int page, pageCount = 1; bool overview = true;
         readonly List<string> _commandHistory = new List<string>();
         readonly MBBindingList<CommandHistoryItemVM> _commandHistoryList = new MBBindingList<CommandHistoryItemVM>();
@@ -47,6 +48,13 @@ namespace CalradiaForge.Mod
         string _outputSourceForLines;
         bool _outputLinesCached;
         readonly List<string> _outputSourceLines = new List<string>();
+        readonly MBBindingList<OutputComparisonRowVM> _outputComparisonRows = new MBBindingList<OutputComparisonRowVM>();
+        string _outputBaseline;
+        string _outputBaselineRouteId;
+        string _outputBaselineRouteName;
+        string _outputComparisonStatus = string.Empty;
+        bool _isOutputComparisonActive;
+        bool _restoreEvidenceFocusAfterComparison;
         ModderRole _activeModderRole = ModderRole.All;
         readonly MBBindingList<CategoryCommandItemVM> _categorySuggestedCommands = new MBBindingList<CategoryCommandItemVM>();
         readonly MBBindingList<CategoryCommandItemVM> _pinnedCommands = new MBBindingList<CategoryCommandItemVM>();
@@ -770,8 +778,36 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string EvidenceHeading => T("Evidence");
         public void ExecuteToggleEvidenceFocus()
         {
-            evidenceFocused = !evidenceFocused;
+            if (_isOutputComparisonActive)
+                _restoreEvidenceFocusAfterComparison = false;
+            SetEvidenceFocus(!evidenceFocused);
+        }
+
+        void SetEvidenceFocus(bool focused)
+        {
+            if (evidenceFocused == focused)
+                return;
+
+            evidenceFocused = focused;
             foreach (var name in new[] { nameof(ShowCommandDeck), nameof(IsPlaybookVisible), nameof(WorkspaceRightMargin), nameof(EvidenceTop), nameof(EvidenceHeight), nameof(EvidenceFontSize), nameof(FocusEvidenceLabel) }) OnPropertyChanged(name);
+        }
+
+        void ExpandEvidenceForOutputComparison()
+        {
+            if (evidenceFocused)
+                return;
+
+            _restoreEvidenceFocusAfterComparison = true;
+            SetEvidenceFocus(true);
+        }
+
+        void RestoreEvidenceFocusAfterOutputComparison()
+        {
+            if (!_restoreEvidenceFocusAfterComparison)
+                return;
+
+            _restoreEvidenceFocusAfterComparison = false;
+            SetEvidenceFocus(false);
         }
         [DataSourceProperty] public bool IsContextVisible => !string.IsNullOrEmpty(ContextValue);
         [DataSourceProperty] public string TestingLabel => T("Testing");
@@ -1247,6 +1283,33 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string ClearOutputHint => T("Clear terminal output display buffer.");
         [DataSourceProperty] public string ContentPlaceholder => T("No telemetry or report data loaded. Select a tool or execute an action above.");
         [DataSourceProperty] public bool IsContentEmpty => string.IsNullOrWhiteSpace(content);
+        [DataSourceProperty] public bool IsNormalContentEmpty => !_isOutputComparisonActive && IsContentEmpty;
+        [DataSourceProperty] public MBBindingList<OutputComparisonRowVM> OutputComparisonRows => _outputComparisonRows;
+        [DataSourceProperty] public bool HasOutputBaseline => _outputBaseline != null;
+        [DataSourceProperty] public bool IsOutputComparisonActive => _isOutputComparisonActive;
+        [DataSourceProperty] public bool IsOutputComparisonInactive => !_isOutputComparisonActive;
+        [DataSourceProperty] public bool IsOutputComparisonEmpty => _isOutputComparisonActive && _outputComparisonRows.Count == 0;
+        [DataSourceProperty] public bool IsOutputBaselineStatusVisible => !_isOutputComparisonActive && HasOutputBaseline;
+        [DataSourceProperty] public bool IsOutputComparisonStatusVisible => _isOutputComparisonActive
+            && !string.IsNullOrEmpty(_outputComparisonStatus);
+        [DataSourceProperty] public string OutputComparisonStatus => _isOutputComparisonActive
+            ? _outputComparisonStatus
+            : HasOutputBaseline ? T("Output baseline pinned.") : string.Empty;
+        [DataSourceProperty] public bool IsCompareOutputDisabled => !HasOutputBaseline || string.IsNullOrEmpty(full);
+        [DataSourceProperty] public bool IsClearOutputBaselineVisible => HasOutputBaseline;
+        [DataSourceProperty] public string PinOutputBaselineLabel => T("Pin output baseline");
+        [DataSourceProperty] public string PinOutputBaselineHint => T("Pin current output as the comparison baseline.");
+        [DataSourceProperty] public string OutputComparisonActionLabel => _isOutputComparisonActive
+            ? T("Show current output")
+            : T("Compare outputs");
+        [DataSourceProperty] public string OutputComparisonActionHint => _isOutputComparisonActive
+            ? T("Return to the current output without removing the baseline.")
+            : T("Show the baseline and current outputs side by side.");
+        [DataSourceProperty] public string ClearOutputBaselineLabel => T("Clear output baseline");
+        [DataSourceProperty] public string ClearOutputBaselineHint => T("Clear the pinned output baseline.");
+        [DataSourceProperty] public string OutputComparisonBaselineHeading => T("Baseline output")
+            + (string.IsNullOrEmpty(_outputBaselineRouteName) ? string.Empty : " · " + ShortSectionHeading(_outputBaselineRouteName));
+        [DataSourceProperty] public string OutputComparisonCurrentHeading => T("Current output") + " · " + ShortSectionHeading(CurrentName);
         [DataSourceProperty] public string MemoryHealthText => $"HEAP: ~{(GC.GetTotalMemory(false) / 1048576)} MB | CTX: {runtime?.CurrentContext.ToString() ?? "None"}";
         [DataSourceProperty] public string Argument { get => argument; set { argument = value; OnPropertyChangedWithValue(value, nameof(Argument)); } }
         [DataSourceProperty]
@@ -1268,7 +1331,7 @@ namespace CalradiaForge.Mod
         }
         [DataSourceProperty] public bool IsOutputFilterEmpty => string.IsNullOrWhiteSpace(_filterQuery);
         [DataSourceProperty] public bool HasOutputFilter => !string.IsNullOrWhiteSpace(_filterQuery);
-        [DataSourceProperty] public string Content { get => content; set { content = value; OnPropertyChangedWithValue(value, nameof(Content)); OnPropertyChanged(nameof(IsContentEmpty)); } }
+        [DataSourceProperty] public string Content { get => content; set { content = value; OnPropertyChangedWithValue(value, nameof(Content)); OnPropertyChanged(nameof(IsContentEmpty)); OnPropertyChanged(nameof(IsNormalContentEmpty)); } }
         [DataSourceProperty] public MBBindingList<CommandHistoryItemVM> CommandHistoryList => _commandHistoryList;
         [DataSourceProperty]
         public bool IsHistoryOpen
@@ -1612,6 +1675,12 @@ namespace CalradiaForge.Mod
         }
         void Render()
         {
+            if (_isOutputComparisonActive)
+            {
+                RenderOutputComparison();
+                return;
+            }
+
             if (!_outputLinesCached || !ReferenceEquals(_outputSourceForLines, full))
             {
                 _outputSourceLines.Clear();
@@ -1631,7 +1700,76 @@ namespace CalradiaForge.Mod
             OnPropertyChanged(nameof(PageLabel));
             OnPropertyChanged(nameof(IsPreviousDisabled));
             OnPropertyChanged(nameof(IsNextDisabled));
+            OnPropertyChanged(nameof(IsNormalContentEmpty));
+            OnPropertyChanged(nameof(HasOutputBaseline));
+            OnPropertyChanged(nameof(IsOutputBaselineStatusVisible));
+            OnPropertyChanged(nameof(IsOutputComparisonStatusVisible));
+            OnPropertyChanged(nameof(OutputComparisonStatus));
+            OnPropertyChanged(nameof(IsCompareOutputDisabled));
+            OnPropertyChanged(nameof(IsClearOutputBaselineVisible));
+            OnPropertyChanged(nameof(OutputComparisonBaselineHeading));
+            OnPropertyChanged(nameof(OutputComparisonCurrentHeading));
         }
+
+        void RenderOutputComparison()
+        {
+            _outputComparisonRows.Clear();
+            if (_outputBaseline == null)
+            {
+                _outputComparisonStatus = T("Pin an output baseline before comparing.");
+            }
+            else if (string.IsNullOrEmpty(full))
+            {
+                _outputComparisonStatus = T("No current output to compare.");
+            }
+            else
+            {
+                OutputLineComparisonResult result = OutputLineComparison.Compare(
+                    _outputBaseline,
+                    full,
+                    _filterQuery,
+                    OutputComparisonWrapWidth,
+                    OutputComparisonWrapWidth,
+                    page);
+
+                if (result.Status == OutputLineComparisonStatus.Available)
+                {
+                    pageCount = Math.Max(1, result.PageCount);
+                    page = Math.Max(0, Math.Min(result.PageIndex, pageCount - 1));
+                    for (int i = 0; i < result.Rows.Count; i++)
+                    {
+                        OutputLineComparisonRow row = result.Rows[i];
+                        _outputComparisonRows.Add(new OutputComparisonRowVM(row.BaselineText, row.CurrentText));
+                    }
+                    _outputComparisonStatus = result.TotalVisualRows == 0
+                        ? T("No output matches the filter on either side.")
+                        : string.Empty;
+                }
+                else
+                {
+                    page = 0;
+                    pageCount = 1;
+                    _outputComparisonStatus = T("Output comparison unavailable because a configured input or work limit was reached.");
+                }
+            }
+
+            OnPropertyChanged(nameof(OutputComparisonRows));
+            OnPropertyChanged(nameof(IsOutputComparisonEmpty));
+            OnPropertyChanged(nameof(OutputComparisonStatus));
+            OnPropertyChanged(nameof(IsOutputBaselineStatusVisible));
+            OnPropertyChanged(nameof(IsOutputComparisonStatusVisible));
+            OnPropertyChanged(nameof(PageLabel));
+            OnPropertyChanged(nameof(IsPreviousDisabled));
+            OnPropertyChanged(nameof(IsNextDisabled));
+        }
+
+        string ShortSectionHeading(string sectionName)
+        {
+            string localized = T(sectionName ?? string.Empty);
+            const int maximumLength = 18;
+            return localized.Length <= maximumLength ? localized : localized.Substring(0, maximumLength - 1) + "…";
+        }
+
         void SelectSection(string section)
         {
             SelectSection(section, executeOnSelect: true);
@@ -1642,6 +1780,7 @@ namespace CalradiaForge.Mod
             if (!section.StartsWith("sdk-", StringComparison.Ordinal)) CloseSdkCatalog();
             _isAssemblyWorkbench = false;
             current = section;
+            OnPropertyChanged(nameof(OutputComparisonCurrentHeading));
             if (section.StartsWith("sdk-", StringComparison.Ordinal))
                 currentCategory = "sdk";
             OnPropertyChanged(nameof(IsAssemblyWorkbench));
@@ -2003,10 +2142,20 @@ namespace CalradiaForge.Mod
         }
         public void CancelPendingWork()
         {
+            if (_finalized)
+                return;
+
             _finalized = true;
             _assemblyCancellation?.Cancel();
             _assemblyCancellation?.Dispose();
             _assemblyCancellation = null;
+            _outputBaseline = null;
+            _outputBaselineRouteId = null;
+            _outputBaselineRouteName = null;
+            _isOutputComparisonActive = false;
+            _outputComparisonStatus = string.Empty;
+            _outputComparisonRows.Clear();
+            _restoreEvidenceFocusAfterComparison = false;
         }
         public void ExecuteRemove() => Send("unpin");
         public void ExecuteBatch() => Send("run-batch");
@@ -2100,6 +2249,106 @@ namespace CalradiaForge.Mod
         }
         public void ExecutePin() => Send("pin");
         public void ExecuteCompare() => Send("compare");
+        public void ExecutePinOutputBaseline()
+        {
+            if (string.IsNullOrEmpty(full))
+            {
+                ShowToast(T("No current output to compare."));
+                return;
+            }
+
+            OutputLineComparisonStatus status = OutputLineComparison.ValidateOutput(full);
+            if (status != OutputLineComparisonStatus.Available)
+            {
+                ShowToast(T("Output exceeds comparison limits; the baseline was not changed."));
+                return;
+            }
+
+            _outputBaseline = full;
+            _outputBaselineRouteId = current;
+            _outputBaselineRouteName = CurrentName;
+            if (_isOutputComparisonActive)
+                Render();
+            OnPropertyChanged(nameof(HasOutputBaseline));
+            OnPropertyChanged(nameof(IsOutputBaselineStatusVisible));
+            OnPropertyChanged(nameof(IsOutputComparisonStatusVisible));
+            OnPropertyChanged(nameof(OutputComparisonStatus));
+            OnPropertyChanged(nameof(IsCompareOutputDisabled));
+            OnPropertyChanged(nameof(IsClearOutputBaselineVisible));
+            OnPropertyChanged(nameof(OutputComparisonBaselineHeading));
+            ShowToast(T("Output baseline pinned."));
+        }
+
+        public void ExecuteCompareOutput()
+        {
+            if (_isOutputComparisonActive)
+            {
+                _isOutputComparisonActive = false;
+                _outputComparisonStatus = string.Empty;
+                _outputComparisonRows.Clear();
+                page = 0;
+                RestoreEvidenceFocusAfterOutputComparison();
+                Render();
+                OnPropertyChanged(nameof(IsOutputComparisonActive));
+                OnPropertyChanged(nameof(IsOutputComparisonInactive));
+                OnPropertyChanged(nameof(OutputComparisonActionLabel));
+                OnPropertyChanged(nameof(OutputComparisonActionHint));
+                OnPropertyChanged(nameof(IsOutputBaselineStatusVisible));
+                OnPropertyChanged(nameof(IsCompareOutputDisabled));
+                return;
+            }
+
+            if (!HasOutputBaseline)
+            {
+                ShowToast(T("Pin an output baseline before comparing."));
+                return;
+            }
+            if (string.IsNullOrEmpty(full))
+            {
+                ShowToast(T("No current output to compare."));
+                return;
+            }
+
+            _isOutputComparisonActive = true;
+            page = 0;
+            ExpandEvidenceForOutputComparison();
+            OnPropertyChanged(nameof(IsOutputComparisonActive));
+            OnPropertyChanged(nameof(IsOutputComparisonInactive));
+            OnPropertyChanged(nameof(OutputComparisonActionLabel));
+            OnPropertyChanged(nameof(OutputComparisonActionHint));
+            OnPropertyChanged(nameof(IsOutputBaselineStatusVisible));
+            OnPropertyChanged(nameof(IsOutputComparisonStatusVisible));
+            Render();
+        }
+
+        public void ExecuteClearOutputBaseline()
+        {
+            if (!HasOutputBaseline)
+                return;
+
+            _outputBaseline = null;
+            _outputBaselineRouteId = null;
+            _outputBaselineRouteName = null;
+            _isOutputComparisonActive = false;
+            _outputComparisonStatus = string.Empty;
+            _outputComparisonRows.Clear();
+            page = 0;
+            RestoreEvidenceFocusAfterOutputComparison();
+            Render();
+            OnPropertyChanged(nameof(HasOutputBaseline));
+            OnPropertyChanged(nameof(IsOutputBaselineStatusVisible));
+            OnPropertyChanged(nameof(IsOutputComparisonActive));
+            OnPropertyChanged(nameof(IsOutputComparisonInactive));
+            OnPropertyChanged(nameof(IsOutputComparisonEmpty));
+            OnPropertyChanged(nameof(IsOutputComparisonStatusVisible));
+            OnPropertyChanged(nameof(OutputComparisonStatus));
+            OnPropertyChanged(nameof(OutputComparisonActionLabel));
+            OnPropertyChanged(nameof(OutputComparisonActionHint));
+            OnPropertyChanged(nameof(IsCompareOutputDisabled));
+            OnPropertyChanged(nameof(IsClearOutputBaselineVisible));
+            OnPropertyChanged(nameof(OutputComparisonBaselineHeading));
+            ShowToast(T("Output baseline cleared."));
+        }
         public void ExecuteRun() => Send("run");
         public void ExecuteEnable() => Send("test-mode", runtime.TestEngine.TestingEnabled ? "disable" : "enable");
         public void ExecuteCopy() => Send("confirm-copy", "I_AM_USING_A_CAMPAIGN_COPY");
@@ -2122,7 +2371,7 @@ namespace CalradiaForge.Mod
                 NotifyLayout();
             }
         }
-        public void ExecutePrevious() { page--; Render(); }
+        public void ExecutePrevious() { page = Math.Max(0, page - 1); Render(); }
         public void ExecuteNext() { page++; Render(); }
         public void ExecuteClose() => close();
         public void ExecuteClearOutput()
@@ -2131,7 +2380,17 @@ namespace CalradiaForge.Mod
             full = "";
             page = 0;
             pageCount = 1;
+            _isOutputComparisonActive = false;
+            _outputComparisonStatus = string.Empty;
+            _outputComparisonRows.Clear();
+            RestoreEvidenceFocusAfterOutputComparison();
             Render();
+            OnPropertyChanged(nameof(IsOutputComparisonActive));
+            OnPropertyChanged(nameof(IsOutputComparisonInactive));
+            OnPropertyChanged(nameof(IsOutputComparisonEmpty));
+            OnPropertyChanged(nameof(IsOutputComparisonStatusVisible));
+            OnPropertyChanged(nameof(OutputComparisonActionLabel));
+            OnPropertyChanged(nameof(OutputComparisonActionHint));
             NotifyLayout();
             ShowToast(T("Output display cleared."));
         }
@@ -4649,5 +4908,21 @@ namespace CalradiaForge.Mod
         {
             parent?.AssignQuickSlot(3, commandText, commandText);
         }
+    }
+}
+
+namespace CalradiaForge.Mod
+{
+    internal sealed class OutputComparisonRowVM : ViewModel
+    {
+        internal OutputComparisonRowVM(string baselineText, string currentText)
+        {
+            BaselineText = baselineText ?? string.Empty;
+            CurrentText = currentText ?? string.Empty;
+        }
+
+        [DataSourceProperty] public string BaselineText { get; }
+        [DataSourceProperty] public string CurrentText { get; }
+        [DataSourceProperty] public int EvidenceFontSize => 18;
     }
 }

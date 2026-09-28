@@ -328,12 +328,37 @@ E.SubElement(filter_input_children,'EditableTextWidget',Id='ForgeOutputFilterInp
 E.SubElement(filter_input_children,'TextWidget',Id='ForgeOutputFilterPlaceholder',IsVisible='@IsOutputFilterEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='6',MarginRight='6',Brush='CalradiaForge.Muted',Text='@OutputFilterPlaceholder',VerticalAlignment='Center',**{'Brush.FontSize':'15'})
 filter_clear=E.SubElement(filter_row_children,'ButtonWidget',Id='ForgeOutputFilterClear',IsVisible='@HasOutputFilter',IsFocusable='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='40',HorizontalAlignment='Right',VerticalAlignment='Center',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteClearOutputFilter','Hint.HintText':'@ClearOutputFilterHint'})
 E.SubElement(E.SubElement(filter_clear,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.ButtonText',Text='×',HorizontalAlignment='Center',VerticalAlignment='Center')
-E.SubElement(evidence_children,'TextWidget',Id='ForgeEmptyEvidence',IsVisible='@IsContentEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='38',MarginLeft='20',MarginTop='62',MarginRight='20',Brush='CalradiaForge.Muted',Text='@ContentPlaceholder',**{'Brush.FontSize':'19'})
-evidence_scroll=E.SubElement(evidence_children,'ScrollablePanel',Id='ForgeEvidenceScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='18',MarginTop='44',MarginRight='16',MarginBottom='12',ClipRect='ForgeEvidenceClip',InnerPanel='ForgeEvidenceClip\\ForgeEvidenceContent',VerticalScrollbar='..\\ForgeEvidenceScrollBar')
+output_actions=E.SubElement(E.SubElement(evidence_children,'ListPanel',Id='ForgeOutputComparisonActions',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='32',MarginLeft='16',MarginTop='42',MarginRight='12',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
+button(output_actions,'PinOutputBaseline','@PinOutputBaselineLabel',174,height=32,hint='@PinOutputBaselineHint')
+button(output_actions,'CompareOutput','@OutputComparisonActionLabel',154,height=32,hint='@OutputComparisonActionHint')
+clear_baseline=button(output_actions,'ClearOutputBaseline','@ClearOutputBaselineLabel',174,height=32,hint='@ClearOutputBaselineHint')
+clear_baseline.set('IsVisible','@IsClearOutputBaselineVisible')
+E.SubElement(output_actions,'TextWidget',Id='ForgeOutputBaselinePinnedStatus',IsVisible='@IsOutputBaselineStatusVisible',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='30',MarginLeft='10',Brush='CalradiaForge.Muted',Text='@OutputComparisonStatus',VerticalAlignment='Center',**{'Brush.FontSize':'14'})
+column_headers=E.SubElement(evidence_children,'ListPanel',Id='ForgeOutputComparisonColumnHeaders',IsVisible='@IsOutputComparisonActive',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='24',MarginLeft='18',MarginTop='78',MarginRight='28',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
+column_children=E.SubElement(column_headers,'Children')
+E.SubElement(column_children,'TextWidget',Id='ForgeOutputComparisonBaselineHeader',IsVisible='@IsOutputComparisonActive',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='8',Brush='CalradiaForge.Gold',Text='@OutputComparisonBaselineHeading',VerticalAlignment='Center',**{'Brush.FontSize':'15'})
+E.SubElement(column_children,'TextWidget',Id='ForgeOutputComparisonCurrentHeader',IsVisible='@IsOutputComparisonActive',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='8',Brush='CalradiaForge.Gold',Text='@OutputComparisonCurrentHeading',VerticalAlignment='Center',**{'Brush.FontSize':'15'})
+evidence_scroll=E.SubElement(evidence_children,'ScrollablePanel',Id='ForgeEvidenceScroll',IsVisible='@IsOutputComparisonInactive',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='18',MarginTop='78',MarginRight='16',MarginBottom='12',ClipRect='ForgeEvidenceClip',InnerPanel='ForgeEvidenceClip\\ForgeEvidenceContent',VerticalScrollbar='..\\ForgeEvidenceScrollBar')
 evidence_scroll_children=E.SubElement(evidence_scroll,'Children')
 evidence_clip=E.SubElement(evidence_scroll_children,'Widget',Id='ForgeEvidenceClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
-E.SubElement(E.SubElement(evidence_clip,'Children'),'TextWidget',Id='ForgeEvidenceContent',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',Brush='CalradiaForge.TerminalText',Text='@Content',VerticalAlignment='Top',ClipContents='true',**{'Brush.FontSize':'@EvidenceFontSize'})
-scrollbar(evidence_children,'ForgeEvidenceScrollBar',44,12,16)
+evidence_clip_children=E.SubElement(evidence_clip,'Children')
+E.SubElement(evidence_clip_children,'TextWidget',Id='ForgeEvidenceContent',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',Brush='CalradiaForge.TerminalText',Text='@Content',VerticalAlignment='Top',ClipContents='true',**{'Brush.FontSize':'@EvidenceFontSize'})
+E.SubElement(evidence_clip_children,'TextWidget',Id='ForgeEmptyEvidence',IsVisible='@IsNormalContentEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='20',MarginRight='20',Brush='CalradiaForge.Muted',Text='@ContentPlaceholder',HorizontalAlignment='Center',VerticalAlignment='Center',ClipContents='true',**{'Brush.FontSize':'19'})
+normal_scrollbar=scrollbar(evidence_children,'ForgeEvidenceScrollBar',78,12,16)
+normal_scrollbar.set('IsVisible','@IsOutputComparisonInactive')
+comparison_scroll=E.SubElement(evidence_children,'ScrollablePanel',Id='ForgeOutputComparisonScroll',IsVisible='@IsOutputComparisonActive',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='18',MarginTop='106',MarginRight='16',MarginBottom='12',ClipRect='ForgeOutputComparisonClip',InnerPanel='ForgeOutputComparisonClip\\ForgeOutputComparisonRows',VerticalScrollbar='..\\ForgeOutputComparisonScrollBar')
+comparison_scroll_children=E.SubElement(comparison_scroll,'Children')
+comparison_clip=E.SubElement(comparison_scroll_children,'Widget',Id='ForgeOutputComparisonClip',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
+comparison_clip_children=E.SubElement(comparison_clip,'Children')
+comparison_list=E.SubElement(comparison_clip_children,'ListPanel',Id='ForgeOutputComparisonRows',DataSource='{OutputComparisonRows}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+comparison_template=E.SubElement(comparison_list,'ItemTemplate')
+comparison_row=E.SubElement(comparison_template,'ListPanel',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='34',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
+comparison_row_children=E.SubElement(comparison_row,'Children')
+E.SubElement(comparison_row_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='32',MarginLeft='8',MarginRight='8',Brush='CalradiaForge.TerminalText',Text='@BaselineText',VerticalAlignment='Center',**{'Brush.FontSize':'16'})
+E.SubElement(comparison_row_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='32',MarginLeft='8',MarginRight='8',Brush='CalradiaForge.TerminalText',Text='@CurrentText',VerticalAlignment='Center',**{'Brush.FontSize':'16'})
+E.SubElement(comparison_clip_children,'TextWidget',Id='ForgeOutputComparisonStatus',IsVisible='@IsOutputComparisonStatusVisible',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='24',MarginRight='24',Brush='CalradiaForge.Muted',Text='@OutputComparisonStatus',HorizontalAlignment='Center',VerticalAlignment='Center',ClipContents='true',**{'Brush.FontSize':'17'})
+comparison_scrollbar=scrollbar(evidence_children,'ForgeOutputComparisonScrollBar',106,12,16)
+comparison_scrollbar.set('IsVisible','@IsOutputComparisonActive')
 
 # The evidence frame ends at y=702 in both modes; keep a quiet brass rule below it.
 E.SubElement(children,'ImageWidget',Id='ForgeEvidenceActionBrassRule',DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='8',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginBottom='158',VerticalAlignment='Bottom',Sprite='forge_patina_brass',Color='#FFFFFFFF')
@@ -599,6 +624,23 @@ output_filter_keys=(
     'Filter output lines...',
     'Clear output filter.',
     'No output lines match this filter.',
+    'Pin output baseline',
+    'Compare outputs',
+    'Clear output baseline',
+    'Baseline output',
+    'Current output',
+    'Output baseline pinned.',
+    'Pin an output baseline before comparing.',
+    'No current output to compare.',
+    'No output matches the filter on either side.',
+    'Output comparison unavailable because a configured input or work limit was reached.',
+    'Output exceeds comparison limits; the baseline was not changed.',
+    'Show current output',
+    'Pin current output as the comparison baseline.',
+    'Show the baseline and current outputs side by side.',
+    'Return to the current output without removing the baseline.',
+    'Clear the pinned output baseline.',
+    'Output baseline cleared.',
 )
 for language,folder,display,catalog in catalogs:
     catalog.update({source:localized[language] for source,localized in navigation_palette.items()})

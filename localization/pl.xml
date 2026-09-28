@@ -233,4 +233,21 @@
   <string key="Clear output filter." value="Wyczyść filtr danych wyjściowych." />
   <string key="No output lines match this filter." value="Żaden wiersz danych wyjściowych nie pasuje do tego filtra." />
   <string key="Evidence" value="Dowody" />
+  <string key="Pin output baseline" value="Przypnij wynik bazowy" />
+  <string key="Compare outputs" value="Porównaj wyniki" />
+  <string key="Clear output baseline" value="Wyczyść wynik bazowy" />
+  <string key="Baseline output" value="Wynik bazowy" />
+  <string key="Current output" value="Bieżący wynik" />
+  <string key="Output baseline pinned." value="Przypięto wynik bazowy." />
+  <string key="Pin an output baseline before comparing." value="Przypnij wynik bazowy przed porównaniem." />
+  <string key="No current output to compare." value="Brak bieżącego wyniku do porównania." />
+  <string key="No output matches the filter on either side." value="Filtr nie pasuje do żadnego wyniku po obu stronach." />
+  <string key="Output comparison unavailable because a configured input or work limit was reached." value="Porównanie wyników niedostępne: osiągnięto skonfigurowany limit wejścia lub pracy." />
+  <string key="Output exceeds comparison limits; the baseline was not changed." value="Wynik przekracza limity porównania; baza nie została zmieniona." />
+  <string key="Show current output" value="Pokaż bieżący wynik" />
+  <string key="Pin current output as the comparison baseline." value="Przypnij bieżący wynik jako bazę porównania." />
+  <string key="Show the baseline and current outputs side by side." value="Pokaż obok siebie wynik bazowy i bieżący." />
+  <string key="Return to the current output without removing the baseline." value="Wróć do bieżącego wyniku bez usuwania bazy." />
+  <string key="Clear the pinned output baseline." value="Wyczyść przypiętą bazę wyniku." />
+  <string key="Output baseline cleared." value="Wyczyszczono bazę wyniku." />
 </strings>

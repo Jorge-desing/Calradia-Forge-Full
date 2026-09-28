@@ -233,4 +233,21 @@
   <string key="Clear output filter." value="Clear output filter." />
   <string key="No output lines match this filter." value="No output lines match this filter." />
   <string key="Evidence" value="Evidence" />
+  <string key="Pin output baseline" value="Pin output baseline" />
+  <string key="Compare outputs" value="Compare outputs" />
+  <string key="Clear output baseline" value="Clear output baseline" />
+  <string key="Baseline output" value="Baseline output" />
+  <string key="Current output" value="Current output" />
+  <string key="Output baseline pinned." value="Output baseline pinned." />
+  <string key="Pin an output baseline before comparing." value="Pin an output baseline before comparing." />
+  <string key="No current output to compare." value="No current output to compare." />
+  <string key="No output matches the filter on either side." value="No output matches the filter on either side." />
+  <string key="Output comparison unavailable because a configured input or work limit was reached." value="Output comparison unavailable because a configured input or work limit was reached." />
+  <string key="Output exceeds comparison limits; the baseline was not changed." value="Output exceeds comparison limits; the baseline was not changed." />
+  <string key="Show current output" value="Show current output" />
+  <string key="Pin current output as the comparison baseline." value="Pin current output as the comparison baseline." />
+  <string key="Show the baseline and current outputs side by side." value="Show the baseline and current outputs side by side." />
+  <string key="Return to the current output without removing the baseline." value="Return to the current output without removing the baseline." />
+  <string key="Clear the pinned output baseline." value="Clear the pinned output baseline." />
+  <string key="Output baseline cleared." value="Output baseline cleared." />
 </strings>

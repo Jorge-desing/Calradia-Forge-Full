@@ -215,7 +215,7 @@ namespace CalradiaForge.Tests
                 (string)evidence.Attribute("MarginTop") != "@EvidenceTop" ||
                 (string)evidence.Attribute("MarginBottom") != "178")
                 throw new Exception("Evidence ledger must stretch between its selected top edge and the bottom action deck.");
-            if ((string)page.Attribute("Text") != "@PageLabel" || (string)empty.Attribute("IsVisible") != "@IsContentEmpty" ||
+            if ((string)page.Attribute("Text") != "@PageLabel" || (string)empty.Attribute("IsVisible") != "@IsNormalContentEmpty" ||
                 (string)empty.Attribute("Text") != "@ContentPlaceholder" || (string)content.Attribute("Text") != "@Content" ||
                 (string)content.Attribute("ClipContents") != "true")
                 throw new Exception("Evidence ledger must retain page, empty-state, and raw-content bindings.");
@@ -232,8 +232,8 @@ namespace CalradiaForge.Tests
                 filterClear == null || (string)filterClear.Attribute("IsVisible") != "@HasOutputFilter" ||
                 (string)filterClear.Attribute("Command.Click") != "ExecuteClearOutputFilter" ||
                 (string)filterClear.Attribute("Hint.HintText") != "@ClearOutputFilterHint" ||
-                evidenceScroll == null || (string)evidenceScroll.Attribute("MarginTop") != "44" ||
-                evidenceScrollbar == null || (string)evidenceScrollbar.Attribute("MarginTop") != "44")
+                evidenceScroll == null || (string)evidenceScroll.Attribute("MarginTop") != "78" ||
+                evidenceScrollbar == null || (string)evidenceScrollbar.Attribute("MarginTop") != "78")
                 throw new Exception("The live output filter must share the evidence header, update while typing, expose a localized clear action, and stay above the paged evidence viewport.");
 
             XElement previous = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgePrevious");
@@ -365,6 +365,7 @@ namespace CalradiaForge.Tests
             test("ForgeUI clears extension-page handlers", TestForgeUI_Clear);
             test("PanelViewModel & CalradiaForge.xml UI telemetry, clear output, and empty-state placeholder", TestPanelViewModelAndPrefabPolish);
             test("Gauntlet live output filter preserves source, argument, wrapping, and paging", TestGauntletLiveOutputFilter);
+            test("Gauntlet output comparison is deterministic, filtered, paged, and bounded", TestGauntletOutputComparison);
             test("Desktop & In-Game UI error corrections (panel overlap, glyph fallback, action parity)", TestUiErrorCorrectionsAndSafety);
             test("Zero-Scroll Desktop Navigation (Accordion, ZenMode, CategoryPicker, Breadcrumbs, Recent)", TestZeroScrollDesktopInterface);
             test("Desktop Top and Bottom Panel Typography Upgrades (TitleBar, Header, Breadcrumbs, StatusBar)", TestDesktopPanelFontSizesAndLayout);
@@ -1970,7 +1971,15 @@ namespace MyCustomMod.QuestBehaviors
             {
                 "Evidence",
                 "Filter current output without changing the tool argument.",
-                "Filter output lines...", "Clear output filter.", "No output lines match this filter."
+                "Filter output lines...", "Clear output filter.", "No output lines match this filter.",
+                "Pin output baseline", "Compare outputs", "Clear output baseline", "Baseline output", "Current output",
+                "Output baseline pinned.", "Pin an output baseline before comparing.", "No current output to compare.",
+                "No output matches the filter on either side.",
+                "Output comparison unavailable because a configured input or work limit was reached.",
+                "Output exceeds comparison limits; the baseline was not changed.", "Show current output",
+                "Pin current output as the comparison baseline.", "Show the baseline and current outputs side by side.",
+                "Return to the current output without removing the baseline.", "Clear the pinned output baseline.",
+                "Output baseline cleared."
             };
             Dictionary<string, string> englishCatalog = XDocument.Load(Path.GetFullPath("localization/en.xml"))
                 .Root.Elements("string").ToDictionary(element => (string)element.Attribute("key"), element => (string)element.Attribute("value"));
@@ -1995,6 +2004,229 @@ namespace MyCustomMod.QuestBehaviors
                     }
                 }
             }
+        }
+
+        private static void TestGauntletOutputComparison()
+        {
+            OutputLineComparisonResult equal = OutputLineComparison.Compare("alpha\nbeta", "alpha\nbeta", string.Empty, 64, 64, 0);
+            AssertOutputComparison(equal, OutputLineComparisonStatus.Available, 2, 1, 2);
+            if (equal.Rows[0].Kind != OutputLineComparisonKind.Equal || equal.Rows[0].BaselineText != "alpha" ||
+                equal.Rows[0].CurrentText != "alpha" || equal.Rows[1].BaselineText != "beta" || equal.Rows[1].CurrentText != "beta")
+                throw new Exception("Identical output lines must be retained on both comparison sides.");
+
+            OutputLineComparisonResult inserted = OutputLineComparison.Compare("head\ntail", "head\nnew\ntail", null, 64, 64, 0);
+            AssertOutputComparison(inserted, OutputLineComparisonStatus.Available, 3, 1, 3);
+            if (inserted.Rows[1].Kind != OutputLineComparisonKind.CurrentOnly || inserted.Rows[1].BaselineText.Length != 0 ||
+                inserted.Rows[1].CurrentText != "new")
+                throw new Exception("An inserted line must occupy the current column and leave its baseline cell empty.");
+
+            OutputLineComparisonResult deleted = OutputLineComparison.Compare("head\nold\ntail", "head\ntail", string.Empty, 64, 64, 0);
+            AssertOutputComparison(deleted, OutputLineComparisonStatus.Available, 3, 1, 3);
+            if (deleted.Rows[1].Kind != OutputLineComparisonKind.BaselineOnly || deleted.Rows[1].BaselineText != "old" ||
+                deleted.Rows[1].CurrentText.Length != 0)
+                throw new Exception("A deleted line must occupy the baseline column and leave its current cell empty.");
+
+            OutputLineComparisonResult replaced = OutputLineComparison.Compare("head\nold one\nold two\ntail",
+                "head\nnew one\ntail", string.Empty, 64, 64, 0);
+            AssertOutputComparison(replaced, OutputLineComparisonStatus.Available, 4, 1, 4);
+            if (replaced.Rows[1].Kind != OutputLineComparisonKind.Changed || replaced.Rows[1].BaselineText != "old one" ||
+                replaced.Rows[1].CurrentText != "new one" || replaced.Rows[2].Kind != OutputLineComparisonKind.BaselineOnly ||
+                replaced.Rows[2].BaselineText != "old two" || replaced.Rows[2].CurrentText.Length != 0)
+                throw new Exception("A contiguous edit run must pair deletions and insertions positionally, then retain unmatched cells.");
+
+            OutputLineComparisonResult tie = OutputLineComparison.Compare("a\nb", "b\na", string.Empty, 64, 64, 0);
+            AssertOutputComparison(tie, OutputLineComparisonStatus.Available, 3, 1, 3);
+            if (tie.Rows[0].Kind != OutputLineComparisonKind.BaselineOnly || tie.Rows[0].BaselineText != "a" ||
+                tie.Rows[1].Kind != OutputLineComparisonKind.Equal || tie.Rows[1].BaselineText != "b" || tie.Rows[1].CurrentText != "b" ||
+                tie.Rows[2].Kind != OutputLineComparisonKind.CurrentOnly || tie.Rows[2].CurrentText != "a")
+                throw new Exception("Equal-cost edit paths must use the documented deterministic deletion-first tie break.");
+
+            OutputLineComparisonResult duplicateOne = OutputLineComparison.Compare("A\nB\nA", "A\nA\nB", "", 64, 64, 0);
+            OutputLineComparisonResult duplicateTwo = OutputLineComparison.Compare("A\nB\nA", "A\nA\nB", "", 64, 64, 0);
+            if (!SerializeComparisonRows(duplicateOne.Rows).SequenceEqual(SerializeComparisonRows(duplicateTwo.Rows)))
+                throw new Exception("Duplicate-line alignments must be deterministic across repeated comparisons.");
+
+            string baselineSeparators = "first\r\nsecond\rthird\n";
+            string currentSeparators = "first\nsecond\nthird\n";
+            OutputLineComparisonResult normalized = OutputLineComparison.Compare(baselineSeparators, currentSeparators, "", 64, 64, 0);
+            AssertOutputComparison(normalized, OutputLineComparisonStatus.Available, 4, 1, 4);
+            if (normalized.Rows.Any(row => row.Kind != OutputLineComparisonKind.Equal) ||
+                normalized.Rows[3].BaselineText.Length != 0 || normalized.Rows[3].CurrentText.Length != 0)
+                throw new Exception("CRLF, CR, LF, and terminal empty lines must normalize identically without dropping the final line.");
+
+            OutputLineComparisonResult emptyOutput = OutputLineComparison.Compare(string.Empty, string.Empty, "", 8, 8, 0);
+            AssertOutputComparison(emptyOutput, OutputLineComparisonStatus.Available, 0, 1, 0);
+            OutputLineComparisonResult emptyLines = OutputLineComparison.Compare("\n", "\n", "", 8, 8, 0);
+            AssertOutputComparison(emptyLines, OutputLineComparisonStatus.Available, 2, 1, 2);
+
+            string rawBaseline = "baseline needle alpha";
+            string rawCurrent = "current other line";
+            OutputLineComparisonResult filtered = OutputLineComparison.Compare(rawBaseline, rawCurrent, "NEEDLE", 5, 5, 0);
+            AssertOutputComparison(filtered, OutputLineComparisonStatus.Available, 5, 1, 5);
+            if (filtered.Rows[0].Kind != OutputLineComparisonKind.Changed ||
+                string.Concat(filtered.Rows.Select(row => row.BaselineText)) != rawBaseline ||
+                string.Concat(filtered.Rows.Select(row => row.CurrentText)) != rawCurrent)
+                throw new Exception("A match on either raw cell must retain the full aligned pair before both columns are wrapped.");
+            if (rawBaseline != "baseline needle alpha" || rawCurrent != "current other line")
+                throw new Exception("Comparison must not mutate either immutable source string.");
+
+            OutputLineComparisonResult currentSideFilter = OutputLineComparison.Compare("left value", "RIGHT value", "right", 64, 64, 0);
+            AssertOutputComparison(currentSideFilter, OutputLineComparisonStatus.Available, 1, 1, 1);
+            if (currentSideFilter.Rows[0].BaselineText != "left value" || currentSideFilter.Rows[0].CurrentText != "RIGHT value")
+                throw new Exception("Filtering on the current column must retain the entire baseline/current pair.");
+            OutputLineComparisonResult noMatches = OutputLineComparison.Compare("left", "right", "absent", 64, 64, 0);
+            AssertOutputComparison(noMatches, OutputLineComparisonStatus.Available, 0, 1, 0);
+            OutputLineComparisonResult whitespaceFilter = OutputLineComparison.Compare("left", "right", " \t", 64, 64, 0);
+            AssertOutputComparison(whitespaceFilter, OutputLineComparisonStatus.Available, 1, 1, 1);
+
+            OutputLineComparisonResult wrapped = OutputLineComparison.Compare("abcdefgh", "abc", string.Empty, 4, 4, 0);
+            AssertOutputComparison(wrapped, OutputLineComparisonStatus.Available, 2, 1, 2);
+            if (wrapped.Rows[0].BaselineText != "abcd" || wrapped.Rows[0].CurrentText != "abc" ||
+                wrapped.Rows[1].BaselineText != "efgh" || wrapped.Rows[1].CurrentText.Length != 0 ||
+                wrapped.Rows.Any(row => row.Kind != OutputLineComparisonKind.Changed))
+                throw new Exception("Wrapped columns must retain paired visual fragments and pad the shorter side with an empty cell.");
+
+            string manyLines = string.Join("\n", Enumerable.Range(0, 18).Select(index => "row " + index));
+            OutputLineComparisonResult firstPage = OutputLineComparison.Compare(manyLines, manyLines, "", 64, 64, 0);
+            AssertOutputComparison(firstPage, OutputLineComparisonStatus.Available, 18, 2, 16);
+            OutputLineComparisonResult secondPage = OutputLineComparison.Compare(manyLines, manyLines, "", 64, 64, 1);
+            AssertOutputComparison(secondPage, OutputLineComparisonStatus.Available, 18, 2, 2);
+            OutputLineComparisonResult clampedPage = OutputLineComparison.Compare(manyLines, manyLines, "", 64, 64, 100);
+            if (clampedPage.PageIndex != 1 || !SerializeComparisonRows(clampedPage.Rows).SequenceEqual(SerializeComparisonRows(secondPage.Rows)))
+                throw new Exception("Comparison pagination must clamp to a complete final page and remain synchronized.");
+
+            if (OutputLineComparison.ValidateOutput(new string('x', OutputLineComparison.MaxCharacters)) != OutputLineComparisonStatus.Available ||
+                OutputLineComparison.ValidateOutput(new string('x', OutputLineComparison.MaxCharacters + 1)) != OutputLineComparisonStatus.TooManyCharacters)
+                throw new Exception("The output character limit must accept its exact boundary and reject the first value above it.");
+            OutputLineComparisonResult tooManyBaselineChars = OutputLineComparison.Compare(
+                new string('x', OutputLineComparison.MaxCharacters + 1), "ok", "", 64, 64, 0);
+            AssertUnavailableComparison(tooManyBaselineChars, OutputLineComparisonStatus.BaselineTooManyCharacters);
+            OutputLineComparisonResult tooManyCurrentChars = OutputLineComparison.Compare(
+                "ok", new string('x', OutputLineComparison.MaxCharacters + 1), "", 64, 64, 0);
+            AssertUnavailableComparison(tooManyCurrentChars, OutputLineComparisonStatus.CurrentTooManyCharacters);
+
+            string exactLineLimit = string.Join("\n", Enumerable.Range(0, OutputLineComparison.MaxLines).Select(index => "L" + index.ToString("D4")));
+            string aboveLineLimit = string.Join("\n", Enumerable.Range(0, OutputLineComparison.MaxLines + 1).Select(index => "L" + index.ToString("D4")));
+            if (OutputLineComparison.ValidateOutput(exactLineLimit) != OutputLineComparisonStatus.Available ||
+                OutputLineComparison.ValidateOutput(aboveLineLimit) != OutputLineComparisonStatus.TooManyLines)
+                throw new Exception("The line limit must accept its exact boundary and reject the first value above it.");
+            OutputLineComparisonResult exactLines = OutputLineComparison.Compare(exactLineLimit, exactLineLimit, "", 64, 64, 0);
+            AssertOutputComparison(exactLines, OutputLineComparisonStatus.Available, OutputLineComparison.MaxLines,
+                (OutputLineComparison.MaxLines + OutputLineComparison.RowsPerPage - 1) / OutputLineComparison.RowsPerPage,
+                OutputLineComparison.RowsPerPage);
+            AssertUnavailableComparison(OutputLineComparison.Compare("ok", aboveLineLimit, "", 64, 64, 0),
+                OutputLineComparisonStatus.CurrentTooManyLines);
+
+            string atVisualRowLimit = string.Join("\n", Enumerable.Repeat("aa", OutputLineComparison.MaxLines));
+            OutputLineComparisonResult exactAlignedRows = OutputLineComparison.Compare(atVisualRowLimit, atVisualRowLimit,
+                "", 1, 1, 0);
+            AssertOutputComparison(exactAlignedRows, OutputLineComparisonStatus.Available, OutputLineComparison.MaxAlignedRows,
+                (OutputLineComparison.MaxAlignedRows + OutputLineComparison.RowsPerPage - 1) / OutputLineComparison.RowsPerPage,
+                OutputLineComparison.RowsPerPage);
+            string aboveVisualRowLimit = atVisualRowLimit.Substring(0, atVisualRowLimit.Length - 2) + "aaa";
+            OutputLineComparisonResult aboveVisualRowLimitResult = OutputLineComparison.Compare(
+                aboveVisualRowLimit, aboveVisualRowLimit, "", 1, 1, 0);
+            AssertOutputComparison(aboveVisualRowLimitResult, OutputLineComparisonStatus.Available,
+                OutputLineComparison.MaxAlignedRows + 1,
+                (OutputLineComparison.MaxAlignedRows + 1 + OutputLineComparison.RowsPerPage - 1) / OutputLineComparison.RowsPerPage,
+                OutputLineComparison.RowsPerPage);
+
+            string traceBoundaryBaseline = string.Join("\n", Enumerable.Range(0, 256).Select(index => "b" + index.ToString("D4")));
+            string traceBoundaryCurrent = string.Join("\n", Enumerable.Range(0, 255).Select(index => "c" + index.ToString("D4")));
+            OutputLineComparisonResult exactTrace = OutputLineComparison.Compare(traceBoundaryBaseline, traceBoundaryCurrent,
+                "", 64, 64, 0);
+            if (exactTrace.Status != OutputLineComparisonStatus.Available)
+                throw new Exception("A diff requiring exactly the configured trace-cell budget must remain available.");
+            string overTraceCurrent = string.Join("\n", Enumerable.Range(0, 256).Select(index => "c" + index.ToString("D4")));
+            AssertUnavailableComparison(OutputLineComparison.Compare(traceBoundaryBaseline, overTraceCurrent, "", 64, 64, 0),
+                OutputLineComparisonStatus.TraceBudgetExceeded);
+
+            string expensivePrefix = new string('x', 60000);
+            string expensiveBaseline = string.Join("\n", Enumerable.Range(0, 4).Select(index => expensivePrefix + "b" + index));
+            string expensiveCurrent = string.Join("\n", Enumerable.Range(0, 4).Select(index => expensivePrefix + "c" + index));
+            AssertUnavailableComparison(OutputLineComparison.Compare(expensiveBaseline, expensiveCurrent, "", 64, 64, 0),
+                OutputLineComparisonStatus.SearchBudgetExceeded);
+
+            OutputLineComparisonResult unicode = OutputLineComparison.Compare("王朝⚔️\nnaïve", "王朝⚔️\nnaïve", "王朝", 64, 64, 0);
+            AssertOutputComparison(unicode, OutputLineComparisonStatus.Available, 1, 1, 1);
+            if (unicode.Rows[0].BaselineText != "王朝⚔️" || unicode.Rows[0].CurrentText != "王朝⚔️")
+                throw new Exception("Ordinal-ignore-case filtering must preserve Unicode content without altering either column.");
+
+            OutputLineComparisonResult wrappedSurrogatePair = OutputLineComparison.Compare("abc😀x", "abc😀x", "", 4, 4, 0);
+            AssertOutputComparison(wrappedSurrogatePair, OutputLineComparisonStatus.Available, 2, 1, 2);
+            if (wrappedSurrogatePair.Rows[0].BaselineText != "abc" || wrappedSurrogatePair.Rows[1].BaselineText != "😀x" ||
+                wrappedSurrogatePair.Rows.Any(row => HasSplitSurrogateBoundary(row.BaselineText) || HasSplitSurrogateBoundary(row.CurrentText)))
+                throw new Exception("Wrapping must not split a Unicode surrogate pair across comparison rows.");
+            OutputLineComparisonResult widthOneSurrogatePair = OutputLineComparison.Compare("😀", "😀", "", 1, 1, 0);
+            AssertOutputComparison(widthOneSurrogatePair, OutputLineComparisonStatus.Available, 1, 1, 1);
+            if (widthOneSurrogatePair.Rows[0].BaselineText != "😀" || widthOneSurrogatePair.Rows[0].CurrentText != "😀")
+                throw new Exception("A surrogate pair must remain intact even when the requested wrap width is one code unit.");
+
+            string repetitiveLine = new string('a', OutputLineComparison.MaxCharacters);
+            string longAbsentQuery = new string('a', 131071) + "b";
+            AssertUnavailableComparison(OutputLineComparison.Compare(repetitiveLine, repetitiveLine, longAbsentQuery,
+                64, 64, 0), OutputLineComparisonStatus.SearchBudgetExceeded);
+
+            string vm = File.ReadAllText(Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.cs"));
+            if (!vm.Contains("_outputBaseline = full;") || !vm.Contains("_outputBaselineRouteId = current;") ||
+                !vm.Contains("_outputBaselineRouteName = CurrentName;") ||
+                !vm.Contains("OutputLineComparison.Compare(") || !vm.Contains("_outputBaseline = null;"))
+                throw new Exception("The panel must pin the original result and its source route, compare separately, and allow explicit baseline release.");
+            int clearOutputStart = vm.IndexOf("public void ExecuteClearOutput()", StringComparison.Ordinal);
+            int clearOutputEnd = vm.IndexOf("public void RecordCommand", clearOutputStart, StringComparison.Ordinal);
+            if (clearOutputStart < 0 || clearOutputEnd <= clearOutputStart)
+                throw new Exception("Could not isolate output clearing to verify comparison-baseline lifetime.");
+            string clearOutput = vm.Substring(clearOutputStart, clearOutputEnd - clearOutputStart);
+            if (!clearOutput.Contains("full = \"\";") || clearOutput.Contains("_outputBaseline = null;") ||
+                !clearOutput.Contains("_isOutputComparisonActive = false;"))
+                throw new Exception("Clearing current output must exit comparison while preserving the pinned baseline.");
+
+            int pinStart = vm.IndexOf("public void ExecutePinOutputBaseline()", StringComparison.Ordinal);
+            int pinEnd = vm.IndexOf("public void ExecuteCompareOutput()", pinStart, StringComparison.Ordinal);
+            int clearBaselineStart = vm.IndexOf("public void ExecuteClearOutputBaseline()", pinEnd, StringComparison.Ordinal);
+            int clearBaselineEnd = vm.IndexOf("public void ExecuteRun()", clearBaselineStart, StringComparison.Ordinal);
+            if (pinStart < 0 || pinEnd <= pinStart || clearBaselineStart <= pinEnd || clearBaselineEnd <= clearBaselineStart)
+                throw new Exception("Could not isolate baseline pin and release actions.");
+            string pinBaseline = vm.Substring(pinStart, pinEnd - pinStart);
+            if (pinBaseline.IndexOf("OutputLineComparison.ValidateOutput(full)", StringComparison.Ordinal) < 0 ||
+                pinBaseline.IndexOf("OutputLineComparison.ValidateOutput(full)", StringComparison.Ordinal) >
+                    pinBaseline.IndexOf("_outputBaseline = full;", StringComparison.Ordinal))
+                throw new Exception("A rejected oversized pin must leave the existing baseline unchanged.");
+            string clearBaseline = vm.Substring(clearBaselineStart, clearBaselineEnd - clearBaselineStart);
+            if (!clearBaseline.Contains("_outputBaseline = null;") ||
+                !clearBaseline.Contains("_isOutputComparisonActive = false;"))
+                throw new Exception("The explicit clear-baseline action must release the pin and exit comparison.");
+
+            int closeStart = vm.IndexOf("public void CancelPendingWork()", StringComparison.Ordinal);
+            int closeEnd = vm.IndexOf("public void ExecuteRemove()", closeStart, StringComparison.Ordinal);
+            if (closeStart < 0 || closeEnd <= closeStart ||
+                !vm.Substring(closeStart, closeEnd - closeStart).Contains("_outputBaseline = null;"))
+                throw new Exception("Closing the panel must release the pinned baseline.");
+        }
+
+        private static void AssertOutputComparison(OutputLineComparisonResult result, OutputLineComparisonStatus status,
+            int visualRows, int pageCount, int pageRows)
+        {
+            if (result.Status != status || result.TotalVisualRows != visualRows || result.PageCount != pageCount ||
+                result.Rows.Count != pageRows)
+                throw new Exception("Unexpected output comparison result: " + result.Status + ", rows=" + result.TotalVisualRows +
+                    ", pages=" + result.PageCount + ", page rows=" + result.Rows.Count + ".");
+        }
+
+        private static void AssertUnavailableComparison(OutputLineComparisonResult result, OutputLineComparisonStatus status)
+        {
+            if (result.Status != status || result.Rows.Count != 0 || result.TotalVisualRows != 0 || result.PageCount != 0)
+                throw new Exception("A bounded comparison failure must return its status with no partial rows or pages.");
+        }
+
+        private static IEnumerable<string> SerializeComparisonRows(IEnumerable<OutputLineComparisonRow> rows)
+        {
+            return rows.Select(row => (int)row.Kind + "|" + row.BaselineText + "|" + row.CurrentText);
+        }
+
+        private static bool HasSplitSurrogateBoundary(string value)
+        {
+            return value.Length > 0 && (char.IsHighSurrogate(value[value.Length - 1]) || char.IsLowSurrogate(value[0]));
         }
 
         private static void TestPanelHotkeyAndLayerLifecycleTelemetry()

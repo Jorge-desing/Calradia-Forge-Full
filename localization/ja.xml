@@ -233,4 +233,21 @@
   <string key="Clear output filter." value="出力フィルターをクリアします。" />
   <string key="No output lines match this filter." value="このフィルターに一致する出力行はありません。" />
   <string key="Evidence" value="証拠" />
+  <string key="Pin output baseline" value="出力ベースラインを固定" />
+  <string key="Compare outputs" value="出力を比較" />
+  <string key="Clear output baseline" value="出力ベースラインを消去" />
+  <string key="Baseline output" value="基準出力" />
+  <string key="Current output" value="現在の出力" />
+  <string key="Output baseline pinned." value="出力ベースラインを固定しました。" />
+  <string key="Pin an output baseline before comparing." value="比較する前に出力をベースラインとして固定してください。" />
+  <string key="No current output to compare." value="比較する現在の出力がありません。" />
+  <string key="No output matches the filter on either side." value="どちらの側にもフィルターに一致する出力はありません。" />
+  <string key="Output comparison unavailable because a configured input or work limit was reached." value="入力または処理の上限に達したため、出力を比較できません。" />
+  <string key="Output exceeds comparison limits; the baseline was not changed." value="出力が比較上限を超えています。ベースラインは変更されていません。" />
+  <string key="Show current output" value="現在の出力を表示" />
+  <string key="Pin current output as the comparison baseline." value="現在の出力を比較ベースラインとして固定します。" />
+  <string key="Show the baseline and current outputs side by side." value="ベースラインと現在の出力を並べて表示します。" />
+  <string key="Return to the current output without removing the baseline." value="ベースラインを残して現在の出力に戻ります。" />
+  <string key="Clear the pinned output baseline." value="固定した出力ベースラインを消去します。" />
+  <string key="Output baseline cleared." value="出力ベースラインを消去しました。" />
 </strings>

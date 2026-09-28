@@ -233,4 +233,21 @@
   <string key="Clear output filter." value="Cancella il filtro dell'output." />
   <string key="No output lines match this filter." value="Nessuna riga di output corrisponde a questo filtro." />
   <string key="Evidence" value="Prove" />
+  <string key="Pin output baseline" value="Fissa output di riferimento" />
+  <string key="Compare outputs" value="Confronta gli output" />
+  <string key="Clear output baseline" value="Cancella output di riferimento" />
+  <string key="Baseline output" value="Output di riferimento" />
+  <string key="Current output" value="Output corrente" />
+  <string key="Output baseline pinned." value="Output di riferimento fissato." />
+  <string key="Pin an output baseline before comparing." value="Fissa un output di riferimento prima di confrontare." />
+  <string key="No current output to compare." value="Nessun output corrente da confrontare." />
+  <string key="No output matches the filter on either side." value="Nessun output corrisponde al filtro in nessuno dei due lati." />
+  <string key="Output comparison unavailable because a configured input or work limit was reached." value="Confronto output non disponibile: è stato raggiunto un limite configurato di input o di lavoro." />
+  <string key="Output exceeds comparison limits; the baseline was not changed." value="L'output supera i limiti di confronto; il riferimento non è stato modificato." />
+  <string key="Show current output" value="Mostra output corrente" />
+  <string key="Pin current output as the comparison baseline." value="Fissa l'output corrente come riferimento per il confronto." />
+  <string key="Show the baseline and current outputs side by side." value="Mostra gli output di riferimento e corrente affiancati." />
+  <string key="Return to the current output without removing the baseline." value="Torna all'output corrente senza rimuovere il riferimento." />
+  <string key="Clear the pinned output baseline." value="Cancella il riferimento di output fissato." />
+  <string key="Output baseline cleared." value="Riferimento output cancellato." />
 </strings>

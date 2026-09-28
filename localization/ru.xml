@@ -233,4 +233,21 @@
   <string key="Clear output filter." value="Очистить фильтр вывода." />
   <string key="No output lines match this filter." value="Нет строк вывода, соответствующих этому фильтру." />
   <string key="Evidence" value="Доказательства" />
+  <string key="Pin output baseline" value="Закрепить исходный вывод" />
+  <string key="Compare outputs" value="Сравнить выводы" />
+  <string key="Clear output baseline" value="Очистить исходный вывод" />
+  <string key="Baseline output" value="Исходный вывод" />
+  <string key="Current output" value="Текущий вывод" />
+  <string key="Output baseline pinned." value="Исходный вывод закреплён." />
+  <string key="Pin an output baseline before comparing." value="Закрепите исходный вывод перед сравнением." />
+  <string key="No current output to compare." value="Нет текущего вывода для сравнения." />
+  <string key="No output matches the filter on either side." value="Ни одна сторона не содержит вывода, соответствующего фильтру." />
+  <string key="Output comparison unavailable because a configured input or work limit was reached." value="Сравнение недоступно: достигнут настроенный предел входных данных или вычислений." />
+  <string key="Output exceeds comparison limits; the baseline was not changed." value="Объём вывода превышает пределы сравнения; исходная версия не изменена." />
+  <string key="Show current output" value="Показать текущий вывод" />
+  <string key="Pin current output as the comparison baseline." value="Закрепить текущий вывод как основу сравнения." />
+  <string key="Show the baseline and current outputs side by side." value="Показать исходный и текущий вывод рядом." />
+  <string key="Return to the current output without removing the baseline." value="Вернуться к текущему выводу, не удаляя исходный." />
+  <string key="Clear the pinned output baseline." value="Очистить закреплённую исходную версию вывода." />
+  <string key="Output baseline cleared." value="Исходный вывод очищен." />
 </strings>

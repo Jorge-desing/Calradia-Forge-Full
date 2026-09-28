@@ -383,5 +383,44 @@ internal static class DesktopSimulationServiceTests
         var initialBuf = opVm.BufferUtilizationGaugeValue;
         opVm.CycleScenario(1);
         Check(opVm.BufferUtilizationGaugeValue != initialBuf, "Cycling scenario must reactively update buffer gauge.");
+
+        // 6. Tactical Combat & Siege Studio Dashboard (Rev074)
+        var combatVm = new CombatStudioDashboardViewModel();
+        Check(combatVm.CombatRadarAxes != null && combatVm.CombatRadarAxes.Count == 5, "Combat studio must expose 5 tactical doctrine axes.");
+        Check(combatVm.DoctrineRadarValues != null && combatVm.DoctrineRadarValues.Count == 5, "Combat studio doctrine values must have 5 entries.");
+        Check(combatVm.CounterDoctrineRadarValues != null && combatVm.CounterDoctrineRadarValues.Count == 5, "Combat studio counter-doctrine values must have 5 entries.");
+        Check(combatVm.DoctrineRadarValues.All(v => v >= 0.0 && v <= 1.0), "Doctrine radar values must be normalized in [0, 1].");
+        Check(combatVm.CounterDoctrineRadarValues.All(v => v >= 0.0 && v <= 1.0), "Counter-doctrine radar values must be normalized in [0, 1].");
+        Check(combatVm.LossesTrajectory != null && combatVm.LossesTrajectory.Count == 16, "Losses trajectory must contain 16 intervals.");
+        Check(combatVm.MoraleCohesionGaugeValue >= 0.0 && combatVm.MoraleCohesionGaugeValue <= 100.0, "Morale cohesion gauge must be bounded in [0, 100].");
+        Check(combatVm.SiegeBreachGaugeValue >= 0.0 && combatVm.SiegeBreachGaugeValue <= 100.0, "Siege breach gauge must be bounded in [0, 100].");
+        Check(combatVm.Contingents != null && combatVm.Contingents.Count == 4, "Combat studio must provide 4 battle cohorts.");
+        Check(!string.IsNullOrWhiteSpace(combatVm.StudioDocumentation), "Combat studio must provide forensic documentation.");
+        Check(!string.IsNullOrWhiteSpace(combatVm.ArchitecturalInvariants), "Combat studio must declare architectural invariants.");
+
+        // 7. Caravan & Market Trade Hub Dashboard (Rev074)
+        var tradeVm = new CaravanTradeDashboardViewModel();
+        Check(tradeVm.TradeRadarAxes != null && tradeVm.TradeRadarAxes.Count == 5, "Trade hub must expose 5 route profile axes.");
+        Check(tradeVm.RouteRadarValues != null && tradeVm.RouteRadarValues.Count == 5, "Trade route radar values must have 5 entries.");
+        Check(tradeVm.CompetitiveRouteRadarValues != null && tradeVm.CompetitiveRouteRadarValues.Count == 5, "Competitive route radar values must have 5 entries.");
+        Check(tradeVm.RouteRadarValues.All(v => v >= 0.0 && v <= 1.0), "Trade route radar values must be normalized in [0, 1].");
+        Check(tradeVm.PriceSpreadTrajectory != null && tradeVm.PriceSpreadTrajectory.Count == 16, "Price spread trajectory must contain 16 intervals.");
+        Check(tradeVm.CaravanSurvivalGaugeValue >= 0.0 && tradeVm.CaravanSurvivalGaugeValue <= 100.0, "Caravan survival gauge must be bounded in [0, 100].");
+        Check(tradeVm.TariffFrictionGaugeValue >= 0.0 && tradeVm.TariffFrictionGaugeValue <= 100.0, "Tariff friction gauge must be bounded in [0, 100].");
+        Check(tradeVm.Commodities != null && tradeVm.Commodities.Count == 5, "Caravan trade hub must expose 5 arbitrage goods.");
+        Check(!string.IsNullOrWhiteSpace(tradeVm.StudioDocumentation), "Trade hub must provide forensic documentation.");
+        Check(!string.IsNullOrWhiteSpace(tradeVm.ArchitecturalInvariants), "Trade hub must declare architectural invariants.");
+
+        // 8. Adaptive Domain Category Telemetry for Generic Flight Deck (Rev074)
+        opVm.ConfigureDomainCategory("Politics");
+        Check(opVm.ActiveCategoryGroup == "Politics", "Active category group must be Politics.");
+        Check(opVm.CategoryRadarAxes != null && opVm.CategoryRadarAxes.Count == 5, "Politics category must provide 5 radar axes.");
+        Check(opVm.CategoryRadarValues != null && opVm.CategoryRadarValues.Count == 5, "Politics category must provide 5 radar values.");
+        Check(opVm.CategoryTrendTrajectory != null && opVm.CategoryTrendTrajectory.Count == 16, "Politics category must provide 16-point trend trajectory.");
+        Check(opVm.CategoryHealthGaugeValue == 91.2, "Politics health gauge value must be 91.2.");
+
+        opVm.ConfigureDomainCategory("Assets");
+        Check(opVm.ActiveCategoryGroup == "Assets", "Active category group must be Assets.");
+        Check(opVm.CategoryHealthGaugeValue == 92.5, "Assets health gauge value must be 92.5.");
     }
 }

@@ -233,4 +233,21 @@
   <string key="Clear output filter." value="Çıktı filtresini temizle." />
   <string key="No output lines match this filter." value="Bu filtreyle eşleşen çıktı satırı yok." />
   <string key="Evidence" value="Kanıt" />
+  <string key="Pin output baseline" value="Temel çıktıyı sabitle" />
+  <string key="Compare outputs" value="Çıktıları karşılaştır" />
+  <string key="Clear output baseline" value="Temel çıktıyı temizle" />
+  <string key="Baseline output" value="Temel çıktı" />
+  <string key="Current output" value="Geçerli çıktı" />
+  <string key="Output baseline pinned." value="Temel çıktı sabitlendi." />
+  <string key="Pin an output baseline before comparing." value="Karşılaştırmadan önce bir temel çıktı sabitleyin." />
+  <string key="No current output to compare." value="Karşılaştırılacak geçerli çıktı yok." />
+  <string key="No output matches the filter on either side." value="Her iki tarafta da filtreyle eşleşen çıktı yok." />
+  <string key="Output comparison unavailable because a configured input or work limit was reached." value="Yapılandırılmış bir girdi veya işlem sınırına ulaşıldığından çıktı karşılaştırılamıyor." />
+  <string key="Output exceeds comparison limits; the baseline was not changed." value="Çıktı karşılaştırma sınırlarını aşıyor; temel çıktı değiştirilmedi." />
+  <string key="Show current output" value="Geçerli çıktıyı göster" />
+  <string key="Pin current output as the comparison baseline." value="Geçerli çıktıyı karşılaştırma temeli olarak sabitle." />
+  <string key="Show the baseline and current outputs side by side." value="Temel ve geçerli çıktıları yan yana göster." />
+  <string key="Return to the current output without removing the baseline." value="Temel çıktıyı kaldırmadan geçerli çıktıya dön." />
+  <string key="Clear the pinned output baseline." value="Sabitlenmiş temel çıktıyı temizle." />
+  <string key="Output baseline cleared." value="Temel çıktı temizlendi." />
 </strings>

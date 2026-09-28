@@ -1002,6 +1002,294 @@
          </Border>
         </Grid>
        </Grid></DataTemplate>
+  <!-- 10. Tactical Combat & Siege Studio Dashboard -->
+  <DataTemplate x:Key="CombatStudioViewTemplate"><Grid>
+        <Grid.RowDefinitions>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <!-- Header -->
+        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Grid.Row="0" Margin="0,0,0,6" Padding="0,0,0,6">
+         <Grid>
+          <Grid.ColumnDefinitions>
+           <ColumnDefinition Width="*"/>
+           <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource GameIcon.crossed_swords}" Fill="{DynamicResource BrassBrush}" Height="16" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="16"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding CombatStudioDashboard.RegimentName, Mode=OneWay}" VerticalAlignment="Center"/>
+           </StackPanel>
+           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding CombatStudioDashboard.TacticalDoctrine, Mode=OneWay}"/>
+           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding CombatStudioDashboard.DeploymentTerrain, Mode=OneWay}"/>
+           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding CombatStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+          </StackPanel>
+          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource Icon.Shield}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="4 BATTLE COHORTS"/>
+           </StackPanel>
+          </Border>
+         </Grid>
+        </Border>
+        <!-- Body: Contingents Grid, Radar Chart, and Casualty & Breach Gauges -->
+        <Grid Grid.Row="1">
+         <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1.4*"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="1.1*"/>
+         </Grid.ColumnDefinitions>
+         <!-- Column 1: Battle Contingents -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="8">
+          <DockPanel LastChildFill="True">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="ACTIVE DEPLOYED CONTINGENTS"/>
+           </Border>
+           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding CombatStudioDashboard.Contingents}">
+             <ItemsControl.ItemTemplate>
+              <DataTemplate>
+               <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,0,5" Padding="6">
+                <StackPanel>
+                 <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Role}"/>
+                  <Border Background="{DynamicResource DeepPineBrush}" CornerRadius="2" Grid.Column="1" Padding="3,1">
+                   <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{Binding BrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding Readiness}"/>
+                  </Border>
+                 </Grid>
+                 <TextBlock FontSize="8.5" Foreground="{DynamicResource BrassBrush}" Margin="0,2,0,0" Text="{Binding CombatRole}"/>
+                 <Grid Margin="0,3,0,0">
+                  <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding UnitCount}"/>
+                  <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Right" Text="{Binding WeaponEnsemble}"/>
+                 </Grid>
+                </StackPanel>
+               </Border>
+              </DataTemplate>
+             </ItemsControl.ItemTemplate>
+            </ItemsControl>
+           </ScrollViewer>
+          </DockPanel>
+         </Border>
+         <!-- Column 2: Tactical Radar Doctrine -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="8">
+          <StackPanel HorizontalAlignment="Center">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="DOCTRINE PROFILE"/>
+           </Border>
+           <presentation:ForgeRadarChart
+               AxisLabels="{Binding CombatStudioDashboard.CombatRadarAxes}"
+               Values="{Binding CombatStudioDashboard.DoctrineRadarValues}"
+               ComparisonValues="{Binding CombatStudioDashboard.CounterDoctrineRadarValues}"
+               Stroke="{DynamicResource BrassBrush}"
+               Fill="{DynamicResource BrassBrush}"
+               ComparisonStroke="{DynamicResource EmberBrush}"
+               ComparisonFill="{DynamicResource EmberBrush}"
+               GridBrush="{DynamicResource BorderBrush}"
+               AxisLabelBrush="{DynamicResource PaperBrush}"
+               Height="130" Width="130" HorizontalAlignment="Center" Margin="0,2"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="■ Shieldwall (Brass)  ■ Counter-Assault (Ember)"/>
+          </StackPanel>
+         </Border>
+         <!-- Column 3: Casualty Sparkline & Dual Ring Gauges -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
+          <StackPanel>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="TACTICAL TELEMETRY"/>
+           </Border>
+           <TextBlock FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource EmberBrush}" Text="15-MIN CASUALTY ENVELOPE"/>
+           <presentation:ForgeSparkline
+               DataPoints="{Binding CombatStudioDashboard.LossesTrajectory}"
+               Stroke="{DynamicResource EmberBrush}"
+               Fill="{DynamicResource EmberBrush}"
+               ShowGridLines="True"
+               GridBrush="{DynamicResource BorderBrush}"
+               ValueUnit="%"
+               FormatString="0.0"
+               Height="36" Margin="0,3"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="{Binding CombatStudioDashboard.CasualtyEnvelope, Mode=OneWay}"/>
+           <Grid Margin="0,4,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <!-- Gauge 1: Morale -->
+            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding CombatStudioDashboard.MoraleCohesionGaugeValue}"
+                 Maximum="100"
+                 Threshold="35"
+                 CenterText="78.5%"
+                 SubText="MORALE"
+                 AccentBrush="{DynamicResource VerdigrisBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="COHESION HIGH"/>
+            </StackPanel>
+            <!-- Gauge 2: Siege Breach -->
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding CombatStudioDashboard.SiegeBreachGaugeValue}"
+                 Maximum="100"
+                 Threshold="50"
+                 CenterText="64.0%"
+                 SubText="BREACH"
+                 AccentBrush="{DynamicResource BrassBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource VerdigrisBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="SIEGE VIABLE"/>
+            </StackPanel>
+           </Grid>
+           <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding CombatStudioDashboard.TacticalShockEfficiency, Mode=OneWay}"/>
+          </StackPanel>
+         </Border>
+        </Grid>
+       </Grid></DataTemplate>
+  <!-- 11. Caravan & Market Trade Hub Dashboard -->
+  <DataTemplate x:Key="CaravanTradeViewTemplate"><Grid>
+        <Grid.RowDefinitions>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <!-- Header -->
+        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Grid.Row="0" Margin="0,0,0,6" Padding="0,0,0,6">
+         <Grid>
+          <Grid.ColumnDefinitions>
+           <ColumnDefinition Width="*"/>
+           <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource GameIcon.scroll_unfurled}" Fill="{DynamicResource VerdigrisBrush}" Height="16" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="16"/>
+            <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding CaravanTradeDashboard.RouteName, Mode=OneWay}" VerticalAlignment="Center"/>
+           </StackPanel>
+           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding CaravanTradeDashboard.OperatingCapital, Mode=OneWay}"/>
+           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding CaravanTradeDashboard.RouteTerrain, Mode=OneWay}"/>
+           <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding CaravanTradeDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+          </StackPanel>
+          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
+           <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource VerdigrisBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="5 ARBITRAGE GOODS"/>
+           </StackPanel>
+          </Border>
+         </Grid>
+        </Border>
+        <!-- Body: Commodity Arbitrage Grid, Route Radar Chart, and Price Spread & Safety Gauges -->
+        <Grid Grid.Row="1">
+         <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1.5*"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="1.1*"/>
+         </Grid.ColumnDefinitions>
+         <!-- Column 1: Commodities Arbitrage Matrix -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="0" Margin="0,0,6,0" Padding="8">
+          <DockPanel LastChildFill="True">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="COMMODITY ARBITRAGE MATRIX"/>
+           </Border>
+           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding CaravanTradeDashboard.Commodities}">
+             <ItemsControl.ItemTemplate>
+              <DataTemplate>
+               <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,0,5" Padding="6">
+                <StackPanel>
+                 <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Name}"/>
+                  <Border Background="{DynamicResource DeepPineBrush}" CornerRadius="2" Grid.Column="1" Padding="3,1">
+                   <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{Binding BrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding OptimalRating}"/>
+                  </Border>
+                 </Grid>
+                 <Grid Margin="0,2,0,0">
+                  <TextBlock FontSize="8.5" Foreground="{DynamicResource MutedTextBrush}"><Run Text="Buy: "/><Run Text="{Binding OriginPrice, Mode=OneWay}"/><Run Text="d ⯈ Sell: "/><Run Text="{Binding DestinationPrice, Mode=OneWay}"/><Run Text="d"/></TextBlock>
+                  <TextBlock FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Right"><Run Text="+"/><Run Text="{Binding NetSpread, Mode=OneWay}"/><Run Text="d ("/><Run Text="{Binding MarginPercent, Mode=OneWay}"/><Run Text=")"/></TextBlock>
+                 </Grid>
+                 <TextBlock FontSize="7.5" Foreground="{DynamicResource BrassBrush}" Margin="0,2,0,0"><Run Text="Cargo Lot: "/><Run Text="{Binding CargoVolume, Mode=OneWay}"/></TextBlock>
+                </StackPanel>
+               </Border>
+              </DataTemplate>
+             </ItemsControl.ItemTemplate>
+            </ItemsControl>
+           </ScrollViewer>
+          </DockPanel>
+         </Border>
+         <!-- Column 2: Route Radar Profile -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="1" Margin="0,0,6,0" Padding="8">
+          <StackPanel HorizontalAlignment="Center">
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="ROUTE PROFILE"/>
+           </Border>
+           <presentation:ForgeRadarChart
+               AxisLabels="{Binding CaravanTradeDashboard.TradeRadarAxes}"
+               Values="{Binding CaravanTradeDashboard.RouteRadarValues}"
+               ComparisonValues="{Binding CaravanTradeDashboard.CompetitiveRouteRadarValues}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource VerdigrisBrush}"
+               ComparisonStroke="{DynamicResource BrassBrush}"
+               ComparisonFill="{DynamicResource BrassBrush}"
+               GridBrush="{DynamicResource BorderBrush}"
+               AxisLabelBrush="{DynamicResource PaperBrush}"
+               Height="130" Width="130" HorizontalAlignment="Center" Margin="0,2"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="■ Silver Route (Verdigris)  ■ Overland (Brass)"/>
+          </StackPanel>
+         </Border>
+         <!-- Column 3: Arbitrage Spread & Security Gauges -->
+         <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
+          <StackPanel>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,2">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="TRADE TELEMETRY"/>
+           </Border>
+           <TextBlock FontSize="8.5" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="30-DAY ARBITRAGE SPREAD"/>
+           <presentation:ForgeSparkline
+               DataPoints="{Binding CaravanTradeDashboard.PriceSpreadTrajectory}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource VerdigrisBrush}"
+               ShowGridLines="True"
+               GridBrush="{DynamicResource BorderBrush}"
+               ValueUnit="d"
+               FormatString="0.0"
+               Height="36" Margin="0,3"/>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="{Binding CaravanTradeDashboard.ArbitrageSummary, Mode=OneWay}"/>
+           <Grid Margin="0,4,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <!-- Gauge 1: Caravan Survival -->
+            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding CaravanTradeDashboard.CaravanSurvivalGaugeValue}"
+                 Maximum="100"
+                 Threshold="75"
+                 CenterText="84.5%"
+                 SubText="SURVIVAL"
+                 AccentBrush="{DynamicResource VerdigrisBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="LOW RISK"/>
+            </StackPanel>
+            <!-- Gauge 2: Tariff Friction -->
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+             <presentation:ForgeRingGauge
+                 Value="{Binding CaravanTradeDashboard.TariffFrictionGaugeValue}"
+                 Maximum="100"
+                 Threshold="25"
+                 CenterText="18.2%"
+                 SubText="TARIFF"
+                 AccentBrush="{DynamicResource BrassBrush}"
+                 BackgroundBrush="{DynamicResource CoalBrush}"
+                 ThresholdBrush="{DynamicResource EmberBrush}"
+                 TextBrush="{DynamicResource PaperBrush}"
+                 Height="56" Width="56"/>
+             <TextBlock FontSize="7.5" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="FAVORABLE"/>
+            </StackPanel>
+           </Grid>
+           <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding CaravanTradeDashboard.SecurityRiskAssessment, Mode=OneWay}"/>
+          </StackPanel>
+         </Border>
+        </Grid>
+       </Grid></DataTemplate>
   <DataTemplate x:Key="GenericOperationOverviewDashboardTemplate"><Grid>
         <Grid.RowDefinitions>
          <RowDefinition Height="Auto"/>
@@ -1031,14 +1319,67 @@
           </Border>
          </Grid>
         </Border>
-        <!-- Body: 4 Guarded Telemetry Sensors & Live Findings -->
+        <!-- Body: Adaptive Domain Category Bar, 4 Guarded Telemetry Sensors & Live Findings -->
         <Grid Grid.Row="1">
          <Grid.RowDefinitions>
           <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
           <RowDefinition Height="*"/>
          </Grid.RowDefinitions>
+         <!-- Adaptive Domain Category Telemetry Bar (Rev074) -->
+         <Border Grid.Row="0" Margin="0,0,0,6" Background="{DynamicResource DeepPineBrush}" BorderBrush="{Binding Tool.CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="4" Padding="6,4">
+          <Grid>
+           <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+           </Grid.ColumnDefinitions>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding Tool.CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1" CornerRadius="3" Margin="0,0,8,0" Padding="6,2" VerticalAlignment="Center">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{Binding Tool.CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding Tool.Group}"/>
+           </Border>
+           <StackPanel Grid.Column="1" VerticalAlignment="Center">
+            <TextBlock FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Tool.CategoryBanner}"/>
+            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding Tool.CategoryMotto}"/>
+           </StackPanel>
+           <!-- Domain Radar -->
+           <presentation:ForgeRadarChart
+               Grid.Column="2"
+               AxisLabels="{Binding GenericOperationDashboard.CategoryRadarAxes}"
+               Values="{Binding GenericOperationDashboard.CategoryRadarValues}"
+               Stroke="{Binding Tool.CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}"
+               Fill="{Binding Tool.CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}"
+               GridBrush="{DynamicResource BorderBrush}"
+               AxisLabelBrush="{DynamicResource PaperBrush}"
+               Height="56" Width="68" Margin="4,0,8,0"/>
+           <!-- Domain Trend Sparkline -->
+           <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="0,0,8,0">
+            <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{Binding Tool.CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}" HorizontalAlignment="Center" Text="STABILITY TREND"/>
+            <presentation:ForgeSparkline
+                DataPoints="{Binding GenericOperationDashboard.CategoryTrendTrajectory}"
+                Stroke="{Binding Tool.CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}"
+                Fill="{Binding Tool.CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}"
+                ShowGridLines="False"
+                Height="22" Width="80" Margin="0,1"/>
+           </StackPanel>
+           <!-- Domain Health Gauge -->
+           <presentation:ForgeRingGauge
+               Grid.Column="4"
+               Value="{Binding GenericOperationDashboard.CategoryHealthGaugeValue}"
+               Maximum="100"
+               Threshold="80"
+               CenterText="94%"
+               SubText="HEALTH"
+               AccentBrush="{Binding Tool.CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}"
+               BackgroundBrush="{DynamicResource CoalBrush}"
+               ThresholdBrush="{DynamicResource EmberBrush}"
+               TextBrush="{DynamicResource PaperBrush}"
+               Height="46" Width="46" VerticalAlignment="Center"/>
+          </Grid>
+         </Border>
          <!-- 4 Guarded Telemetry Sensors -->
-         <Grid Grid.Row="0" Margin="0,0,0,6">
+         <Grid Grid.Row="1" Margin="0,0,0,6">
           <Grid.ColumnDefinitions>
            <ColumnDefinition Width="*"/>
            <ColumnDefinition Width="*"/>
@@ -1090,7 +1431,7 @@
           </Border>
          </Grid>
          <!-- Live Findings Flight Deck -->
-          <Border Grid.Row="1" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="6">
+          <Border Grid.Row="2" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" CornerRadius="3" Padding="6">
            <DockPanel LastChildFill="True">
             <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
              <Grid.ColumnDefinitions>
@@ -1536,6 +1877,14 @@
        <!-- 9. Generic Operation Flight Deck & Guarded Telemetry -->
 
        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource GenericOperationOverviewDashboardTemplate}" MinHeight="0" MinWidth="0" Visibility="{Binding IsGenericOperationOverview, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+       <!-- 10. Tactical Combat & Siege Studio Dashboard -->
+
+       <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CombatStudioViewTemplate}" MinHeight="0" MinWidth="0" Visibility="{Binding IsCombatStudio, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+       <!-- 11. Caravan & Market Trade Hub Dashboard -->
+
+       <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CaravanTradeViewTemplate}" MinHeight="0" MinWidth="0" Visibility="{Binding IsCaravanTrade, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
       </Grid>
 

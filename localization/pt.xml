@@ -233,4 +233,21 @@
   <string key="Clear output filter." value="Limpar filtro de saída." />
   <string key="No output lines match this filter." value="Nenhuma linha de saída corresponde a este filtro." />
   <string key="Evidence" value="Evidências" />
+  <string key="Pin output baseline" value="Fixar saída de referência" />
+  <string key="Compare outputs" value="Comparar saídas" />
+  <string key="Clear output baseline" value="Limpar saída de referência" />
+  <string key="Baseline output" value="Saída de referência" />
+  <string key="Current output" value="Saída atual" />
+  <string key="Output baseline pinned." value="Saída de referência fixada." />
+  <string key="Pin an output baseline before comparing." value="Fixe uma saída de referência antes de comparar." />
+  <string key="No current output to compare." value="Não há saída atual para comparar." />
+  <string key="No output matches the filter on either side." value="Nenhuma saída corresponde ao filtro em nenhum dos lados." />
+  <string key="Output comparison unavailable because a configured input or work limit was reached." value="A comparação não está disponível porque um limite configurado de entrada ou processamento foi atingido." />
+  <string key="Output exceeds comparison limits; the baseline was not changed." value="A saída excede os limites de comparação; a referência não foi alterada." />
+  <string key="Show current output" value="Mostrar saída atual" />
+  <string key="Pin current output as the comparison baseline." value="Fixar a saída atual como referência de comparação." />
+  <string key="Show the baseline and current outputs side by side." value="Mostrar as saídas de referência e atual lado a lado." />
+  <string key="Return to the current output without removing the baseline." value="Voltar à saída atual sem remover a referência." />
+  <string key="Clear the pinned output baseline." value="Limpar a referência de saída fixada." />
+  <string key="Output baseline cleared." value="Referência de saída limpa." />
 </strings>

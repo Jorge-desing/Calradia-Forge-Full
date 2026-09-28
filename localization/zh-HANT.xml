@@ -233,4 +233,21 @@
   <string key="Clear output filter." value="清除輸出篩選器。" />
   <string key="No output lines match this filter." value="沒有符合此篩選器的輸出行。" />
   <string key="Evidence" value="證據" />
+  <string key="Pin output baseline" value="固定基準輸出" />
+  <string key="Compare outputs" value="比較輸出" />
+  <string key="Clear output baseline" value="清除基準輸出" />
+  <string key="Baseline output" value="基準輸出" />
+  <string key="Current output" value="目前輸出" />
+  <string key="Output baseline pinned." value="已固定基準輸出。" />
+  <string key="Pin an output baseline before comparing." value="請先固定一個基準輸出再進行比較。" />
+  <string key="No current output to compare." value="沒有可供比較的目前輸出。" />
+  <string key="No output matches the filter on either side." value="兩側皆沒有符合篩選條件的輸出。" />
+  <string key="Output comparison unavailable because a configured input or work limit was reached." value="已達到設定的輸入或工作量上限，無法比較輸出。" />
+  <string key="Output exceeds comparison limits; the baseline was not changed." value="輸出超出比較限制；基準輸出未變更。" />
+  <string key="Show current output" value="顯示目前輸出" />
+  <string key="Pin current output as the comparison baseline." value="將目前輸出固定為比較基準。" />
+  <string key="Show the baseline and current outputs side by side." value="並排顯示基準輸出與目前輸出。" />
+  <string key="Return to the current output without removing the baseline." value="返回目前輸出，但保留基準輸出。" />
+  <string key="Clear the pinned output baseline." value="清除已固定的輸出基準。" />
+  <string key="Output baseline cleared." value="已清除基準輸出。" />
 </strings>

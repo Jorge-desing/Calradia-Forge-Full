@@ -2298,6 +2298,291 @@ namespace CalradiaForge.Desktop.Presentation
         ];
         public string TroubleshootingHeader => "Troubleshooting: Command Execution & Boundary Guard";
         public string TroubleshootingRemedy => "Offline diagnostic commands are bounded to prevent engine stalls. If a command times out, check system telemetry and filter parameters.";
+
+        string activeCategoryGroup = "Forge SDK";
+        static readonly string[] DefaultGenericRadarAxes = ["Stability", "Performance", "Safety", "Conformance", "Integrity"];
+        static readonly double[] DefaultGenericRadarValues = [0.95, 0.90, 0.98, 0.92, 0.94];
+        static readonly double[] DefaultGenericTrendTrajectory = [88.0, 89.5, 91.0, 90.5, 92.0, 93.4, 92.8, 94.0, 93.5, 94.2, 94.8, 95.0, 95.4, 96.0, 95.8, 96.5];
+
+        IReadOnlyList<string> categoryRadarAxes = DefaultGenericRadarAxes;
+        IReadOnlyList<double> categoryRadarValues = DefaultGenericRadarValues;
+        IReadOnlyList<double> categoryTrendTrajectory = DefaultGenericTrendTrajectory;
+        double categoryHealthGaugeValue = 94.5;
+        string categoryHealthStatus = "DOMAIN STABILITY: 94.5% OPTIMAL";
+
+        public string ActiveCategoryGroup { get => activeCategoryGroup; private set => Set(ref activeCategoryGroup, value); }
+        public IReadOnlyList<string> CategoryRadarAxes { get => categoryRadarAxes; private set => Set(ref categoryRadarAxes, value); }
+        public IReadOnlyList<double> CategoryRadarValues { get => categoryRadarValues; private set => Set(ref categoryRadarValues, value); }
+        public IReadOnlyList<double> CategoryTrendTrajectory { get => categoryTrendTrajectory; private set => Set(ref categoryTrendTrajectory, value); }
+        public double CategoryHealthGaugeValue { get => categoryHealthGaugeValue; private set => Set(ref categoryHealthGaugeValue, value); }
+        public string CategoryHealthStatus { get => categoryHealthStatus; private set => Set(ref categoryHealthStatus, value); }
+
+        public void ConfigureDomainCategory(string group)
+        {
+            activeCategoryGroup = string.IsNullOrWhiteSpace(group) ? "Forge SDK" : group;
+            switch (activeCategoryGroup)
+            {
+                case "Politics":
+                    CategoryRadarAxes = ["Influence", "Legitimacy", "ClanLoyalty", "Succession", "Sovereignty"];
+                    CategoryRadarValues = [0.88, 0.92, 0.78, 0.85, 0.90];
+                    CategoryTrendTrajectory = [82.0, 84.5, 83.0, 86.0, 88.5, 87.0, 89.2, 90.0, 91.5, 90.8, 92.0, 93.1, 92.5, 93.8, 94.0, 94.5];
+                    CategoryHealthGaugeValue = 91.2;
+                    CategoryHealthStatus = "SENATE COHESION: 91.2% STABLE";
+                    break;
+                case "Campaign":
+                    CategoryRadarAxes = ["Exploration", "WeatherResil", "TroopRation", "ScoutRadius", "QuestPurity"];
+                    CategoryRadarValues = [0.85, 0.74, 0.90, 0.82, 0.88];
+                    CategoryTrendTrajectory = [78.0, 80.0, 82.5, 81.0, 83.4, 85.0, 84.2, 86.0, 88.0, 87.5, 89.0, 90.2, 89.8, 91.0, 91.5, 92.0];
+                    CategoryHealthGaugeValue = 88.6;
+                    CategoryHealthStatus = "EXPEDITION MORALE: 88.6% HIGH";
+                    break;
+                case "Diagnostics":
+                    CategoryRadarAxes = ["ThreadSafety", "MemoryCeiling", "DiskIsolation", "Determinism", "RuleCompliance"];
+                    CategoryRadarValues = [0.98, 0.95, 0.96, 0.99, 1.00];
+                    CategoryTrendTrajectory = [92.0, 93.0, 93.5, 94.0, 94.8, 95.0, 95.5, 96.0, 96.2, 96.8, 97.0, 97.4, 97.8, 98.0, 98.2, 98.5];
+                    CategoryHealthGaugeValue = 97.8;
+                    CategoryHealthStatus = "SYSTEM INTEGRITY: 97.8% VERIFIED";
+                    break;
+                case "Assets":
+                    CategoryRadarAxes = ["TextureFormat", "AtlasPack", "SpriteMipmap", "AudioBus", "PrefabSchema"];
+                    CategoryRadarValues = [0.90, 0.86, 0.88, 0.92, 0.94];
+                    CategoryTrendTrajectory = [80.0, 82.0, 83.5, 85.0, 86.2, 87.0, 88.5, 89.0, 90.2, 91.0, 91.5, 92.4, 92.8, 93.0, 93.5, 94.0];
+                    CategoryHealthGaugeValue = 92.5;
+                    CategoryHealthStatus = "ASSET PIPELINE: 92.5% OPTIMAL";
+                    break;
+                case "Delivery":
+                    CategoryRadarAxes = ["ZipIntegrity", "HashProven", "ZeroGarbage", "NoScripts", "CleanMeta"];
+                    CategoryRadarValues = [1.00, 1.00, 0.98, 1.00, 0.96];
+                    CategoryTrendTrajectory = [95.0, 95.5, 96.0, 96.8, 97.0, 97.5, 98.0, 98.2, 98.8, 99.0, 99.2, 99.4, 99.5, 99.6, 99.8, 100.0];
+                    CategoryHealthGaugeValue = 99.2;
+                    CategoryHealthStatus = "PACKAGING DEPOT: 99.2% SECURE";
+                    break;
+                case "Learning":
+                    CategoryRadarAxes = ["CodexIndex", "HelpParity", "SearchDepth", "CrossLinks", "Bilingual"];
+                    CategoryRadarValues = [0.92, 0.90, 0.88, 0.85, 0.94];
+                    CategoryTrendTrajectory = [84.0, 85.0, 86.5, 87.0, 88.2, 89.0, 90.0, 90.8, 91.5, 92.0, 92.4, 93.0, 93.2, 93.8, 94.0, 94.4];
+                    CategoryHealthGaugeValue = 93.0;
+                    CategoryHealthStatus = "KNOWLEDGE BASE: 93.0% INDEXED";
+                    break;
+                default:
+                    CategoryRadarAxes = DefaultGenericRadarAxes;
+                    CategoryRadarValues = DefaultGenericRadarValues;
+                    CategoryTrendTrajectory = DefaultGenericTrendTrajectory;
+                    CategoryHealthGaugeValue = 94.5;
+                    CategoryHealthStatus = "DOMAIN STABILITY: 94.5% OPTIMAL";
+                    break;
+            }
+            Raise(nameof(ActiveCategoryGroup));
+            Raise(nameof(CategoryHealthGaugeValue));
+            Raise(nameof(CategoryHealthStatus));
+        }
+
         public string ProceduralMacroAction => "cf.summary && cf.audit";
+    }
+
+
+    // =========================================================================
+    // TACTICAL COMBAT & SIEGE STUDIO VIEW MODELS (Rev074)
+    // =========================================================================
+
+    internal sealed class CombatContingentViewModel
+    {
+        public CombatContingentViewModel(string role, string unitCount, string combatRole, string weaponEnsemble, string readiness, string brushKey)
+        {
+            Role = role;
+            UnitCount = unitCount;
+            CombatRole = combatRole;
+            WeaponEnsemble = weaponEnsemble;
+            Readiness = readiness;
+            BrushKey = brushKey;
+        }
+
+        public string Role { get; }
+        public string UnitCount { get; }
+        public string CombatRole { get; }
+        public string WeaponEnsemble { get; }
+        public string Readiness { get; }
+        public string BrushKey { get; }
+    }
+
+    internal sealed class CombatStudioDashboardViewModel : ObservableObject
+    {
+        static readonly string[] DefaultCombatRadarAxes = ["ArmorPen", "ShockMorale", "RangedDPS", "CavCharge", "ShieldInteg"];
+        static readonly double[] DefaultDoctrineRadarValues = [0.88, 0.76, 0.65, 0.92, 0.85];
+        static readonly double[] DefaultCounterDoctrineRadarValues = [0.72, 0.84, 0.80, 0.70, 0.78];
+        static readonly double[] DefaultLossesTrajectory = [
+            0.0, 1.2, 2.8, 4.5, 6.2, 8.9, 11.4, 14.8,
+            17.2, 19.5, 21.0, 22.8, 23.9, 24.5, 25.1, 25.4
+        ];
+
+        static readonly CombatContingentViewModel[] DefaultContingents = [
+            new("Heavy Vanguard", "240 Legionaries", "Frontline Shieldwall", "Spatha & Imperial Scutum", "100% Locked", "BrassBrush"),
+            new("Palatine Archer Guard", "120 Master Bowmen", "Indirect Volley Fire", "Recurve Bow & Bodkin Shafts", "96% Supplied", "VerdigrisBrush"),
+            new("Elite Cataphract Cohort", "80 Barded Knights", "Flanking Shock Charge", "Kontos Lance & Heavy Mace", "98% Ready", "BrassBrush"),
+            new("Onager Siege Battery", "4 Heavy Engines", "Wall Fortification Breaching", "Incendiary Stone Projectiles", "Calibrated", "EmberBrush")
+        ];
+
+        string regimentName = "Legio I Calradica · Vanguard Strike Cohort";
+        string tacticalDoctrine = "Heavy Infantry Shieldwall with Cataphract Flanking Reserves";
+        string deploymentTerrain = "Plains of Penton (Open Grassy Field · Mild Defilade · 18° Slope)";
+        string tacticalShockEfficiency = "Shock Cohesion: 92.4% · Kinetic Momentum: 4.8x (Wedge Assault)";
+        string casualtyEnvelope = "Projected 15-Minute Combat Loss: 25.4% (Favorable 3.4:1 Kill Ratio)";
+
+        double moraleCohesionGaugeValue = 78.5;
+        double siegeBreachGaugeValue = 64.0;
+
+        public CombatStudioDashboardViewModel()
+        {
+            Contingents = DefaultContingents;
+            CombatRadarAxes = DefaultCombatRadarAxes;
+            DoctrineRadarValues = DefaultDoctrineRadarValues;
+            CounterDoctrineRadarValues = DefaultCounterDoctrineRadarValues;
+            LossesTrajectory = DefaultLossesTrajectory;
+        }
+
+        public string RegimentName { get => regimentName; private set => Set(ref regimentName, value); }
+        public string TacticalDoctrine { get => tacticalDoctrine; private set => Set(ref tacticalDoctrine, value); }
+        public string DeploymentTerrain { get => deploymentTerrain; private set => Set(ref deploymentTerrain, value); }
+        public string TacticalShockEfficiency { get => tacticalShockEfficiency; private set => Set(ref tacticalShockEfficiency, value); }
+        public string CasualtyEnvelope { get => casualtyEnvelope; private set => Set(ref casualtyEnvelope, value); }
+
+        public IReadOnlyList<string> CombatRadarAxes { get; }
+        public IReadOnlyList<double> DoctrineRadarValues { get; }
+        public IReadOnlyList<double> CounterDoctrineRadarValues { get; }
+        public IReadOnlyList<double> LossesTrajectory { get; }
+        public IReadOnlyList<CombatContingentViewModel> Contingents { get; }
+
+        public double MoraleCohesionGaugeValue { get => moraleCohesionGaugeValue; private set => Set(ref moraleCohesionGaugeValue, value); }
+        public double SiegeBreachGaugeValue { get => siegeBreachGaugeValue; private set => Set(ref siegeBreachGaugeValue, value); }
+
+        public string StudioDocumentation => "TaleWorlds Combat AI & Formation Architecture: Manages tactical agent components, formation orders (Wedge, Shieldwall, Square), casualty pipelines, morale shock thresholds, and siege weapon detachment algorithms.";
+        public string ArchitecturalInvariants => "1. Agent components must not instantiate heavy physics or mesh operations in OnInit(); defer to first OnTick().\n2. Unanimity vs First-Wins: IsAgentInteractionAllowed() requires all logics to agree.\n3. Keep casualty and damage pipeline calculations strictly on game thread.\n4. Siege weapon detachments must preserve navmesh connectivity.";
+        public string StudioCaveat => "Manipulating skeleton or collision meshes inside MissionLogic.OnInit() crashes the internal C++ physics pipeline immediately.";
+        public string QuickActionCommand => "cf.sim_combat formation";
+        public string QuickActionLabel => "Audit Formation";
+        public string ScratchpadNotes { get; set; } = "Notes: Legio I Calradica vanguard formation deployed with 3.4:1 favorable kill ratio and 78.5% morale cohesion.";
+        public IReadOnlyList<StudioConsoleCommand> CuratedConsoleCommands { get; } =
+        [
+            new("cf.sim_combat formation", "Audit combat AI formation orders and casualty ratios.", "Tactical Combat", true),
+            new("cf.inspect_troop imperial_legionary", "Inspect frontline troop equipment envelope and armor penetration.", "Tactical Combat"),
+            new("campaign.give_troops imperial_cataphract 20", "Reinforce player army with 20 heavy cataphracts.", "Workflow"),
+            new("mission.set_combat_ai 1", "Configure mission tactical combat AI aggressiveness.", "Diagnostics"),
+            new("cf.audit_rules", "Verify CLR assembly rules and anti-shadowing constraints.", "Diagnostics")
+        ];
+        public string PlaybookTitle => "Playbook: Tactical Combat Formation & Siege Engine Setup";
+        public IReadOnlyList<string> PlaybookSteps { get; } =
+        [
+            "1. Register custom MissionLogic in SubModule.OnMissionBehaviorInitialize().",
+            "2. Ensure zero mesh manipulation in OnInit(); defer to first OnTick(dt).",
+            "3. Hook Mission.Current.OnAgentHit() for telemetry without blocking game thread."
+        ];
+        public string TroubleshootingHeader => "Troubleshooting: Combat Engine Crash on Scene Initialization";
+        public string TroubleshootingRemedy => "If game crashes upon entering battle or town scene, ensure that all AgentComponent logic and mesh setups are guarded with a boolean flag and executed on the first OnTick() call.";
+        public string ProceduralMacroAction => "cf.sim_combat formation && cf.inspect_troop imperial_legionary";
+    }
+
+    // =========================================================================
+    // CARAVAN & MARKET TRADE HUB VIEW MODELS (Rev074)
+    // =========================================================================
+
+    internal sealed class TradeCommodityViewModel
+    {
+        public TradeCommodityViewModel(string name, int originPrice, int destinationPrice, int netSpread, string marginPercent, string cargoVolume, string optimalRating, string brushKey)
+        {
+            Name = name;
+            OriginPrice = originPrice;
+            DestinationPrice = destinationPrice;
+            NetSpread = netSpread;
+            MarginPercent = marginPercent;
+            CargoVolume = cargoVolume;
+            OptimalRating = optimalRating;
+            BrushKey = brushKey;
+        }
+
+        public string Name { get; }
+        public int OriginPrice { get; }
+        public int DestinationPrice { get; }
+        public int NetSpread { get; }
+        public string MarginPercent { get; }
+        public string CargoVolume { get; }
+        public string OptimalRating { get; }
+        public string BrushKey { get; }
+    }
+
+    internal sealed class CaravanTradeDashboardViewModel : ObservableObject
+    {
+        static readonly string[] DefaultTradeRadarAxes = ["ProfitMargin", "Security", "SupplyVol", "TariffFric", "TransitSpeed"];
+        static readonly double[] DefaultRouteRadarValues = [0.86, 0.78, 0.82, 0.35, 0.74];
+        static readonly double[] DefaultCompetitiveRouteRadarValues = [0.68, 0.55, 0.90, 0.58, 0.82];
+        static readonly double[] DefaultPriceSpreadTrajectory = [
+            110.0, 114.5, 112.0, 125.0, 132.0, 128.5, 142.0, 138.0,
+            145.5, 150.0, 148.0, 158.0, 162.5, 160.0, 168.0, 172.0
+        ];
+
+        static readonly TradeCommodityViewModel[] DefaultCommodities = [
+            new("Silver Ore", 120, 292, 172, "+143.3%", "45 Units", "OPTIMAL ARBITRAGE", "VerdigrisBrush"),
+            new("Raw Velvet", 85, 185, 100, "+117.6%", "60 Units", "HIGH MARGIN", "VerdigrisBrush"),
+            new("Hardwood", 22, 48, 26, "+118.2%", "150 Units", "STEADY VOLUME", "BrassBrush"),
+            new("Grain", 12, 22, 10, "+83.3%", "300 Units", "FOOD STAPLE", "BrassBrush"),
+            new("Olives & Oil", 35, 62, 27, "+77.1%", "80 Units", "MODERATE", "PaperBrush")
+        ];
+
+        string routeName = "Imperial Silver Corridor · Marunath -> Zeonica";
+        string operatingCapital = "50,000 Denars (Master Guild Caravan Escort)";
+        string routeTerrain = "Highland Passes to Lowland Plains (420 km · 3.8 Days Travel)";
+        string arbitrageSummary = "Average Cargo Spread: +118.4% · Estimated Roundtrip Net Yield: +14,800 Denars";
+        string securityRiskAssessment = "Route Security: 84.5% · Bandit Threat: LOW (Patrolled by Imperial Legions)";
+
+        double caravanSurvivalGaugeValue = 84.5;
+        double tariffFrictionGaugeValue = 18.2;
+
+        public CaravanTradeDashboardViewModel()
+        {
+            Commodities = DefaultCommodities;
+            TradeRadarAxes = DefaultTradeRadarAxes;
+            RouteRadarValues = DefaultRouteRadarValues;
+            CompetitiveRouteRadarValues = DefaultCompetitiveRouteRadarValues;
+            PriceSpreadTrajectory = DefaultPriceSpreadTrajectory;
+        }
+
+        public string RouteName { get => routeName; private set => Set(ref routeName, value); }
+        public string OperatingCapital { get => operatingCapital; private set => Set(ref operatingCapital, value); }
+        public string RouteTerrain { get => routeTerrain; private set => Set(ref routeTerrain, value); }
+        public string ArbitrageSummary { get => arbitrageSummary; private set => Set(ref arbitrageSummary, value); }
+        public string SecurityRiskAssessment { get => securityRiskAssessment; private set => Set(ref securityRiskAssessment, value); }
+
+        public IReadOnlyList<string> TradeRadarAxes { get; }
+        public IReadOnlyList<double> RouteRadarValues { get; }
+        public IReadOnlyList<double> CompetitiveRouteRadarValues { get; }
+        public IReadOnlyList<double> PriceSpreadTrajectory { get; }
+        public IReadOnlyList<TradeCommodityViewModel> Commodities { get; }
+
+        public double CaravanSurvivalGaugeValue { get => caravanSurvivalGaugeValue; private set => Set(ref caravanSurvivalGaugeValue, value); }
+        public double TariffFrictionGaugeValue { get => tariffFrictionGaugeValue; private set => Set(ref tariffFrictionGaugeValue, value); }
+
+        public string StudioDocumentation => "Bannerlord Dynamic Market & Caravan Trade Architecture: Models regional supply/demand elasticity, caravan movement AI, commodity price arbitrage, tariff rates, and underworld smuggling routes.";
+        public string ArchitecturalInvariants => "1. Never manipulate settlement ItemRoster without inventory bounds checking to prevent underflow.\n2. Caravan AI routes must check MobileParty navigation validity and avoids pathing through impassable terrain.\n3. Decorator GameModels (TradeModel, TariffModel) must wrap _previousModel.\n4. Keep trade transactions and economic calculations stateless across save cycles.";
+        public string StudioCaveat => "Deducting commodity items directly without bounds checking results in negative item quantities and unrecoverable save corruption.";
+        public string QuickActionCommand => "cf.sim_economy trade";
+        public string QuickActionLabel => "Audit Arbitrage";
+        public string ScratchpadNotes { get; set; } = "Notes: Silver corridor Marunath to Zeonica yielding +14,800d net per roundtrip with 84.5% caravan survival.";
+        public IReadOnlyList<StudioConsoleCommand> CuratedConsoleCommands { get; } =
+        [
+            new("cf.sim_economy trade", "Audit market commodity arbitrage spreads and caravan routes.", "Economy & Trade", true),
+            new("cf.workshop_eval Marunath", "Inspect settlement production inputs, outputs, and loyalty.", "Economy & Trade"),
+            new("campaign.print_settlement_economy Zeonica", "Print settlement trade volume, food storage, and security.", "Economy & Trade"),
+            new("campaign.add_gold_to_hero 5000", "Inject 5,000 denars working capital to player clan.", "Workflow"),
+            new("cf.audit_rules", "Verify CLR assembly rules and anti-shadowing constraints.", "Diagnostics")
+        ];
+        public string PlaybookTitle => "Playbook: Caravan Trading & Settlement Market Price Synchronization";
+        public IReadOnlyList<string> PlaybookSteps { get; } =
+        [
+            "1. Calculate commodity price spreads between regional settlements.",
+            "2. Spawn or dispatch MobileParty caravan with PartyComponent wrapper.",
+            "3. Enforce ItemRoster underflow guards during buy/sell transactions."
+        ];
+        public string TroubleshootingHeader => "Troubleshooting: Underflow Crash on Commodity Transaction";
+        public string TroubleshootingRemedy => "If ItemRoster.AddToCounts throws an underflow exception, verify that item count is greater than or equal to the quantity being deducted before executing the transaction.";
+        public string ProceduralMacroAction => "cf.sim_economy trade && cf.workshop_eval Marunath";
     }
 }

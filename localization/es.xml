@@ -233,4 +233,21 @@
   <string key="Clear output filter." value="Borrar el filtro de salida." />
   <string key="No output lines match this filter." value="Ninguna línea de salida coincide con este filtro." />
   <string key="Evidence" value="Evidencia" />
+  <string key="Pin output baseline" value="Fijar salida base" />
+  <string key="Compare outputs" value="Comparar salidas" />
+  <string key="Clear output baseline" value="Borrar salida base" />
+  <string key="Baseline output" value="Salida base" />
+  <string key="Current output" value="Salida actual" />
+  <string key="Output baseline pinned." value="Se fijó la salida base." />
+  <string key="Pin an output baseline before comparing." value="Fija una salida base antes de compararlas." />
+  <string key="No current output to compare." value="No hay una salida actual para comparar." />
+  <string key="No output matches the filter on either side." value="Ninguna salida coincide con el filtro en ninguno de los dos lados." />
+  <string key="Output comparison unavailable because a configured input or work limit was reached." value="La comparación no está disponible porque se alcanzó un límite configurado de entrada o de trabajo." />
+  <string key="Output exceeds comparison limits; the baseline was not changed." value="La salida supera los límites de comparación; no se modificó la línea base." />
+  <string key="Show current output" value="Mostrar salida actual" />
+  <string key="Pin current output as the comparison baseline." value="Fijar la salida actual como línea base de comparación." />
+  <string key="Show the baseline and current outputs side by side." value="Mostrar las salidas base y actual en paralelo." />
+  <string key="Return to the current output without removing the baseline." value="Volver a la salida actual sin quitar la línea base." />
+  <string key="Clear the pinned output baseline." value="Borrar la línea base de salida fijada." />
+  <string key="Output baseline cleared." value="Se borró la salida base." />
 </strings>
