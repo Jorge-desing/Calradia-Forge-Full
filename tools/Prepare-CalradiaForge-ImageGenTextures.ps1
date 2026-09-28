@@ -30,7 +30,14 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $masterRoot = Join-Path $repositoryRoot 'assets\gauntlet-imagegen'
 $preparedRoot = Join-Path $masterRoot 'prepared'
 $archiveRoot = Join-Path $masterRoot 'archive\2026-09-25'
+$roundArchiveRoot = Join-Path $masterRoot 'archive\2026-09-28'
 $retiredPreparedTextures = @('forge_dark_wood.png', 'forge_inkwash.png', 'forge_war_table_cloth.png')
+$retiredPreparedHeaderTextures = @(
+    'forge_header_summary_v1.png', 'forge_header_modules_v1.png',
+    'forge_header_logs_v1.png', 'forge_header_inspector_v1.png',
+    'forge_header_tests_v1.png', 'forge_header_metrics_v1.png',
+    'forge_header_framework_v1.png', 'forge_header_extensions_v1.png'
+)
 
 function Resolve-InputPath([string]$Value, [string]$DefaultName) {
     if ([string]::IsNullOrWhiteSpace($Value)) {
@@ -44,7 +51,7 @@ function Resolve-InputPath([string]$Value, [string]$DefaultName) {
 
 $textures = @(
     [pscustomobject]@{
-        Name = 'forge_war_table_cloth_v2.png'; Master = Resolve-InputPath $WarTableClothV2Master 'forge_war_table_cloth_v2.png'
+        Name = 'forge_war_table_cloth_v2.png'; Master = Resolve-InputPath $WarTableClothV2Master 'forge_war_table_cloth_v3_master.png'
         Width = 1024; Height = 128; MaxAlpha = 24; PreserveArtworkBounds = $false; RequireTransparency = $false
     },
     [pscustomobject]@{
@@ -96,12 +103,12 @@ $textures = @(
         Width = 128; Height = 64; MaxAlpha = 112; PreserveArtworkBounds = $true; RequireTransparency = $true
     },
     [pscustomobject]@{
-        Name = 'forge_heraldic_header_v2.png'; Master = Resolve-InputPath $HeraldicHeaderV2Master 'forge_heraldic_header_v2_master.png'
+        Name = 'forge_heraldic_header_v2.png'; Master = Resolve-InputPath $HeraldicHeaderV2Master 'forge_heraldic_header_v3_master.png'
         Width = 256; Height = 48; MaxAlpha = 88; PreserveArtworkBounds = $false; RequireTransparency = $true
     },
     [pscustomobject]@{
-        Name = 'forge_heraldic_rail_v2.png'; Master = Resolve-InputPath $HeraldicRailV2Master 'forge_heraldic_rail_v2_master.png'
-        Width = 128; Height = 256; MaxAlpha = 64; PreserveArtworkBounds = $false; RequireTransparency = $true
+        Name = 'forge_heraldic_rail_v2.png'; Master = Resolve-InputPath $HeraldicRailV2Master 'forge_heraldic_rail_v4_master.png'
+        Width = 128; Height = 256; MaxAlpha = 64; PreserveArtworkBounds = $false; RequireTransparency = $false
     }
 )
 
@@ -121,20 +128,20 @@ function Get-ResolvedPath([string]$Path) {
     return [IO.Path]::GetFullPath($Path).TrimEnd([char[]]@('\', '/'))
 }
 
-function Remove-VerifiedArchivedPreparedTexture([string]$Name) {
+function Remove-VerifiedArchivedPreparedTexture([string]$Name, [string]$ArchiveDirectory) {
     $sourcePath = Join-Path $preparedRoot $Name
     if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
         return
     }
 
-    foreach ($path in @($sourcePath, (Join-Path $archiveRoot ('prepared-' + $Name)))) {
+    foreach ($path in @($sourcePath, (Join-Path $ArchiveDirectory ('prepared-' + $Name)))) {
         $item = Get-Item -LiteralPath $path -Force -ErrorAction Stop
         if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
             throw "Refusing to retire '$Name' through a reparse point: '$path'."
         }
     }
-    $archivePath = Join-Path $archiveRoot ('prepared-' + $Name)
-    $manifestPath = Join-Path $archiveRoot 'SHA256SUMS.txt'
+    $archivePath = Join-Path $ArchiveDirectory ('prepared-' + $Name)
+    $manifestPath = Join-Path $ArchiveDirectory 'SHA256SUMS.txt'
     if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
         throw "Refusing to retire '$Name' without its archive integrity manifest."
     }
@@ -500,7 +507,10 @@ try {
 
     Write-Reports $stagedReports
     foreach ($retiredName in $retiredPreparedTextures) {
-        Remove-VerifiedArchivedPreparedTexture $retiredName
+        Remove-VerifiedArchivedPreparedTexture $retiredName $archiveRoot
+    }
+    foreach ($retiredName in $retiredPreparedHeaderTextures) {
+        Remove-VerifiedArchivedPreparedTexture $retiredName $roundArchiveRoot
     }
     Write-Host "PASS: fixed RGBA sprites are ready for the source generator: $preparedRoot"
 }

@@ -22,22 +22,21 @@ TEXTURES = {
     "forge_rail_cartographic_field_v1.png": ((256, 256), 36, False, False),
     "forge_heraldic_overlay.png": ((256, 48), 112, True, True),
     "forge_heraldic_header_v2.png": ((256, 48), 88, True, True),
-    "forge_heraldic_rail_v2.png": ((128, 256), 64, True, True),
+    "forge_heraldic_rail_v2.png": ((128, 256), 64, False, False),
     "forge_patina_brass.png": ((128, 16), 88, False, False),
     "forge_pine_felt.png": ((128, 32), 40, False, False),
-    "forge_header_summary_v1.png": ((128, 64), 112, True, False),
-    "forge_header_modules_v1.png": ((128, 64), 112, True, False),
-    "forge_header_logs_v1.png": ((128, 64), 112, True, False),
-    "forge_header_inspector_v1.png": ((128, 64), 112, True, False),
-    "forge_header_tests_v1.png": ((128, 64), 112, True, False),
-    "forge_header_metrics_v1.png": ((128, 64), 112, True, False),
-    "forge_header_framework_v1.png": ((128, 64), 112, True, False),
-    "forge_header_extensions_v1.png": ((128, 64), 112, True, False),
 }
-RETIRED_TEXTURES = {"forge_dark_wood.png", "forge_inkwash.png", "forge_war_table_cloth.png"}
+RETIRED_TEXTURES = {
+    "forge_dark_wood.png", "forge_inkwash.png", "forge_war_table_cloth.png",
+    "forge_header_summary_v1.png", "forge_header_modules_v1.png",
+    "forge_header_logs_v1.png", "forge_header_inspector_v1.png",
+    "forge_header_tests_v1.png", "forge_header_metrics_v1.png",
+    "forge_header_framework_v1.png", "forge_header_extensions_v1.png",
+}
 PREPARER = Path("tools/Prepare-CalradiaForge-ImageGenTextures.ps1")
 VALIDATOR = Path("tools/Validate-CalradiaForge-DecorativeSprites.py")
 ARCHIVE = Path("assets/gauntlet-imagegen/archive/2026-09-25")
+ROUND_ARCHIVE = Path("assets/gauntlet-imagegen/archive/2026-09-28")
 
 
 def sha256(data: bytes) -> str:
@@ -79,6 +78,36 @@ def verify_archive(root: Path) -> None:
         raise AssertionError("Texture archive omitted required historical file(s): " + ", ".join(sorted(required - observed)))
 
 
+def verify_retired_route_archive(root: Path) -> None:
+    archive = root / ROUND_ARCHIVE
+    manifest = archive / "SHA256SUMS.txt"
+    if not manifest.is_file():
+        raise FileNotFoundError(f"Retired route ornament archive manifest is missing: {manifest}")
+    expected = {
+        f"{prefix}-{name}"
+        for prefix in ("master", "prepared", "spriteparts")
+        for name in RETIRED_TEXTURES
+        if name.startswith("forge_header_")
+    }
+    observed: set[str] = set()
+    for line in manifest.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        match = re.fullmatch(r"([0-9A-F]{64})  ([^ ]+)  \[source=([^\]]+)\]", line)
+        if match is None:
+            raise AssertionError(f"Malformed retired route archive integrity row: {line}")
+        digest, name, _source = match.groups()
+        archive_path = archive / name
+        if not archive_path.is_file() or sha256(archive_path.read_bytes()) != digest:
+            raise AssertionError(f"Retired route archive SHA-256 mismatch: {archive_path}")
+        observed.add(name)
+    if expected != observed:
+        raise AssertionError(
+            "Retired route archive file set differs from its contract; "
+            f"missing={sorted(expected - observed)}, unexpected={sorted(observed - expected)}"
+        )
+
+
 def main() -> int:
     root = Path(__file__).resolve().parents[1]
     preparer = root / PREPARER
@@ -91,6 +120,7 @@ def main() -> int:
     prepared_directory = root / "assets/gauntlet-imagegen/prepared"
     sprite_directory = root / "modules/CalradiaForge/GUI/SpriteParts/ui_calradiaforge"
     verify_archive(root)
+    verify_retired_route_archive(root)
     import importlib.util
     validator_spec = importlib.util.spec_from_file_location(
         "calradiaforge_decorative_validator", root / VALIDATOR
@@ -209,8 +239,9 @@ def main() -> int:
     if changed:
         raise AssertionError("Preparation check modified project textures: " + ", ".join(changed))
 
-    print("PASS: fifteen ImageGen-derived textures match deterministic preparation hashes and RGBA8 contracts.")
-    print("PASS: both heraldic v2 assets retain transparency, alpha limits, and artwork at both horizontal ends.")
+    print("PASS: seven active ImageGen-derived textures match deterministic preparation hashes and RGBA8 contracts.")
+    print("PASS: retired 24x12 route ornaments remain preserved in the SHA-256 archive and absent from the live sprite set.")
+    print("PASS: heraldic header artwork retains transparency, alpha limits, and visible art at both horizontal ends.")
     print("PASS: dimensions and alpha maxima match the preparation report; source PNGs remained unchanged.")
     return 0
 

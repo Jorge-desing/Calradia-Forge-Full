@@ -191,6 +191,9 @@ namespace CalradiaForge.Desktop.Presentation
         public RelayCommand FilterArchetypeCommand { get; }
         public RelayCommand SimulateBattleShockCommand { get; }
 
+        double troopReadinessIndex = 94.2;
+        public double TroopReadinessIndex { get => troopReadinessIndex; set => Set(ref troopReadinessIndex, value); }
+
         void RecalculateBattleShock()
         {
             var troop = SelectedTroop ?? CanonicalDefaultSelected;
@@ -198,6 +201,7 @@ namespace CalradiaForge.Desktop.Presentation
             var isRanged = troop.Archetype.Equals("Ranged", StringComparison.OrdinalIgnoreCase);
             var cohesionBase = (isCav ? 96.8 : isRanged ? 88.4 : 93.5) + (CaptainPerksActive ? 5.0 : 0.0);
             cohesionBase = Math.Min(100.0, cohesionBase);
+            TroopReadinessIndex = Math.Clamp(cohesionBase, 10.0, 100.0);
             var shockMulti = (isCav ? 4.2 : isRanged ? 1.6 : 3.4) + (CaptainPerksActive ? 0.6 : 0.0);
             var formation = isCav ? "Wedge" : isRanged ? "Loose" : "Shieldwall";
             simulatedFrontlineCohesion = $"{cohesionBase:0.0}% Cohesion · Shock Absorption: {shockMulti:0.0}x ({formation})";
@@ -373,6 +377,7 @@ namespace CalradiaForge.Desktop.Presentation
         public string ActivePreset { get => activePreset; private set => Set(ref activePreset, value); }
         public double LeftVuLevel => 0.86;
         public double RightVuLevel => 0.82;
+        public double MasterAudioHeadroomGauge => 78.5;
         public IReadOnlyList<AudioBandViewModel> Bands { get; }
         public IReadOnlyList<AudioWavePoint> Waveform { get; }
         public RelayCommand ApplyPresetCommand { get; }
@@ -538,6 +543,7 @@ namespace CalradiaForge.Desktop.Presentation
 
         public IReadOnlyList<double> CumulativeProfitTrajectory { get => cumulativeProfitTrajectory; private set => Set(ref cumulativeProfitTrajectory, value); }
         public double RebellionRiskGaugeValue { get => rebellionRiskGaugeValue; private set => Set(ref rebellionRiskGaugeValue, value); }
+        public double IndustrialEfficiencyGauge => 88.4;
 
         public int HorizonDays
         {
@@ -992,6 +998,7 @@ namespace CalradiaForge.Desktop.Presentation
 
         public IReadOnlyList<double> MemoryDecayTrajectory { get => memoryDecayTrajectory; private set => Set(ref memoryDecayTrajectory, value); }
         public double MemorySlotUtilizationGaugeValue => CapacityPercentage;
+        public double CognitiveCacheHitRateGauge => 94.2;
 
         public string Architecture => "CoALA Cognitive Architecture (Short-Term Working + Bounded Episodic + Semantic Facts + Utility Decay)";
         public string CapacitySummary { get => capacitySummary; set => Set(ref capacitySummary, value); }
@@ -1345,6 +1352,7 @@ namespace CalradiaForge.Desktop.Presentation
         public string RiskLevel { get => riskLevel; set => Set(ref riskLevel, value); }
         public string RiskBrushKey { get => riskBrushKey; set => Set(ref riskBrushKey, value); }
         public string RiskScoreBrushKey { get => RiskBrushKey; set => RiskBrushKey = value; }
+        public double StatelessSecurityScoreGauge => 100.0;
 
         public SecurityRuleCheckViewModel RuleACheck { get; private set; }
         public SecurityRuleCheckViewModel RuleBCheck { get; private set; }
@@ -1572,6 +1580,7 @@ namespace CalradiaForge.Desktop.Presentation
 
         public string LoadOrderWarning { get => loadOrderWarning; private set => Set(ref loadOrderWarning, value); }
         public string WarningBrushKey { get => warningBrushKey; private set => Set(ref warningBrushKey, value); }
+        public double ModuleIntegrityScoreGauge => 98.5;
 
         public ModulePipelineNodeViewModel SelectedModule
         {
@@ -1809,6 +1818,7 @@ namespace CalradiaForge.Desktop.Presentation
 
         public string SenateVoteOutcome { get => senateVoteOutcome; private set => Set(ref senateVoteOutcome, value); }
         public string SenateVoteBrushKey { get => senateVoteBrushKey; private set => Set(ref senateVoteBrushKey, value); }
+        public double ImperialStabilityGauge => 76.5;
 
         public IReadOnlyList<ForgeBarDataPoint> KingdomPowerComparisonBars { get; } =
         [
@@ -2077,6 +2087,7 @@ namespace CalradiaForge.Desktop.Presentation
         public string MixerComplianceStatus { get => ValidationStatus; set => ValidationStatus = value; }
 
         public ObservableCollection<BlueprintNodeViewModel> BlueprintNodes => blueprintNodes;
+        public double TemplateValidationScoreGauge => 96.8;
 
         public string MixerCategoryStatus => "Mixer Buses: ui (2D Interface), mission_combat (3D Combat) & ambient";
         public string FormatCompliance => "Vorbis .OGG / 16-bit 44.1kHz PCM Zero-Latency Decoding";
@@ -2286,6 +2297,7 @@ namespace CalradiaForge.Desktop.Presentation
         ];
         IReadOnlyList<double> executionLatencyTrajectory = DefaultExecutionLatencyTrajectory;
         double bufferUtilizationGaugeValue = 42.0;
+        public double EngineThroughputGauge => 72.4;
 
         public IReadOnlyList<double> ExecutionLatencyTrajectory { get => executionLatencyTrajectory; private set => Set(ref executionLatencyTrajectory, value); }
         public double BufferUtilizationGaugeValue { get => bufferUtilizationGaugeValue; private set => Set(ref bufferUtilizationGaugeValue, value); }
@@ -2509,6 +2521,7 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<double> LossesTrajectory { get; }
         public double MoraleCohesionGaugeValue { get => moraleCohesionGaugeValue; private set => Set(ref moraleCohesionGaugeValue, value); }
         public double SiegeBreachGaugeValue { get => siegeBreachGaugeValue; private set => Set(ref siegeBreachGaugeValue, value); }
+        public double CombatReadinessGauge => 89.2;
 
         public IReadOnlyList<ForgeBarDataPoint> WeaponDamageBreakdownBars { get; } =
         [
@@ -2634,6 +2647,8 @@ namespace CalradiaForge.Desktop.Presentation
 
         public double CaravanSurvivalGaugeValue { get => caravanSurvivalGaugeValue; private set => Set(ref caravanSurvivalGaugeValue, value); }
         public double TariffFrictionGaugeValue { get => tariffFrictionGaugeValue; private set => Set(ref tariffFrictionGaugeValue, value); }
+        public double RouteSecurityGauge => 84.5;
+        public double MarketLiquidityGauge => 78.0;
 
         public IReadOnlyList<ForgeBarDataPoint> CommodityProfitMarginBars { get; } =
         [

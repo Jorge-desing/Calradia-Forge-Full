@@ -2727,6 +2727,16 @@ internal static class Program
                 "WorkOrderContextStatus" or "WorkOrderPermissionStatus" or "WorkOrderReportStatus" or
                 "WorkOrderApplicationStatus" or "RetainedEvidenceSummary")
             .ToArray();
+        var workOrderRows = workOrderCards.Select(card => Math.Round(Bounds(card, workOrderStrip).Top, 0)).Distinct().Count();
+        var expectedWorkOrderRows = 1;
+        var workOrderTextWraps = workOrderCards.SelectMany(card => Descendants(card).OfType<TextBlock>())
+            .Where(block => block.IsVisible)
+            .All(block => block.TextWrapping == TextWrapping.Wrap ||
+                          BindingOperations.GetBinding(block, TextBlock.TextProperty)?.Path?.Path == "EvidenceSummary" &&
+                          block.TextWrapping == TextWrapping.NoWrap);
+        Check(workOrderStrip.Child is WrapPanel && workOrderCards.Length == 5 &&
+              workOrderCards.All(card => Math.Abs(card.Width - 178) < 0.01) && workOrderRows == expectedWorkOrderRows && workOrderTextWraps,
+            $"Work-order summaries must keep all five bounded cards visible while labels and long values wrap at narrow and normal widths (width={window.ActualWidth:0.#}, rows={workOrderRows}).");
         var workbenchArtNames = new[]
         {
             "workbench-cartographic-board-hq-rev083.png",

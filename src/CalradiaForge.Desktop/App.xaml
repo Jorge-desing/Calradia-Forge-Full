@@ -59,6 +59,33 @@
     <Style x:Key="RailButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="Padding" Value="{DynamicResource Token.Inset.Compact}"/><Setter Property="Margin" Value="0,1,0,1"/><Setter Property="FontSize" Value="11"/></Style>
     <Style x:Key="OperationalRailGroupButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="7,6"/><Setter Property="Margin" Value="0,1,0,1"/><Setter Property="Background" Value="{DynamicResource TemperedBrush}"/><Setter Property="Foreground" Value="{DynamicResource PaperBrush}"/><Setter Property="FontSize" Value="11"/></Style>
     <Style x:Key="GroupToolButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="7,5"/><Setter Property="Margin" Value="0,1,0,1"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Foreground" Value="{DynamicResource PaperBrush}"/><Setter Property="FontSize" Value="10"/><Style.Triggers><DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter Property="Background" Value="{DynamicResource ComboSelectedBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource BrassBrush}"/><Setter Property="BorderThickness" Value="2,1,1,1"/><Setter Property="Foreground" Value="{DynamicResource ComboSelectedTextBrush}"/><Setter Property="FontWeight" Value="Bold"/></DataTrigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource FocusBrush}"/><Setter Property="BorderThickness" Value="{DynamicResource Token.FocusThickness}"/></Trigger></Style.Triggers></Style>
+    <Style x:Key="ForgeInteractiveCardStyle" TargetType="Border">
+     <Setter Property="Background" Value="{DynamicResource RailSurfaceBrush}"/>
+     <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+     <Setter Property="BorderThickness" Value="1"/>
+     <Setter Property="CornerRadius" Value="4"/>
+     <Style.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+       <Setter Property="BorderBrush" Value="{DynamicResource BrassBrush}"/>
+      </Trigger>
+     </Style.Triggers>
+    </Style>
+    <Style x:Key="ForgeFilterChipStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+     <Setter Property="FontSize" Value="7.5"/>
+     <Setter Property="Padding" Value="5,1"/>
+     <Setter Property="Margin" Value="0,0,3,0"/>
+     <Setter Property="Background" Value="{DynamicResource DeepPineBrush}"/>
+     <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+     <Setter Property="Foreground" Value="{DynamicResource PaperBrush}"/>
+     <Setter Property="BorderThickness" Value="1"/>
+     <Style.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+       <Setter Property="Background" Value="{DynamicResource VerdigrisBrush}"/>
+       <Setter Property="BorderBrush" Value="{DynamicResource BrassBrush}"/>
+       <Setter Property="Foreground" Value="{DynamicResource InkBrush}"/>
+      </Trigger>
+     </Style.Triggers>
+    </Style>
     <Style TargetType="TextBox"><Setter Property="Padding" Value="{DynamicResource Token.Inset.Compact}"/><Setter Property="FontSize" Value="{DynamicResource Token.BodyFont}"/><Setter Property="Background" Value="{DynamicResource InputBrush}"/><Setter Property="Foreground" Value="{DynamicResource PaperBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/><Setter Property="CaretBrush" Value="{DynamicResource BrassBrush}"/><Setter Property="BorderThickness" Value="1"/><Style.Triggers><Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource FocusBrush}"/><Setter Property="BorderThickness" Value="{DynamicResource Token.FocusThickness}"/></Trigger></Style.Triggers></Style>
    <Style x:Key="SearchClearButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="Width" Value="28"/><Setter Property="Height" Value="28"/><Setter Property="MinWidth" Value="28"/><Setter Property="MinHeight" Value="28"/><Setter Property="Padding" Value="3"/><Setter Property="Margin" Value="0,0,3,0"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="Transparent"/><Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}"/><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
     <Style TargetType="ComboBox">

@@ -535,7 +535,7 @@ internal static class Program
         var workspace = ReadSourceText(Desktop("Presentation/WorkbenchWorkspaceControl.xaml"));
         Check(xaml.Contains("Width=\"1360\"") && xaml.Contains("Height=\"820\"") && xaml.Contains("MinWidth=\"980\"") && xaml.Contains("MinHeight=\"680\""), "Workbench needs bounded responsive dimensions for common desktop work areas");
         Check(xaml.Contains("TextWrapping=\"Wrap\"") && xaml.Contains("TextTrimming=\"CharacterEllipsis\""), "Tool content must wrap and header text must trim before overlap");
-        Check(xaml.Contains("<WrapPanel Grid.Row=\"0\" MinHeight=\"40\"") && xaml.Contains("<UniformGrid Columns=\"5\"") &&
+        Check(xaml.Contains("<WrapPanel Grid.Row=\"0\" MinHeight=\"40\"") && xaml.Contains("<WrapPanel>") &&
               xaml.Contains("ResponsiveWorkbenchPanel") && xaml.Contains("MinimumPresentationWidth") &&
               xaml.Contains("ContextDossierToggleButton") && xaml.Contains("ContextDossierPanel") &&
               xaml.Contains("ResponsiveWorkbenchScrollViewport") && xaml.Contains("MinimumContextWidth") &&

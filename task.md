@@ -566,3 +566,31 @@
   - [x] Empaquetar distribución con `tools/package.ps1` (3 archivos ZIP generados en `artifacts/`).
   - [x] Sincronizar y push a GitHub (`main`) bajo la Regla E.
 
+## Gran Ronda de Mejoras Gráficas, Visuales y Telemetría Vectorial WPF (Rev084)
+- [x] Fase 1: Generación y Procesamiento de Activos Tácticos HQ (`high-quality-image-generation`)
+  - [x] Generar activos tácticos medievales con `generate_image` (placa dial metálica y cinta de rango imperial).
+  - [x] Procesar activos con `tools/process_high_quality_asset.py` (POT 512, alfa, dilatación de bordes 2px, sRGB, metadatos JSON).
+  - [x] Integrar texturas en `Resources/Textures/` y pinceles congelados en temas tácticos.
+- [x] Fase 2: Expansión de Controles de Telemetría Vectorial Directa (`ForgeChartControls.cs`)
+  - [x] Implementar `ForgeRadarChart` con N ejes poligonales, anillos concéntricos, polígono translúcido, marcadores y geometrías congeladas (.Freeze()).
+  - [x] Implementar `ForgeArcGauge` con arco de fondo, arco de progreso redondeado, texto formateado y unidades con coste cero en reposo.
+- [x] Fase 3: Enriquecimiento de Modelos de Vista en `DesktopSimulationViewModels.cs`
+  - [x] Exponer propiedades de radar para tropas (`TroopAttributesRadar`) y combate (`CombatTacticalRadar`).
+  - [x] Exponer medidores de arco para diplomacia, comercio, talleres, tropas y saturación del flight deck.
+- [x] Fase 4: Micro-Interacciones y Estilos de Feedback Táctico
+  - [x] Estilo interactivo de tarjetas con resplandor en hover (`ForgeInteractiveCardStyle`) y chips de filtro (`ForgeFilterChipStyle`).
+  - [x] Animación de pulso cíclico suave en `SessionConnectionIndicator` (Connected/Connecting).
+  - [x] Garantizar presentación estricta en una sola línea horizontal en `WorkbenchHeaderControl.xaml` a 980 DIP.
+- [x] Fase 5: Integración XAML en `ToolPageTemplates.xaml`
+  - [x] Integrar `ForgeRadarChart` y `ForgeArcGauge` en los paneles manteniendo exactamente el contrato de 9 `*DashboardTemplate`.
+  - [x] Asegurar resolución mínima 980x680 DIP y enlaces `Mode=OneWay` en elementos `<Run>`.
+- [x] Fase 6: Pruebas y Verificación Integral de 6 Capas
+  - [x] Actualizar pruebas de renderizado en `DesktopSimulationServiceTests.cs`.
+  - [x] Validar compilación Release (0 errores), stateless (4/4), Core & ForgeWeave, Desktop MVVM (63), Render (WPF 292), Agentes (31) y Pipeline de Imágenes (5).
+  - [x] Ejecutar smoke test Windows UI Automation (23/23 registros observados).
+- [x] Fase 7: Registro de Aprendizaje, Empaquetado y Sincronización Git
+  - [x] Redactar Propuesta 38 en `learning_proposal.md` (`/learn`).
+  - [x] Empaquetar distribución con `tools/package.ps1` (3 archivos ZIP generados en `artifacts/`).
+  - [x] Sincronizar y push a GitHub (`main`) bajo la Regla E.
+
+

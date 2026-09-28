@@ -260,6 +260,25 @@
             <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="Dynamic Selected Troop Attribute Index" TextWrapping="Wrap"/>
            </StackPanel>
           </Border>
+          <!-- Column: Combat Readiness Arc Gauge -->
+          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Width="170" Margin="0,0,4,0">
+           <StackPanel HorizontalAlignment="Center">
+            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,0,6" Padding="4,1">
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="BATTLE READINESS" TextWrapping="Wrap"/>
+            </Border>
+            <presentation:ForgeArcGauge
+                Value="{Binding TroopTreeDashboard.TroopReadinessIndex}"
+                MinValue="0" MaxValue="100"
+                ArcThickness="6"
+                TrackBrush="{DynamicResource FrameSurfaceSolidBrush}"
+                ProgressBrush="{DynamicResource VerdigrisBrush}"
+                ValueBrush="{DynamicResource PaperBrush}"
+                UnitsBrush="{DynamicResource BrassBrush}"
+                ValueFormat="0.0" UnitsText="%" GaugeTitle="COHESION"
+                Height="130" Width="145"/>
+            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="Dynamic Cohesion Index" TextWrapping="Wrap"/>
+           </StackPanel>
+          </Border>
          </StackPanel>
         </ScrollViewer>
        </Grid></DataTemplate>
@@ -378,6 +397,16 @@
              <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}"><Run Text="{DynamicResource Viz.Audio.SpatialLabel}"/><Run Text=" 3D Mission"/></TextBlock>
             </StackPanel>
            </Border>
+           <presentation:ForgeArcGauge
+               Value="{Binding AudioStudioDashboard.MasterAudioHeadroomGauge}"
+               MinValue="0" MaxValue="100"
+               ArcThickness="5"
+               TrackBrush="{DynamicResource CoalBrush}"
+               ProgressBrush="{DynamicResource VerdigrisBrush}"
+               ValueBrush="{DynamicResource PaperBrush}"
+               UnitsBrush="{DynamicResource BrassBrush}"
+               ValueFormat="0.0" UnitsText="%" GaugeTitle="HEADROOM"
+               Height="72" Width="72" HorizontalAlignment="Center" Margin="0,5,0,0"/>
           </StackPanel>
          </Border>
         </Grid>
@@ -413,9 +442,26 @@
             <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" VerticalAlignment="Center" Text="{Binding WorkshopDashboard.SimulationSummary}"/>
            </StackPanel>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,4" VerticalAlignment="Center">
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" TextWrapping="Wrap"><Run Text="SILVERSMITH "/><Run Text="{DynamicResource Viz.Workshop.OptimalLabel}"/><Run Text=" (+340d)"/></TextBlock>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <presentation:ForgeArcGauge
+               Value="{Binding WorkshopDashboard.IndustrialEfficiencyGauge}"
+               MinValue="0"
+               MaxValue="100"
+               GaugeTitle="EFFICIENCY"
+               UnitsText="%"
+               TrackBrush="{DynamicResource CoalBrush}"
+               ProgressBrush="{DynamicResource BrassBrush}"
+               ValueBrush="{DynamicResource BrassBrush}"
+               UnitsBrush="{DynamicResource MutedTextBrush}"
+               ArcThickness="5"
+               Width="80"
+               Height="72"
+               Margin="0,0,8,0"
+               VerticalAlignment="Center"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,4" VerticalAlignment="Center">
+             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" TextWrapping="Wrap"><Run Text="SILVERSMITH "/><Run Text="{DynamicResource Viz.Workshop.OptimalLabel}"/><Run Text=" (+340d)"/></TextBlock>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Body: 7 Enterprises Comparative Profit Bars + Civic Equilibrium -->
@@ -703,9 +749,26 @@
             <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" VerticalAlignment="Center" Text="{Binding CodeSecurityDashboard.AuditSummaryMessage, Mode=OneWay}"/>
            </StackPanel>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding CodeSecurityDashboard.RiskScoreBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,4" VerticalAlignment="Center">
-           <TextBlock FontSize="10" FontWeight="Bold" Foreground="{Binding CodeSecurityDashboard.RiskScoreBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding CodeSecurityDashboard.RiskScoreText}"/>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <presentation:ForgeArcGauge
+               Value="{Binding CodeSecurityDashboard.StatelessSecurityScoreGauge}"
+               MinValue="0"
+               MaxValue="100"
+               GaugeTitle="SECURITY"
+               UnitsText="%"
+               TrackBrush="{DynamicResource CoalBrush}"
+               ProgressBrush="{DynamicResource VerdigrisBrush}"
+               ValueBrush="{DynamicResource VerdigrisBrush}"
+               UnitsBrush="{DynamicResource MutedTextBrush}"
+               ArcThickness="5"
+               Width="80"
+               Height="72"
+               Margin="0,0,8,0"
+               VerticalAlignment="Center"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding CodeSecurityDashboard.RiskScoreBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="3" Padding="8,4" VerticalAlignment="Center">
+            <TextBlock FontSize="10" FontWeight="Bold" Foreground="{Binding CodeSecurityDashboard.RiskScoreBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding CodeSecurityDashboard.RiskScoreText}"/>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Body: 4 Architectural Rule Cards -->
@@ -785,9 +848,26 @@
             <TextBlock FontSize="8" Foreground="{Binding ModuleHierarchyDashboard.WarningBrushKey, Converter={StaticResource BrushKeyConverter}}" VerticalAlignment="Center" Text="{Binding ModuleHierarchyDashboard.LoadOrderWarning, Mode=OneWay}"/>
            </StackPanel>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,4" VerticalAlignment="Center">
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding ModuleHierarchyDashboard.SubModuleXmlStatus}"/>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <presentation:ForgeArcGauge
+               Value="{Binding ModuleHierarchyDashboard.ModuleIntegrityScoreGauge}"
+               MinValue="0"
+               MaxValue="100"
+               GaugeTitle="INTEGRITY"
+               UnitsText="%"
+               TrackBrush="{DynamicResource CoalBrush}"
+               ProgressBrush="{DynamicResource VerdigrisBrush}"
+               ValueBrush="{DynamicResource VerdigrisBrush}"
+               UnitsBrush="{DynamicResource MutedTextBrush}"
+               ArcThickness="5"
+               Width="80"
+               Height="72"
+               Margin="0,0,8,0"
+               VerticalAlignment="Center"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,4" VerticalAlignment="Center">
+             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding ModuleHierarchyDashboard.SubModuleXmlStatus}"/>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Body: Pipeline DAG Nodes -->
@@ -851,6 +931,21 @@
            </StackPanel>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <presentation:ForgeArcGauge
+               Value="{Binding KingdomDiplomacyDashboard.ImperialStabilityGauge}"
+               MinValue="0"
+               MaxValue="100"
+               GaugeTitle="STABILITY"
+               UnitsText="%"
+               TrackBrush="{DynamicResource CoalBrush}"
+               ProgressBrush="{DynamicResource VerdigrisBrush}"
+               ValueBrush="{DynamicResource VerdigrisBrush}"
+               UnitsBrush="{DynamicResource MutedTextBrush}"
+               ArcThickness="5"
+               Width="80"
+               Height="72"
+               Margin="0,0,8,0"
+               VerticalAlignment="Center"/>
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,6,0" Padding="8,4">
             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding KingdomDiplomacyDashboard.DynasticHeirScoreText}"/>
            </Border>
@@ -1003,9 +1098,26 @@
             <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" VerticalAlignment="Center" Text="{Binding ComponentGeneratorDashboard.XmlCopyFeedback, Mode=OneWay}"/>
            </StackPanel>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,4" VerticalAlignment="Center">
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding ComponentGeneratorDashboard.MixerComplianceStatus}"/>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <presentation:ForgeArcGauge
+               Value="{Binding ComponentGeneratorDashboard.TemplateValidationScoreGauge}"
+               MinValue="0"
+               MaxValue="100"
+               GaugeTitle="VALIDATION"
+               UnitsText="%"
+               TrackBrush="{DynamicResource CoalBrush}"
+               ProgressBrush="{DynamicResource VerdigrisBrush}"
+               ValueBrush="{DynamicResource VerdigrisBrush}"
+               UnitsBrush="{DynamicResource MutedTextBrush}"
+               ArcThickness="5"
+               Width="80"
+               Height="72"
+               Margin="0,0,8,0"
+               VerticalAlignment="Center"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,4" VerticalAlignment="Center">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding ComponentGeneratorDashboard.MixerComplianceStatus}"/>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Body: Blueprint Synthesis Stages & Live XML Preview -->
@@ -1067,12 +1179,29 @@
             <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,3,0,0" Text="{Binding CombatStudioDashboard.DeploymentTerrain, Mode=OneWay}"/>
             <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="22,4,0,0" Text="{Binding CombatStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
-           <StackPanel Orientation="Horizontal">
-            <Path Data="{StaticResource Icon.Shield}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
-            <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="4 BATTLE COHORTS"/>
-           </StackPanel>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <presentation:ForgeArcGauge
+               Value="{Binding CombatStudioDashboard.CombatReadinessGauge}"
+               MinValue="0"
+               MaxValue="100"
+               GaugeTitle="READINESS"
+               UnitsText="%"
+               TrackBrush="{DynamicResource CoalBrush}"
+               ProgressBrush="{DynamicResource BrassBrush}"
+               ValueBrush="{DynamicResource BrassBrush}"
+               UnitsBrush="{DynamicResource MutedTextBrush}"
+               ArcThickness="5"
+               Width="80"
+               Height="72"
+               Margin="0,0,8,0"
+               VerticalAlignment="Center"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+             <Path Data="{StaticResource Icon.Shield}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="4 BATTLE COHORTS"/>
+            </StackPanel>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Body: Contingents Grid, Radar Chart, and Casualty & Breach Gauges -->
@@ -1233,12 +1362,29 @@
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding CaravanTradeDashboard.RouteTerrain, Mode=OneWay}"/>
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding CaravanTradeDashboard.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
-           <StackPanel Orientation="Horizontal">
-            <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource VerdigrisBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="5 ARBITRAGE GOODS"/>
-           </StackPanel>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <presentation:ForgeArcGauge
+               Value="{Binding CaravanTradeDashboard.RouteSecurityGauge}"
+               MinValue="0"
+               MaxValue="100"
+               GaugeTitle="SECURITY"
+               UnitsText="%"
+               TrackBrush="{DynamicResource CoalBrush}"
+               ProgressBrush="{DynamicResource VerdigrisBrush}"
+               ValueBrush="{DynamicResource VerdigrisBrush}"
+               UnitsBrush="{DynamicResource MutedTextBrush}"
+               ArcThickness="5"
+               Width="80"
+               Height="72"
+               Margin="0,0,8,0"
+               VerticalAlignment="Center"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+             <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource VerdigrisBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="5 ARBITRAGE GOODS"/>
+            </StackPanel>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Body: Commodity Arbitrage Grid, Route Radar Chart, and Price Spread & Safety Gauges -->
@@ -2147,9 +2293,26 @@
             <TextBlock FontSize="8" Foreground="{Binding GenericOperationDashboard.ScanStatusBrushKey, Converter={StaticResource BrushKeyConverter}}" VerticalAlignment="Center" Text="{Binding GenericOperationDashboard.ScanStatusMessage, Mode=OneWay}"/>
            </StackPanel>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding GenericOperationDashboard.ScanStatusBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,4" VerticalAlignment="Center">
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{Binding GenericOperationDashboard.ScanStatusBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{DynamicResource Viz.Operation.Ready}"/>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <presentation:ForgeArcGauge
+               Value="{Binding GenericOperationDashboard.EngineThroughputGauge}"
+               MinValue="0"
+               MaxValue="100"
+               GaugeTitle="THROUGHPUT"
+               UnitsText="%"
+               TrackBrush="{DynamicResource CoalBrush}"
+               ProgressBrush="{DynamicResource BrassBrush}"
+               ValueBrush="{DynamicResource BrassBrush}"
+               UnitsBrush="{DynamicResource MutedTextBrush}"
+               ArcThickness="5"
+               Width="80"
+               Height="72"
+               Margin="0,0,8,0"
+               VerticalAlignment="Center"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding GenericOperationDashboard.ScanStatusBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="3" Padding="8,4" VerticalAlignment="Center">
+            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{Binding GenericOperationDashboard.ScanStatusBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{DynamicResource Viz.Operation.Ready}"/>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Body: Adaptive Domain Category Bar, 4 Guarded Telemetry Sensors & Live Findings -->

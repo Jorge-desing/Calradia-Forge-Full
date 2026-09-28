@@ -776,7 +776,9 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string ContextValue => FormatContext(runtime.CurrentContext.ToString());
         bool evidenceFocused;
         [DataSourceProperty] public bool ShowCommandDeck => !evidenceFocused;
-        [DataSourceProperty] public float EvidenceTop => evidenceFocused ? 220f : 392f;
+        // A 672-DIP shell at the 1280x720 audit viewport, minus the 178-DIP
+        // bottom reserve and two 1-DIP frame insets, leaves a 160-DIP ledger body.
+        [DataSourceProperty] public float EvidenceTop => evidenceFocused ? 220f : 332f;
         [DataSourceProperty] public float EvidenceHeight => evidenceFocused ? 482f : 310f;
         [DataSourceProperty] public int EvidenceFontSize => evidenceFocused ? 24 : 18;
         [DataSourceProperty] public string FocusEvidenceLabel => evidenceFocused ? T("Show tools") : T("Focus evidence");

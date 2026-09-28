@@ -1048,5 +1048,250 @@ namespace CalradiaForge.Desktop.Presentation
             }
         }
     }
+
+    // =========================================================================
+    // FORGE ARC GAUGE CONTROL (TACTICAL DIAL / CIRCULAR TELEMETRY METER)
+    // =========================================================================
+
+    public sealed class ForgeArcGauge : FrameworkElement
+    {
+        private static readonly Typeface ValueTypeface = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+        private static readonly Typeface LabelTypeface = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
+
+        public static readonly DependencyProperty ValueProperty =
+            DependencyProperty.Register(nameof(Value), typeof(double), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty MinValueProperty =
+            DependencyProperty.Register(nameof(MinValue), typeof(double), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty MaxValueProperty =
+            DependencyProperty.Register(nameof(MaxValue), typeof(double), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata(100.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ArcThicknessProperty =
+            DependencyProperty.Register(nameof(ArcThickness), typeof(double), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata(6.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty TrackBrushProperty =
+            DependencyProperty.Register(nameof(TrackBrush), typeof(Brush), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ProgressBrushProperty =
+            DependencyProperty.Register(nameof(ProgressBrush), typeof(Brush), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ValueBrushProperty =
+            DependencyProperty.Register(nameof(ValueBrush), typeof(Brush), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty UnitsBrushProperty =
+            DependencyProperty.Register(nameof(UnitsBrush), typeof(Brush), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty ValueFormatProperty =
+            DependencyProperty.Register(nameof(ValueFormat), typeof(string), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata("0", FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty UnitsTextProperty =
+            DependencyProperty.Register(nameof(UnitsText), typeof(string), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata("%", FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty GaugeTitleProperty =
+            DependencyProperty.Register(nameof(GaugeTitle), typeof(string), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty StartAngleProperty =
+            DependencyProperty.Register(nameof(StartAngle), typeof(double), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata(135.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty SweepAngleProperty =
+            DependencyProperty.Register(nameof(SweepAngle), typeof(double), typeof(ForgeArcGauge),
+                new FrameworkPropertyMetadata(270.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public double Value
+        {
+            get => (double)GetValue(ValueProperty);
+            set => SetValue(ValueProperty, value);
+        }
+
+        public double MinValue
+        {
+            get => (double)GetValue(MinValueProperty);
+            set => SetValue(MinValueProperty, value);
+        }
+
+        public double MaxValue
+        {
+            get => (double)GetValue(MaxValueProperty);
+            set => SetValue(MaxValueProperty, value);
+        }
+
+        public double ArcThickness
+        {
+            get => (double)GetValue(ArcThicknessProperty);
+            set => SetValue(ArcThicknessProperty, value);
+        }
+
+        public Brush? TrackBrush
+        {
+            get => (Brush?)GetValue(TrackBrushProperty);
+            set => SetValue(TrackBrushProperty, value);
+        }
+
+        public Brush? ProgressBrush
+        {
+            get => (Brush?)GetValue(ProgressBrushProperty);
+            set => SetValue(ProgressBrushProperty, value);
+        }
+
+        public Brush? ValueBrush
+        {
+            get => (Brush?)GetValue(ValueBrushProperty);
+            set => SetValue(ValueBrushProperty, value);
+        }
+
+        public Brush? UnitsBrush
+        {
+            get => (Brush?)GetValue(UnitsBrushProperty);
+            set => SetValue(UnitsBrushProperty, value);
+        }
+
+        public string ValueFormat
+        {
+            get => (string)GetValue(ValueFormatProperty);
+            set => SetValue(ValueFormatProperty, value);
+        }
+
+        public string UnitsText
+        {
+            get => (string)GetValue(UnitsTextProperty);
+            set => SetValue(UnitsTextProperty, value);
+        }
+
+        public string GaugeTitle
+        {
+            get => (string)GetValue(GaugeTitleProperty);
+            set => SetValue(GaugeTitleProperty, value);
+        }
+
+        public double StartAngle
+        {
+            get => (double)GetValue(StartAngleProperty);
+            set => SetValue(StartAngleProperty, value);
+        }
+
+        public double SweepAngle
+        {
+            get => (double)GetValue(SweepAngleProperty);
+            set => SetValue(SweepAngleProperty, value);
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            var title = string.IsNullOrWhiteSpace(GaugeTitle) ? "Value" : GaugeTitle;
+            ToolTip = $"{title}: {Value.ToString(ValueFormat, CultureInfo.InvariantCulture)}{UnitsText}";
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            base.OnRender(dc);
+            var w = ActualWidth;
+            var h = ActualHeight;
+            if (w < 24 || h < 24) return;
+
+            var cx = w / 2.0;
+            var cy = h / 2.0;
+            var thick = Math.Max(2.0, ArcThickness);
+            var radius = Math.Max(8.0, Math.Min(cx, cy) - thick / 2.0 - 2.0);
+
+            var startDeg = StartAngle;
+            var sweepDeg = SweepAngle;
+            var startRad = (startDeg * Math.PI) / 180.0;
+            var totalEndRad = ((startDeg + sweepDeg) * Math.PI) / 180.0;
+
+            // Draw Background Track Arc
+            var trackGeo = new StreamGeometry();
+            using (var ctx = trackGeo.Open())
+            {
+                var ptStart = new Point(cx + radius * Math.Cos(startRad), cy + radius * Math.Sin(startRad));
+                var ptEnd = new Point(cx + radius * Math.Cos(totalEndRad), cy + radius * Math.Sin(totalEndRad));
+                ctx.BeginFigure(ptStart, isFilled: false, isClosed: false);
+                ctx.ArcTo(ptEnd, new Size(radius, radius), 0.0, sweepDeg > 180.0, SweepDirection.Clockwise, isStroked: true, isSmoothJoin: true);
+            }
+            trackGeo.Freeze();
+
+            var trkBrush = TrackBrush ?? new SolidColorBrush(Color.FromArgb(40, 200, 200, 200));
+            trkBrush.Freeze();
+            var trkPen = new Pen(trkBrush, thick)
+            {
+                StartLineCap = PenLineCap.Round,
+                EndLineCap = PenLineCap.Round
+            };
+            trkPen.Freeze();
+            dc.DrawGeometry(null, trkPen, trackGeo);
+
+            // Draw Progress Arc
+            var min = MinValue;
+            var max = Math.Max(min + 0.001, MaxValue);
+            var norm = Math.Clamp((Value - min) / (max - min), 0.0, 1.0);
+            var progSweep = sweepDeg * norm;
+
+            if (progSweep > 0.5)
+            {
+                var progEndRad = ((startDeg + progSweep) * Math.PI) / 180.0;
+                var progGeo = new StreamGeometry();
+                using (var ctx = progGeo.Open())
+                {
+                    var ptStart = new Point(cx + radius * Math.Cos(startRad), cy + radius * Math.Sin(startRad));
+                    var ptEnd = new Point(cx + radius * Math.Cos(progEndRad), cy + radius * Math.Sin(progEndRad));
+                    ctx.BeginFigure(ptStart, isFilled: false, isClosed: false);
+                    ctx.ArcTo(ptEnd, new Size(radius, radius), 0.0, progSweep > 180.0, SweepDirection.Clockwise, isStroked: true, isSmoothJoin: true);
+                }
+                progGeo.Freeze();
+
+                var progBrush = ProgressBrush ?? new SolidColorBrush(Color.FromArgb(240, 212, 175, 55));
+                progBrush.Freeze();
+                var progPen = new Pen(progBrush, thick)
+                {
+                    StartLineCap = PenLineCap.Round,
+                    EndLineCap = PenLineCap.Round
+                };
+                progPen.Freeze();
+                dc.DrawGeometry(null, progPen, progGeo);
+            }
+
+            // Draw Center Text (Value & Units/Title)
+            var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            var valBrush = ValueBrush ?? new SolidColorBrush(Color.FromArgb(240, 245, 240, 230));
+            valBrush.Freeze();
+
+            var valFontSize = Math.Clamp(radius * 0.46, 9.0, 18.0);
+            var valStr = Value.ToString(ValueFormat, CultureInfo.InvariantCulture);
+            var ftVal = new FormattedText(valStr, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                ValueTypeface, valFontSize, valBrush, dpi);
+
+            var untBrush = UnitsBrush ?? new SolidColorBrush(Color.FromArgb(180, 190, 185, 170));
+            untBrush.Freeze();
+
+            var untFontSize = Math.Clamp(radius * 0.24, 6.5, 11.0);
+            var untStr = string.IsNullOrWhiteSpace(GaugeTitle) ? UnitsText : $"{UnitsText} · {GaugeTitle}";
+            var ftUnt = new FormattedText(untStr, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                LabelTypeface, untFontSize, untBrush, dpi)
+            {
+                MaxTextWidth = Math.Max(20.0, radius * 1.7),
+                Trimming = TextTrimming.CharacterEllipsis
+            };
+
+            var totalTextH = ftVal.Height + ftUnt.Height - 1.0;
+            var textStartY = cy - totalTextH / 2.0;
+
+            dc.DrawText(ftVal, new Point(cx - ftVal.Width / 2.0, textStartY));
+            dc.DrawText(ftUnt, new Point(cx - ftUnt.Width / 2.0, textStartY + ftVal.Height - 1.0));
+        }
+    }
 }
+
 

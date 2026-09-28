@@ -32,14 +32,6 @@ DECORATION_SIZES = {
     "forge_heraldic_rail_v2": (128, 256),
     "forge_patina_brass": (128, 16),
     "forge_pine_felt": (128, 32),
-    "forge_header_summary_v1": (128, 64),
-    "forge_header_modules_v1": (128, 64),
-    "forge_header_logs_v1": (128, 64),
-    "forge_header_inspector_v1": (128, 64),
-    "forge_header_tests_v1": (128, 64),
-    "forge_header_metrics_v1": (128, 64),
-    "forge_header_framework_v1": (128, 64),
-    "forge_header_extensions_v1": (128, 64),
 }
 DECORATIONS = tuple(DECORATION_SIZES)
 OCCLUDING_PANEL_IDS = {
@@ -57,14 +49,6 @@ MAX_ALPHA = {
     "forge_heraldic_rail_v2": 64,
     "forge_patina_brass": 88,
     "forge_pine_felt": 40,
-    "forge_header_summary_v1": 112,
-    "forge_header_modules_v1": 112,
-    "forge_header_logs_v1": 112,
-    "forge_header_inspector_v1": 112,
-    "forge_header_tests_v1": 112,
-    "forge_header_metrics_v1": 112,
-    "forge_header_framework_v1": 112,
-    "forge_header_extensions_v1": 112,
 }
 MIN_VISIBLE_COLORS = {name: 2 for name in DECORATIONS}
 TEXT_OVERLAP_ALPHA_MAX = {
@@ -75,15 +59,6 @@ TEXT_OVERLAP_ALPHA_MAX = {
 TRANSPARENT_DECORATIONS = {
     "forge_heraldic_overlay",
     "forge_heraldic_header_v2",
-    "forge_heraldic_rail_v2",
-    "forge_header_summary_v1",
-    "forge_header_modules_v1",
-    "forge_header_logs_v1",
-    "forge_header_inspector_v1",
-    "forge_header_tests_v1",
-    "forge_header_metrics_v1",
-    "forge_header_framework_v1",
-    "forge_header_extensions_v1",
 }
 EDGE_ART_DECORATIONS = {"forge_heraldic_overlay", "forge_heraldic_header_v2"}
 RETIRED_DECORATIONS = {
@@ -99,6 +74,15 @@ RETIRED_DECORATIONS = {
     "forge_dark_wood",
     "forge_inkwash",
     "forge_war_table_cloth",
+    "forge_heraldic_rail_v2",
+    "forge_header_summary_v1",
+    "forge_header_modules_v1",
+    "forge_header_logs_v1",
+    "forge_header_inspector_v1",
+    "forge_header_tests_v1",
+    "forge_header_metrics_v1",
+    "forge_header_framework_v1",
+    "forge_header_extensions_v1",
 }
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 MAX_PNG_BYTES = 32 * 1024 * 1024
@@ -184,20 +168,6 @@ PLAYBOOK_FLOW_ORDER = (
     "ForgeTroubleshootingTitle", "ForgeTroubleshootingAdvice", "ForgePlaybookBrassRule2",
     "ForgeRecommendedMacro", "ForgeRunMacro",
 )
-
-ROUTE_HEADER_ORNAMENT_BINDINGS = {
-    "ForgeHeaderOrnamentSummary": ("forge_header_summary_v1", "@IsSummaryActive"),
-    "ForgeHeaderOrnamentModules": ("forge_header_modules_v1", "@IsModulesActive"),
-    "ForgeHeaderOrnamentLogs": ("forge_header_logs_v1", "@IsLogsActive"),
-    "ForgeHeaderOrnamentInspector": ("forge_header_inspector_v1", "@IsInspectorActive"),
-    "ForgeHeaderOrnamentTests": ("forge_header_tests_v1", "@IsTestsActive"),
-    "ForgeHeaderOrnamentMetrics": ("forge_header_metrics_v1", "@IsMetricsActive"),
-    "ForgeHeaderOrnamentFramework": ("forge_header_framework_v1", "@IsFrameworkActive"),
-    "ForgeHeaderOrnamentExtensions": ("forge_header_extensions_v1", "@IsExtensionsActive"),
-}
-for _element_id, (_sprite_name, _visibility_binding) in ROUTE_HEADER_ORNAMENT_BINDINGS.items():
-    EXPECTED_DECORATIVE_PLACEMENTS[_element_id] = (
-        _sprite_name, "<shell>", Rect(256, 114, 24, 12))
 
 DECORATIVE_LAYOUT_CONTRACTS = {
     "ForgeHeaderCloth": {

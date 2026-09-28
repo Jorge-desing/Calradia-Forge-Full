@@ -8,9 +8,11 @@ contracts. It deliberately does not claim to replace an in-game render check.
 from __future__ import annotations
 
 import argparse
+from functools import lru_cache
 import re
 import struct
 import sys
+import unicodedata
 import xml.etree.ElementTree as ET
 import zlib
 from dataclasses import dataclass
@@ -24,6 +26,7 @@ DEFAULT_VIEWMODEL = ROOT / "src/CalradiaForge.Mod/PanelViewModel.cs"
 DEFAULT_TOOL_ITEM_VIEWMODEL = ROOT / "src/CalradiaForge.Mod/ToolItemVM.cs"
 DEFAULT_BRUSHES = ROOT / "modules/CalradiaForge/GUI/Brushes/CalradiaForge.xml"
 DEFAULT_SPRITES = ROOT / "modules/CalradiaForge/GUI/CalradiaForgeSpriteData.xml"
+LANGUAGE_CATALOG_ROOT = ROOT / "modules/CalradiaForge/ModuleData/Languages"
 SPRITE_PART_ROOT = ROOT / "modules/CalradiaForge/GUI/SpriteParts"
 PRIMARY_ROUTE_ICONS = {
     "ForgeSummary": "calradiaforge_open_book",
@@ -116,6 +119,8 @@ VIEWPORT_PROFILES = ((1220, 880), (1280, 720), (1600, 900), (1920, 1080))
 SHELL_MAX_WIDTH = 1760
 SHELL_MAX_HEIGHT = 1024
 SHELL_MARGIN = 24
+MIN_NORMAL_EVIDENCE_LEDGER_HEIGHT = 160
+MIN_TEST_RESULT_FIELD_GAP = 6
 
 
 def local_name(tag: str) -> str:
@@ -129,6 +134,61 @@ def number(value: str | None) -> float | None:
         return float(value.rstrip("fF"))
     except ValueError:
         return None
+
+
+@lru_cache(maxsize=8)
+def localized_values_for_english_label(english_text: str) -> dict[str, str]:
+    """Resolve a short UI label from each language catalog by its English text."""
+    english_catalog = LANGUAGE_CATALOG_ROOT / "EN" / "forge_strings.xml"
+    try:
+        root = ET.parse(english_catalog).getroot()
+    except (OSError, ET.ParseError):
+        return {}
+    matching_ids = {
+        node.attrib.get("id", "")
+        for node in root.iter("string")
+        if node.attrib.get("text") == english_text and node.attrib.get("id")
+    }
+    if len(matching_ids) != 1:
+        return {}
+
+    string_id = next(iter(matching_ids))
+    values: dict[str, str] = {}
+    for catalog in sorted(LANGUAGE_CATALOG_ROOT.glob("*/forge_strings.xml")):
+        language = catalog.parent.name
+        try:
+            localized_root = ET.parse(catalog).getroot()
+        except (OSError, ET.ParseError):
+            continue
+        node = next(
+            (item for item in localized_root.iter("string") if item.attrib.get("id") == string_id),
+            None,
+        )
+        if node is not None:
+            values[language] = node.attrib.get("text", "")
+    return values
+
+
+def estimated_label_width(text: str, font_size: float) -> float:
+    """Conservatively estimate a single-line label width for geometry auditing.
+
+    Gauntlet font metrics are supplied by the game at runtime, so this is not
+    a pixel-perfect renderer. Full-width glyphs reserve one em, whitespace a
+    third of an em, and ordinary letters slightly more than half an em.
+    """
+    em_units = 0.0
+    for character in text:
+        if unicodedata.category(character) in {"Mn", "Me", "Cf"}:
+            continue
+        if character.isspace():
+            em_units += 0.34
+        elif unicodedata.east_asian_width(character) in {"W", "F"}:
+            em_units += 1.0
+        elif character.isupper():
+            em_units += 0.66
+        else:
+            em_units += 0.56
+    return em_units * font_size
 
 
 def data_source_properties(source: str) -> set[str]:
@@ -1943,6 +2003,7 @@ def validate_test_results_explorer_geometry(
         "TestResultsExplorerHeader", "TestResultsExplorerHeading", "TestResultsExplorerClose",
         "TestResultsExplorerSummary", "TestResultsExplorerContent", "TestResultsExplorerListFrame",
         "TestResultsExplorerColumns", "TestResultsExplorerScroll", "TestResultsExplorerScrollBar",
+        "TestResultsExplorerStatusHeader", "TestResultsExplorerDurationHeader",
         "TestResultsExplorerDetailFrame", "TestResultsExplorerSelectedHeading",
         "TestResultsExplorerDetailScroll", "TestResultsExplorerDetailScrollBar",
         "TestResultsExplorerEmptyMessage", "TestResultsExplorerDetailEmpty",
@@ -2086,6 +2147,95 @@ def validate_test_results_explorer_geometry(
             audit.error(f"Test-results detail empty state overlaps its heading in {viewport_name}")
     if columns_rect is not None and list_scroll_rect is not None and intersects(columns_rect, list_scroll_rect):
         audit.error(f"Test-results list headers overlap the scroll viewport in {viewport_name}")
+
+    # Localized column labels can be longer than the English defaults. Keep
+    # their measured cells separate and large enough in every supported catalog.
+    localized_header_contracts = (
+        ("TestResultsExplorerStatusHeader", "Status"),
+        ("TestResultsExplorerDurationHeader", "Duration"),
+    )
+    expected_languages = {"BR", "CNs", "CNt", "DE", "EN", "FR", "IT", "JP", "KO", "PL", "RU", "SP", "TR"}
+    for header_id, english_label in localized_header_contracts:
+        header = nodes[header_id]
+        header_rect = rectangles.get(header)
+        label_font_size = number(header.attrib.get("Brush.FontSize"))
+        if header.attrib.get("Text") != f"@TestResultsExplorer{english_label}Label":
+            audit.error(f"{header_id} must bind to its localized {english_label} label")
+        if columns_rect is None or header_rect is None or not contained(columns_rect, header_rect):
+            audit.error(f"{header_id} must remain inside the test-results column row in {viewport_name}")
+        translations = localized_values_for_english_label(english_label)
+        if set(translations) != expected_languages:
+            missing = sorted(expected_languages - set(translations))
+            audit.error(
+                f"Cannot measure all localized {english_label} labels "
+                f"(missing catalogs: {', '.join(missing) if missing else 'none'})"
+            )
+        if header_rect is not None and label_font_size is not None:
+            widest = max(
+                ((estimated_label_width(value, label_font_size), language, value)
+                 for language, value in translations.items()),
+                default=(0.0, "", ""),
+            )
+            if widest[0] > header_rect.width:
+                audit.error(
+                    f"{header_id} is too narrow for the long {widest[1]} label {widest[2]!r} "
+                    f"in {viewport_name} (needs about {widest[0]:.1f} DIP; has {header_rect.width:g})"
+                )
+        if header.attrib.get("ClipContents", "").lower() != "true":
+            audit.error(f"{header_id} must clip long localized text to its own column")
+
+    status_header_rect = rectangles.get(nodes["TestResultsExplorerStatusHeader"])
+    duration_header_rect = rectangles.get(nodes["TestResultsExplorerDurationHeader"])
+    if status_header_rect is not None and duration_header_rect is not None \
+            and intersects(status_header_rect, duration_header_rect):
+        audit.error(f"Test-results status and duration headings overlap in {viewport_name}")
+
+    # ItemTemplate geometry is content-relative; model it against the measured
+    # list viewport so long result statuses cannot paint into the duration cell.
+    template = nodes["TestResults"].find("ItemTemplate")
+    row = next((child for child in template if local_name(child.tag) == "ButtonWidget"), None) \
+        if template is not None else None
+    row_children = row.find("Children") if row is not None else None
+    row_child_nodes = row_children if row_children is not None else ()
+    status_cells = [
+        node for node in row_child_nodes
+        if local_name(node.tag) == "TextWidget" and node.attrib.get("Text") == "@Status"
+    ]
+    duration_cells = [
+        node for node in row_child_nodes
+        if local_name(node.tag) == "TextWidget" and node.attrib.get("Text") == "@DurationText"
+    ]
+    if len(status_cells) != 1 or len(duration_cells) != 1:
+        audit.error("Test-result rows must contain exactly one status and one duration field")
+    elif row is None or list_scroll_rect is None:
+        audit.error(f"Cannot resolve test-result row cell geometry in {viewport_name}")
+    else:
+        row_height = number(row.attrib.get("SuggestedHeight"))
+        if row_height is None or row_height <= 0:
+            audit.error("Test-result rows must declare a positive fixed height for cell layout")
+        else:
+            row_rect = Rect(0, 0, list_scroll_rect.width, row_height)
+            row_cells: list[tuple[str, ET.Element, Rect | None]] = []
+            for name, node in (("status", status_cells[0]), ("duration", duration_cells[0])):
+                cell_rect = widget_rect(node, row_rect, vm_source, False)
+                row_cells.append((name, node, cell_rect))
+                if cell_rect is None or cell_rect.width <= 0 or not contained(row_rect, cell_rect):
+                    audit.error(f"Test-result {name} field exceeds its row in {viewport_name}")
+                if node.attrib.get("ClipContents", "").lower() != "true":
+                    audit.error(
+                        f"Test-result {name} field must clip long values to prevent overlap in {viewport_name}"
+                    )
+            status_rect = row_cells[0][2]
+            duration_rect = row_cells[1][2]
+            if status_rect is not None and duration_rect is not None:
+                field_gap = duration_rect.left - status_rect.right
+                if field_gap < MIN_TEST_RESULT_FIELD_GAP:
+                    audit.error(
+                        f"Test-result status and duration fields must keep at least "
+                        f"{MIN_TEST_RESULT_FIELD_GAP} DIP clear in {viewport_name}: "
+                        f"found {field_gap:g} DIP"
+                    )
+
     detail_scroll_rect = rectangles.get(nodes["TestResultsExplorerDetailScroll"])
     if detail_heading_rect is not None and detail_scroll_rect is not None \
             and intersects(detail_heading_rect, detail_scroll_rect):
@@ -2096,8 +2246,6 @@ def validate_test_results_explorer_geometry(
 
     if nodes["TestResults"].attrib.get("DataSource") != "{TestResults}":
         audit.error("TestResults must bind to {TestResults}")
-    template = nodes["TestResults"].find("ItemTemplate")
-    row = next((child for child in template if local_name(child.tag) == "ButtonWidget"), None) if template is not None else None
     if row is None or row.attrib.get("Command.Click") != "ExecuteSelect" or row.attrib.get("IsFocusable") != "true":
         audit.error("Test-results rows must be focusable selection controls with ExecuteSelect")
 
@@ -2266,6 +2414,32 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
         for profile_name, (state, detailed_mode, region_ids) in layout_profiles.items():
             rectangles = shell_layout(shell, vm_source, state, viewport, detailed_mode)
             shell_bounds = rectangles[shell]
+            if viewport == (1280, 720) and profile_name == "regular":
+                evidence_frame = top_nodes.get("ForgeEvidenceFrame")
+                evidence_rect = rectangles.get(evidence_frame) if evidence_frame is not None else None
+                if evidence_rect is None:
+                    audit.error("Cannot resolve the normal evidence ledger at 1280x720")
+                elif evidence_rect.height < MIN_NORMAL_EVIDENCE_LEDGER_HEIGHT:
+                    audit.error(
+                        "Normal ForgeEvidenceFrame must provide at least "
+                        f"{MIN_NORMAL_EVIDENCE_LEDGER_HEIGHT} DIP at 1280x720 "
+                        f"(found {evidence_rect.height:g} DIP)"
+                    )
+            if profile_name in {"regular", "detailed"}:
+                primary_host = top_nodes.get("ForgePrimaryCommandHost")
+                evidence_frame = top_nodes.get("ForgeEvidenceFrame")
+                primary_rect = rectangles.get(primary_host) if primary_host is not None else None
+                evidence_rect = rectangles.get(evidence_frame) if evidence_frame is not None else None
+                if primary_rect is None or evidence_rect is None:
+                    audit.error(
+                        f"Cannot resolve primary command and evidence regions "
+                        f"in {profile_name}/{viewport[0]}x{viewport[1]}"
+                    )
+                elif intersects(primary_rect, evidence_rect):
+                    audit.error(
+                        f"ForgePrimaryCommandHost overlaps ForgeEvidenceFrame "
+                        f"in {profile_name}/{viewport[0]}x{viewport[1]}"
+                    )
             regions: list[tuple[str, Rect]] = []
             for element_id in region_ids:
                 node = top_nodes.get(element_id)
@@ -2284,6 +2458,10 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
                 regions.append((element_id, rect))
             for index, (first_id, first) in enumerate(regions):
                 for second_id, second in regions[index + 1:]:
+                    if {first_id, second_id} == {"ForgePrimaryCommandHost", "ForgeEvidenceFrame"}:
+                        # Checked above with a dedicated diagnostic in the
+                        # regular and detailed layouts.
+                        continue
                     if {first_id, second_id} == {"ForgeNavigationFooter", "ForgeStatusToast"} and toast_footer_exclusive:
                         continue
                     if intersects(first, second):
