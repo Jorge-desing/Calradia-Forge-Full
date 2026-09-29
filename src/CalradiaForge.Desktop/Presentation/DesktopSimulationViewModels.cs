@@ -3404,6 +3404,51 @@ namespace CalradiaForge.Desktop.Presentation
         public double VisualTreeDepthGaugeValue { get => visualTreeDepthGaugeValue; private set => Set(ref visualTreeDepthGaugeValue, value); }
         public double ScreenCoverageGaugeValue { get => screenCoverageGaugeValue; private set => Set(ref screenCoverageGaugeValue, value); }
 
+        double frameRenderBudgetMs = 6.8;
+        IReadOnlyList<double> layoutPassDensityTrajectory =
+        [
+            1.2, 1.4, 1.1, 1.8, 1.6, 2.0, 1.5, 2.2,
+            1.9, 1.7, 2.1, 1.8, 2.4, 2.0, 1.6, 1.8
+        ];
+
+        public double FrameRenderBudgetMs { get => frameRenderBudgetMs; private set => Set(ref frameRenderBudgetMs, value); }
+        public IReadOnlyList<double> LayoutPassDensityTrajectory { get => layoutPassDensityTrajectory; private set => Set(ref layoutPassDensityTrajectory, value); }
+
+        public void CycleScenario(int index)
+        {
+            var isMainHud = index % 2 == 0;
+            if (isMainHud)
+            {
+                PrefabName = "CalradiaForge.Hud.xml · Tactical Battlefield HUD";
+                ActiveLayer = "Layer 2 · In-Game Combat MissionView Overlay";
+                FrameRenderBudgetMs = 6.8;
+                VisualTreeDepthGaugeValue = 50.0;
+                ScreenCoverageGaugeValue = 34.5;
+                LayoutPassDensityTrajectory =
+                [
+                    1.2, 1.4, 1.1, 1.8, 1.6, 2.0, 1.5, 2.2,
+                    1.9, 1.7, 2.1, 1.8, 2.4, 2.0, 1.6, 1.8
+                ];
+            }
+            else
+            {
+                PrefabName = "CalradiaForge.Workbench.xml · Live Modding Workbench";
+                ActiveLayer = "Layer 1 · Gauntlet Screen In-Game Overlay (F10)";
+                FrameRenderBudgetMs = 11.4;
+                VisualTreeDepthGaugeValue = 66.7;
+                ScreenCoverageGaugeValue = 52.0;
+                LayoutPassDensityTrajectory =
+                [
+                    2.4, 2.8, 3.1, 2.9, 3.5, 3.2, 2.8, 3.9,
+                    3.4, 3.1, 3.8, 3.3, 4.0, 3.6, 3.0, 3.4
+                ];
+            }
+            Raise(nameof(FrameRenderBudgetMs));
+            Raise(nameof(LayoutPassDensityTrajectory));
+            Raise(nameof(VisualTreeDepthGaugeValue));
+            Raise(nameof(ScreenCoverageGaugeValue));
+        }
+
         public string StudioDocumentation => "TaleWorlds Gauntlet UI & HUD Architecture: Inspects declarative Gauntlet XML prefabs, widget visual trees, layout anchoring, subpixel snapping, brush style dictionaries, and MissionView 3D-to-2D projection overlays.";
         public string ArchitecturalInvariants => "1. All elements referenced with @ in <ItemTemplate> must exist on the child ViewModel with [DataSourceProperty].\n2. Gauntlet widgets must execute layout and draw calls strictly on TaleWorlds UI thread.\n3. Keep brush XML schemas synchronized with sprite-sheet atlas coordinates.\n4. Avoid deep visual tree nesting (> 12 layers) to prevent layout thrashing.";
         public string StudioCaveat => "Binding an in-game Gauntlet widget to a property that lacks [DataSourceProperty] results in silent UI rendering failure or TaleWorlds binding exceptions.";
@@ -3516,6 +3561,68 @@ namespace CalradiaForge.Desktop.Presentation
 
         public double EquilibriumGaugeValue { get => equilibriumGaugeValue; private set => Set(ref equilibriumGaugeValue, value); }
         public double BanditThreatGaugeValue { get => banditThreatGaugeValue; private set => Set(ref banditThreatGaugeValue, value); }
+
+        double campaignSeasonElapsedDays = 48.5;
+        IReadOnlyList<ForgeStepItem> campaignPacificationPipelineSteps =
+        [
+            new("Reconnaissance", "Scout frontier borderlands", ForgeStepStatus.Completed, "SURVEYED"),
+            new("Tribute Settlement", "Negotiate village pacts", ForgeStepStatus.Completed, "SETTLED"),
+            new("Garrison Drilling", "Militia cohesion & walls", ForgeStepStatus.Active, "DRILLING"),
+            new("Provincial Order", "Imperial equilibrium restored", ForgeStepStatus.Pending, "PENDING")
+        ];
+
+        public double CampaignSeasonElapsedDays { get => campaignSeasonElapsedDays; private set => Set(ref campaignSeasonElapsedDays, value); }
+        public IReadOnlyList<ForgeStepItem> CampaignPacificationPipelineSteps { get => campaignPacificationPipelineSteps; private set => Set(ref campaignPacificationPipelineSteps, value); }
+
+        public void CycleScenario(int index)
+        {
+            var isCentral = index % 2 == 0;
+            if (isCentral)
+            {
+                ProvinceName = "Imperial Heartlands Province · Calradia Central Valley";
+                ExpeditionLeader = "Proconsul Lucon of the Senate · Legio III Expedition";
+                EnvironmentalState = "Temperate Autumn · Prevailing Winds NW 14 km/h · No Blizzard Hazards";
+                EquilibriumAssessment = "Provincial Equilibrium: 78.5% STABLE · Net Food Balance: +48 Bushels/Day";
+                BanditThreatAnalysis = "Regional Threat: 32.0% MODERATE · 3 Mountain Bandit Lairs Sighted";
+                EquilibriumGaugeValue = 78.5;
+                BanditThreatGaugeValue = 32.0;
+                CampaignSeasonElapsedDays = 48.5;
+                CampaignPacificationPipelineSteps =
+                [
+                    new("Reconnaissance", "Scout frontier borderlands", ForgeStepStatus.Completed, "SURVEYED"),
+                    new("Tribute Settlement", "Negotiate village pacts", ForgeStepStatus.Completed, "SETTLED"),
+                    new("Garrison Drilling", "Militia cohesion & walls", ForgeStepStatus.Active, "DRILLING"),
+                    new("Provincial Order", "Imperial equilibrium restored", ForgeStepStatus.Pending, "PENDING")
+                ];
+            }
+            else
+            {
+                ProvinceName = "Frontier Marches Corridor · Western Battanian Borders";
+                ExpeditionLeader = "Legate Penton · Frontier Vanguard Cohort";
+                EnvironmentalState = "Dense Autumn Mist & Highlands Fog · Heavy Terrain Friction";
+                EquilibriumAssessment = "Provincial Equilibrium: 62.4% CONTESTED · Net Food Balance: +12 Bushels/Day";
+                BanditThreatAnalysis = "Regional Threat: 58.0% ELEVATED · 7 Forest Bandit Warbands Active";
+                EquilibriumGaugeValue = 62.4;
+                BanditThreatGaugeValue = 58.0;
+                CampaignSeasonElapsedDays = 64.0;
+                CampaignPacificationPipelineSteps =
+                [
+                    new("Reconnaissance", "Border patrol contact", ForgeStepStatus.Completed, "SURVEYED"),
+                    new("Tribute Settlement", "Hearth levies contested", ForgeStepStatus.Active, "CONTESTED"),
+                    new("Garrison Drilling", "Palisade reinforcement", ForgeStepStatus.Pending, "PENDING"),
+                    new("Provincial Order", "Frontier pacification", ForgeStepStatus.Pending, "PENDING")
+                ];
+            }
+            Raise(nameof(ProvinceName));
+            Raise(nameof(ExpeditionLeader));
+            Raise(nameof(EnvironmentalState));
+            Raise(nameof(EquilibriumAssessment));
+            Raise(nameof(BanditThreatAnalysis));
+            Raise(nameof(EquilibriumGaugeValue));
+            Raise(nameof(BanditThreatGaugeValue));
+            Raise(nameof(CampaignSeasonElapsedDays));
+            Raise(nameof(CampaignPacificationPipelineSteps));
+        }
 
         public string StudioDocumentation => "Bannerlord Campaign World, Settlement Equilibrium & Expedition Architecture: Models settlement prosperity, loyalty, village hearths, construction queues, weather simulations, bandit lares, and mobile party expedition routes.";
         public string ArchitecturalInvariants => "1. Campaign behaviors must remain 100% stateless (zero SaveableTypeDefiner in mod behaviors).\n2. SyncData() must contain zero dataStore serialization.\n3. MobileParty spawners must assign valid PartyComponent and home settlement.\n4. Settlement calculations must check null checks on Town/Village components.";
@@ -3760,6 +3867,56 @@ namespace CalradiaForge.Desktop.Presentation
         public double ArchiveHygieneGaugeValue { get => archiveHygieneGaugeValue; private set => Set(ref archiveHygieneGaugeValue, value); }
         public double CompressionRatioGaugeValue { get => compressionRatioGaugeValue; private set => Set(ref compressionRatioGaugeValue, value); }
 
+        double packagingElapsedSeconds = 12.4;
+        IReadOnlyList<double> compressionThroughputTrajectory =
+        [
+            42.0, 58.0, 64.0, 72.0, 68.0, 85.0, 92.0, 98.0,
+            105.0, 112.0, 108.0, 118.0, 124.0, 116.0, 122.0, 128.5
+        ];
+
+        public double PackagingElapsedSeconds { get => packagingElapsedSeconds; private set => Set(ref packagingElapsedSeconds, value); }
+        public IReadOnlyList<double> CompressionThroughputTrajectory { get => compressionThroughputTrajectory; private set => Set(ref compressionThroughputTrajectory, value); }
+
+        public void CycleScenario(int index)
+        {
+            var isProduction = index % 2 == 0;
+            if (isProduction)
+            {
+                DistributionTitle = "FastPackageEngine v2 · Multi-Threaded Distribution Pipeline";
+                HygieneAuditMetrics = "Distribution Hygiene: 100% Verified · 0 TaleWorlds DLLs · 0 Scripts · 0 Zone Streams";
+                CompressionEngineMetrics = "Compression Engine: Parallel.Invoke Multi-Core · Optimal Level · 128.5 MB/s Peak";
+                ArchiveHygieneGaugeValue = 100.0;
+                CompressionRatioGaugeValue = 78.4;
+                PackagingElapsedSeconds = 12.4;
+                CompressionThroughputTrajectory =
+                [
+                    42.0, 58.0, 64.0, 72.0, 68.0, 85.0, 92.0, 98.0,
+                    105.0, 112.0, 108.0, 118.0, 124.0, 116.0, 122.0, 128.5
+                ];
+            }
+            else
+            {
+                DistributionTitle = "CI/CD Quick Packaging Profile · Verification Staging";
+                HygieneAuditMetrics = "Preflight Hygiene: 100% Verified · Zero Intermediate Leakage · Fast Compression";
+                CompressionEngineMetrics = "Compression Engine: Single-Pass Fast Compression · 145.0 MB/s Peak";
+                ArchiveHygieneGaugeValue = 98.5;
+                CompressionRatioGaugeValue = 68.2;
+                PackagingElapsedSeconds = 4.8;
+                CompressionThroughputTrajectory =
+                [
+                    65.0, 82.0, 95.0, 110.0, 125.0, 134.0, 142.0, 145.0,
+                    140.0, 138.0, 144.0, 141.0, 139.0, 145.0, 142.0, 140.0
+                ];
+            }
+            Raise(nameof(DistributionTitle));
+            Raise(nameof(HygieneAuditMetrics));
+            Raise(nameof(CompressionEngineMetrics));
+            Raise(nameof(ArchiveHygieneGaugeValue));
+            Raise(nameof(CompressionRatioGaugeValue));
+            Raise(nameof(PackagingElapsedSeconds));
+            Raise(nameof(CompressionThroughputTrajectory));
+        }
+
         public string StudioDocumentation => "Calradia Forge Delivery & FastPackageEngine Architecture: Manages distribution safety, multi-threaded parallel compression, cryptographic SHA-256 ledger hashing, Mark-of-the-Web (:Zone.Identifier) stream stripping, and strict exclusion of proprietary game binaries.";
         public string ArchitecturalInvariants => "1. Zero proprietary TaleWorlds assemblies in distribution archives.\n2. Never include .bat or .ps1 scripts in public distribution zips.\n3. Strip all NTFS :Zone.Identifier streams prior to compression.\n4. Every package must be audited by audit_package.py and recorded in SHA-256 ledger.";
         public string StudioCaveat => "Distributing unstripped assemblies with Zone.Identifier will cause dynamic CLR Assembly.LoadFrom failures with HRESULT 0x80131515 on end-user machines.";
@@ -3916,6 +4073,24 @@ namespace CalradiaForge.Desktop.Presentation
         public double ComplianceScoreGaugeValue { get => complianceScoreGaugeValue; private set => Set(ref complianceScoreGaugeValue, value); }
         public double FaultRiskGaugeValue { get => faultRiskGaugeValue; private set => Set(ref faultRiskGaugeValue, value); }
 
+        double forensicScanElapsedMs = 142.5;
+        IReadOnlyList<ForgeStepItem> forensicAuditPipelineSteps =
+        [
+            new("PE Inspection", "CLR metadata & headers", ForgeStepStatus.Completed, "CLEAN"),
+            new("Bytecode Audit", "IL opcode bounds check", ForgeStepStatus.Completed, "PARSED"),
+            new("Heuristic Scanner", "Rule & security checks", ForgeStepStatus.Active, "AUDITING"),
+            new("Certification", "Integrity seal issued", ForgeStepStatus.Pending, "PENDING")
+        ];
+        IReadOnlyList<double> anomalyDensityTrajectory =
+        [
+            0.2, 0.4, 0.1, 0.3, 0.6, 0.2, 0.1, 0.4,
+            0.3, 0.5, 0.2, 0.1, 0.3, 0.2, 0.1, 0.2
+        ];
+
+        public double ForensicScanElapsedMs { get => forensicScanElapsedMs; private set => Set(ref forensicScanElapsedMs, value); }
+        public IReadOnlyList<ForgeStepItem> ForensicAuditPipelineSteps { get => forensicAuditPipelineSteps; private set => Set(ref forensicAuditPipelineSteps, value); }
+        public IReadOnlyList<double> AnomalyDensityTrajectory { get => anomalyDensityTrajectory; private set => Set(ref anomalyDensityTrajectory, value); }
+
         public void CycleScenario(int index)
         {
             var isStrict = index % 2 == 0;
@@ -3930,6 +4105,19 @@ namespace CalradiaForge.Desktop.Presentation
                 ActiveProfileLabel = "Strict Production Audit";
                 ComplianceScoreGaugeValue = 98.5;
                 FaultRiskGaugeValue = 8.0;
+                ForensicScanElapsedMs = 142.5;
+                ForensicAuditPipelineSteps =
+                [
+                    new("PE Inspection", "CLR metadata & headers", ForgeStepStatus.Completed, "CLEAN"),
+                    new("Bytecode Audit", "IL opcode bounds check", ForgeStepStatus.Completed, "PARSED"),
+                    new("Heuristic Scanner", "Rule & security checks", ForgeStepStatus.Active, "AUDITING"),
+                    new("Certification", "Integrity seal issued", ForgeStepStatus.Pending, "PENDING")
+                ];
+                AnomalyDensityTrajectory =
+                [
+                    0.2, 0.4, 0.1, 0.3, 0.6, 0.2, 0.1, 0.4,
+                    0.3, 0.5, 0.2, 0.1, 0.3, 0.2, 0.1, 0.2
+                ];
                 for (int i = 0; i < StrictFindings.Length; i++) findings.Add(StrictFindings[i]);
             }
             else
@@ -3942,11 +4130,27 @@ namespace CalradiaForge.Desktop.Presentation
                 ActiveProfileLabel = "Development Sandbox & Crash Forensics";
                 ComplianceScoreGaugeValue = 84.0;
                 FaultRiskGaugeValue = 22.5;
+                ForensicScanElapsedMs = 328.0;
+                ForensicAuditPipelineSteps =
+                [
+                    new("PE Inspection", "CLR symbols loaded", ForgeStepStatus.Completed, "LOADED"),
+                    new("Bytecode Audit", "Trace disassembly", ForgeStepStatus.Completed, "PARSED"),
+                    new("Heuristic Scanner", "2 warning anomalies", ForgeStepStatus.Failed, "WARNING"),
+                    new("Certification", "Sandbox containment", ForgeStepStatus.Active, "TRIAGE")
+                ];
+                AnomalyDensityTrajectory =
+                [
+                    1.4, 2.8, 3.2, 2.1, 4.5, 3.8, 2.9, 5.2,
+                    4.1, 3.6, 4.8, 5.0, 3.9, 4.2, 3.5, 4.0
+                ];
                 for (int i = 0; i < SandboxFindings.Length; i++) findings.Add(SandboxFindings[i]);
             }
             Raise(nameof(Findings));
             Raise(nameof(ComplianceScoreGaugeValue));
             Raise(nameof(FaultRiskGaugeValue));
+            Raise(nameof(ForensicScanElapsedMs));
+            Raise(nameof(ForensicAuditPipelineSteps));
+            Raise(nameof(AnomalyDensityTrajectory));
         }
 
         public string StudioDocumentation => "Calradia Forge Diagnostics & Integrity Forensic Squadron: Deep inspection of XML schemas, SubModule manifests, crash logs (.cfcrash), memory allocations, and mission mesh safety.";

@@ -677,6 +677,11 @@ namespace CalradiaForge.Mod
                     tool.IsSelected = string.Equals(tool.Tag, id, StringComparison.Ordinal);
             }
             SelectSection(id, executeOnSelect: false);
+            if (string.Equals(id, "novice-gauntlet", StringComparison.Ordinal))
+            {
+                _navigationPaletteFocusSearchRequested = true;
+                OnPropertyChanged(nameof(NavigationPaletteFocusSearchRequested));
+            }
         }
 
         private void SaveNavigationPaletteState()
@@ -1272,7 +1277,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string CloseHint => T("Close Calradia Forge interface.");
         [DataSourceProperty] public string PreviousLabel => T("Previous");
         [DataSourceProperty] public string NextLabel => T("Next");
-        [DataSourceProperty] public string InputLabel => T("Search / argument");
+        [DataSourceProperty] public string InputLabel => current == "novice-gauntlet" ? T("Page title") : T("Search / argument");
         [DataSourceProperty] public bool IsAssemblyWorkbench => _isAssemblyWorkbench;
         [DataSourceProperty] public bool IsNormalInputVisible => !_isAssemblyWorkbench;
         [DataSourceProperty] public bool IsRegularActionDeckVisible => !_isAssemblyWorkbench && current != "extensions";
@@ -1316,6 +1321,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string ContentPlaceholder => T("No telemetry or report data loaded. Select a tool or execute an action above.");
         [DataSourceProperty] public bool IsContentEmpty => string.IsNullOrWhiteSpace(content);
         [DataSourceProperty] public bool IsNormalContentEmpty => !_isOutputComparisonActive && IsContentEmpty;
+        [DataSourceProperty] public bool HasClipboardOutput => !string.IsNullOrWhiteSpace(full);
         [DataSourceProperty] public MBBindingList<OutputComparisonRowVM> OutputComparisonRows => _outputComparisonRows;
         [DataSourceProperty] public bool HasOutputBaseline => _outputBaseline != null;
         [DataSourceProperty] public bool IsOutputComparisonActive => _isOutputComparisonActive;
@@ -1408,7 +1414,7 @@ namespace CalradiaForge.Mod
 
         private static readonly string[] LayoutStatePropertyNames = new[]
         {
-            nameof(NavigationLabel), nameof(CurrentSectionLabel), nameof(SectionHelpLabel), nameof(IsSummaryActive), nameof(IsModulesActive),
+            nameof(NavigationLabel), nameof(CurrentSectionLabel), nameof(SectionHelpLabel), nameof(InputLabel), nameof(IsSummaryActive), nameof(IsModulesActive),
             nameof(IsLogsActive), nameof(IsInspectorActive), nameof(IsTestsActive), nameof(IsMetricsActive),
             nameof(IsFrameworkActive), nameof(IsExtensionsActive), nameof(IsCategoryOverviewActive),
             nameof(CategoryOverviewLabel), nameof(CategoryOverviewHint), nameof(IsCategoryInspectorActive),
@@ -1723,6 +1729,7 @@ namespace CalradiaForge.Mod
         }
         void Render()
         {
+            OnPropertyChanged(nameof(HasClipboardOutput));
             if (_isOutputComparisonActive)
             {
                 RenderOutputComparison();
@@ -3889,6 +3896,7 @@ namespace CalradiaForge.Mod
                 case "ForgeRun": ExecuteRun(); break;
                 case "ForgeEnable": ExecuteEnable(); break;
                 case "ForgeCopy": ExecuteCopy(); break;
+                case "ForgeClipboard": ExecuteClipboard(); break;
                 case "ForgeExport": ExecuteExport(); break;
                 case "ForgeBatch": ExecuteBatch(); break;
                 case "ForgePrevious": ExecutePrevious(); break;

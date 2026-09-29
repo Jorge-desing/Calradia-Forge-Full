@@ -2926,8 +2926,28 @@ namespace MyCustomMod.QuestBehaviors
                 throw new Exception("NoviceScaffoldEngine failed to route 'hint' tool.");
 
             string pageBlueprint = NoviceScaffoldEngine.Generate("gauntlet-page", "Inventory Panel");
-            if (!pageBlueprint.Contains("[ForgeUiPage(\"my_mod.inventorypanel\", \"ForgeInventoryPanelPage\", \"my_mod_ui_inventorypanel_title\""))
+            const string pagePrefix = "your_unique_module_page_prefix";
+            const string pageId = pagePrefix + ".inventorypanel";
+            const string titleKey = pagePrefix + "_ui_inventorypanel_title";
+            const string statusKey = pagePrefix + "_ui_inventorypanel_status";
+            const string readyKey = pagePrefix + "_ui_inventorypanel_ready";
+            const string refreshKey = pagePrefix + "_ui_inventorypanel_refresh";
+            const string closeKey = pagePrefix + "_ui_inventorypanel_close";
+            if (!pageBlueprint.Contains("[ForgeUiPage(\"" + pageId + "\", \"ForgeInventoryPanelPage\", \"" + titleKey + "\""))
                 throw new Exception("Gauntlet page blueprint has incorrect page ID, prefab, or title key.");
+            if (!pageBlueprint.Contains("SECTION 1/4 — XML PREFAB")
+                || !pageBlueprint.Contains("SECTION 2/4 — VIEWMODEL")
+                || !pageBlueprint.Contains("SECTION 3/4 — LOCALIZATION")
+                || !pageBlueprint.Contains("SECTION 4/4 — SUBMODULE INTEGRATION")
+                || pageBlueprint.IndexOf("SECTION 1/4 — XML PREFAB", StringComparison.Ordinal) >= pageBlueprint.IndexOf("SECTION 2/4 — VIEWMODEL", StringComparison.Ordinal)
+                || pageBlueprint.IndexOf("SECTION 2/4 — VIEWMODEL", StringComparison.Ordinal) >= pageBlueprint.IndexOf("SECTION 3/4 — LOCALIZATION", StringComparison.Ordinal)
+                || pageBlueprint.IndexOf("SECTION 3/4 — LOCALIZATION", StringComparison.Ordinal) >= pageBlueprint.IndexOf("SECTION 4/4 — SUBMODULE INTEGRATION", StringComparison.Ordinal))
+                throw new Exception("Gauntlet page blueprint sections are missing or out of order.");
+            if (!pageBlueprint.Contains("Replace every '" + pagePrefix + "' marker")
+                || !pageBlueprint.Contains("YOUR_EXACT_MODULE_FOLDER_ID")
+                || !pageBlueprint.Contains("namespace YourMod.UI")
+                || !pageBlueprint.Contains("independent of the module folder ID"))
+                throw new Exception("Gauntlet page blueprint must distinguish the page prefix, exact owner ID, and valid C# namespace.");
             if (!pageBlueprint.Contains("using CalradiaForge.Sdk;")
                 || !pageBlueprint.Contains("using TaleWorlds.Library;")
                 || !pageBlueprint.Contains("public sealed class ForgeInventoryPanelPageViewModel : ViewModel")
@@ -2935,6 +2955,8 @@ namespace MyCustomMod.QuestBehaviors
                 throw new Exception("Gauntlet page blueprint does not satisfy the ForgeUiPage ViewModel contract.");
             if (!pageBlueprint.Contains("[DataSourceProperty]") || !pageBlueprint.Contains("public string StatusText"))
                 throw new Exception("Gauntlet page blueprint is missing its ViewModel bindings.");
+            if (!pageBlueprint.Contains("OnPropertyChangedWithValue(value, nameof(StatusText));"))
+                throw new Exception("Gauntlet page blueprint must call the Bannerlord ViewModel notification API with the property name.");
             if (!pageBlueprint.Contains("[ForgeUiCommand(\"refresh\", nameof(ExecuteRefresh)")
                 || !pageBlueprint.Contains("[ForgeUiCommand(\"close\", nameof(ExecuteClose)"))
                 throw new Exception("Gauntlet page blueprint is missing its command declarations.");
@@ -2943,20 +2965,54 @@ namespace MyCustomMod.QuestBehaviors
                 throw new Exception("Gauntlet page commands must remain parameterless, non-state-changing ViewModel methods.");
             if (!pageBlueprint.Contains("Command.Click=\"ExecuteRefresh\"")
                 || !pageBlueprint.Contains("Command.Click=\"ExecuteClose\"")
+                || !pageBlueprint.Contains("If either lifecycle override already exists, merge the Forge calls into its body; do not add duplicate overrides.")
                 || !pageBlueprint.Contains("ForgeApi.RegisterWhenAvailable(RegisterForgeUi)")
                 || !pageBlueprint.Contains("ForgeApi.UnregisterWhenAvailable(RegisterForgeUi)")
-                || !pageBlueprint.Contains("ForgeApi.UnregisterUiPages(\"MyMod\")")
-                || !pageBlueprint.Contains("private void RegisterForgeUi(IForgeRegistry registry) => ForgeApi.AutoRegister(typeof(ForgeInventoryPanelPageViewModel).Assembly, \"MyMod\");")
-                || !pageBlueprint.Contains("ForgeUI.OpenPage(\"my_mod.inventorypanel\")"))
+                || !pageBlueprint.Contains("ForgeApi.UnregisterUiPages(\"YOUR_EXACT_MODULE_FOLDER_ID\")")
+                || !pageBlueprint.Contains("private void RegisterForgeUi(IForgeRegistry registry) => ForgeApi.AutoRegister(typeof(ForgeInventoryPanelPageViewModel).Assembly, \"YOUR_EXACT_MODULE_FOLDER_ID\");")
+                || !pageBlueprint.Contains("ForgeUI.OpenPage(\"" + pageId + "\")")
+                || pageBlueprint.Contains("protected override void OnSubModuleLoad")
+                || pageBlueprint.Contains("protected override void OnSubModuleUnloaded"))
                 throw new Exception("Gauntlet page blueprint is missing prefab bindings or module lifecycle steps.");
+            if (pageBlueprint.Split(new[] { "ForgeApi.RegisterWhenAvailable(RegisterForgeUi);" }, StringSplitOptions.None).Length - 1 != 1
+                || pageBlueprint.Split(new[] { "ForgeApi.UnregisterWhenAvailable(RegisterForgeUi);" }, StringSplitOptions.None).Length - 1 != 1
+                || pageBlueprint.Split(new[] { "ForgeApi.AutoRegister(" }, StringSplitOptions.None).Length - 1 != 1)
+                throw new Exception("Gauntlet page blueprint must give one availability callback and one AutoRegister call to merge into existing lifecycle methods.");
+            if (!pageBlueprint.Contains("The Refresh button is a demonstration")
+                || !pageBlueprint.Contains("this generator writes no files"))
+                throw new Exception("Gauntlet page blueprint must describe sample button behavior and text-only output.");
             int prefabStart = pageBlueprint.IndexOf("<Prefab>", StringComparison.Ordinal);
             int prefabEnd = pageBlueprint.IndexOf("</Prefab>", prefabStart, StringComparison.Ordinal);
             if (prefabStart < 0 || prefabEnd < 0)
                 throw new Exception("Gauntlet page blueprint is missing a complete XML prefab.");
             XDocument.Parse(pageBlueprint.Substring(prefabStart, prefabEnd + "</Prefab>".Length - prefabStart));
+            int localizationStart = pageBlueprint.IndexOf("<base type=\"string\">", StringComparison.Ordinal);
+            int localizationEnd = pageBlueprint.IndexOf("</base>", localizationStart, StringComparison.Ordinal);
+            if (localizationStart < 0 || localizationEnd < 0)
+                throw new Exception("Gauntlet page blueprint is missing its localization entries.");
+            XDocument pageLocalization = XDocument.Parse(pageBlueprint.Substring(localizationStart, localizationEnd + "</base>".Length - localizationStart));
+            string[] expectedPageKeys = { titleKey, statusKey, readyKey, refreshKey, closeKey };
+            foreach (string key in expectedPageKeys)
+                if (!pageBlueprint.Contains("{=" + key + "}"))
+                    throw new Exception("Gauntlet page blueprint is missing a ViewModel localization reference for " + key + ".");
+            var emittedPageKeys = pageLocalization.Descendants("string").Select(element => (string)element.Attribute("id")).ToArray();
+            if (expectedPageKeys.Any(key => !emittedPageKeys.Contains(key))
+                || !pageBlueprint.Contains("ForgeUI.OpenPage(\"" + pageId + "\")"))
+                throw new Exception("Gauntlet page IDs and localization IDs are not emitted consistently.");
             string hostilePageBlueprint = NoviceScaffoldEngine.Generate("gauntlet-page", "../Bad\"<Prefab>");
             if (hostilePageBlueprint.Contains("../") || hostilePageBlueprint.Contains("Bad\"<Prefab>"))
                 throw new Exception("Gauntlet page blueprint did not normalize an unsafe title.");
+            string emptyPageBlueprint = NoviceScaffoldEngine.Generate("gauntlet-page", "");
+            string symbolPageBlueprint = NoviceScaffoldEngine.Generate("gauntlet-page", "!@#$%^&*()<>/");
+            if (!emptyPageBlueprint.Contains("Context: Tools") || !symbolPageBlueprint.Contains("Context: Tools"))
+                throw new Exception("Gauntlet page blueprint must supply a valid fallback title for empty and symbol-only input.");
+            string unicodePageBlueprint = NoviceScaffoldEngine.Generate("gauntlet-page", "Café 兵");
+            if (!unicodePageBlueprint.Contains("Context: Café 兵")
+                || !unicodePageBlueprint.Contains("public sealed class ForgeCafé兵PageViewModel"))
+                throw new Exception("Gauntlet page blueprint must preserve valid Unicode titles in the generated identifiers and fallback text.");
+            string escapedPageBlueprint = NoviceScaffoldEngine.Generate("gauntlet-page", "A & <B> \" C");
+            if (escapedPageBlueprint.Contains("A & <B>") || escapedPageBlueprint.Contains("A &amp;"))
+                throw new Exception("Gauntlet page blueprint must normalize XML and C# metacharacters in user titles.");
             string boundaryPageBlueprint = NoviceScaffoldEngine.Generate("gauntlet-page", new string('A', 47) + " B");
             const string pageTitleContextMarker = " Context: ";
             int pageTitleContextStart = boundaryPageBlueprint.IndexOf(pageTitleContextMarker, StringComparison.Ordinal);
@@ -3035,6 +3091,41 @@ namespace MyCustomMod.QuestBehaviors
             if (!xmlContent.Contains("Hint.HintText=\"@SearchHint\"")) throw new Exception("CalradiaForge.xml missing SearchHint on argument field.");
             if (!xmlContent.Contains("Hint.HintText=\"@PageHint\"")) throw new Exception("CalradiaForge.xml missing PageHint on pagination display.");
             if (!xmlContent.Contains("Ctrl + 1 … 7")) throw new Exception("CalradiaForge.xml missing Ctrl + 1 … 7 in shortcuts modal.");
+
+            XDocument gauntletUi = XDocument.Parse(xmlContent);
+            var titleFieldLabel = gauntletUi.Descendants().FirstOrDefault(element => (string)element.Attribute("Id") == "ForgeInputLabel");
+            var titleField = gauntletUi.Descendants().FirstOrDefault(element => (string)element.Attribute("Id") == "ForgeArgument");
+            var clipboardButton = gauntletUi.Descendants().FirstOrDefault(element => (string)element.Attribute("Id") == "ForgeClipboard");
+            var campaignCopyButton = gauntletUi.Descendants().FirstOrDefault(element => (string)element.Attribute("Id") == "ForgeCopy");
+            if ((string)titleFieldLabel?.Attribute("Text") != "@InputLabel"
+                || (string)titleField?.Attribute("Text") != "@Argument"
+                || !panelContent.Contains("InputLabel => current == \"novice-gauntlet\" ? T(\"Page title\")"))
+                throw new Exception("Gauntlet Page Blueprint title label and existing argument field binding are not connected.");
+            if (clipboardButton == null
+                || clipboardButton.Name.LocalName != "ButtonWidget"
+                || (string)clipboardButton.Attribute("Command.Click") != "ExecuteClipboard"
+                || (string)clipboardButton.Attribute("IsVisible") != "@HasClipboardOutput"
+                || !panelContent.Contains("public bool HasClipboardOutput => !string.IsNullOrWhiteSpace(full)")
+                || !panelContent.Contains("OnPropertyChanged(nameof(HasClipboardOutput));")
+                || !panelContent.Contains("case \"ForgeClipboard\": ExecuteClipboard(); break;")
+                || !panelContent.Contains("Send(\"clipboard\", full);"))
+                throw new Exception("Gauntlet clipboard button must be visible only for generated output and copy the complete output through mouse and keyboard.");
+            if (campaignCopyButton == null
+                || (string)campaignCopyButton.Attribute("Command.Click") != "ExecuteCopy"
+                || !panelContent.Contains("public void ExecuteCopy() => Send(\"confirm-copy\", \"I_AM_USING_A_CAMPAIGN_COPY\");"))
+                throw new Exception("ForgeCopy must retain its campaign-copy confirmation behavior.");
+            int paletteActivationStart = panelContent.IndexOf("internal void ActivateNavigationPaletteItem(string id)", StringComparison.Ordinal);
+            int selectWithoutExecution = paletteActivationStart < 0
+                ? -1
+                : panelContent.IndexOf("SelectSection(id, executeOnSelect: false);", paletteActivationStart, StringComparison.Ordinal);
+            int titleFocusRequest = selectWithoutExecution < 0
+                ? -1
+                : panelContent.IndexOf("_navigationPaletteFocusSearchRequested = true;", selectWithoutExecution, StringComparison.Ordinal);
+            if (paletteActivationStart < 0 || selectWithoutExecution < 0 || titleFocusRequest < selectWithoutExecution
+                || !panelContent.Contains("if (string.Equals(id, \"novice-gauntlet\", StringComparison.Ordinal))")
+                || !subModuleContent.Contains("if (vm.ConsumeNavigationPaletteFocusSearchRequest()) FocusMainSearch();")
+                || !subModuleContent.Contains("IsForgeArgumentPredicate"))
+                throw new Exception("Selecting the Page Blueprint route must avoid generation and focus the existing argument field.");
 
             // 5. Desktop MainWindow.xaml and MainWindow.xaml.cs Parity
             string[] mainXamlCandidates = new[]

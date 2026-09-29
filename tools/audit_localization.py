@@ -29,6 +29,11 @@ REQUIRED_NAVIGATION_PALETTE_TEXTS = {
     "Add favorite",
     "Use this view's controls to run actions.",
 }
+REQUIRED_TRANSLATED_NATIVE_IDS = {
+    "forge_8f1ea1ac7b38",  # Gauntlet Page Blueprint
+    "forge_7bc45a420de0",  # Gauntlet Page Blueprint description
+    "forge_02660ffe391c",  # Page title field
+}
 VERSION = __import__("re").search(r"<CalradiaForgeVersion>([^<]+)</CalradiaForgeVersion>", (ROOT / "Directory.Build.props").read_text(encoding="utf-8")).group(1)
 
 
@@ -59,6 +64,10 @@ def main() -> None:
             raise ValueError(f"{folder} does not have English key parity")
         if any(not value.strip() for value in entries.values()):
             raise ValueError(f"{folder} contains an empty translation entry")
+        if iso != "en":
+            untranslated = [identifier for identifier in REQUIRED_TRANSLATED_NATIVE_IDS if entries[identifier] == english[identifier]]
+            if untranslated:
+                raise ValueError(f"{folder} leaves required UI strings in English: {', '.join(sorted(untranslated))}")
         for identifier, source in english.items():
             expected = "forge_" + hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
             if identifier != expected:

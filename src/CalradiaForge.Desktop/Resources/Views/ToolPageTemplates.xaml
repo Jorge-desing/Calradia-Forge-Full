@@ -1834,12 +1834,15 @@
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding GauntletStudio.TargetResolution, Mode=OneWay}"/>
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding GauntletStudio.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
-           <StackPanel Orientation="Horizontal">
-            <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="5 ACTIVE WIDGETS"/>
-           </StackPanel>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-laurel-crest-rev089.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+             <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="5 ACTIVE WIDGETS"/>
+            </StackPanel>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Gauntlet Render & Layout Pipeline (Rev085) -->
@@ -1920,6 +1923,16 @@
                AxisLabelBrush="{DynamicResource PaperBrush}"
                Height="130" Width="130" HorizontalAlignment="Center" Margin="0,2"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="■ Primary HUD (Brass)  ■ Alternative (Verdigris)"/>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,8,0,3" Padding="4,2">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="LAYOUT PASS DENSITY ENVELOPE"/>
+           </Border>
+           <presentation:ForgeAreaChart
+               DataPoints="{Binding GauntletStudio.LayoutPassDensityTrajectory}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource DeepPineBrush}"
+               GridBrush="{DynamicResource BorderBrush}"
+               ShowGridLines="True"
+               Height="40" Margin="0,2"/>
           </StackPanel>
          </Border>
          <!-- Column 3: Draw-Call Latency Sparkline & Tree / Coverage Gauges -->
@@ -1939,6 +1952,20 @@
                FormatString="0.0"
                Height="36" Margin="0,3"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="{Binding GauntletStudio.RenderBudgetStatus, Mode=OneWay}"/>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,2,0,3" Padding="4,2">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="FRAME RENDER CHRONOMETER (16.6 MS)"/>
+           </Border>
+           <presentation:ForgeTimelineRuler
+               CurrentTime="{Binding GauntletStudio.FrameRenderBudgetMs}"
+               TotalDuration="16.6"
+               MajorInterval="4.0"
+               MinorInterval="1.0"
+               UnitLabel="ms"
+               RulerBrush="{DynamicResource BorderBrush}"
+               TickBrush="{DynamicResource PaperBrush}"
+               MarkerBrush="{DynamicResource VerdigrisBrush}"
+               LabelBrush="{DynamicResource BrassBrush}"
+               Height="32" Margin="0,2"/>
            <Grid Margin="0,4,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <!-- Gauge 1: Visual Tree Depth -->
@@ -1981,6 +2008,7 @@
   <DataTemplate x:Key="CampaignStudioViewTemplate"><Grid>
         <Grid.RowDefinitions>
          <RowDefinition Height="Auto"/>
+         <RowDefinition Height="Auto"/>
          <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <!-- Header -->
@@ -1999,16 +2027,39 @@
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding CampaignStudio.EnvironmentalState, Mode=OneWay}"/>
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding CampaignStudio.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
-           <StackPanel Orientation="Horizontal">
-            <Path Data="{StaticResource Icon.Flag}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource VerdigrisBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="5 SETTLEMENTS"/>
-           </StackPanel>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-laurel-crest-rev089.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+             <Path Data="{StaticResource Icon.Flag}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource VerdigrisBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="5 SETTLEMENTS"/>
+            </StackPanel>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
+        <!-- Campaign Pacification & Governance Pipeline (Rev089) -->
+        <Border Grid.Row="1" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="4" Margin="0,0,0,6" Padding="6,4">
+         <DockPanel LastChildFill="True">
+          <Border DockPanel.Dock="Left" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,8,0" Padding="6,2" VerticalAlignment="Center">
+           <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="PACIFICATION PIPELINE"/>
+          </Border>
+          <presentation:ForgeStepProgress
+              Steps="{Binding CampaignStudio.CampaignPacificationPipelineSteps}"
+              ActiveBrush="{DynamicResource BrassBrush}"
+              CompletedBrush="{DynamicResource VerdigrisBrush}"
+              PendingBrush="{DynamicResource CoalBrush}"
+              FailedBrush="{DynamicResource EmberBrush}"
+              ConnectorBrush="{DynamicResource BorderBrush}"
+              TextBrush="{DynamicResource PaperBrush}"
+              SubtitleBrush="{DynamicResource MutedTextBrush}"
+              NodeRadius="9"
+              Height="36"
+              VerticalAlignment="Center"/>
+         </DockPanel>
+        </Border>
         <!-- Body: Settlement Expeditions Grid, Radar Chart, and Equilibrium & Threat Gauges -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
          <Grid.ColumnDefinitions>
           <ColumnDefinition Width="1.4*"/>
           <ColumnDefinition Width="*"/>
@@ -2087,6 +2138,20 @@
                FormatString="0.0"
                Height="48" Margin="0,2"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="{Binding CampaignStudio.EquilibriumAssessment, Mode=OneWay}"/>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,2,0,3" Padding="4,2">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="CAMPAIGN SEASON CHRONOMETER (84 DAYS)"/>
+           </Border>
+           <presentation:ForgeTimelineRuler
+               CurrentTime="{Binding CampaignStudio.CampaignSeasonElapsedDays}"
+               TotalDuration="84.0"
+               MajorInterval="21.0"
+               MinorInterval="7.0"
+               UnitLabel="d"
+               RulerBrush="{DynamicResource BorderBrush}"
+               TickBrush="{DynamicResource PaperBrush}"
+               MarkerBrush="{DynamicResource VerdigrisBrush}"
+               LabelBrush="{DynamicResource BrassBrush}"
+               Height="32" Margin="0,2"/>
            <Grid Margin="0,4,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <!-- Gauge 1: Equilibrium Index -->
@@ -2353,12 +2418,15 @@
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding DeliveryStudioDashboard.HygieneAuditMetrics, Mode=OneWay}"/>
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding DeliveryStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
-           <StackPanel Orientation="Horizontal">
-            <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="HYGIENE 100% PASS"/>
-           </StackPanel>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-laurel-crest-rev089.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+             <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="HYGIENE 100% PASS"/>
+            </StackPanel>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Distribution & Packaging Safety Pipeline (Rev085) -->
@@ -2439,6 +2507,16 @@
                AxisLabelBrush="{DynamicResource PaperBrush}"
                Height="130" Width="130" HorizontalAlignment="Center" Margin="0,2"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="■ Release Profile  ■ CI/CD Quick Profile"/>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="0,8,0,3" Padding="4,2">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Text="COMPRESSION ENVELOPE (MB/S)"/>
+           </Border>
+           <presentation:ForgeAreaChart
+               DataPoints="{Binding DeliveryStudioDashboard.CompressionThroughputTrajectory}"
+               Stroke="{DynamicResource VerdigrisBrush}"
+               Fill="{DynamicResource DeepPineBrush}"
+               GridBrush="{DynamicResource BorderBrush}"
+               ShowGridLines="True"
+               Height="40" Margin="0,2"/>
           </StackPanel>
          </Border>
          <!-- Column 3: Compression Throughput Sparkline & Hygiene / Compression Gauges -->
@@ -2458,6 +2536,20 @@
                FormatString="0.0"
                Height="36" Margin="0,3"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="{Binding DeliveryStudioDashboard.CompressionEngineMetrics, Mode=OneWay}"/>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,2,0,3" Padding="4,2">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="PACKAGING DURATION (30 SECONDS)"/>
+           </Border>
+           <presentation:ForgeTimelineRuler
+               CurrentTime="{Binding DeliveryStudioDashboard.PackagingElapsedSeconds}"
+               TotalDuration="30.0"
+               MajorInterval="5.0"
+               MinorInterval="1.0"
+               UnitLabel="s"
+               RulerBrush="{DynamicResource BorderBrush}"
+               TickBrush="{DynamicResource PaperBrush}"
+               MarkerBrush="{DynamicResource VerdigrisBrush}"
+               LabelBrush="{DynamicResource BrassBrush}"
+               Height="32" Margin="0,2"/>
            <Grid Margin="0,4,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <!-- Gauge 1: Archive Hygiene -->
@@ -2500,6 +2592,7 @@
   <DataTemplate x:Key="DiagnosticsStudioViewTemplate"><Grid>
         <Grid.RowDefinitions>
          <RowDefinition Height="Auto"/>
+         <RowDefinition Height="Auto"/>
          <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <!-- Header -->
@@ -2518,16 +2611,39 @@
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding DiagnosticsStudioDashboard.ScanMetricsSummary, Mode=OneWay}"/>
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding DiagnosticsStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding DiagnosticsStudioDashboard.HealthBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
-           <StackPanel Orientation="Horizontal">
-            <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{Binding DiagnosticsStudioDashboard.HealthBrushKey, Converter={StaticResource BrushKeyConverter}}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{Binding DiagnosticsStudioDashboard.HealthBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding DiagnosticsStudioDashboard.OverallHealthStatus, Mode=OneWay}"/>
-           </StackPanel>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-laurel-crest-rev089.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding DiagnosticsStudioDashboard.HealthBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+             <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{Binding DiagnosticsStudioDashboard.HealthBrushKey, Converter={StaticResource BrushKeyConverter}}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{Binding DiagnosticsStudioDashboard.HealthBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding DiagnosticsStudioDashboard.OverallHealthStatus, Mode=OneWay}"/>
+            </StackPanel>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
+        <!-- Forensic Audit & Integrity Pipeline (Rev089) -->
+        <Border Grid.Row="1" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="4" Margin="0,0,0,6" Padding="6,4">
+         <DockPanel LastChildFill="True">
+          <Border DockPanel.Dock="Left" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,0,8,0" Padding="6,2" VerticalAlignment="Center">
+           <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="FORENSIC PIPELINE"/>
+          </Border>
+          <presentation:ForgeStepProgress
+              Steps="{Binding DiagnosticsStudioDashboard.ForensicAuditPipelineSteps}"
+              ActiveBrush="{DynamicResource BrassBrush}"
+              CompletedBrush="{DynamicResource VerdigrisBrush}"
+              PendingBrush="{DynamicResource CoalBrush}"
+              FailedBrush="{DynamicResource EmberBrush}"
+              ConnectorBrush="{DynamicResource BorderBrush}"
+              TextBrush="{DynamicResource PaperBrush}"
+              SubtitleBrush="{DynamicResource MutedTextBrush}"
+              NodeRadius="9"
+              Height="36"
+              VerticalAlignment="Center"/>
+         </DockPanel>
+        </Border>
         <!-- Body: Forensic Findings, Radar Chart, and Scan Latency / Gauges -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
          <Grid.ColumnDefinitions>
           <ColumnDefinition Width="1.35*"/>
           <ColumnDefinition Width="1.1*"/>
@@ -2606,6 +2722,16 @@
                AxisLabelBrush="{DynamicResource PaperBrush}"
                Height="130" Width="130" HorizontalAlignment="Center" Margin="0,2"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Text="■ Strict Production  ■ Sandbox / Forensics"/>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource EmberBrush}" BorderThickness="1" CornerRadius="2" Margin="0,8,0,3" Padding="4,2">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource EmberBrush}" HorizontalAlignment="Center" Text="ANOMALY DENSITY ENVELOPE"/>
+           </Border>
+           <presentation:ForgeAreaChart
+               DataPoints="{Binding DiagnosticsStudioDashboard.AnomalyDensityTrajectory}"
+               Stroke="{DynamicResource EmberBrush}"
+               Fill="{DynamicResource DeepPineBrush}"
+               GridBrush="{DynamicResource BorderBrush}"
+               ShowGridLines="True"
+               Height="40" Margin="0,2"/>
           </StackPanel>
          </Border>
          <!-- Column 3: Scan Latency Sparkline & Compliance / Fault Risk Gauges -->
@@ -2629,6 +2755,20 @@
                FormatString="0.0"
                Height="48" Margin="0,2"/>
            <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Margin="0,1,0,6" TextWrapping="Wrap" Text="Real-time static rule scan latency across all AST visitors and schema analyzers."/>
+           <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,2,0,3" Padding="4,2">
+            <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" HorizontalAlignment="Center" Text="FORENSIC SCAN CHRONOMETER (500 MS)"/>
+           </Border>
+           <presentation:ForgeTimelineRuler
+               CurrentTime="{Binding DiagnosticsStudioDashboard.ForensicScanElapsedMs}"
+               TotalDuration="500.0"
+               MajorInterval="100.0"
+               MinorInterval="25.0"
+               UnitLabel="ms"
+               RulerBrush="{DynamicResource BorderBrush}"
+               TickBrush="{DynamicResource PaperBrush}"
+               MarkerBrush="{DynamicResource VerdigrisBrush}"
+               LabelBrush="{DynamicResource BrassBrush}"
+               Height="32" Margin="0,2"/>
            <Grid Margin="0,4,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <!-- Gauge 1: Compliance Score -->

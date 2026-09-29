@@ -44,6 +44,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies Rev087 specialized studio pipelines, area trajectories, and aquila seal telemetry");
         Rev088TroopCombatTradeVisualTelemetry();
         Console.WriteLine("PASS Desktop simulation verifies Rev088 troop progression, combat doctrine, and caravan trade visual telemetry");
+        Rev089CampaignDiagnosticsDeliveryGauntletVisualTelemetry();
+        Console.WriteLine("PASS Desktop simulation verifies Rev089 campaign, diagnostics, delivery, and gauntlet visual telemetry");
     }
 
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
@@ -701,5 +703,64 @@ internal static class DesktopSimulationServiceTests
             "Cycling trade scenario must advance expedition to market arbitrage phase.");
         Check(tradeVm.ArbitrageYieldTrajectory.Count == 16,
             "Cycled trade scenario must maintain 16-point yield trajectory.");
+    }
+
+    static void Rev089CampaignDiagnosticsDeliveryGauntletVisualTelemetry()
+    {
+        // 1. GauntletStudioDashboardViewModel
+        var gauntletVm = new GauntletStudioDashboardViewModel();
+        Check(gauntletVm.GauntletRenderPipelineSteps != null && gauntletVm.GauntletRenderPipelineSteps.Count == 4,
+            "GauntletStudio dashboard must expose 4 render pipeline steps.");
+        Check(gauntletVm.LayoutPassDensityTrajectory != null && gauntletVm.LayoutPassDensityTrajectory.Count == 16,
+            "GauntletStudio dashboard must expose 16-point layout pass density trajectory.");
+        Check(gauntletVm.FrameRenderBudgetMs > 0.0,
+            "GauntletStudio dashboard must expose non-zero frame render budget ms.");
+        gauntletVm.CycleScenario(1);
+        Check(gauntletVm.FrameRenderBudgetMs > 10.0,
+            "Cycling gauntlet scenario must update frame render budget for complex HUD.");
+        Check(gauntletVm.LayoutPassDensityTrajectory.Count == 16,
+            "Cycled gauntlet scenario must maintain 16-point density trajectory.");
+
+        // 2. CampaignStudioDashboardViewModel
+        var campaignVm = new CampaignStudioDashboardViewModel();
+        Check(campaignVm.CampaignPacificationPipelineSteps != null && campaignVm.CampaignPacificationPipelineSteps.Count == 4,
+            "CampaignStudio dashboard must expose 4 pacification pipeline steps.");
+        Check(campaignVm.ProvinceEquilibriumTrajectory != null && campaignVm.ProvinceEquilibriumTrajectory.Count == 16,
+            "CampaignStudio dashboard must expose 16-point equilibrium trajectory.");
+        Check(campaignVm.CampaignSeasonElapsedDays > 0.0,
+            "CampaignStudio dashboard must expose non-zero campaign season elapsed days.");
+        campaignVm.CycleScenario(1);
+        Check(campaignVm.CampaignPacificationPipelineSteps.Any(s => s.Title == "Tribute Settlement" && s.Status == ForgeStepStatus.Active),
+            "Cycling campaign scenario must activate contested tribute settlement phase.");
+        Check(campaignVm.CampaignSeasonElapsedDays > 60.0,
+            "Cycling campaign scenario must advance season elapsed days.");
+
+        // 3. DeliveryStudioDashboardViewModel
+        var deliveryVm = new DeliveryStudioDashboardViewModel();
+        Check(deliveryVm.DeliveryPipelineSteps != null && deliveryVm.DeliveryPipelineSteps.Count == 4,
+            "DeliveryStudio dashboard must expose 4 delivery pipeline steps.");
+        Check(deliveryVm.CompressionThroughputTrajectory != null && deliveryVm.CompressionThroughputTrajectory.Count == 16,
+            "DeliveryStudio dashboard must expose 16-point compression throughput trajectory.");
+        Check(deliveryVm.PackagingElapsedSeconds > 0.0,
+            "DeliveryStudio dashboard must expose non-zero packaging elapsed seconds.");
+        deliveryVm.CycleScenario(1);
+        Check(deliveryVm.CompressionThroughputTrajectory.Count == 16,
+            "Cycled delivery scenario must maintain 16-point throughput trajectory.");
+        Check(deliveryVm.PackagingElapsedSeconds < 5.0,
+            "CI/CD Quick profile must reduce packaging duration.");
+
+        // 4. DiagnosticsStudioDashboardViewModel
+        var diagVm = new DiagnosticsStudioDashboardViewModel();
+        Check(diagVm.ForensicAuditPipelineSteps != null && diagVm.ForensicAuditPipelineSteps.Count == 4,
+            "DiagnosticsStudio dashboard must expose 4 forensic audit pipeline steps.");
+        Check(diagVm.AnomalyDensityTrajectory != null && diagVm.AnomalyDensityTrajectory.Count == 16,
+            "DiagnosticsStudio dashboard must expose 16-point anomaly density trajectory.");
+        Check(diagVm.ForensicScanElapsedMs > 0.0,
+            "DiagnosticsStudio dashboard must expose non-zero forensic scan elapsed ms.");
+        diagVm.CycleScenario(1);
+        Check(diagVm.ForensicAuditPipelineSteps.Any(s => s.Title == "Certification" && s.Status == ForgeStepStatus.Active),
+            "Cycling diagnostics scenario must activate sandbox triage certification phase.");
+        Check(diagVm.ForensicScanElapsedMs > 200.0,
+            "Sandbox/deep inspection scenario must update forensic scan latency.");
     }
 }

@@ -82,6 +82,7 @@ PRESERVED_UNPACKAGED_VARIANTS = {
     "imperial-wax-seal-rev085.png",
     "calradia-astrolabe-dial-rev086.png",
     "calradia-aquila-seal-rev087.png",
+    "calradia-laurel-crest-rev089.png",
 }
 
 

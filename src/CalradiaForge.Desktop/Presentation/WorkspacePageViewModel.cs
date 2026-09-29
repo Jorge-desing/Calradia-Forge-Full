@@ -685,13 +685,15 @@ namespace CalradiaForge.Desktop.Presentation
             }
             else if (IsGauntletStudio)
             {
-                Evidence.Add(new("Gauntlet / Preset", "Loaded", $"Cycled Gauntlet HUD preset #{presetCycleIndex % 2 + 1}"));
+                GauntletStudio?.CycleScenario(presetCycleIndex);
+                Evidence.Add(new("Gauntlet / Preset", "Loaded", $"Cycled Gauntlet HUD preset #{presetCycleIndex % 2 + 1}: {GauntletStudio?.PrefabName}"));
                 Raise(nameof(GauntletStudio));
                 Raise(nameof(PresetActionLabel));
             }
             else if (IsCampaignStudio)
             {
-                Evidence.Add(new("Campaign / Preset", "Loaded", $"Cycled Campaign expedition preset #{presetCycleIndex % 2 + 1}"));
+                CampaignStudio?.CycleScenario(presetCycleIndex);
+                Evidence.Add(new("Campaign / Preset", "Loaded", $"Cycled Campaign expedition preset #{presetCycleIndex % 2 + 1}: {CampaignStudio?.ProvinceName}"));
                 Raise(nameof(CampaignStudio));
                 Raise(nameof(PresetActionLabel));
             }
@@ -703,7 +705,8 @@ namespace CalradiaForge.Desktop.Presentation
             }
             else if (IsDeliveryStudio)
             {
-                Evidence.Add(new("Delivery / Preset", "Loaded", $"Cycled FastPackageEngine delivery preset #{presetCycleIndex % 2 + 1}"));
+                DeliveryStudioDashboard?.CycleScenario(presetCycleIndex);
+                Evidence.Add(new("Delivery / Preset", "Loaded", $"Cycled FastPackageEngine delivery preset #{presetCycleIndex % 2 + 1}: {DeliveryStudioDashboard?.DistributionTitle}"));
                 Raise(nameof(DeliveryStudioDashboard));
                 Raise(nameof(PresetActionLabel));
             }
