@@ -1,50 +1,20 @@
 using System;
-using System.Reflection;
-using System.Linq;
-using CalradiaForge.Sdk.Patcher;
+using System.ComponentModel;
 
 namespace CalradiaForge.Core
 {
     /// <summary>
-    /// Serves as the central bootstrapping system for Calradia Forge.
-    /// It can automatically discover and initialize patches across all loaded mod assemblies.
+    /// Compatibility surface retained for extensions compiled against earlier SDK builds.
+    /// Forge no longer scans the AppDomain or applies patches during module startup.
     /// </summary>
     public static class ForgeBootstrapper
     {
-        private static bool isInitialized = false;
-
-        /// <summary>
-        /// Automatically discovers and applies all Forge patches in all loaded assemblies
-        /// that reference CalradiaForge.Sdk.
-        /// </summary>
+        /// <summary>Does nothing. Patch application now requires an explicit experimental API call.</summary>
+        [Obsolete("Global patch discovery is disabled. Use an explicit patch service only after manual review.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void InitializeGlobalPatches()
         {
-            if (isInitialized) return;
-            isInitialized = true;
-
-            int totalPatches = 0;
-            
-            // Scan all loaded assemblies in the AppDomain
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (assembly.IsDynamic) continue;
-
-                // Only scan assemblies that have CalradiaForge.Sdk as a reference to save time
-                if (assembly.GetReferencedAssemblies().Any(a => a.Name == "CalradiaForge.Sdk") || assembly.GetName().Name == "CalradiaForge.Sdk")
-                {
-                    try
-                    {
-                        totalPatches += ForgePatcher.ApplyAll(assembly);
-                    }
-                    catch (Exception ex)
-                    {
-                        // In a real scenario, this would write to TaleWorlds log
-                        Console.WriteLine($"ForgeBootstrapper: Error applying patches for {assembly.GetName().Name} - {ex.Message}");
-                    }
-                }
-            }
-
-            Console.WriteLine($"ForgeBootstrapper: Successfully applied {totalPatches} Forge patches across all loaded mods.");
+            // Intentionally empty for binary/source compatibility with old callers.
         }
     }
 }

@@ -27,6 +27,7 @@ namespace CalradiaForge.Mod
         Widget navigationPaletteReturnFocus;
         bool navigationPaletteWasOpen;
         private static readonly Func<Widget, bool> IsForgeArgumentPredicate = w => w != null && (w.Id == "ForgeArgument" || w.Id == "ForgeCommandArgument");
+        private static readonly Func<Widget, bool> IsGauntletComposerTitlePredicate = w => w is EditableTextWidget && w.Id == "ForgeComposerTitle";
         private static readonly Func<Widget, bool> IsSdkCatalogSearchPredicate = w => w is EditableTextWidget && w.Id == "ForgeSdkCatalogSearch";
         private static readonly Func<Widget, bool> IsNavigationPaletteSearchPredicate = w => w is EditableTextWidget && w.Id == "ForgeNavigationPaletteSearch";
         protected override void OnSubModuleLoad() 
@@ -39,7 +40,6 @@ namespace CalradiaForge.Mod
                 CalradiaForge.Sdk.ForgeUI.PageOpenRequested += OpenExtensionPage;
                 CalradiaForge.Sdk.ForgeUI.PageCloseRequested += RequestCloseExtensionPage;
                 CalradiaForge.Sdk.ForgeApi.UiPagesRemoved += OnUiPagesRemoved;
-                CalradiaForge.Core.ForgeBootstrapper.InitializeGlobalPatches();
             }
             catch (Exception ex)
             {
@@ -312,7 +312,9 @@ namespace CalradiaForge.Mod
         void FocusNavigationPaletteSearch() => FocusFirstWidget(IsNavigationPaletteSearchPredicate);
         void FocusMainSearch()
         {
-            var predicate = vm?.IsSdkCatalogOpen == true ? IsSdkCatalogSearchPredicate : IsForgeArgumentPredicate;
+            var predicate = vm?.IsGauntletComposerActive == true
+                ? IsGauntletComposerTitlePredicate
+                : vm?.IsSdkCatalogOpen == true ? IsSdkCatalogSearchPredicate : IsForgeArgumentPredicate;
             FocusFirstWidget(predicate);
         }
         void FocusFirstWidget(Func<Widget, bool> predicate)
@@ -342,6 +344,11 @@ namespace CalradiaForge.Mod
                 {
                     case "ForgeAssemblyPath": return vm?.AssemblyPathLabel ?? "";
                     case "ForgeAssemblyVersion": return vm?.AssemblyVersionLabel ?? "";
+                    case "ForgeComposerTitle": return vm?.GauntletComposerTitleLabel ?? "";
+                    case "ForgeComposerLabel": return vm?.GauntletComposerLabelFieldLabel ?? "";
+                    case "ForgeComposerText": return vm?.GauntletComposerTextFieldLabel ?? "";
+                    case "ForgeComposerOptions": return vm?.GauntletComposerOptionsFieldLabel ?? "";
+                    case "ForgeComposerProgress": return vm?.GauntletComposerProgressFieldLabel ?? "";
                     case "ForgeSdkCatalogSearch": return vm?.SdkCatalogSearchPlaceholder ?? "";
                     case "ForgeNavigationPaletteSearch": return vm?.NavigationPaletteSearchPlaceholder ?? "";
                     default: return vm?.InputLabel ?? "";
@@ -531,7 +538,6 @@ namespace CalradiaForge.Mod
                 CalradiaForge.Sdk.ForgeData.ClearAll();
                 CalradiaForge.Sdk.ForgeAgentMemory.ClearAll();
                 CalradiaForge.Sdk.ForgeUI.Clear();
-                CalradiaForge.Sdk.ForgeDetour.UnpatchAll();
             }
             finally
             {

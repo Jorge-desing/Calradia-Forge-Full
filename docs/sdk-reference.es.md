@@ -1,10 +1,10 @@
 # Referencia del SDK de Calradia Forge — 25.0.0
 
-Versión del contrato del SDK: **10**  
+Versión del contrato del SDK: **11**
 Versión del código fuente del producto: **25.0.0**  
 Destinos del SDK: `net472` y `net8.0`; el módulo del juego continúa en `net472`.
 
-> Esta referencia describe el árbol de código fuente v25.0.0. Los ZIP de distribución existentes no se regeneraron para esta actualización; su contenido no demuestra que incluyan el contrato 10 del SDK.
+> Esta referencia describe el árbol de código fuente v25.0.0. Los ZIP de distribución existentes no se regeneraron para esta actualización; su contenido no demuestra que incluyan el contrato 11 del SDK.
 
 ## 1. Registro automático
 
@@ -132,27 +132,48 @@ api.Dispose(); // o usa 'using'
 
 El puente heredado `Subscribe(ForgeEvent, Action<object[]>)` aísla las excepciones de callbacks y las registra mediante `ForgeApi.Logger`. Combínalo con `Unsubscribe(eventType, callback)` o `ClearSubscribers()` para liberar callbacks estáticos. Las suscripciones de delegados específicas de ForgeWeave deben usar `SubscribeWeaveWhenAvailable` cuando el módulo deba sobrevivir desconexiones y reconexiones del anfitrión; el `ForgeWeaveRegistration` devuelto es el propietario del ciclo de vida.
 
-## 6. ForgeLivePatcher
+## 6. Reemplazo explícito y experimental de métodos
 
-`ForgeLivePatcher` proporciona desvíos Harmony para un par de métodos conocidos:
+La capacidad opcional `IForgePatchService` está disponible como `ForgeApi.Patches`. Se mantiene separada de `IForgeRegistry`, así que añadir soporte de ciclo de vida de parches no obliga a los implementadores existentes del registro a agregar métodos. `ForgeApi.Version` es una constante de compilación; usa `ForgeApi.Patches != null` para comprobar si el anfitrión conectado proporciona realmente esta capacidad. `IForgePatchServiceLifecycle` es una segunda capacidad opcional para anfitriones que pueden reutilizar la misma instancia del servicio después de reconectar; se mantiene separada para conservar la compatibilidad de código fuente de los servicios de parcheo existentes.
+
+Usa un ID de parche estable y una etiqueta de propietario explícitos para instalar un reemplazo de método uno a uno:
 
 ```csharp
-var original = typeof(Hero).GetMethod("GetName");
-var replacement = typeof(MyPatch).GetMethod("PatchedGetName");
-ForgeLivePatcher.Patch(original, replacement);
+var patches = ForgeApi.Patches;
+if (patches == null)
+    throw new InvalidOperationException("El anfitrión Forge conectado no ofrece el servicio de parches.");
+
+IForgePatchHandle handle = patches.ApplyMethodReplacement(
+    "my_module.hero_name",
+    "MyModule",
+    typeof(Hero).GetMethod("GetName"),
+    typeof(MyPatch).GetMethod("PatchedGetName"));
+
+ForgePatchVerification verification = handle.Verify();
+ForgePatchRevertResult result = handle.Revert();
+// Dispose solicita una reversión idempotente de mejor esfuerzo; conserva el handle para el ciclo de vida y diagnóstico.
 ```
+
+El handle expone una `Snapshot` inmutable, `Verify()` y `Revert()`. `Dispose()` solicita una reversión de mejor esfuerzo y puede llamarse más de una vez. `IForgePatchService.GetSnapshots(owner)` devuelve instantáneas inmutables; `Verify(patchId)`, `Revert(patchId)`, `RevertOwner(owner)` y `RevertAll()` ofrecen operaciones explícitas de estado y limpieza. Los resultados informan `Applied`, `Reverted`, `Conflict` o `Failed`; el propietario es una etiqueta de seguimiento, no un límite de autorización. Al desconectarse, el servicio deja de aceptar parches nuevos e intenta revertir sus parches en orden inverso de aplicación. Los handles existentes siguen pudiendo consultarse o liberarse después de la desconexión. Al reconectar, el servicio integrado solo vuelve a abrir solicitudes cuando cada registro anterior y sus bytes originales se verifican como revertidos y ningún destino conserva un detour rastreado; los conflictos o estados inciertos lo mantienen cerrado.
+
+La reversión solo se permite si los bytes del destino aún coinciden con exactitud con los bytes de salto instalados por Forge. Si otro componente modificó el destino, Forge registra un conflicto y deja intactos los bytes ajenos. La restauración de la protección de página y `FlushInstructionCache` se comprueban; un fallo se informa y no se trata como una aplicación o reversión exitosa. Se rechaza antes de llamar a `VirtualProtect` cualquier escritura que cruce el límite de una página del sistema, porque este backend restaura un único valor de protección original para todo el tramo.
+
+Este escritor de bajo nivel sigue siendo experimental. Ni los cambios de protección de página ejecutable ni el vaciado de la caché de instrucciones coordinan los demás hilos que pudieran estar ejecutando el destino. El backend actual no garantiza hot patching concurrente seguro; úsalo en un fixture desechable y aislado, y asegúrate de que ningún hilo pueda ejecutar el método mientras se modifica su código. No lo uses como framework de parcheo de producción. El campo owner es solo descriptivo. Declaraciones de hook de preflight como `Transpiler` y `Finalizer` no están implementadas por el backend de reemplazo de métodos.
+
+`ForgeLivePatcher` y las utilidades de desvío anteriores permanecen como superficies de compatibilidad. `ApplyDetour(original, replacement)` usa la ruta de reemplazo de bajo nivel de Forge; `ApplyPatch`/`RevertPatch` solo emiten sus eventos de solicitud correspondientes para un consumidor registrado. Forge no incluye Harmony ni convierte automáticamente declaraciones `Prefix`, `Postfix`, `Transpiler` o `Finalizer` en hooks de ejecución. Prefiere `ForgeApi.Patches` cuando necesites propiedad explícita, verificación y reversión.
 
 ## 7. Versión del contrato de ForgeApi
 
-Comprueba el contrato público del SDK en tiempo de ejecución antes de usar funciones del contrato 10:
+El contrato 11 añade la superficie opcional del servicio de parches. Como la versión es una constante de compilación incrustada en el ensamblado consumidor, comprueba la capacidad opcional en ejecución en vez de usar una comparación de versión para esta función:
 
 ```csharp
-if (ForgeApi.Version < 10)
-    throw new InvalidOperationException("Se requiere el contrato 10 del SDK de Calradia Forge.");
+if (ForgeApi.Patches == null)
+    throw new InvalidOperationException("El anfitrión conectado no ofrece el servicio de parches.");
 ```
 
 | Contrato | Código fuente del producto | Incorporación relevante |
 |---|---|---|
+| 11 | 25.0.0 | `IForgePatchService` opcional con handles explícitos para reemplazo de métodos, verificación y reversión con detección de conflictos. |
 | 10 | 25.0.0 | Resultados explícitos de guardado seguro, informes acotados de auto-registro, lecturas tipadas de memoria semántica/procedimental y notificaciones de disponibilidad seguras por generación. |
 | 9 | 24.0.0 | Registros de `ForgeModelRegistry` con propietario; las condiciones de modificadores se ejecutan sobre una instantánea fuera del bloqueo del registro. |
 | 8 | 24.0.0 | Registro administrado de disponibilidad ForgeWeave y `ForgeAgentMemory` acotado; el TTL solo se aplica a la memoria semántica. |

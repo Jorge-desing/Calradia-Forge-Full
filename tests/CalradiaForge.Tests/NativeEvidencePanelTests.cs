@@ -60,20 +60,28 @@ namespace CalradiaForge.Tests
 
         static Type ResolveBindingOwner(XElement widget, Type panelType)
         {
-            var itemTemplate = widget?.AncestorsAndSelf().FirstOrDefault(element => element.Name.LocalName == "ItemTemplate");
-            if (itemTemplate == null) return panelType;
+            Type contextType = panelType;
+            var templates = widget?.AncestorsAndSelf()
+                .Where(element => element.Name.LocalName == "ItemTemplate")
+                .Reverse();
+            if (templates == null) return contextType;
 
-            var list = itemTemplate.Ancestors().FirstOrDefault(element => element.Name.LocalName == "ListPanel");
-            var dataSource = (string)list?.Attribute("DataSource");
-            if (string.IsNullOrWhiteSpace(dataSource) || dataSource.Length < 3 || dataSource[0] != '{' || dataSource[dataSource.Length - 1] != '}')
-                throw new InvalidOperationException("ItemTemplate must be nested under a ListPanel with a bound collection.");
+            foreach (var itemTemplate in templates)
+            {
+                var sourceOwner = itemTemplate.Parent?.Attribute("DataSource") != null
+                    ? itemTemplate.Parent
+                    : itemTemplate.Ancestors().FirstOrDefault(element => element.Attribute("DataSource") != null);
+                var dataSource = (string)sourceOwner?.Attribute("DataSource");
+                if (string.IsNullOrWhiteSpace(dataSource) || dataSource.Length < 3 || dataSource[0] != '{' || dataSource[dataSource.Length - 1] != '}')
+                    throw new InvalidOperationException("ItemTemplate must be nested under a ListPanel with a bound collection.");
 
-            var collectionProperty = panelType.GetProperty(dataSource.Substring(1, dataSource.Length - 2));
-            var itemType = collectionProperty?.PropertyType.GetGenericArguments().FirstOrDefault();
-            if (itemType == null)
-                throw new InvalidOperationException("Could not resolve the item ViewModel for " + dataSource + ".");
-
-            return itemType;
+                var collectionProperty = contextType.GetProperty(dataSource.Substring(1, dataSource.Length - 2));
+                var itemType = collectionProperty?.PropertyType.GetGenericArguments().FirstOrDefault();
+                if (itemType == null)
+                    throw new InvalidOperationException("Could not resolve the item ViewModel for " + dataSource + " on " + contextType.Name + ".");
+                contextType = itemType;
+            }
+            return contextType;
         }
         static void Decorations()
         {

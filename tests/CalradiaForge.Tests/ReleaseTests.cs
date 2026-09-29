@@ -6,6 +6,7 @@ using System.Threading;
 using CalradiaForge.Core;
 using CalradiaForge.Sdk;
 using CalradiaForge.Mod;
+using CalradiaForge.Mod.Commands;
 using CoreModule = CalradiaForge.Core.Module;
 
 internal static class ReleaseTests
@@ -17,6 +18,11 @@ internal static class ReleaseTests
         test("Spanish is an explicit secondary translation",()=>Assert(Localization.Text("Modules","es")=="Módulos" && Localization.Text("Modules","en")=="Modules"));
         test("Unsupported languages fall back to English",()=>Assert(Localization.Text("Modules","fr")=="Modules" && Localization.Text("Unregistered extension message","es")=="Unregistered extension message"));
         test("Protocol advertises the complete standalone developer surface",()=>{var expected=new[]{"hello","summary","scan","modules","dependencies","diagnostics","logs","inspect","pin","compare","snapshots","unpin","tests","commands","command","test-mode","confirm-copy","run","run-batch","metrics","framework","event-journal","replay","harmony","patch-blueprints","patch-preflight","report","export","panel-open","panel-close","language","agent-memory"};var capabilities=ForgeProtocol.Hello(SuiteInfo.Version,"1.4.8");Assert(capabilities.Contains("protocol:1")&&expected.All(capabilities.Contains)&&ForgeProtocol.Actions.SequenceEqual(expected)&&capabilities.Length==expected.Length+3);});
+        test("Patch console controls are explicit and absent from the read-only IPC action list",()=>{
+            var help=ForgeCommands.Help(new List<string>());
+            Assert(help.Contains("cf.patch_status [owner]")&&help.Contains("cf.patch_revert <id|owner|all>")&&
+                ForgeProtocol.Actions.All(action=>action!="patch_status"&&action!="patch_revert"));
+        });
         test("Extension startup keeps healthy registrations after another callback fails",()=>{
             var healthy=false;Action<IForgeRegistry> broken=registry=>throw new InvalidOperationException("broken extension");Action<IForgeRegistry> ready=registry=>healthy=ReferenceEquals(registry,ForgeApi.Registry);
             ForgeApi.Available+=broken;ForgeApi.Available+=ready;
@@ -50,6 +56,48 @@ internal static class ReleaseTests
             var result=PatchPreflightEngine.Inspect(Capture(Blueprint("blueprint.overload",overload),Blueprint("blueprint.constructor",constructor)),new[]{typeof(PatchTargetFixture).Assembly},"Any");
             Assert(result.ResolvedCount==2&&result.Outcomes.All(outcome=>outcome.Resolved)&&result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.overload").ResolvedSignature.Contains("System.Int32"));
         });
+        test("Patch preflight resolves exact callback signatures without invoking callbacks",()=>{
+            PatchCallbackFixture.Invoked=false;
+            var blueprint=Blueprint("blueprint.callback",MethodReference.From(typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)})));
+            blueprint.PatchMethod=MethodReference.From(typeof(PatchCallbackFixture).GetMethod(nameof(PatchCallbackFixture.Callback)));
+            var result=PatchPreflightEngine.Inspect(Capture(blueprint),new[]{typeof(PatchTargetFixture).Assembly},"Any");
+            Assert(result.ResolvedCount==1&&result.Outcomes.Single().CallbackResolved&&result.Outcomes.Single().ResolvedCallbackSignature=="()"&&!PatchCallbackFixture.Invoked);
+        });
+        test("Patch preflight blocks missing or non-method callbacks",()=>{
+            var target=MethodReference.From(typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)}));
+            var missing=Blueprint("blueprint.no-callback",target);missing.PatchMethod=null;
+            var constructor=Blueprint("blueprint.constructor-callback",target);
+            constructor.PatchMethod=MethodReference.From(typeof(PatchCallbackConstructorFixture).GetConstructor(Type.EmptyTypes));
+            var result=PatchPreflightEngine.Inspect(Capture(missing,constructor),new[]{typeof(PatchTargetFixture).Assembly},"Any");
+            var missingOutcome=result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.no-callback");
+            var constructorOutcome=result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.constructor-callback");
+            if (!(result.ResolvedCount==0&&missingOutcome.Status=="Callback not declared"&&constructorOutcome.Status=="Invalid callback"))
+                throw new Exception("Callback preflight mismatch: count="+result.ResolvedCount+", missing="+missingOutcome.Status+", constructor="+constructorOutcome.Status+", outcomes="+result.Outcomes.Count);
+        });
+        test("Patch preflight validates generic arity for target and callback references",()=>{
+            var target=MethodReference.From(typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Generic)));
+            var callbackMethod=typeof(PatchCallbackFixture).GetMethod(nameof(PatchCallbackFixture.GenericCallback));
+            var valid=Blueprint("blueprint.generic",target);valid.PatchMethod=MethodReference.From(callbackMethod);
+            var invalid=Blueprint("blueprint.bad-generic-arity",target);invalid.PatchMethod=MethodReference.From(callbackMethod);invalid.PatchMethod.GenericArity++;
+            var result=PatchPreflightEngine.Inspect(Capture(valid,invalid),new[]{typeof(PatchTargetFixture).Assembly},"Any");
+            var resolved=result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.generic");
+            var rejected=result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.bad-generic-arity");
+            if (!(result.ResolvedCount==1&&resolved.Resolved&&resolved.CallbackResolved&&resolved.ResolvedCallbackSignature.Contains("T")&&!rejected.Resolved&&rejected.Status=="Callback Member not found"))
+                throw new Exception("Generic preflight mismatch: count="+result.ResolvedCount+", valid="+resolved.Status+"/"+resolved.ResolvedCallbackSignature+", invalid="+rejected.Status+"/"+rejected.ResolvedCallbackSignature);
+        });
+        test("Patch preflight distinguishes type and method generic parameter positions",()=>{
+            var method=typeof(GenericParameterScopeFixture<>).GetMethod(nameof(GenericParameterScopeFixture<object>.Target));
+            var exact=MethodReference.From(method);
+            var mismatched=MethodReference.From(method);
+            mismatched.ParameterTypes[0]=TypeReference.From(method.GetGenericArguments()[0]);
+            var result=PatchPreflightEngine.Inspect(Capture(
+                Blueprint("blueprint.generic-scope",exact),Blueprint("blueprint.generic-scope-mismatch",mismatched)),
+                new[]{typeof(ReleaseTests).Assembly},"Any");
+            var resolved=result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.generic-scope");
+            var rejected=result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.generic-scope-mismatch");
+            Assert(exact.ParameterTypes[0].FullName=="!0"&&exact.ParameterTypes[1].FullName=="!!0"&&
+                resolved.Resolved&&!rejected.Resolved&&rejected.Status=="Member not found");
+        });
         test("Patch preflight never chooses an undeclared overload",()=>{
             var target=new MethodReference {AssemblyName=typeof(PatchTargetFixture).Assembly.GetName().Name,DeclaringType=typeof(PatchTargetFixture).FullName,MemberName=nameof(PatchTargetFixture.Overload),ParameterTypes=new List<TypeReference>()};
             var result=PatchPreflightEngine.Inspect(Capture(Blueprint("blueprint.missing-signature",target)),new[]{typeof(PatchTargetFixture).Assembly},"Any");
@@ -61,9 +109,17 @@ internal static class ReleaseTests
             var result=PatchPreflightEngine.Inspect(Capture(invalid,first,duplicate),new[]{typeof(PatchTargetFixture).Assembly},"Any");
             Assert(result.Outcomes.Count==3&&result.Outcomes.Any(outcome=>outcome.Status=="Invalid blueprint")&&result.Outcomes.Any(outcome=>outcome.Status=="Duplicate blueprint ID")&&result.Findings.Count>=2);
         });
+        test("Patch preflight rejects padded or oversized IDs without truncation aliases",()=>{
+            var target=MethodReference.From(typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)}));
+            var padded=Blueprint(" blueprint.padded ",target);
+            var longPrefix=new string('x',512);
+            var oversizedA=Blueprint(longPrefix+"a",target);var oversizedB=Blueprint(longPrefix+"b",target);
+            var result=PatchPreflightEngine.Inspect(Capture(padded,oversizedA,oversizedB),new[]{typeof(PatchTargetFixture).Assembly},"Any");
+            Assert(result.Outcomes.All(outcome=>!outcome.Resolved)&&result.Outcomes.Any(outcome=>outcome.Notes.Any(note=>note.Contains("leading or trailing whitespace")))&&result.Outcomes.Count(outcome=>outcome.Notes.Any(note=>note.Contains("cannot exceed 512 characters")))==2);
+        });
         test("Patch preflight remains structurally useful without a patch runtime",()=>{
             var target=MethodReference.From(typeof(string).GetMethod(nameof(string.IsNullOrEmpty),new[]{typeof(string)}));
-            var result=PatchPreflightEngine.Inspect(Capture(Blueprint("blueprint.no-runtime",target)),new[]{typeof(string).Assembly},"Any");
+            var result=PatchPreflightEngine.Inspect(Capture(Blueprint("blueprint.no-runtime",target)),new[]{typeof(string).Assembly,typeof(PatchCallbackFixture).Assembly},"Any");
             Assert(result.ResolvedCount==1&&result.ReviewCount==0&&result.Outcomes.Single().Resolved&&result.Status.StartsWith("No blocking issues"));
         });
         test("Patch preflight reports self ordering as an independent review item",()=>{
@@ -71,6 +127,33 @@ internal static class ReleaseTests
             var blueprint=Blueprint("blueprint.order",target);blueprint.Before.Add("blueprint.order");
             var result=PatchPreflightEngine.Inspect(Capture(blueprint),new[]{typeof(PatchTargetFixture).Assembly},"Any");
             Assert(result.ResolvedCount==1&&result.ReviewCount==1&&result.Status.StartsWith("Review required")&&result.Findings.Any(f=>f.Code=="patch_order_self"));
+        });
+        test("Patch preflight reports conflicting targets, unknown references and cycles",()=>{
+            var target=MethodReference.From(typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)}));
+            var first=Blueprint("blueprint.first",target);first.Before.Add("blueprint.second");first.After.Add("blueprint.unknown");
+            var second=Blueprint("blueprint.second",target);second.Before.Add("blueprint.first");
+            var result=PatchPreflightEngine.Inspect(Capture(first,second),new[]{typeof(PatchTargetFixture).Assembly},"Any");
+            Assert(result.ResolvedCount==2&&result.ReviewCount>=5&&result.Findings.Any(f=>f.Code=="patch_target_conflict")&&result.Findings.Any(f=>f.Code=="patch_order_missing")&&result.Findings.Any(f=>f.Code=="patch_order_cycle"));
+        });
+        test("Patch preflight reports duplicated and ambiguous ordering references",()=>{
+            var target=MethodReference.From(typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)}));
+            var first=Blueprint("blueprint.first",target);first.Before.Add("blueprint.second");first.Before.Add("blueprint.second");
+            var second=Blueprint("blueprint.second",target);var duplicate=Blueprint("blueprint.second",target);
+            var result=PatchPreflightEngine.Inspect(Capture(first,second,duplicate),new[]{typeof(PatchTargetFixture).Assembly},"Any");
+            Assert(result.Findings.Any(f=>f.Code=="patch_order_duplicate")&&result.Findings.Any(f=>f.Code=="patch_order_ambiguous")&&result.Outcomes.Where(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.second").All(outcome=>!outcome.Resolved));
+        });
+        test("Patch preflight reports blank ordering references",()=>{
+            var target=MethodReference.From(typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)}));
+            var blueprint=Blueprint("blueprint.blank-order",target);blueprint.Before.Add(" ");
+            var result=PatchPreflightEngine.Inspect(Capture(blueprint),new[]{typeof(PatchTargetFixture).Assembly},"Any");
+            Assert(result.Findings.Any(f=>f.Code=="patch_order_invalid")&&result.ReviewCount==1);
+        });
+        test("Patch preflight reports ordering references beyond its bounded inspection",()=>{
+            var target=MethodReference.From(typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)}));
+            var blueprint=Blueprint("blueprint.order-limit",target);
+            for(var index=0;index<33;index++)blueprint.Before.Add("owner."+index);
+            var result=PatchPreflightEngine.Inspect(Capture(blueprint),new[]{typeof(PatchTargetFixture).Assembly},"Any");
+            Assert(result.Findings.Any(f=>f.Code=="patch_order_limit"));
         });
         test("Registration freezes mutation permissions",()=>{var engine=new TestEngine();var item=new MutableTest();engine.Register(item);item.Descriptor.ChangesState=false;Throws(()=>engine.Execute("mutable",new Services(),1,CancellationToken.None));Assert(item.Runs==0);});
         test("Enumerated descriptors cannot change permissions",()=>{var engine=new TestEngine();engine.Register(new MutableTest());engine.Tests.First().ChangesState=false;Throws(()=>engine.Execute("mutable",new Services(),1,CancellationToken.None));});
@@ -150,7 +233,7 @@ internal static class ReleaseTests
     static CoreModule M(string id,params string[] dependencies)=>new CoreModule{Id=id,Dependencies=dependencies.ToList()};
     static TestEngine Enabled()=>new TestEngine{TestingEnabled=true,CampaignCopyConfirmed=true};
     static PatchBlueprintCapture Capture(params PatchBlueprint[] blueprints)=>new PatchBlueprintCapture {ProviderCount=1,Declarations=blueprints.Select(blueprint=>new PatchBlueprintDeclaration {ProviderId="fixture.provider",Module="fixture",ProviderName="Fixture provider",Context=Context.Any,Blueprint=blueprint}).ToList()};
-    static PatchBlueprint Blueprint(string id,MethodReference target)=>new PatchBlueprint {Id=id,Name="Fixture blueprint",Hook=PatchHookKind.Prefix,Target=target,Before=new List<string>(),After=new List<string>()};
+    static PatchBlueprint Blueprint(string id,MethodReference target)=>new PatchBlueprint {Id=id,Name="Fixture blueprint",Hook=PatchHookKind.Prefix,Target=target,PatchMethod=MethodReference.From(typeof(PatchCallbackFixture).GetMethod(nameof(PatchCallbackFixture.Callback))),Before=new List<string>(),After=new List<string>()};
     static void Assert(bool value){if(!value)throw new Exception("Release regression failed");}
     static void Throws(Action action){try{action();}catch{return;}throw new Exception("Expected rejection");}
     sealed class Services:ITestServices
@@ -187,6 +270,21 @@ internal static class ReleaseTests
         public PatchTargetFixture(int value) { }
         public static void Overload(int value) { }
         public static void Overload(string value) { }
+        public static T Generic<T>(T value) => value;
+    }
+    public sealed class GenericParameterScopeFixture<TClass>
+    {
+        public void Target<TMethod>(TClass classValue,TMethod methodValue) { }
+    }
+    public static class PatchCallbackFixture
+    {
+        public static bool Invoked;
+        public static void Callback() { Invoked=true; }
+        public static void GenericCallback<T>(T value) { Invoked=true; }
+    }
+    public sealed class PatchCallbackConstructorFixture
+    {
+        public PatchCallbackConstructorFixture() { }
     }
     public static class UnsupportedHarmony { }
     public static class FakeOriginals

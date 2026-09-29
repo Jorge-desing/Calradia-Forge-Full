@@ -96,6 +96,11 @@ namespace CalradiaForge.Core
         public string ResolvedType { get; set; }
         public string ResolvedMember { get; set; }
         public string ResolvedSignature { get; set; }
+        public bool CallbackResolved { get; set; }
+        public string ResolvedCallbackAssembly { get; set; }
+        public string ResolvedCallbackType { get; set; }
+        public string ResolvedCallbackMember { get; set; }
+        public string ResolvedCallbackSignature { get; set; }
         public List<string> Notes { get; set; } = new List<string>();
     }
     public sealed class PatchPreflightSnapshot

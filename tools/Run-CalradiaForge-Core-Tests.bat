@@ -25,6 +25,13 @@ if defined FORGE_TEST_MODULES (
 )
 set "RESULT=%ERRORLEVEL%"
 if not "%RESULT%"=="0" echo ERROR: Core suite failed with exit code %RESULT%.
+if not "%RESULT%"=="0" goto finish
+
+rem Native executable-memory writes run only in a disposable x64 child process,
+rem launched by its dedicated batch file after the managed Core regression suite.
+call "%ROOT%\tests\CalradiaForge.DetourFixture\Run-DetourFixture.bat" --no-pause
+set "RESULT=%ERRORLEVEL%"
+if not "%RESULT%"=="0" echo ERROR: Isolated native detour fixture failed with exit code %RESULT%.
 
 :finish
 if "%PAUSE_ON_EXIT%"=="1" pause

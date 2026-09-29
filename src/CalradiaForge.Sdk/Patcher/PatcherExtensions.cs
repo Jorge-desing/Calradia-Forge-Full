@@ -18,17 +18,26 @@ namespace CalradiaForge.Sdk.Patcher
             if (originalMethod == null) throw new ArgumentNullException(nameof(originalMethod));
             if (replacementMethod == null) throw new ArgumentNullException(nameof(replacementMethod));
 
-            byte[] originalBytes = MethodSwapper.DetourMethod(originalMethod, replacementMethod);
-
+            var sourceModule = Assembly.GetCallingAssembly().GetName().Name;
+            string patchId = "legacy:" + ForgeDetour.ShortHash(
+                ForgeDetour.SignatureIdentity(originalMethod) + "->" + ForgeDetour.SignatureIdentity(replacementMethod));
+            byte[] originalBytes = MethodSwapper.DetourMethod(originalMethod, replacementMethod, patchId, sourceModule);
             var record = new PatchRecord
             {
+                Id = patchId,
                 Original = originalMethod,
                 Replacement = replacementMethod,
-                SourceModule = Assembly.GetCallingAssembly().GetName().Name,
+                Owner = sourceModule,
+                SourceModule = sourceModule,
                 OriginalBytes = originalBytes
             };
 
-            ForgePatcher.Register(record);
+            try { ForgePatcher.Register(record); }
+            catch
+            {
+                MethodSwapper.RestoreMethod(originalMethod, originalBytes);
+                throw;
+            }
             
             return record;
         }
@@ -39,7 +48,7 @@ namespace CalradiaForge.Sdk.Patcher
         public static void RevertDetour(this PatchRecord record)
         {
             if (record == null) throw new ArgumentNullException(nameof(record));
-            MethodSwapper.RestoreMethod(record.Original, record.OriginalBytes);
+            ForgePatcher.Revert(record);
         }
     }
 }

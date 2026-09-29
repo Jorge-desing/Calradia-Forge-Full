@@ -26,6 +26,14 @@ namespace CalradiaForge.Mod
         readonly List<string> _navigationPaletteRecents = new List<string>();
         readonly MBBindingList<NavigationPaletteItemVM> _navigationPaletteResults = new MBBindingList<NavigationPaletteItemVM>();
         readonly string _navigationPaletteStatePath;
+        readonly string _gauntletComposerDraftPath;
+        readonly MBBindingList<GauntletComposerBlockVM> _gauntletComposerBlocks = new MBBindingList<GauntletComposerBlockVM>();
+        GauntletComposerDraft _gauntletComposerDraft = new GauntletComposerDraft();
+        string _selectedGauntletComposerBlockId = string.Empty;
+        string _gauntletComposerOptionsEditBlockId;
+        string _gauntletComposerOptionsEditText;
+        string _gauntletComposerStatusKey = "No saved draft.";
+        bool _isGauntletComposerPackageVisible;
         string _navigationPaletteSearchText = "";
         int _navigationPaletteSelectedIndex = -1;
         int _historyIndex = -1;
@@ -63,7 +71,7 @@ namespace CalradiaForge.Mod
         ModderRole _activeModderRole = ModderRole.All;
         readonly MBBindingList<CategoryCommandItemVM> _categorySuggestedCommands = new MBBindingList<CategoryCommandItemVM>();
         readonly MBBindingList<CategoryCommandItemVM> _pinnedCommands = new MBBindingList<CategoryCommandItemVM>();
-        public PanelViewModel(Runtime r, Action c) { runtime = r; close = c; _navigationPaletteStatePath = GetNavigationPaletteStatePath(); Labels(); InitializeTools(); InitializeNavigationPalette(); RebuildCategoryCommands(); ExecuteSummary(); }
+        public PanelViewModel(Runtime r, Action c) { runtime = r; close = c; _navigationPaletteStatePath = GetNavigationPaletteStatePath(); _gauntletComposerDraftPath = GetGauntletComposerDraftPath(); Labels(); InitializeGauntletComposer(); InitializeTools(); InitializeNavigationPalette(); RebuildCategoryCommands(); ExecuteSummary(); }
         private MBBindingList<ToolItemVM> _sdkTools = new MBBindingList<ToolItemVM>();
         [DataSourceProperty] public MBBindingList<ToolItemVM> SdkTools => _sdkTools;
         [DataSourceProperty] public string CategoryMissionDescription => GetCategoryMissionDescription(currentCategory);
@@ -427,6 +435,7 @@ namespace CalradiaForge.Mod
             AddNavigationPaletteRoute("novice-events", NoviceEventsLabel, noviceGroup, NoviceEventsHint);
             AddNavigationPaletteRoute("novice-hint", NoviceHintLabel, noviceGroup, NoviceHintHint);
             AddNavigationPaletteRoute("novice-gauntlet", NoviceGauntletLabel, noviceGroup, NoviceGauntletHint);
+            AddNavigationPaletteRoute("novice-gauntlet-composer", NoviceGauntletComposerLabel, noviceGroup, NoviceGauntletComposerHint);
             AddNavigationPaletteRoute("novice-workshop", NoviceWorkshopLabel, noviceGroup, NoviceWorkshopHint);
             AddNavigationPaletteRoute("novice-party", NovicePartyLabel, noviceGroup, NovicePartyHint);
             AddNavigationPaletteRoute("novice-building", NoviceBuildingLabel, noviceGroup, NoviceBuildingHint);
@@ -470,7 +479,7 @@ namespace CalradiaForge.Mod
                 case "siege-tactics": case "casus-belli": case "rule-auditor": case "model-audit": case "dump-diagnostics":
                 case "audit-localization": case "audit-save": case "audit-audio": case "novice-behavior": case "novice-troop":
                 case "novice-quest": case "novice-item": case "novice-submodule": case "novice-checklist": case "novice-events":
-                case "novice-hint": case "novice-gauntlet": case "novice-workshop": case "novice-party": case "novice-building": case "novice-combat":
+                case "novice-hint": case "novice-gauntlet": case "novice-gauntlet-composer": case "novice-workshop": case "novice-party": case "novice-building": case "novice-combat":
                     return true;
                 default:
                     return false;
@@ -677,7 +686,8 @@ namespace CalradiaForge.Mod
                     tool.IsSelected = string.Equals(tool.Tag, id, StringComparison.Ordinal);
             }
             SelectSection(id, executeOnSelect: false);
-            if (string.Equals(id, "novice-gauntlet", StringComparison.Ordinal))
+            if (string.Equals(id, "novice-gauntlet", StringComparison.Ordinal)
+                || string.Equals(id, "novice-gauntlet-composer", StringComparison.Ordinal))
             {
                 _navigationPaletteFocusSearchRequested = true;
                 OnPropertyChanged(nameof(NavigationPaletteFocusSearchRequested));
@@ -781,7 +791,7 @@ namespace CalradiaForge.Mod
         }
         [DataSourceProperty] public string ContextValue => FormatContext(runtime.CurrentContext.ToString());
         bool evidenceFocused;
-        [DataSourceProperty] public bool ShowCommandDeck => !evidenceFocused;
+        [DataSourceProperty] public bool ShowCommandDeck => !evidenceFocused && !IsGauntletComposerActive;
         // A 672-DIP shell at the 1280x720 audit viewport, minus the 178-DIP
         // bottom reserve and two 1-DIP frame insets, leaves a 160-DIP ledger body.
         [DataSourceProperty] public float EvidenceTop => evidenceFocused ? 220f : 332f;
@@ -789,6 +799,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public int EvidenceFontSize => evidenceFocused ? 24 : 18;
         [DataSourceProperty] public string FocusEvidenceLabel => evidenceFocused ? T("Show tools") : T("Focus evidence");
         [DataSourceProperty] public string EvidenceHeading => T("Evidence");
+        [DataSourceProperty] public string OutputHeading => IsGauntletComposerPackageVisible ? T("Generated package") : EvidenceHeading;
         public void ExecuteToggleEvidenceFocus()
         {
             if (_isOutputComparisonActive)
@@ -882,6 +893,7 @@ namespace CalradiaForge.Mod
                     case "novice-events": return s + "OnSessionLaunchedEvent, HourlyTickEvent, OnHeroKilledEvent, all";
                     case "novice-hint": return s + "RecruitVolunteers, CloseButton, QuickSave, AttackOrder";
                     case "novice-gauntlet": return s + "InventoryPanel, PartyOverview, KingdomDashboard, DialoguePage";
+                    case "novice-gauntlet-composer": return s + "data binding, MBBindingList, ItemTemplate, XML, ViewModel";
                     case "novice-workshop": return s + "apothecary, brewery, smithy, silversmith, linen_weaver";
                     case "novice-party": return s + "mountain_raiders, desert_nomads, sea_plunderers, forest_outlaws";
                     case "novice-building": return s + "granary_vault, fortified_bastion, aqueduct_extension, training_grounds";
@@ -942,6 +954,7 @@ namespace CalradiaForge.Mod
                     case "novice-events": return T("CampaignEvent Explainer: Learn when each CampaignEvent fires and how to use it. Enter an event name (e.g. 'HourlyTickEvent') or 'all' for the full catalog.");
                     case "novice-hint": return T("Gauntlet Hint Forge: Generates C# [DataSourceProperty] ViewModel hints, Gauntlet Hint.HintText XML attributes, and localization XML. Enter a button title above.");
                     case "novice-gauntlet": return NoviceGauntletHint;
+                    case "novice-gauntlet-composer": return NoviceGauntletComposerHint;
                     case "novice-workshop": return T("Workshop Scaffold: Generate valid workshops.xml + CampaignBehaviorBase with production cycle and underflow safety.");
                     case "novice-party": return T("Bandit Party Spawner: Generate partyTemplates.xml + MobileParty save-safe spawner logic. Enter a clan name above.");
                     case "novice-building": return T("Settlement Building: Generate buildings.xml (3 tiers) + SettlementFoodModel/BuildingDevelopmentModel Decorator.");
@@ -1004,6 +1017,7 @@ namespace CalradiaForge.Mod
                     case "novice-events": return "Event Explainer";
                     case "novice-hint": return "Gauntlet Hint Forge";
                     case "novice-gauntlet": return "Gauntlet Page Blueprint";
+                    case "novice-gauntlet-composer": return "Gauntlet Page Composer";
                     case "novice-workshop": return "Workshop Scaffold";
                     case "novice-party": return "Bandit Spawner";
                     case "novice-building": return "Building Architect";
@@ -1194,6 +1208,8 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string NoviceHintHint => T("Gauntlet Hint Forge: Generate ViewModel hint properties and Hint.HintText XML attributes.");
         [DataSourceProperty] public string NoviceGauntletLabel => T("Gauntlet Page Blueprint");
         [DataSourceProperty] public string NoviceGauntletHint => T("Generate a complete, self-contained Gauntlet page with a bound ViewModel, XML prefab, commands, and registration notes.");
+        [DataSourceProperty] public string NoviceGauntletComposerLabel => T("Gauntlet Page Composer");
+        [DataSourceProperty] public string NoviceGauntletComposerHint => T("Arrange a Gauntlet page visually, preview data-bound components, and generate an XML, ViewModel, localization, and integration package.");
         [DataSourceProperty] public string NoviceWorkshopLabel => T("⚒️ Workshop Scaffold");
         [DataSourceProperty] public string NoviceWorkshopHint => T("Generate valid workshops.xml + CampaignBehaviorBase with production cycle and underflow safety.");
         [DataSourceProperty] public string NovicePartyLabel => T("🏕️ Bandit Spawner");
@@ -1277,11 +1293,164 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string CloseHint => T("Close Calradia Forge interface.");
         [DataSourceProperty] public string PreviousLabel => T("Previous");
         [DataSourceProperty] public string NextLabel => T("Next");
-        [DataSourceProperty] public string InputLabel => current == "novice-gauntlet" ? T("Page title") : T("Search / argument");
+        [DataSourceProperty] public string InputLabel => current == "novice-gauntlet" || IsGauntletComposerActive ? T("Page title") : T("Search / argument");
         [DataSourceProperty] public bool IsAssemblyWorkbench => _isAssemblyWorkbench;
-        [DataSourceProperty] public bool IsNormalInputVisible => !_isAssemblyWorkbench;
-        [DataSourceProperty] public bool IsRegularActionDeckVisible => !_isAssemblyWorkbench && current != "extensions";
+        [DataSourceProperty] public bool IsNormalInputVisible => !_isAssemblyWorkbench && !IsGauntletComposerActive;
+        [DataSourceProperty] public bool IsRegularActionDeckVisible => !_isAssemblyWorkbench && current != "extensions" && !IsGauntletComposerActive;
         [DataSourceProperty] public bool IsExtensionsActionDeckVisible => !_isAssemblyWorkbench && current == "extensions";
+        [DataSourceProperty] public bool IsGauntletComposerActive => current == "novice-gauntlet-composer";
+        [DataSourceProperty] public bool IsGauntletComposerWorkspaceVisible => IsGauntletComposerActive && !_isGauntletComposerPackageVisible;
+        [DataSourceProperty] public bool IsGauntletComposerPackageVisible => IsGauntletComposerActive && _isGauntletComposerPackageVisible;
+        [DataSourceProperty] public bool IsEvidenceFrameVisible => !IsGauntletComposerActive || _isGauntletComposerPackageVisible;
+        [DataSourceProperty] public bool IsComposerPaginationVisible => !IsGauntletComposerActive || _isGauntletComposerPackageVisible;
+        [DataSourceProperty] public bool IsEvidenceToggleVisible => !IsGauntletComposerActive;
+        [DataSourceProperty] public MBBindingList<GauntletComposerBlockVM> GauntletComposerBlocks => _gauntletComposerBlocks;
+        [DataSourceProperty] public bool GauntletComposerHasBlocks => _gauntletComposerBlocks.Count > 0;
+        [DataSourceProperty] public bool GauntletComposerIsEmpty => _gauntletComposerBlocks.Count == 0;
+        [DataSourceProperty] public string GauntletComposerTitleLabel => T("Page title");
+        [DataSourceProperty] public string GauntletComposerAddHeadingLabel => T("Heading");
+        [DataSourceProperty] public string GauntletComposerAddTextLabel => T("Text");
+        [DataSourceProperty] public string GauntletComposerAddFieldLabel => T("Editable field");
+        [DataSourceProperty] public string GauntletComposerAddButtonLabel => T("Button");
+        [DataSourceProperty] public string GauntletComposerAddMetricLabel => T("Status or metric");
+        [DataSourceProperty] public string GauntletComposerAddListLabel => T("List");
+        [DataSourceProperty] public string GauntletComposerAddToggleLabel => T("Toggle");
+        [DataSourceProperty] public string GauntletComposerAddProgressLabel => T("Progress bar");
+        [DataSourceProperty] public string GauntletComposerAddSelectorLabel => T("Selector");
+        [DataSourceProperty] public string GauntletComposerCatalogHeading => T("Add component");
+        [DataSourceProperty] public string GauntletComposerOrderHeading => T("Page components");
+        [DataSourceProperty] public string GauntletComposerPropertiesHeading => T("Selected component");
+        [DataSourceProperty] public string GauntletComposerPreviewHeading => T("Gauntlet preview");
+        [DataSourceProperty] public string GauntletComposerEmptyLabel => T("Add a component to begin. The preview uses local sample data.");
+        [DataSourceProperty] public string GauntletComposerLabelFieldLabel => T("Component label");
+        [DataSourceProperty] public string GauntletComposerTextFieldLabel => T("Sample text or value");
+        [DataSourceProperty] public string GauntletComposerOptionsFieldLabel => T("Options, separated by |");
+        [DataSourceProperty] public string GauntletComposerProgressFieldLabel => T("Progress (0-100)");
+        [DataSourceProperty] public string GauntletComposerSaveLabel => T("Save draft");
+        [DataSourceProperty] public string GauntletComposerGenerateLabel => T("Generate");
+        [DataSourceProperty] public string GauntletComposerCopyLabel => T("Copy package");
+        [DataSourceProperty] public string GauntletComposerEditLabel => T("Edit draft");
+        [DataSourceProperty] public string GauntletComposerPreviousLabel => T("Previous component");
+        [DataSourceProperty] public string GauntletComposerNextLabel => T("Next component");
+        [DataSourceProperty] public string GauntletComposerMoveUpLabel => T("Move up");
+        [DataSourceProperty] public string GauntletComposerMoveDownLabel => T("Move down");
+        [DataSourceProperty] public string GauntletComposerRemoveLabel => T("Remove");
+        [DataSourceProperty] public string GauntletComposerTryButtonLabel => T("Try button");
+        [DataSourceProperty] public string GauntletComposerToggleSampleLabel => T("Toggle sample");
+        [DataSourceProperty] public string GauntletComposerNextSampleLabel => T("Next option");
+        [DataSourceProperty] public string GauntletComposerSampleValueLabel => SelectedGauntletComposerBlock?.ValueText ?? string.Empty;
+        [DataSourceProperty] public bool GauntletComposerCanAddComponent => _gauntletComposerBlocks.Count < GauntletComposerKinds.MaximumComponents;
+        [DataSourceProperty] public string GauntletComposerStatusLabel => T(_gauntletComposerStatusKey);
+        [DataSourceProperty] public string GauntletComposerCountLabel => _gauntletComposerBlocks.Count.ToString(CultureInfo.InvariantCulture) + " / " + GauntletComposerKinds.MaximumComponents.ToString(CultureInfo.InvariantCulture);
+        [DataSourceProperty] public string GauntletComposerSelectedKindLabel => SelectedGauntletComposerBlock?.TypeLabel ?? T("No component selected");
+        [DataSourceProperty] public bool GauntletComposerHasSelection => SelectedGauntletComposerBlock != null;
+        [DataSourceProperty] public bool GauntletComposerOptionsVisible => SelectedGauntletComposerBlock != null && SelectedGauntletComposerBlock.HasOptions;
+        [DataSourceProperty] public bool GauntletComposerProgressVisible => SelectedGauntletComposerBlock != null && SelectedGauntletComposerBlock.IsProgress;
+        [DataSourceProperty] public bool GauntletComposerSampleButtonVisible => SelectedGauntletComposerBlock != null && SelectedGauntletComposerBlock.IsButton;
+        [DataSourceProperty] public bool GauntletComposerSampleToggleVisible => SelectedGauntletComposerBlock != null && SelectedGauntletComposerBlock.IsToggle;
+        [DataSourceProperty] public bool GauntletComposerSampleSelectorVisible => SelectedGauntletComposerBlock != null && SelectedGauntletComposerBlock.IsSelector;
+        [DataSourceProperty]
+        public bool GauntletComposerSampleToggleState
+        {
+            get => SelectedGauntletComposerBlock?.IsOn ?? false;
+            set
+            {
+                var selected = SelectedGauntletComposerBlock;
+                if (selected != null) selected.IsOn = value;
+            }
+        }
+        [DataSourceProperty] public bool GauntletComposerAtCapacity => _gauntletComposerBlocks.Count >= GauntletComposerKinds.MaximumComponents;
+        [DataSourceProperty] public string GauntletComposerOptionsPreviewText => SelectedGauntletComposerBlock?.OptionsPreviewText ?? string.Empty;
+        private GauntletComposerBlockVM SelectedGauntletComposerBlock => _gauntletComposerBlocks.FirstOrDefault(block => string.Equals(block.Id, _selectedGauntletComposerBlockId, StringComparison.Ordinal));
+        [DataSourceProperty]
+        public string GauntletComposerTitle
+        {
+            get => _gauntletComposerDraft.Title ?? string.Empty;
+            set
+            {
+                string next = GauntletComposerKinds.Limit(value, GauntletComposerKinds.MaximumTitleLength);
+                if (string.Equals(_gauntletComposerDraft.Title, next, StringComparison.Ordinal)) return;
+                _gauntletComposerDraft.Title = next;
+                OnPropertyChangedWithValue(next, nameof(GauntletComposerTitle));
+                MarkGauntletComposerEdited();
+            }
+        }
+
+        private static string GetGauntletComposerDraftPath()
+        {
+            try
+            {
+                var localApplicationData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                return string.IsNullOrWhiteSpace(localApplicationData)
+                    ? null
+                    : Path.Combine(localApplicationData, "CalradiaForge", "gauntlet-composer.json");
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private void InitializeGauntletComposer()
+        {
+            var loaded = GauntletComposerPersistence.Load(_gauntletComposerDraftPath);
+            _gauntletComposerDraft = loaded.Draft ?? new GauntletComposerDraft();
+            switch (loaded.Status)
+            {
+                case GauntletComposerLoadStatus.Loaded: _gauntletComposerStatusKey = "Draft loaded."; break;
+                case GauntletComposerLoadStatus.Invalid: _gauntletComposerStatusKey = "Saved draft is damaged. It will stay until you save."; break;
+                case GauntletComposerLoadStatus.TooLarge: _gauntletComposerStatusKey = "Saved draft exceeds 64 KiB. It will stay until you save."; break;
+                case GauntletComposerLoadStatus.UnknownVersion: _gauntletComposerStatusKey = "Saved draft uses an unsupported version. It will stay until you save."; break;
+                case GauntletComposerLoadStatus.Unavailable: _gauntletComposerStatusKey = "Saved draft could not be read. It will stay until you save."; break;
+                default: _gauntletComposerStatusKey = "No saved draft."; break;
+            }
+            RebuildGauntletComposerBlocks(selectFirst: true);
+        }
+
+        private void RebuildGauntletComposerBlocks(bool selectFirst)
+        {
+            _gauntletComposerBlocks.Clear();
+            _gauntletComposerOptionsEditBlockId = null;
+            _gauntletComposerOptionsEditText = null;
+            foreach (var model in _gauntletComposerDraft.Components ?? new List<GauntletComposerBlock>())
+                _gauntletComposerBlocks.Add(new GauntletComposerBlockVM(this, model));
+            if (selectFirst && !_gauntletComposerBlocks.Any(block => string.Equals(block.Id, _selectedGauntletComposerBlockId, StringComparison.Ordinal)))
+                _selectedGauntletComposerBlockId = _gauntletComposerBlocks.FirstOrDefault()?.Id ?? string.Empty;
+            foreach (var block in _gauntletComposerBlocks)
+                block.IsSelected = string.Equals(block.Id, _selectedGauntletComposerBlockId, StringComparison.Ordinal);
+            NotifyGauntletComposerSelection();
+        }
+        [DataSourceProperty]
+        public string GauntletComposerSelectedLabel
+        {
+            get => SelectedGauntletComposerBlock?.Label ?? string.Empty;
+            set => UpdateSelectedGauntletComposerLabel(value);
+        }
+        [DataSourceProperty]
+        public string GauntletComposerSelectedText
+        {
+            get => SelectedGauntletComposerBlock?.Text ?? string.Empty;
+            set => UpdateSelectedGauntletComposerText(value);
+        }
+        [DataSourceProperty]
+        public string GauntletComposerSelectedOptions
+        {
+            get
+            {
+                var selected = SelectedGauntletComposerBlock;
+                if (selected == null) return string.Empty;
+                return string.Equals(_gauntletComposerOptionsEditBlockId, selected.Id, StringComparison.Ordinal)
+                    ? _gauntletComposerOptionsEditText ?? string.Empty
+                    : string.Join(" | ", selected.Model.Options);
+            }
+            set => UpdateSelectedGauntletComposerOptions(value);
+        }
+        [DataSourceProperty]
+        public string GauntletComposerSelectedProgress
+        {
+            get => SelectedGauntletComposerBlock?.Model.Progress.ToString(CultureInfo.InvariantCulture) ?? "0";
+            set => UpdateSelectedGauntletComposerProgress(value);
+        }
         [DataSourceProperty] public string AssemblyPathLabel => T("Assembly path or list index");
         [DataSourceProperty] public string AssemblyVersionLabel => T("Version");
         [DataSourceProperty] public string AssemblyListLabel => T("List installed DLLs");
@@ -1474,6 +1643,9 @@ namespace CalradiaForge.Mod
         }
         void Send(string action, string arg = null)
         {
+            if (string.Equals(action, "novice-gauntlet-composer", StringComparison.Ordinal)
+                || (IsGauntletComposerActive && !string.Equals(action, "clipboard", StringComparison.Ordinal)))
+                return;
             var effectiveArg = arg ?? Argument;
             if (!string.IsNullOrWhiteSpace(effectiveArg))
             {
@@ -1832,10 +2004,16 @@ namespace CalradiaForge.Mod
 
         void SelectSection(string section, bool executeOnSelect)
         {
+            string previousSection = current;
             if (_isTestResultsExplorerOpen && !string.Equals(current, section, StringComparison.Ordinal))
                 ExecuteCloseTestResultsExplorer();
+            if (string.Equals(previousSection, "novice-gauntlet-composer", StringComparison.Ordinal)
+                && !string.Equals(section, "novice-gauntlet-composer", StringComparison.Ordinal))
+                SetEvidenceFocus(false);
             if (!section.StartsWith("sdk-", StringComparison.Ordinal)) CloseSdkCatalog();
             _isAssemblyWorkbench = false;
+            if (!string.Equals(section, "novice-gauntlet-composer", StringComparison.Ordinal))
+                _isGauntletComposerPackageVisible = false;
             current = section;
             OnPropertyChanged(nameof(OutputComparisonCurrentHeading));
             if (section.StartsWith("sdk-", StringComparison.Ordinal))
@@ -1844,6 +2022,7 @@ namespace CalradiaForge.Mod
             OnPropertyChanged(nameof(IsNormalInputVisible));
             OnPropertyChanged(nameof(IsRegularActionDeckVisible));
             OnPropertyChanged(nameof(IsExtensionsActionDeckVisible));
+            NotifyGauntletComposerVisibility();
             OnPropertyChanged(nameof(ShowTestActions));
             switch (section)
             {
@@ -1902,6 +2081,7 @@ namespace CalradiaForge.Mod
                 case "novice-events":
                 case "novice-hint":
                 case "novice-gauntlet":
+                case "novice-gauntlet-composer":
                 case "novice-workshop":
                 case "novice-party":
                 case "novice-building":
@@ -1911,7 +2091,17 @@ namespace CalradiaForge.Mod
             }
             RebuildCategoryCommands();
             NotifyLayout();
-            if (executeOnSelect)
+            if (string.Equals(section, "novice-gauntlet-composer", StringComparison.Ordinal))
+            {
+                if (!string.Equals(previousSection, section, StringComparison.Ordinal))
+                {
+                    full = string.Empty;
+                    page = 0;
+                }
+                Render();
+                NotifyGauntletComposerVisibility();
+            }
+            else if (executeOnSelect)
             {
                 runtime.Register("CalradiaForge", "Info", "Panel section: " + section);
                 Send(current);
@@ -1960,10 +2150,356 @@ namespace CalradiaForge.Mod
         public void ExecuteNoviceEvents()     { SelectSection("novice-events"); }
         public void ExecuteNoviceHint()       { SelectSection("novice-hint"); }
         public void ExecuteNoviceGauntlet()   { SelectSection("novice-gauntlet"); }
+        public void ExecuteNoviceGauntletComposer()
+        {
+            SelectSection("novice-gauntlet-composer");
+            _navigationPaletteFocusSearchRequested = true;
+            OnPropertyChanged(nameof(NavigationPaletteFocusSearchRequested));
+        }
         public void ExecuteNoviceWorkshop()   { SelectSection("novice-workshop"); }
         public void ExecuteNoviceParty()      { SelectSection("novice-party"); }
         public void ExecuteNoviceBuilding()   { SelectSection("novice-building"); }
         public void ExecuteNoviceCombat()     { SelectSection("novice-combat"); }
+
+        public void ExecuteComposerAddHeading() => AddGauntletComposerBlock("heading");
+        public void ExecuteComposerAddText() => AddGauntletComposerBlock("text");
+        public void ExecuteComposerAddField() => AddGauntletComposerBlock("field");
+        public void ExecuteComposerAddButton() => AddGauntletComposerBlock("button");
+        public void ExecuteComposerAddMetric() => AddGauntletComposerBlock("metric");
+        public void ExecuteComposerAddList() => AddGauntletComposerBlock("list");
+        public void ExecuteComposerAddToggle() => AddGauntletComposerBlock("toggle");
+        public void ExecuteComposerAddProgress() => AddGauntletComposerBlock("progress");
+        public void ExecuteComposerAddSelector() => AddGauntletComposerBlock("selector");
+
+        private void AddGauntletComposerBlock(string kind)
+        {
+            if (!IsGauntletComposerActive || _gauntletComposerDraft.Components.Count >= GauntletComposerKinds.MaximumComponents)
+            {
+                SetGauntletComposerStatus(IsGauntletComposerActive ? "A draft can contain at most 12 components." : "Open the Gauntlet Page Composer first.");
+                return;
+            }
+
+            var model = GauntletComposerKinds.Create(kind);
+            _gauntletComposerDraft.Components.Add(model);
+            var viewModel = new GauntletComposerBlockVM(this, model);
+            _gauntletComposerBlocks.Add(viewModel);
+            _gauntletComposerOptionsEditBlockId = null;
+            _gauntletComposerOptionsEditText = null;
+            _selectedGauntletComposerBlockId = model.Id;
+            foreach (var block in _gauntletComposerBlocks)
+                block.IsSelected = string.Equals(block.Id, _selectedGauntletComposerBlockId, StringComparison.Ordinal);
+            MarkGauntletComposerEdited();
+            NotifyGauntletComposerSelection();
+        }
+
+        public void ExecuteComposerPreviousBlock() => SelectAdjacentGauntletComposerBlock(-1);
+        public void ExecuteComposerNextBlock() => SelectAdjacentGauntletComposerBlock(1);
+
+        private void SelectAdjacentGauntletComposerBlock(int offset)
+        {
+            if (_gauntletComposerBlocks.Count == 0) return;
+            int index = _gauntletComposerBlocks.ToList().FindIndex(block => string.Equals(block.Id, _selectedGauntletComposerBlockId, StringComparison.Ordinal));
+            index = Math.Max(0, Math.Min(_gauntletComposerBlocks.Count - 1, (index < 0 ? 0 : index) + offset));
+            SelectGauntletComposerBlock(_gauntletComposerBlocks[index].Id);
+        }
+
+        public void ExecuteComposerMoveUp() => MoveGauntletComposerBlock(-1);
+        public void ExecuteComposerMoveDown() => MoveGauntletComposerBlock(1);
+
+        private void MoveGauntletComposerBlock(int offset)
+        {
+            int index = _gauntletComposerDraft.Components.FindIndex(block => string.Equals(block.Id, _selectedGauntletComposerBlockId, StringComparison.Ordinal));
+            int target = index + offset;
+            if (index < 0 || target < 0 || target >= _gauntletComposerDraft.Components.Count) return;
+            var model = _gauntletComposerDraft.Components[index];
+            _gauntletComposerDraft.Components.RemoveAt(index);
+            _gauntletComposerDraft.Components.Insert(target, model);
+            var item = _gauntletComposerBlocks[index];
+            _gauntletComposerBlocks.RemoveAt(index);
+            _gauntletComposerBlocks.Insert(target, item);
+            MarkGauntletComposerEdited();
+            OnPropertyChanged(nameof(GauntletComposerCountLabel));
+        }
+
+        public void ExecuteComposerRemove()
+        {
+            int index = _gauntletComposerDraft.Components.FindIndex(block => string.Equals(block.Id, _selectedGauntletComposerBlockId, StringComparison.Ordinal));
+            if (index < 0) return;
+            _gauntletComposerDraft.Components.RemoveAt(index);
+            _gauntletComposerBlocks.RemoveAt(index);
+            _gauntletComposerOptionsEditBlockId = null;
+            _gauntletComposerOptionsEditText = null;
+            _selectedGauntletComposerBlockId = _gauntletComposerBlocks.Count == 0
+                ? string.Empty
+                : _gauntletComposerBlocks[Math.Min(index, _gauntletComposerBlocks.Count - 1)].Id;
+            foreach (var block in _gauntletComposerBlocks)
+                block.IsSelected = string.Equals(block.Id, _selectedGauntletComposerBlockId, StringComparison.Ordinal);
+            MarkGauntletComposerEdited();
+            NotifyGauntletComposerSelection();
+        }
+
+        internal void SelectGauntletComposerBlock(string id)
+        {
+            if (!_gauntletComposerBlocks.Any(block => string.Equals(block.Id, id, StringComparison.Ordinal))) return;
+            if (!string.Equals(_selectedGauntletComposerBlockId, id, StringComparison.Ordinal))
+            {
+                _gauntletComposerOptionsEditBlockId = null;
+                _gauntletComposerOptionsEditText = null;
+            }
+            _selectedGauntletComposerBlockId = id;
+            foreach (var block in _gauntletComposerBlocks)
+                block.IsSelected = string.Equals(block.Id, id, StringComparison.Ordinal);
+            NotifyGauntletComposerSelection();
+        }
+
+        internal void SelectGauntletComposerOption(GauntletComposerBlockVM block, int optionIndex)
+        {
+            if (block == null || optionIndex < 0 || optionIndex >= block.Options.Count) return;
+            block.SelectedOptionIndex = optionIndex;
+            block.RefreshSelection();
+        }
+
+        internal void GauntletComposerBlockValueChanged(GauntletComposerBlockVM block, string propertyName)
+        {
+            if (block == null) return;
+            if (string.Equals(block.Id, _selectedGauntletComposerBlockId, StringComparison.Ordinal))
+            {
+                if (propertyName == nameof(GauntletComposerBlockVM.Label)) OnPropertyChanged(nameof(GauntletComposerSelectedLabel));
+                if (propertyName == nameof(GauntletComposerBlockVM.Text)) OnPropertyChanged(nameof(GauntletComposerSelectedText));
+                if (propertyName == nameof(GauntletComposerBlockVM.IsOn)) OnPropertyChanged(nameof(GauntletComposerSampleToggleState));
+            }
+            MarkGauntletComposerEdited();
+        }
+
+        private void UpdateSelectedGauntletComposerLabel(string value)
+        {
+            var selected = SelectedGauntletComposerBlock;
+            if (selected == null) return;
+            value = GauntletComposerKinds.Limit(value, GauntletComposerKinds.MaximumTextLength);
+            if (string.Equals(selected.Model.Label, value, StringComparison.Ordinal)) return;
+            selected.Model.Label = value;
+            selected.RefreshFromModel();
+            OnPropertyChanged(nameof(GauntletComposerSelectedLabel));
+            MarkGauntletComposerEdited();
+        }
+
+        private void UpdateSelectedGauntletComposerText(string value)
+        {
+            var selected = SelectedGauntletComposerBlock;
+            if (selected == null) return;
+            value = GauntletComposerKinds.Limit(value, GauntletComposerKinds.MaximumTextLength);
+            if (string.Equals(selected.Model.Text, value, StringComparison.Ordinal)) return;
+            selected.Model.Text = value;
+            selected.RefreshFromModel();
+            OnPropertyChanged(nameof(GauntletComposerSelectedText));
+            MarkGauntletComposerEdited();
+        }
+
+        private void UpdateSelectedGauntletComposerOptions(string value)
+        {
+            var selected = SelectedGauntletComposerBlock;
+            if (selected == null || !selected.HasOptions) return;
+            string nextEdit = GauntletComposerKinds.Limit(value, GauntletComposerKinds.MaximumOptionsInputLength);
+            bool editChanged = !string.Equals(_gauntletComposerOptionsEditBlockId, selected.Id, StringComparison.Ordinal)
+                || !string.Equals(_gauntletComposerOptionsEditText, nextEdit, StringComparison.Ordinal);
+            _gauntletComposerOptionsEditBlockId = selected.Id;
+            _gauntletComposerOptionsEditText = nextEdit;
+            if (!GauntletComposerKinds.TryParseOptions(nextEdit, out var values, out _, out var parseError))
+            {
+                OnPropertyChanged(nameof(GauntletComposerSelectedOptions));
+                if (editChanged) MarkGauntletComposerEdited();
+                SetGauntletComposerStatus(parseError ?? "Lists and selectors require between 1 and 8 non-empty options separated by |.");
+                return;
+            }
+            bool optionsChanged = !selected.Model.Options.SequenceEqual(values, StringComparer.Ordinal);
+            if (optionsChanged)
+            {
+                selected.Model.Options = values;
+                selected.ReplaceOptions();
+                OnPropertyChanged(nameof(GauntletComposerOptionsPreviewText));
+            }
+            OnPropertyChanged(nameof(GauntletComposerSelectedOptions));
+            if (editChanged || optionsChanged) MarkGauntletComposerEdited();
+        }
+
+        private bool ValidateGauntletComposerOptionsEdit(out string error)
+        {
+            error = null;
+            var selected = SelectedGauntletComposerBlock;
+            if (selected == null || !string.Equals(_gauntletComposerOptionsEditBlockId, selected.Id, StringComparison.Ordinal)) return true;
+            if (!GauntletComposerKinds.TryParseOptions(_gauntletComposerOptionsEditText, out var options, out bool isComplete, out error)
+                || !isComplete || options.Count != selected.Model.Options.Count
+                || !selected.Model.Options.SequenceEqual(options, StringComparer.Ordinal))
+            {
+                error = error ?? "Lists and selectors require between 1 and 8 non-empty options separated by |.";
+                return false;
+            }
+            return true;
+        }
+
+        private void UpdateSelectedGauntletComposerProgress(string value)
+        {
+            var selected = SelectedGauntletComposerBlock;
+            if (selected == null || !selected.IsProgress) return;
+            if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int progress) || progress < 0 || progress > 100)
+            {
+                OnPropertyChanged(nameof(GauntletComposerSelectedProgress));
+                SetGauntletComposerStatus("Progress must be a whole number from 0 to 100.");
+                return;
+            }
+            if (selected.Model.Progress == progress) return;
+            selected.Model.Progress = progress;
+            selected.RefreshFromModel();
+            OnPropertyChanged(nameof(GauntletComposerSelectedProgress));
+            MarkGauntletComposerEdited();
+        }
+
+        public void ExecuteComposerSaveDraft()
+        {
+            if (!ValidateGauntletComposerOptionsEdit(out var optionsError))
+            {
+                SetGauntletComposerStatus(optionsError);
+                return;
+            }
+            if (!GauntletComposerKinds.TryNormalize(_gauntletComposerDraft, out var normalized, out var validationError))
+            {
+                SetGauntletComposerStatus(validationError);
+                return;
+            }
+            if (!GauntletComposerPersistence.TrySave(_gauntletComposerDraftPath, normalized, out var error))
+            {
+                SetGauntletComposerStatus(error ?? "The draft could not be saved.");
+                return;
+            }
+            _gauntletComposerDraft = normalized;
+            RebuildGauntletComposerBlocks(selectFirst: false);
+            SetGauntletComposerStatus("Draft saved.");
+        }
+
+        public void ExecuteComposerGenerate()
+        {
+            if (!ValidateGauntletComposerOptionsEdit(out var optionsError))
+            {
+                _isGauntletComposerPackageVisible = false;
+                SetEvidenceFocus(false);
+                SetGauntletComposerStatus(optionsError);
+                NotifyGauntletComposerVisibility();
+                return;
+            }
+            if (!GauntletComposerGenerator.TryGenerate(_gauntletComposerDraft, out var package, out var errors))
+            {
+                _isGauntletComposerPackageVisible = false;
+                SetEvidenceFocus(false);
+                string firstError = errors.FirstOrDefault() ?? string.Empty;
+                SetGauntletComposerStatus(firstError == "Add at least one component before generating the package."
+                    ? firstError
+                    : firstError.StartsWith("Lists and selectors require between 1 and 8", StringComparison.Ordinal)
+                        ? "Lists and selectors require between 1 and 8 options."
+                        : "The generated package failed its binding and localization checks.");
+                NotifyGauntletComposerVisibility();
+                return;
+            }
+            full = package.FullText;
+            page = 0;
+            overview = false;
+            _isGauntletComposerPackageVisible = true;
+            SetEvidenceFocus(true);
+            SetGauntletComposerStatus("Bindings and localization passed validation.");
+            Render();
+            NotifyGauntletComposerVisibility();
+        }
+
+        public void ExecuteComposerCopyPackage()
+        {
+            if (!IsGauntletComposerPackageVisible || string.IsNullOrWhiteSpace(full)) return;
+            ExecuteClipboard();
+        }
+
+        public void ExecuteComposerSampleButton()
+        {
+            SelectedGauntletComposerBlock?.ExecuteSampleAction();
+            OnPropertyChanged(nameof(GauntletComposerSampleValueLabel));
+        }
+        public void ExecuteComposerSampleToggle() => SelectedGauntletComposerBlock?.ExecuteToggle();
+        public void ExecuteComposerSampleNextOption()
+        {
+            SelectedGauntletComposerBlock?.ExecuteNextOption();
+            OnPropertyChanged(nameof(GauntletComposerSampleValueLabel));
+        }
+
+        public void ExecuteComposerEditDraft()
+        {
+            if (!_isGauntletComposerPackageVisible) return;
+            _isGauntletComposerPackageVisible = false;
+            SetEvidenceFocus(false);
+            full = string.Empty;
+            page = 0;
+            Render();
+            NotifyGauntletComposerVisibility();
+        }
+
+        private void MarkGauntletComposerEdited()
+        {
+            if (_isGauntletComposerPackageVisible)
+            {
+                _isGauntletComposerPackageVisible = false;
+                SetEvidenceFocus(false);
+                full = string.Empty;
+                page = 0;
+                Render();
+            }
+            SetGauntletComposerStatus("Unsaved draft changes.");
+            OnPropertyChanged(nameof(GauntletComposerCountLabel));
+            OnPropertyChanged(nameof(GauntletComposerHasBlocks));
+            OnPropertyChanged(nameof(GauntletComposerIsEmpty));
+            OnPropertyChanged(nameof(GauntletComposerAtCapacity));
+            NotifyGauntletComposerVisibility();
+        }
+
+        private void SetGauntletComposerStatus(string key)
+        {
+            _gauntletComposerStatusKey = key ?? string.Empty;
+            OnPropertyChanged(nameof(GauntletComposerStatusLabel));
+        }
+
+        private void NotifyGauntletComposerSelection()
+        {
+            foreach (string property in new[]
+            {
+                nameof(GauntletComposerSelectedLabel), nameof(GauntletComposerSelectedText), nameof(GauntletComposerSelectedOptions),
+                nameof(GauntletComposerSelectedProgress), nameof(GauntletComposerSelectedKindLabel), nameof(GauntletComposerHasSelection),
+                nameof(GauntletComposerOptionsVisible), nameof(GauntletComposerProgressVisible), nameof(GauntletComposerSampleButtonVisible),
+                nameof(GauntletComposerSampleToggleVisible), nameof(GauntletComposerSampleSelectorVisible), nameof(GauntletComposerOptionsPreviewText)
+                , nameof(GauntletComposerSampleToggleState), nameof(GauntletComposerSampleValueLabel)
+            }) OnPropertyChanged(property);
+        }
+
+        private void NotifyGauntletComposerVisibility()
+        {
+            foreach (string property in new[]
+            {
+                nameof(IsGauntletComposerActive), nameof(IsGauntletComposerWorkspaceVisible), nameof(IsGauntletComposerPackageVisible),
+                nameof(IsEvidenceFrameVisible), nameof(IsComposerPaginationVisible), nameof(IsEvidenceToggleVisible),
+                nameof(IsRegularActionDeckVisible), nameof(IsNormalInputVisible), nameof(ShowCommandDeck),
+                nameof(EvidenceTop), nameof(EvidenceHeading), nameof(OutputHeading)
+            }) OnPropertyChanged(property);
+        }
+
+        internal string LocalizeGauntletComposerKind(string kind)
+        {
+            switch (kind)
+            {
+                case "heading": return T("Heading");
+                case "text": return T("Text");
+                case "field": return T("Editable field");
+                case "button": return T("Button");
+                case "metric": return T("Status or metric");
+                case "list": return T("List");
+                case "toggle": return T("Toggle");
+                case "progress": return T("Progress bar");
+                default: return T("Selector");
+            }
+        }
         public void ExecuteForceGC()
         {
             long before = GC.GetTotalMemory(false);
@@ -3970,6 +4506,28 @@ namespace CalradiaForge.Mod
                 case "ForgeNoviceEvents": ExecuteNoviceEvents(); break;
                 case "ForgeNoviceHint": ExecuteNoviceHint(); break;
                 case "ForgeNoviceGauntlet": ExecuteNoviceGauntlet(); break;
+                case "ForgeNoviceGauntletComposer": ExecuteNoviceGauntletComposer(); break;
+                case "ForgeComposerAddHeading": ExecuteComposerAddHeading(); break;
+                case "ForgeComposerAddText": ExecuteComposerAddText(); break;
+                case "ForgeComposerAddField": ExecuteComposerAddField(); break;
+                case "ForgeComposerAddButton": ExecuteComposerAddButton(); break;
+                case "ForgeComposerAddMetric": ExecuteComposerAddMetric(); break;
+                case "ForgeComposerAddList": ExecuteComposerAddList(); break;
+                case "ForgeComposerAddToggle": ExecuteComposerAddToggle(); break;
+                case "ForgeComposerAddProgress": ExecuteComposerAddProgress(); break;
+                case "ForgeComposerAddSelector": ExecuteComposerAddSelector(); break;
+                case "ForgeComposerPreviousBlock": ExecuteComposerPreviousBlock(); break;
+                case "ForgeComposerNextBlock": ExecuteComposerNextBlock(); break;
+                case "ForgeComposerMoveUp": ExecuteComposerMoveUp(); break;
+                case "ForgeComposerMoveDown": ExecuteComposerMoveDown(); break;
+                case "ForgeComposerRemove": ExecuteComposerRemove(); break;
+                case "ForgeComposerSave": ExecuteComposerSaveDraft(); break;
+                case "ForgeComposerGenerate": ExecuteComposerGenerate(); break;
+                case "ForgeComposerCopy": ExecuteComposerCopyPackage(); break;
+                case "ForgeComposerEdit": ExecuteComposerEditDraft(); break;
+                case "ForgeComposerSampleButton": ExecuteComposerSampleButton(); break;
+                case "ForgeComposerSampleToggle": ExecuteComposerSampleToggle(); break;
+                case "ForgeComposerSampleNextOption": ExecuteComposerSampleNextOption(); break;
                 case "ForgeRunNovice": { if (currentCategory == "novice") Send(current, Argument); } break;
                 case "ForgeCategoryHelp": ExecuteCategoryHelp(); break;
                 case "ForgeCycleModderRole": ExecuteCycleModderRole(); break;
@@ -4747,6 +5305,179 @@ namespace CalradiaForge.Mod
                 _categorySuggestedCommands.Add(rawList[i]);
             }
         }
+    }
+
+    internal sealed class GauntletComposerBlockVM : ViewModel
+    {
+        private readonly PanelViewModel _parent;
+        private readonly MBBindingList<GauntletComposerOptionItemVM> _options = new MBBindingList<GauntletComposerOptionItemVM>();
+        private bool _isSelected;
+        private int _selectedOptionIndex;
+        private int _sampleActionCount;
+
+        internal GauntletComposerBlockVM(PanelViewModel parent, GauntletComposerBlock model)
+        {
+            _parent = parent;
+            Model = model ?? throw new ArgumentNullException(nameof(model));
+            ReplaceOptions();
+        }
+
+        internal GauntletComposerBlock Model { get; }
+        [DataSourceProperty] public string Id => Model.Id;
+        [DataSourceProperty] public string Kind => Model.Kind;
+        [DataSourceProperty] public string TypeLabel => _parent.LocalizeGauntletComposerKind(Model.Kind);
+        [DataSourceProperty] public bool HasOptions => Model.Kind == "list" || Model.Kind == "selector";
+        [DataSourceProperty] public bool IsHeading => Model.Kind == "heading";
+        [DataSourceProperty] public bool IsText => Model.Kind == "text";
+        [DataSourceProperty] public bool IsField => Model.Kind == "field";
+        [DataSourceProperty] public bool IsButton => Model.Kind == "button";
+        [DataSourceProperty] public bool IsMetric => Model.Kind == "metric";
+        [DataSourceProperty] public bool IsList => Model.Kind == "list";
+        [DataSourceProperty] public bool IsToggle => Model.Kind == "toggle";
+        [DataSourceProperty] public bool IsProgress => Model.Kind == "progress";
+        [DataSourceProperty] public bool IsSelector => Model.Kind == "selector";
+        [DataSourceProperty] public string OptionsPreviewText => string.Join("\n", Model.Options ?? new List<string>());
+        [DataSourceProperty] public string SelectedOptionLabel => _options.Count == 0 ? string.Empty : _options[Math.Max(0, Math.Min(_selectedOptionIndex, _options.Count - 1))].Label;
+        [DataSourceProperty] public MBBindingList<GauntletComposerOptionItemVM> Options => _options;
+        [DataSourceProperty]
+        public string Label
+        {
+            get => Model.Label ?? string.Empty;
+            set
+            {
+                string next = GauntletComposerKinds.Limit(value, GauntletComposerKinds.MaximumTextLength);
+                if (string.Equals(Model.Label, next, StringComparison.Ordinal)) return;
+                Model.Label = next;
+                OnPropertyChangedWithValue(next, nameof(Label));
+                _parent.GauntletComposerBlockValueChanged(this, nameof(Label));
+            }
+        }
+        [DataSourceProperty]
+        public string Text
+        {
+            get => Model.Text ?? string.Empty;
+            set
+            {
+                string next = GauntletComposerKinds.Limit(value, GauntletComposerKinds.MaximumTextLength);
+                if (string.Equals(Model.Text, next, StringComparison.Ordinal)) return;
+                Model.Text = next;
+                OnPropertyChangedWithValue(next, nameof(Text));
+                OnPropertyChanged(nameof(ValueText));
+                _parent.GauntletComposerBlockValueChanged(this, nameof(Text));
+            }
+        }
+        [DataSourceProperty] public string ValueText => _sampleActionCount == 0 ? (string.IsNullOrWhiteSpace(Model.Text) ? Model.Label : Model.Text) : TypeLabel + " · " + _sampleActionCount.ToString(CultureInfo.InvariantCulture);
+        [DataSourceProperty] public string SampleButtonLabel => _sampleActionCount == 0 ? Model.Label ?? string.Empty : (Model.Label ?? string.Empty) + " (" + _sampleActionCount.ToString(CultureInfo.InvariantCulture) + ")";
+        [DataSourceProperty] public int ProgressValue => Model.Progress;
+        [DataSourceProperty] public float ProgressAmount => Math.Max(0, Math.Min(100, Model.Progress)) / 100f;
+        [DataSourceProperty]
+        public bool IsOn
+        {
+            get => Model.IsOn;
+            set
+            {
+                if (Model.IsOn == value) return;
+                Model.IsOn = value;
+                OnPropertyChangedWithValue(value, nameof(IsOn));
+                _parent.GauntletComposerBlockValueChanged(this, nameof(IsOn));
+            }
+        }
+        [DataSourceProperty]
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                if (_isSelected == value) return;
+                _isSelected = value;
+                OnPropertyChangedWithValue(value, nameof(IsSelected));
+            }
+        }
+        [DataSourceProperty]
+        public int SelectedOptionIndex
+        {
+            get => _selectedOptionIndex;
+            set
+            {
+                _selectedOptionIndex = _options.Count == 0 ? 0 : Math.Max(0, Math.Min(_options.Count - 1, value));
+                OnPropertyChangedWithValue(_selectedOptionIndex, nameof(SelectedOptionIndex));
+                RefreshSelection();
+            }
+        }
+
+        internal void RefreshFromModel()
+        {
+            foreach (string property in new[] { nameof(Label), nameof(Text), nameof(ValueText), nameof(SampleButtonLabel), nameof(ProgressValue), nameof(ProgressAmount), nameof(IsOn) })
+                OnPropertyChanged(property);
+        }
+
+        internal void ReplaceOptions()
+        {
+            _options.Clear();
+            var values = Model.Options ?? new List<string>();
+            for (int i = 0; i < values.Count; i++)
+                _options.Add(new GauntletComposerOptionItemVM(this, i, values[i]));
+            if (_selectedOptionIndex >= _options.Count)
+                _selectedOptionIndex = Math.Max(0, _options.Count - 1);
+            RefreshSelection();
+            OnPropertyChanged(nameof(Options));
+            OnPropertyChanged(nameof(OptionsPreviewText));
+            OnPropertyChanged(nameof(SelectedOptionLabel));
+        }
+
+        internal void RefreshSelection()
+        {
+            foreach (var option in _options)
+                option.IsSelected = option.Index == _selectedOptionIndex;
+            OnPropertyChanged(nameof(SelectedOptionLabel));
+        }
+
+        internal void SelectOption(int index) => _parent.SelectGauntletComposerOption(this, index);
+
+        public void ExecuteSelect() => _parent.SelectGauntletComposerBlock(Id);
+        public void ExecuteSampleAction()
+        {
+            _sampleActionCount++;
+            OnPropertyChanged(nameof(ValueText));
+            OnPropertyChanged(nameof(SampleButtonLabel));
+        }
+        public void ExecuteToggle() => IsOn = !IsOn;
+        public void ExecuteNextOption()
+        {
+            if (_options.Count == 0) return;
+            SelectedOptionIndex = (_selectedOptionIndex + 1) % _options.Count;
+            RefreshSelection();
+        }
+    }
+
+    internal sealed class GauntletComposerOptionItemVM : ViewModel
+    {
+        private readonly GauntletComposerBlockVM _owner;
+        private readonly int _index;
+        private bool _isSelected;
+
+        internal GauntletComposerOptionItemVM(GauntletComposerBlockVM owner, int index, string label)
+        {
+            _owner = owner;
+            _index = index;
+            Label = label ?? string.Empty;
+        }
+
+        internal int Index => _index;
+        [DataSourceProperty] public string Label { get; }
+        [DataSourceProperty]
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                if (_isSelected == value) return;
+                _isSelected = value;
+                OnPropertyChangedWithValue(value, nameof(IsSelected));
+            }
+        }
+
+        public void ExecuteSelect() => _owner?.SelectOption(_index);
     }
 
     internal sealed class NavigationPaletteItemVM : ViewModel

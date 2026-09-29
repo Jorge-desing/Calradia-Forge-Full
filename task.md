@@ -666,3 +666,10 @@
   - [x] Sincronizar y push a GitHub (`main`) bajo la Regla E.
 
 
+## Compositor Gauntlet con contrato de bindings verificado — 2026-09-29
+- [x] Sincronizar las guías `GAME_UI_EXTENSIONS.md` y `.es.md` con la ruta, los nueve componentes, la vista previa local, el esquema de borrador v1 y sus límites, la validación de bindings y las cuatro salidas generadas.
+- [ ] Completar la integración de la ruta y el generador; conservar el Blueprint y la API pública del SDK.
+- [ ] Añadir regresiones para componentes, IDs, límites, borradores, escapado y cobertura del contrato XML/ViewModel/localización.
+- [ ] Ejecutar Release, verificación stateless, suite completa y auditorías Gauntlet/localización.
+- [ ] Probar en Steam persistencia, edición, vista previa, generación y copia integral en 1220×880 y 1280×720.
+- [ ] Desplegar tras la verificación en vivo, con respaldo y hashes; sin importar assets ni modificar TPAC.

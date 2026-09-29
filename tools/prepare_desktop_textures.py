@@ -86,6 +86,12 @@ PRESERVED_UNPACKAGED_VARIANTS = {
     "calradia-centurion-medallion-rev090.png",
     "calradia-guild-medallion-rev092.png",
     "calradia-mind-medallion-rev093.png",
+    # Rev095: Five new thematic studio medallions (Audio/CodeSecurity/Hierarchy/Diplomacy/ComponentGenerator)
+    "calradia-acoustic-medallion-rev095.png",
+    "calradia-cipher-seal-rev095.png",
+    "calradia-hierarchy-seal-rev095.png",
+    "calradia-diplomacy-medallion-rev095.png",
+    "calradia-mechanism-medallion-rev095.png",
 }
 
 

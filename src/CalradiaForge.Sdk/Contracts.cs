@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using CalradiaForge.Sdk.Patcher;
 
 namespace CalradiaForge.Sdk
 {
@@ -145,7 +146,11 @@ namespace CalradiaForge.Sdk
         public static TypeReference From(Type type)
         {
             if(type==null)return null;
-            return new TypeReference {AssemblyName=type.Assembly.GetName().Name,FullName=type.FullName??type.Name};
+            var assembly=type.IsGenericParameter?type.Module?.Assembly:type.Assembly;
+            var fullName=type.IsGenericParameter
+                ? (type.DeclaringMethod==null?"!":"!!")+type.GenericParameterPosition
+                : type.FullName??type.Name;
+            return new TypeReference {AssemblyName=assembly?.GetName().Name,FullName=fullName};
         }
     }
     public sealed class MethodReference
@@ -456,8 +461,9 @@ namespace CalradiaForge.Sdk
 
     public static class ForgeApi
     {
-        public const int Version = 10;
+        public const int Version = 11;
         static readonly object availabilityGate=new object();
+        static readonly object connectionGate=new object();
         static IForgeRegistry registry;
         static Action<IForgeRegistry,long,int> registryChanged;
         static long registryGeneration;
@@ -483,6 +489,7 @@ namespace CalradiaForge.Sdk
             }
         }
         static IPatchBlueprintRegistry patchBlueprints;
+        static IForgePatchService patches;
         static IForgeEventRegistry events;
         static IForgeReplayRegistry replays;
         static IForgeSettingsRegistry settings;
@@ -497,6 +504,9 @@ namespace CalradiaForge.Sdk
         static SharedLibraryRegistry libraries;
         public static IForgeRegistry Registry { get {lock(availabilityGate)return registry;} }
         public static IPatchBlueprintRegistry PatchBlueprints { get {lock(availabilityGate)return patchBlueprints;} }
+        /// <summary>Gets the optional explicit method-patching capability when the connected host provides it.</summary>
+        /// <remarks>Check this property at runtime; <see cref="Version"/> is a compile-time constant and is not a capability probe.</remarks>
+        public static IForgePatchService Patches { get {lock(availabilityGate)return patches;} }
         public static IForgeEventRegistry Events { get {lock(availabilityGate)return events;} }
         public static bool PublishCustomEvent(string topic, IEnumerable<KeyValuePair<string, string>> data = null) => Events?.PublishCustom(topic, data) ?? false;
         public static IForgeReplayRegistry Replays { get {lock(availabilityGate)return replays;} }
@@ -697,7 +707,33 @@ namespace CalradiaForge.Sdk
         }
         public static void Connect(IForgeRegistry registry)
         {
+            lock(connectionGate) ConnectCore(registry);
+        }
+
+        static void ConnectCore(IForgeRegistry registry)
+        {
             if(registry==null)throw new ArgumentNullException(nameof(registry));
+            IForgeRegistry priorRegistry;
+            IForgePatchService priorPatches;
+            lock(availabilityGate)
+            {
+                priorRegistry=ForgeApi.registry;
+                priorPatches=patches;
+            }
+            if(!ReferenceEquals(priorRegistry,registry))
+            {
+                ForgeDetour.StopAcceptingApplications();
+                priorPatches?.Disconnect();
+                try { ForgeDetour.UnpatchAll(); }
+                catch { /* Exact status remains in ForgeDetour snapshots; do not retry during this transition. */ }
+                ForgePatcher.RemoveVerifiedRevertedRecords();
+                var outstanding=ForgeDetour.GetTrackedSnapshots();
+                if(outstanding.Count>0)
+                    throw new InvalidOperationException("The previous Forge connection retains patch conflicts or uncertain detours. Resolve them before replacing the registry.");
+            }
+            // Reopen the incoming host's optional service only after its prior records prove
+            // cleanly reverted. Do this before publishing it or reopening direct detours.
+            (registry as IForgePatchServiceLifecycle)?.Reconnect();
             SharedLibraryRegistry previous;
             Action<IForgeRegistry> subscribers;
             Action<IForgeRegistry,long,int> lifecycleSubscribers;
@@ -705,10 +741,12 @@ namespace CalradiaForge.Sdk
             int connectionThreadId;
             lock(availabilityGate)
             {
+                ForgeDetour.AllowApplications();
                 previous=libraries;
                 libraries=new SharedLibraryRegistry();
                 ForgeApi.registry=registry;
                 patchBlueprints=registry as IPatchBlueprintRegistry;
+                patches=registry as IForgePatchService;
                 events=registry as IForgeEventRegistry;
                 replays=registry as IForgeReplayRegistry;
                 settings=registry as IForgeSettingsRegistry;
@@ -935,7 +973,14 @@ namespace CalradiaForge.Sdk
         }
         public static void Disconnect()
         {
+            lock(connectionGate) DisconnectCore();
+        }
+
+        static void DisconnectCore()
+        {
+            ForgeDetour.StopAcceptingApplications();
             SharedLibraryRegistry previous;
+            IForgePatchService previousPatches;
             IForgeUiRegistry previousUi;
             Action<IForgeRegistry,long,int> lifecycleSubscribers;
             long generation;
@@ -943,24 +988,36 @@ namespace CalradiaForge.Sdk
             lock(availabilityGate)
             {
                 previous=libraries;
+                previousPatches=patches;
                 previousUi=ui;
                 connectionThreadId=registryThreadId;
-                libraries=null;patchBlueprints=null;events=null;replays=null;settings=null;logger=null;input=null;saveManager=null;debug=null;agentManager=null;analyses=null;runtimeCapabilities=null;ui=null;registry=null;
+                libraries=null;patchBlueprints=null;patches=null;events=null;replays=null;settings=null;logger=null;input=null;saveManager=null;debug=null;agentManager=null;analyses=null;runtimeCapabilities=null;ui=null;registry=null;
                 registryThreadId=0;
                 UiPagesRemoved=null;
                 lifecycleSubscribers=registryChanged;
                 generation=++registryGeneration;
             }
-            previous?.Dispose();
-            previousUi?.Clear();
-            if(lifecycleSubscribers==null)return;
             var errors=new List<Exception>();
+            try { previous?.Dispose(); }
+            catch(Exception ex) { errors.Add(ex); }
+            try { previousPatches?.Disconnect(); }
+            catch(Exception ex) { errors.Add(ex); }
+            ForgeDetour.UnpatchAllForLifecycle();
+            try { ForgePatcher.RemoveVerifiedRevertedRecords(); }
+            catch(Exception ex) { errors.Add(ex); }
+            try { previousUi?.Clear(); }
+            catch(Exception ex) { errors.Add(ex); }
+            if(lifecycleSubscribers==null)
+            {
+                if(errors.Count>0)throw new AggregateException("One or more Forge services failed during disconnection.",errors);
+                return;
+            }
             foreach(var listener in lifecycleSubscribers.GetInvocationList().Cast<Action<IForgeRegistry,long,int>>())
             {
                 try { listener(null,generation,connectionThreadId); }
                 catch(Exception ex) { errors.Add(ex); }
             }
-            if(errors.Count>0)throw new AggregateException("One or more ForgeWeave subscribers threw an exception during disconnection.",errors);
+            if(errors.Count>0)throw new AggregateException("One or more Forge services or lifecycle subscribers failed during disconnection.",errors);
         }
     }
 }

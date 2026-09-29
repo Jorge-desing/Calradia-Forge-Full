@@ -14,11 +14,6 @@ using CalradiaForge.Tests;
 class Program
 {
     static int passed,failed;static string temp;
-    static bool _detourCalled;
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-    static void AssertDetourOriginal() { _detourCalled = false; }
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-    static void AssertDetourReplacement() { _detourCalled = true; }
 
     static void Main(string[] args)
     {
@@ -49,17 +44,6 @@ class Program
             GameThreadActionQueueTests.Run(Test);
             AssemblyWorkbenchTests.Run(Test, temp);
             
-            // ForgeDetour test
-            Test("ForgeDetour redirects execution", () => {
-                AssertDetourOriginal();
-                var orig = typeof(Program).GetMethod(nameof(AssertDetourOriginal), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-                var repl = typeof(Program).GetMethod(nameof(AssertDetourReplacement), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-                ForgeDetour.Patch(orig, repl);
-                _detourCalled = false;
-                AssertDetourOriginal(); // Will be redirected to AssertDetourReplacement
-                True(_detourCalled);
-            });
-
             Test("JSON roundtrip with unicode and HTML",()=>{var r=new Request{Argument="Español <script>\n"};Equal(Json.Deserialize<Request>(Json.Serialize(r)).Argument,r.Argument);});
             Test("Atomic settings replacement",()=>{var p=Path.Combine(temp,"settings.json");Json.Save(p,new Settings{Language="en"});Json.Save(p,new Settings{Language="es"});Equal(Json.Deserialize<Settings>(File.ReadAllText(p)).Language,"es");});
             Test("Healthy module",()=>{var d=Folder("healthy");Module(d,"A","");Equal(ModuleValidator.Inspect(d).Findings.Count,0);});

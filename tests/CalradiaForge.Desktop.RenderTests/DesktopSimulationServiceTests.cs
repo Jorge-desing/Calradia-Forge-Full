@@ -54,6 +54,55 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies Rev092 workshop guild medallion and scenario cycling telemetry");
         Rev093AgentCognitiveMindAndProceduralRadarTelemetry();
         Console.WriteLine("PASS Desktop simulation verifies Rev093 CoALA cognitive mind medallion and procedural policy radar telemetry");
+        Rev095FiveStudioMedallionUpgrades();
+        Console.WriteLine("PASS Desktop simulation verifies Rev095 five thematic studio medallions registered and XAML templates upgraded");
+    }
+
+    static void Rev095FiveStudioMedallionUpgrades()
+    {
+        // Verify all 5 new Rev095 medallion assets are referenced in ToolPageTemplates.xaml
+        string xamlPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "CalradiaForge.Desktop", "Resources", "Views", "ToolPageTemplates.xaml");
+        string xaml = File.ReadAllText(xamlPath);
+
+        string[] expectedAssets = {
+            "calradia-acoustic-medallion-rev095.png",
+            "calradia-cipher-seal-rev095.png",
+            "calradia-hierarchy-seal-rev095.png",
+            "calradia-diplomacy-medallion-rev095.png",
+            "calradia-mechanism-medallion-rev095.png",
+        };
+        foreach (var asset in expectedAssets)
+            Check(xaml.Contains(asset), $"Rev095: XAML must reference new asset '{asset}'.");
+
+        // Verify exactly 9 DashboardTemplate DataTemplates are present (Rule C invariant)
+        int templateCount = System.Text.RegularExpressions.Regex.Matches(
+            xaml, @"<DataTemplate x:Key=""\w+DashboardTemplate""").Count;
+        Check(templateCount == 9, $"Rev095: Rule C violated — expected exactly 9 DashboardTemplates, found {templateCount}.");
+
+        // Verify no Run.Text binding missing Mode=OneWay (Propuesta 48 invariant) in upgraded templates
+        string[] upgradeKeys = {
+            "AudioMixerInspectorDashboardTemplate",
+            "CodeSecurityAuditorDashboardTemplate",
+            "ModuleHierarchyValidatorDashboardTemplate",
+            "KingdomDiplomacyStudioDashboardTemplate",
+            "ComponentGeneratorStudioDashboardTemplate",
+        };
+        // Simple check: no bare <Run Text="{Binding ... without Mode=OneWay} in the full XAML
+        var runBindings = System.Text.RegularExpressions.Regex.Matches(
+            xaml, @"<Run Text=""\{Binding [^}]+\}""");
+        foreach (System.Text.RegularExpressions.Match m in runBindings)
+        {
+            Check(m.Value.Contains("Mode=OneWay"),
+                $"Rev095: Propuesta 48 violated — Run.Text binding missing Mode=OneWay: '{m.Value}'.");
+        }
+
+        // Verify new assets are registered in .csproj
+        string csprojPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "CalradiaForge.Desktop", "CalradiaForge.Desktop.csproj");
+        string csproj = File.ReadAllText(csprojPath);
+        foreach (var asset in expectedAssets)
+            Check(csproj.Contains(asset), $"Rev095: .csproj must include Resource entry for '{asset}'.");
     }
 
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }

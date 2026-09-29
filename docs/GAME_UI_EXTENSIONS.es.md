@@ -57,6 +57,20 @@ El título se reduce a letras, números y espacios y se limita a 48 caracteres a
 
 Integra las entradas inglesas en el recurso de cadenas en inglés que ya referencia el `SubModule.xml` del módulo destino. Fusiona el registro y la baja con los overrides existentes `OnSubModuleLoad` y `OnSubModuleUnloaded`. No añadas overrides, callbacks de disponibilidad ni llamadas `AutoRegister` duplicados para un ensamblado y propietario que ya estén registrados. **Refresh** y **Close** son comandos de demostración: Refresh solo cambia el texto de estado del ejemplo y Close solicita cerrar la página de extensión. Al registrar la página, Forge valida la carpeta propietaria, el prefab, el ViewModel y los enlaces `Command.Click`.
 
+## Compositor de páginas Gauntlet dentro del juego
+
+Abre la paleta de navegación con `Ctrl+P` y elige **Gauntlet Page Composer** en el grupo Novice. El ID de la ruta es `novice-gauntlet-composer`. Su espacio dedicado incluye el título de página, un catálogo y una lista ordenada de componentes, un editor de propiedades, una vista previa de muestra y las acciones **Save Draft**, **Generate** y **Copy Package**. Es una ruta independiente de **Gauntlet Page Blueprint**.
+
+Puedes añadir hasta 12 componentes: encabezado, texto, campo editable, botón, estado/métrica, lista, alternador, barra de progreso y selector. Cada ID permanece asociado a su bloque al cambiar el orden. Las listas y los selectores admiten de 1 a 8 filas u opciones editables. El título de página tiene un máximo de 48 caracteres; las etiquetas y los textos, de 128 caracteres.
+
+La vista previa usa una plantilla Gauntlet fija enlazada a `MBBindingList` y datos locales de muestra. Los botones, alternadores y selectores de la vista previa solo modifican ese modelo de muestra; no ejecutan acciones de campaña ni cargan XML generado.
+
+El borrador se guarda de forma explícita. **Save Draft** escribe el esquema versión 1 en `%LOCALAPPDATA%\CalradiaForge\gauntlet-composer.json`; el archivo tiene un límite de 64 KiB. Al abrir la ruta se carga el último borrador válido. Si el archivo no existe, el lienzo queda vacío. Si está dañado, excede el límite o usa una versión de esquema desconocida, el compositor sigue disponible e informa el estado de carga; conserva el archivo existente hasta que el usuario guarde explícitamente un reemplazo.
+
+**Generate** requiere al menos un componente y crea un paquete de texto completo con cuatro partes: el prefab XML de Gauntlet, un ViewModel de C#, las entradas inglesas de localización y las instrucciones de integración en SubModule. Antes de habilitar **Copy Package**, el generador comprueba que los bindings XML y comandos correspondan a miembros del ViewModel generado, que las plantillas de lista tengan su colección y contexto de fila, y que los IDs de localización concuerden en todo el paquete. Los errores de validación impiden copiar un paquete no válido. **Copy Package** copia toda la salida generada, incluidas todas sus secciones, no solo la página visible actualmente.
+
+El compositor genera texto en memoria. No crea ni modifica archivos del módulo del usuario y no cambia la API pública del SDK.
+
 ## Ayuda contextual e iconos
 
 La acción Help presenta resúmenes breves sin conexión derivados de los comentarios XML del SDK y traducidos al idioma activo de Bannerlord. DocFX solo se utiliza al compilar. Modules incluye el SVG original de Game-icons.net y PNG transparentes atribuidos para sprites; SpriteSheetGenerator y Resource Browser de Bannerlord deben empaquetarlos en los recursos gráficos del juego antes de que un prefab Gauntlet los referencie.

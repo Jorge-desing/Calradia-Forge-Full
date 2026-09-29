@@ -539,6 +539,85 @@ def contained(parent: Rect, child: Rect) -> bool:
             and parent.right >= child.right and parent.bottom >= child.bottom)
 
 
+def within_composer_surface(node: ET.Element, parents: dict[ET.Element, ET.Element]) -> bool:
+    """Identify new route nodes for the dedicated compositor layout audit."""
+    current: ET.Element | None = node
+    while current is not None:
+        element_id = current.attrib.get("Id", "")
+        if element_id == "ForgeComposerWorkspace" or element_id.startswith("ForgeComposer"):
+            return True
+        current = parents.get(current)
+    return False
+
+
+def validate_composer_geometry(audit: Audit, prefab: ET.Element, shell: ET.Element, vm_source: str) -> None:
+    """Check the dedicated composer workspace and its two internal scroll panes."""
+    parents = descendant_map(prefab)
+    for viewport in VIEWPORT_PROFILES:
+        layout = shell_layout(shell, vm_source, False, viewport)
+        shell_rect = layout.get(shell)
+        workspace = find_by_id(prefab, "ForgeComposerWorkspace")
+        workspace_rect = layout.get(workspace) if workspace is not None else None
+        suffix = f"{viewport[0]}x{viewport[1]}"
+        if shell_rect is None or workspace_rect is None:
+            audit.error(f"Cannot resolve Gauntlet Page Composer workspace in {suffix}")
+            continue
+        if workspace_rect.width <= 0 or workspace_rect.height < 240 or not contained(shell_rect, workspace_rect):
+            audit.error(f"Gauntlet Page Composer workspace is clipped or too short in {suffix}")
+
+        column_rects: dict[str, Rect] = {}
+        for column_id in ("ForgeComposerLeftColumn", "ForgeComposerRightColumn"):
+            column = find_by_id(prefab, column_id)
+            rect = layout.get(column) if column is not None else None
+            if rect is None or not contained(workspace_rect, rect) or rect.width <= 0 or rect.height <= 0:
+                audit.error(f"Cannot resolve {column_id} inside the composer workspace in {suffix}")
+            else:
+                column_rects[column_id] = rect
+        left_rect = column_rects.get("ForgeComposerLeftColumn")
+        right_rect = column_rects.get("ForgeComposerRightColumn")
+        if left_rect is not None and right_rect is not None:
+            if intersects(left_rect, right_rect):
+                audit.error(f"Gauntlet Page Composer columns overlap in {suffix}")
+            if left_rect.width < 220 or right_rect.width < 320:
+                audit.error(f"Gauntlet Page Composer columns are too narrow in {suffix}")
+
+        for panel_id, column_id in (
+            ("ForgeComposerLeftScroll", "ForgeComposerLeftColumn"),
+            ("ForgeComposerRightScroll", "ForgeComposerRightColumn"),
+        ):
+            panel = find_by_id(prefab, panel_id)
+            panel_rect = layout.get(panel) if panel is not None else None
+            column_rect = column_rects.get(column_id)
+            if panel_rect is None or column_rect is None or not contained(column_rect, panel_rect):
+                audit.error(f"{panel_id} must remain inside its column in {suffix}")
+            elif panel_rect.width <= 0 or panel_rect.height < 120:
+                audit.error(f"{panel_id} has insufficient scrollable area in {suffix}")
+
+        action = find_by_id(prefab, "ForgeComposerActionDeck")
+        action_rect = layout.get(action) if action is not None else None
+        if action_rect is None or not contained(shell_rect, action_rect):
+            audit.error(f"Cannot resolve the composer action deck in {suffix}")
+        elif intersects(workspace_rect, action_rect):
+            audit.error(f"Gauntlet Page Composer workspace overlaps its action deck in {suffix}")
+
+        pagination = find_by_id(prefab, "ForgePaginationAndUtilityDeck")
+        pagination_rect = layout.get(pagination) if pagination is not None else None
+        if action_rect is not None and pagination_rect is not None and intersects(action_rect, pagination_rect):
+            audit.error(f"Composer generation and package paging actions overlap in {suffix}")
+
+        package_layout = shell_layout(shell, vm_source, True, viewport)
+        evidence = find_by_id(prefab, "ForgeEvidenceFrame")
+        evidence_rect = package_layout.get(evidence) if evidence is not None else None
+        package_action = package_layout.get(action) if action is not None else None
+        package_pagination = package_layout.get(pagination) if pagination is not None else None
+        if evidence_rect is None or not contained(shell_rect, evidence_rect):
+            audit.error(f"Generated package evidence is outside the shell in {suffix}")
+        elif package_action is not None and intersects(evidence_rect, package_action):
+            audit.error(f"Generated package evidence overlaps the composer edit action in {suffix}")
+        if package_action is not None and package_pagination is not None and intersects(package_action, package_pagination):
+            audit.error(f"Generated package edit and paging actions overlap in {suffix}")
+
+
 def validate_output_comparison_geometry(
     audit: Audit,
     prefab: ET.Element,
@@ -688,6 +767,14 @@ def visible_in_evidence_state(
         visibility = current.attrib.get("IsVisible", "").strip()
         if visibility.casefold() == "false":
             return False
+        # The composer owns a separate workspace and output surface. Its
+        # controls are measured by validate_composer_geometry rather than by
+        # the shared War Table route profiles below.
+        if visibility in {
+            "@IsGauntletComposerActive", "@IsGauntletComposerWorkspaceVisible",
+            "@IsGauntletComposerPackageVisible", "@IsComposerPaginationVisible",
+        }:
+            return False
         if visibility == "@ShowCommandDeck" and state:
             return False
         if visibility.startswith("@"):
@@ -737,6 +824,8 @@ EXPECTED_SCROLL_PANELS = {
     "TestResultsExplorerScroll": "TestResultsExplorerScrollBar",
     "TestResultsExplorerDetailScroll": "TestResultsExplorerDetailScrollBar",
     "NavigationPaletteScroll": "NavigationPaletteScrollBar",
+    "ForgeComposerLeftScroll": "ForgeComposerLeftScrollBar",
+    "ForgeComposerRightScroll": "ForgeComposerRightScrollBar",
 }
 
 PLAYBOOK_TEXT_LAYOUT = {
@@ -1239,7 +1328,6 @@ def validate_contracts(
         audit.error("Missing ForgeEvidenceFrame")
         return
     expected_evidence = {
-        "ForgeEvidenceHeading": ("Text", "@EvidenceHeading"),
         "ForgeEvidencePage": ("Text", "@PageLabel"),
         "ForgeEmptyEvidence": ("Text", "@ContentPlaceholder"),
         "ForgeEvidenceContent": ("Text", "@Content"),
@@ -1275,11 +1363,18 @@ def validate_contracts(
     scroll = find_by_id(evidence, "ForgeEvidenceScroll")
     scrollbar = find_by_id(evidence, "ForgeEvidenceScrollBar")
     heading = find_by_id(evidence, "ForgeEvidenceHeading")
+    if heading is None or heading.attrib.get("Text") not in ("@EvidenceHeading", "@OutputHeading"):
+        audit.error("ForgeEvidenceHeading must bind the short localized evidence or generated-package label")
     if heading is None or heading.attrib.get("WidthSizePolicy") != "Fixed" \
             or heading.attrib.get("SuggestedWidth") != "205":
         audit.error("ForgeEvidenceHeading must reserve a bounded title area for the inline filter")
-    if 'public string EvidenceHeading => T("Evidence");' not in viewmodel_source:
+    if ('public string EvidenceHeading =>' not in viewmodel_source
+            or 'T("Evidence")' not in viewmodel_source
+            or 'T("Generated package")' not in viewmodel_source):
         audit.error("ForgeEvidenceHeading must use the short localized label so long route titles cannot collide with the filter")
+    if heading is not None and heading.attrib.get("Text") == "@OutputHeading" \
+            and ("public string OutputHeading =>" not in viewmodel_source or "nameof(OutputHeading)" not in viewmodel_source):
+        audit.error("ForgeEvidenceHeading must refresh the generated-package label when the composer output changes")
     if filter_row is None or filter_row.attrib.get("MarginTop") != "5" \
             or filter_row.attrib.get("SuggestedHeight") != "32" \
             or filter_row.attrib.get("MarginLeft") != "225" \
@@ -1753,6 +1848,8 @@ def validate_decorative_layers(
                     if not protected:
                         continue
                     if item_template_for(node, parents) is not None:
+                        continue
+                    if within_composer_surface(node, parents):
                         continue
                     if node not in rectangles:
                         if is_bounded_scroll_flow_item(node):
@@ -2262,7 +2359,7 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
     stretch_width_ids = {
         "ForgeHeader", "ForgeTopBrassFrameRule", "ForgeInputRow", "ForgePrimaryCommandHost",
         "ForgeEvidenceFrame", "ForgeEvidenceActionBrassRule", "ForgeSecondaryActionDeck",
-        "ForgeExtensionActionDeck", "ForgeAssemblyActionDeck", "ForgePaginationAndUtilityDeck",
+        "ForgeExtensionActionDeck", "ForgeAssemblyActionDeck", "ForgeComposerActionDeck", "ForgePaginationAndUtilityDeck",
         "ForgeNavigationFooter", "ForgeBottomBrassFrameRule",
     }
     for element_id in sorted(stretch_width_ids):
@@ -2276,6 +2373,7 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
         "ForgeSecondaryActionDeck": "99",
         "ForgeExtensionActionDeck": "99",
         "ForgeAssemblyActionDeck": "99",
+        "ForgeComposerActionDeck": "99",
         "ForgePaginationAndUtilityDeck": "47",
         "ForgeNavigationFooter": "14",
         "ForgeBottomBrassFrameRule": "4",
@@ -2461,6 +2559,8 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
                             continue
                         if item_template_for(control, parents) is not None:
                             continue
+                        if within_composer_surface(control, parents):
+                            continue
                         ancestor = control
                         inside_playbook = False
                         while ancestor is not None:
@@ -2484,6 +2584,8 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
                 if local_name(node.tag) not in {"ButtonWidget", "EditableTextWidget"}:
                     continue
                 if item_template_for(node, parents) is not None:
+                    continue
+                if within_composer_surface(node, parents):
                     continue
                 rect = rectangles.get(node)
                 if rect is None:
@@ -2519,6 +2621,8 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
                 if local_name(row.tag) != "ListPanel" or "HorizontalLeftToRight" not in row.attrib.get("StackLayout.LayoutMethod", ""):
                     continue
                 if item_template_for(row, parents) is not None:
+                    continue
+                if within_composer_surface(row, parents):
                     continue
                 row_rect = rectangles.get(row)
                 if row_rect is None:
@@ -2575,6 +2679,7 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
                         )
 
     validate_decorative_layers(audit, prefab, shell, vm_source)
+    validate_composer_geometry(audit, prefab, shell, vm_source)
 
 
 def audit_prefab(

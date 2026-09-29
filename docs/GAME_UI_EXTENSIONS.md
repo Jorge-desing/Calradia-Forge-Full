@@ -57,6 +57,20 @@ The title is reduced to letters, digits, and spaces and capped at 48 characters 
 
 Merge the English localization entries into the English strings resource already referenced by the target module's `SubModule.xml`. Integrate the registration and unregistration calls into the existing `OnSubModuleLoad` and `OnSubModuleUnloaded` overrides. Do not add duplicate overrides, availability callbacks, or `AutoRegister` calls for an assembly and owner that are already registered. **Refresh** and **Close** are demonstration commands: Refresh changes only the sample status text, and Close requests that the extension page close. When the page is registered, Forge validates the owner folder, prefab, ViewModel, and `Command.Click` bindings.
 
+## In-game Gauntlet Page Composer
+
+Open the navigation palette with `Ctrl+P` and select **Gauntlet Page Composer** in the Novice group. Its route ID is `novice-gauntlet-composer`. The dedicated workspace has a page title, a component catalog and ordered list, a properties editor, a sample preview, and **Save Draft**, **Generate**, and **Copy Package** actions. It is separate from **Gauntlet Page Blueprint**.
+
+Add up to 12 components: heading, text, editable field, button, status/metric, list, toggle, progress bar, and selector. Component IDs stay attached to their blocks when the order changes. Lists and selectors accept 1–8 editable entries or options. The page title is limited to 48 characters; labels and text values are limited to 128 characters.
+
+The preview uses a fixed Gauntlet template bound to `MBBindingList` and local sample data. Preview buttons, toggles, and selectors only change that sample model; they do not run campaign actions or load generated XML.
+
+Draft persistence is explicit. **Save Draft** writes schema version 1 to `%LOCALAPPDATA%\CalradiaForge\gauntlet-composer.json`; the file is limited to 64 KiB. Opening the route loads the last valid draft. A missing file leaves an empty canvas. If a draft is damaged, oversized, or uses an unknown schema version, the composer remains available and reports its load status; the existing file is kept until the user explicitly saves a replacement.
+
+**Generate** requires at least one component and creates a complete text package with four parts: a Gauntlet prefab XML, a C# ViewModel, English localization entries, and SubModule integration instructions. Before enabling **Copy Package**, the generator checks that XML bindings and commands resolve to generated ViewModel members, list templates have matching collection and row contexts, and localization IDs agree across the package. Validation errors prevent copying an invalid package. **Copy Package** copies the complete generated output, including all sections, rather than only the currently visible output page.
+
+The composer generates text in memory. It does not create or modify files in the user's module and does not change the public SDK API.
+
 ## Contextual help and icons
 
 The in-game Help action shows short offline summaries derived from SDK XML documentation and localized in Bannerlord's active language. DocFX is used at build time only. Game-icons.net SVG source and attributed transparent sprite-part PNGs are included with Modules; Bannerlord's SpriteSheetGenerator and Resource Browser must pack those PNGs into the game's sprite resources before a Gauntlet prefab references them.

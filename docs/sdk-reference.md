@@ -1,10 +1,10 @@
 # Calradia Forge SDK Reference — 25.0.0
 
-SDK Contract Version: **10**  
+SDK Contract Version: **11**
 Product source version: **25.0.0**  
 SDK targets: `net472` and `net8.0`; the in-game module remains `net472`.
 
-> This reference describes the v25.0.0 source tree. Existing distribution ZIPs were not regenerated for this source update; their contents do not establish SDK contract 10 availability.
+> This reference describes the v25.0.0 source tree. Existing distribution ZIPs were not regenerated for this source update; their contents do not establish SDK contract 11 availability.
 
 ## 1. Auto registration
 
@@ -132,27 +132,48 @@ api.Dispose(); // or use 'using'
 
 The legacy `Subscribe(ForgeEvent, Action<object[]>)` bridge isolates callback exceptions and logs them through `ForgeApi.Logger`. Pair it with `Unsubscribe(eventType, callback)` or `ClearSubscribers()` to release static callbacks. ForgeWeave-specific delegate subscriptions should use `SubscribeWeaveWhenAvailable` when the module must survive host disconnect/reconnect; its returned `ForgeWeaveRegistration` is the lifecycle owner.
 
-## 6. ForgeLivePatcher
+## 6. Explicit experimental method replacement
 
-`ForgeLivePatcher` exposes Harmony detours for a known method pair:
+The optional `IForgePatchService` capability is available as `ForgeApi.Patches`. It is deliberately separate from `IForgeRegistry`, so adding patch lifecycle support does not require existing registry implementations to add methods. `ForgeApi.Version` is a compile-time constant; use `ForgeApi.Patches != null` to determine whether the connected host actually supplies this capability. `IForgePatchServiceLifecycle` is a second optional capability for hosts that can reuse the same service instance after reconnect; it is separate so existing patch-service implementations remain source-compatible.
+
+Use an explicit stable patch ID and owner label to install a one-for-one method replacement:
 
 ```csharp
-var original = typeof(Hero).GetMethod("GetName");
-var replacement = typeof(MyPatch).GetMethod("PatchedGetName");
-ForgeLivePatcher.Patch(original, replacement);
+var patches = ForgeApi.Patches;
+if (patches == null)
+    throw new InvalidOperationException("The connected Forge host does not provide patch service support.");
+
+IForgePatchHandle handle = patches.ApplyMethodReplacement(
+    "my_module.hero_name",
+    "MyModule",
+    typeof(Hero).GetMethod("GetName"),
+    typeof(MyPatch).GetMethod("PatchedGetName"));
+
+ForgePatchVerification verification = handle.Verify();
+ForgePatchRevertResult result = handle.Revert();
+// Dispose is an idempotent best-effort revert; keep the handle for lifecycle and diagnostics.
 ```
+
+The handle exposes an immutable `Snapshot`, `Verify()`, and `Revert()`. `Dispose()` requests best-effort reversion and is safe to call more than once. `IForgePatchService.GetSnapshots(owner)` returns immutable snapshots; `Verify(patchId)`, `Revert(patchId)`, `RevertOwner(owner)` and `RevertAll()` provide explicit status and cleanup operations. Results report `Applied`, `Reverted`, `Conflict` or `Failed`; an owner is a tracking label, not an authorization boundary. When the service disconnects it stops accepting new patches and attempts to revert its patches in reverse application order. Existing handles remain queryable/releasable after disconnection. On reconnect, the built-in service reopens only when every prior record and original byte image is verified as reverted and no target detour remains tracked; conflicts or uncertain records keep it closed.
+
+Reversion is allowed only when the target bytes still match the exact jump bytes installed by Forge. If another component changed the target, Forge records a conflict and leaves the foreign bytes untouched. Page-protection restoration and `FlushInstructionCache` are checked; a failure is reported rather than treated as a successful patch or revert. A write that crosses a system page boundary is rejected before `VirtualProtect`, because this backend restores one original protection value for the written span.
+
+This low-level writer remains experimental. Neither executable-page protection changes nor instruction-cache flushing coordinate other threads that may be executing the target. The current backend does not claim safe concurrent hot patching; use a disposable, isolated fixture and ensure no thread can execute the method while code is changed. Do not use this as a production patch framework. The owner field is descriptive only. Preflight hook declarations such as `Transpiler` and `Finalizer` are not implemented by the method-replacement backend.
+
+`ForgeLivePatcher` and the older detour utilities remain compatibility surfaces. `ApplyDetour(original, replacement)` uses Forge's low-level replacement path; `ApplyPatch`/`RevertPatch` only raise their corresponding request events for a registered consumer. Forge does not provide Harmony or automatically turn `Prefix`, `Postfix`, `Transpiler` or `Finalizer` declarations into runtime hooks. Prefer `ForgeApi.Patches` when explicit ownership, verification and reversion are required.
 
 ## 7. ForgeApi contract version
 
-Check the public SDK contract at runtime before using contract-10 surfaces:
+Contract 11 adds the optional patch-service surface. Because the version is a compile-time constant embedded in the consuming assembly, check the optional capability at runtime instead of using a version comparison for this feature:
 
 ```csharp
-if (ForgeApi.Version < 10)
-    throw new InvalidOperationException("Calradia Forge SDK contract 10 is required.");
+if (ForgeApi.Patches == null)
+    throw new InvalidOperationException("The connected host does not provide the patch service.");
 ```
 
 | Contract | Product source | Relevant addition |
 |---|---|---|
+| 11 | 25.0.0 | Optional `IForgePatchService` with explicit method-replacement handles, verification and conflict-aware reversion. |
 | 10 | 25.0.0 | Explicit safe-save outcomes, bounded auto-registration reports, typed Semantic/Procedural memory reads, and generation-safe availability delivery. |
 | 9 | 24.0.0 | Owner-scoped `ForgeModelRegistry` registrations; modifier conditions execute on a registry snapshot outside its lock. |
 | 8 | 24.0.0 | Managed ForgeWeave availability registration and bounded `ForgeAgentMemory`; TTL is limited to Semantic memory. |

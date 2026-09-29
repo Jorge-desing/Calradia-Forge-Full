@@ -23,9 +23,11 @@ namespace CalradiaForge.Mod.Commands
         {
             return "Calradia Forge Commands:\n" +
                    "cf.help - Shows this list\n" +
-                   "cf.patches - Lists all currently active memory patches\n" +
-                   "cf.revert_all - Emergency undo of all Forge patches\n" +
-                   "cf.verify_integrity - Checks if other mods broke our patches\n" +
+                   "cf.patches - Lists Forge-tracked patch status\n" +
+                   "cf.patch_status [owner] - Shows explicit experimental patch records\n" +
+                   "cf.patch_revert <id|owner|all> - Explicitly reverts tracked patches\n" +
+                   "cf.revert_all - Reverts all safely tracked Forge patches\n" +
+                   "cf.verify_integrity - Verifies exact Forge-installed patch bytes\n" +
                    "cf.test_log - Tests the ForgeLogger subsystem\n" +
                    "cf.diplomacy.calc_war_score <military> <gold> <activeWars> <tributeRecv> <tributePaid>\n" +
                    "cf.diplomacy.calc_peace_tribute <casInflicted> <casSuffered> <settleTaken> <settleLost>\n" +
@@ -58,21 +60,57 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("patches", "cf")]
         public static string ListPatches(List<string> args)
         {
-            var patches = ForgePatcher.GetAppliedPatches();
-            if (patches.Count == 0) return "No active patches found.";
+            var snapshots = ForgeDetour.GetTrackedSnapshots();
+            if (snapshots.Count == 0) return "No Forge-tracked patches found.";
+            return "Forge-tracked patches (" + snapshots.Count + "):\n" + string.Join("\n", snapshots.Select(p =>
+                "- [" + p.State + "; intact=" + p.IsIntact + "] " + p.PatchId + " owner=" + p.Owner + ": " +
+                p.TargetMethod + " -> " + p.ReplacementMethod));
+        }
 
-            string result = $"Active Patches ({patches.Count}):\n";
-            foreach (var p in patches)
+        [CommandLineFunctionality.CommandLineArgumentFunction("patch_status", "cf")]
+        public static string PatchStatus(List<string> args)
+        {
+            string owner = args != null && args.Count > 0 ? args[0].Trim() : null;
+            var snapshots = ForgeDetour.GetTrackedSnapshots(owner);
+            if (snapshots.Count == 0) return owner == null ? "No explicit patch records found." : "No explicit patch records found for owner '" + owner + "'.";
+            string result = "Forge patch status (" + snapshots.Count + "):\n";
+            foreach (var patch in snapshots)
+                result += "- [" + patch.State + "; intact=" + patch.IsIntact + "] " + patch.PatchId + " owner=" + patch.Owner + ": " + patch.TargetMethod + " -> " + patch.ReplacementMethod + "\n";
+            return result.TrimEnd();
+        }
+
+        [CommandLineFunctionality.CommandLineArgumentFunction("patch_revert", "cf")]
+        public static string PatchRevert(List<string> args)
+        {
+            if (args == null || args.Count != 1 || string.IsNullOrWhiteSpace(args[0]))
+                return "Usage: cf.patch_revert <id|owner|all>";
+            string target = args[0].Trim();
+            var snapshots = ForgeDetour.GetTrackedSnapshots();
+            bool matchesId = snapshots.Any(item => string.Equals(item.PatchId, target, StringComparison.OrdinalIgnoreCase));
+            bool matchesOwner = snapshots.Any(item => string.Equals(item.Owner, target, StringComparison.OrdinalIgnoreCase));
+            if (matchesId && matchesOwner)
+                return "Patch revert stopped: the argument matches both a patch ID and an owner; no write was made.";
+            if (string.Equals(target, "all", StringComparison.OrdinalIgnoreCase) && (matchesId || matchesOwner))
+                return "Patch revert stopped: 'all' is both a reserved command and a patch ID or owner; no write was made.";
+
+            var results = new List<ForgePatchRevertResult>();
+            if (string.Equals(target, "all", StringComparison.OrdinalIgnoreCase))
             {
-                string target = p.Original != null 
-                    ? (p.Original.DeclaringType != null ? $"{p.Original.DeclaringType.Name}.{p.Original.Name}" : p.Original.Name) 
-                    : "UnknownTarget";
-                string replacement = p.Replacement != null 
-                    ? (p.Replacement.DeclaringType != null ? $"{p.Replacement.DeclaringType.Name}.{p.Replacement.Name}" : p.Replacement.Name) 
-                    : "UnknownReplacement";
-                result += $"- {target} -> {replacement} (Module: {p.SourceModule})\n";
+                results.AddRange(ForgeDetour.RevertAllTracked());
             }
-            return result;
+            else
+            {
+                var idMatches = snapshots.Where(item => string.Equals(item.PatchId, target, StringComparison.OrdinalIgnoreCase)).ToArray();
+                if (idMatches.Length > 1)
+                    return "Patch revert stopped: the ID is ambiguous in the shared registry; no write was made.";
+                if (idMatches.Length == 1) results.Add(ForgeDetour.RevertById(idMatches[0].PatchId));
+                else results.AddRange(ForgeDetour.RevertOwner(target));
+            }
+            int reverted = results.Count(item => item.IsReverted);
+            int conflicts = results.Count(item => item.State == ForgePatchState.Conflict);
+            int failed = results.Count - reverted - conflicts;
+            return "Patch revert: " + reverted + " reverted, " + conflicts + " conflict(s), " + failed + " failed." +
+                (results.Count == 0 ? " No matching patch records." : "\n" + string.Join("\n", results.Select(item => "- " + item.PatchId + ": " + item.State + " — " + item.Detail)));
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("revert_all", "cf")]
@@ -80,9 +118,11 @@ namespace CalradiaForge.Mod.Commands
         {
             try
             {
-                int count = ForgePatcher.GetAppliedPatches().Count;
-                ForgePatcher.RevertAll();
-                return $"Successfully reverted {count} patches to their original game state.";
+                var results = ForgeDetour.RevertAllTracked();
+                int reverted = results.Count(item => item.IsReverted);
+                int conflict = results.Count(item => item.State == ForgePatchState.Conflict);
+                int failed = results.Count - reverted - conflict;
+                return $"Safely reverted {reverted} Forge patch(es); {conflict} conflict(s) were left untouched; {failed} failed or uncertain.";
             }
             catch (Exception ex)
             {
@@ -93,18 +133,11 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("verify_integrity", "cf")]
         public static string VerifyIntegrity(List<string> args)
         {
-            var broken = ForgePatcher.VerifyIntegrity();
-            if (broken.Count == 0) return "Integrity check passed: All patches are intact.";
-
-            string result = $"WARNING: {broken.Count} patches have been overwritten by other frameworks!\n";
-            foreach (var p in broken)
-            {
-                string brokenName = p.Original != null 
-                    ? (p.Original.DeclaringType != null ? $"{p.Original.DeclaringType.Name}.{p.Original.Name}" : p.Original.Name) 
-                    : "Unknown";
-                result += $"- Broken: {brokenName}\n";
-            }
-            return result;
+            var snapshots = ForgeDetour.GetTrackedSnapshots();
+            var broken = snapshots.Where(item => !item.IsIntact).ToArray();
+            if (broken.Length == 0) return "Integrity check passed: all recorded patches match their expected bytes.";
+            return "Patch byte conflicts or failures: " + broken.Length + "\n" + string.Join("\n", broken.Select(p =>
+                "- " + p.State + ": " + p.PatchId + " owner=" + p.Owner + ": " + p.TargetMethod + " -> " + p.ReplacementMethod));
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("test_log", "cf")]

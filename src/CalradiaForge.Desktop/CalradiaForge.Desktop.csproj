@@ -35,6 +35,11 @@
     <Resource Include="Resources/Textures/calradia-centurion-medallion-rev090.png" />
     <Resource Include="Resources/Textures/calradia-guild-medallion-rev092.png" />
     <Resource Include="Resources/Textures/calradia-mind-medallion-rev093.png" />
+    <Resource Include="Resources/Textures/calradia-acoustic-medallion-rev095.png" />
+    <Resource Include="Resources/Textures/calradia-cipher-seal-rev095.png" />
+    <Resource Include="Resources/Textures/calradia-hierarchy-seal-rev095.png" />
+    <Resource Include="Resources/Textures/calradia-diplomacy-medallion-rev095.png" />
+    <Resource Include="Resources/Textures/calradia-mechanism-medallion-rev095.png" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />

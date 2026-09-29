@@ -7,9 +7,10 @@ using CalradiaForge.Sdk;
 
 namespace CalradiaForge.Core
 {
-    public sealed class TestEngine : IForgeRegistry, IForgeUiRegistry, IPatchBlueprintRegistry, IForgeEventRegistry, IForgeReplayRegistry, IForgeSettingsRegistry, IForgeLogger, IForgeInput, IForgeSaveManager, IForgeDebug, IForgeAgentManager, IForgeAnalysisRegistry, IForgeRuntimeCapabilities
+    public sealed class TestEngine : IForgeRegistry, IForgeUiRegistry, IPatchBlueprintRegistry, IForgePatchService, IForgePatchServiceLifecycle, IForgeEventRegistry, IForgeReplayRegistry, IForgeSettingsRegistry, IForgeLogger, IForgeInput, IForgeSaveManager, IForgeDebug, IForgeAgentManager, IForgeAnalysisRegistry, IForgeRuntimeCapabilities
     {
         readonly object registryGate=new object();
+        readonly ForgePatchService forgePatchService=new ForgePatchService();
         readonly Dictionary<string,ITestCase> tests=new Dictionary<string,ITestCase>();
         readonly Dictionary<string,ICommand> commands=new Dictionary<string,ICommand>();
         readonly Dictionary<string,IDiagnosticProvider> providers=new Dictionary<string,IDiagnosticProvider>();
@@ -75,6 +76,14 @@ namespace CalradiaForge.Core
             }
         }
         public int PatchBlueprintProviderCount { get { lock(registryGate) return patchBlueprintProviders.Count; } }
+        public IForgePatchHandle ApplyMethodReplacement(string patchId,string owner,System.Reflection.MethodInfo target,System.Reflection.MethodInfo replacement) => forgePatchService.ApplyMethodReplacement(patchId,owner,target,replacement);
+        public IReadOnlyList<ForgePatchSnapshot> GetSnapshots(string owner=null) => forgePatchService.GetSnapshots(owner);
+        public ForgePatchVerification Verify(string patchId) => forgePatchService.Verify(patchId);
+        public ForgePatchRevertResult Revert(string patchId) => forgePatchService.Revert(patchId);
+        public IReadOnlyList<ForgePatchRevertResult> RevertOwner(string owner) => forgePatchService.RevertOwner(owner);
+        public IReadOnlyList<ForgePatchRevertResult> RevertAll() => forgePatchService.RevertAll();
+        public void Reconnect() => forgePatchService.Reconnect();
+        public void Disconnect() => forgePatchService.Disconnect();
         public IReadOnlyList<Descriptor> Analyzers { get {lock(registryGate)return analyzers.Keys.OrderBy(id=>id,StringComparer.Ordinal).Select(id=>Copy(descriptors[id])).ToArray();} }
         public IEnumerable<ForgeEventSubscription> ForgeWeaveSubscriptions => forgeWeave.Subscriptions;
         public int ForgeWeaveSubscriptionCount => forgeWeave.Count;

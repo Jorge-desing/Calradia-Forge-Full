@@ -12,6 +12,8 @@ using CalradiaForge.Sdk;
 using CalradiaForge.Core;
 using CalradiaForge.Examples;
 using CalradiaForge.Mod.Commands;
+using CalradiaForge.Sdk.Patcher;
+using CalradiaForge.TestFixtures;
 
 namespace CalradiaForge.Tests
 {
@@ -22,7 +24,19 @@ namespace CalradiaForge.Tests
             test("ModSettings serialization and caching", TestModSettings);
             test("ModSettings reports safe-save outcomes and preserves committed data on failure", TestModSettingsSafeSave);
             test("CampaignVariableInspector tracking and snapshots", TestCampaignVariableInspector);
-            test("ForgeLivePatcher API hooks to ForgeDetour", TestForgeLivePatcher);
+            test("Legacy patch hook API only emits its documented request notification", TestForgeLivePatcher);
+            test("ForgeDetour rejects a page-crossing write before changing memory protection", TestForgeDetourPageBoundary);
+            test("ForgeDetour public Patch clears its reservation after a page-boundary rejection", TestForgeDetourPatchPageBoundaryCleanup);
+            test("ForgePatcher batch clears IDs and targets after a page-boundary rejection", TestPatchBatchPageBoundaryCleanup);
+            test("ForgeDetour verifies bytes and refuses foreign-byte rollback with a simulated memory adapter", TestForgeDetourFakeMemory);
+            test("Optional Forge patch service reverts on disconnect and rejects stale apply", TestPatchServiceLifecycle);
+            test("Forge patch service disconnect preserves unrelated direct detours", TestPatchServiceScope);
+            test("Optional Forge patch service retains foreign bytes on disconnect", TestPatchServiceConflictRetention);
+            test("ForgeApi connection replacement retires prior patches before publishing the next host", TestPatchServiceConnectionReplacement);
+            test("ForgeApi connection replacement preserves conflicted host for manual resolution", TestPatchServiceConnectionReplacementConflict);
+            test("ForgeApi disconnect reverts direct and legacy detours through the shared registry", TestPatchServiceLegacyCleanup);
+            test("ForgePatcher ApplyAll rolls back the complete batch when a later write fails", TestPatchBatchRollback);
+            test("Patch console routes use shared IDs, owners, and reverse-all inventory", TestPatchConsoleRoutes);
             
             test("ForgeApi AutoRegister discovers classes", TestForgeApiAutoRegister);
             test("ForgeApi AutoRegisterWithReport distinguishes unavailable and partial registration", TestForgeApiAutoRegisterWithReport);
@@ -50,7 +64,7 @@ namespace CalradiaForge.Tests
             test("ForgeAgentMemory expired semantic entry releases a global slot", TestForgeAgentMemoryExpiredGlobalSlot);
             test("ForgeLocalApi exposes info and agents endpoints", TestForgeLocalApiEndpoints);
             test("ForgeCampaignEvents logs dispatch errors", TestForgeCampaignEventsErrorLogging);
-            test("ForgeApi Version is 10", TestForgeApiVersion);
+            test("ForgeApi Version is 11", TestForgeApiVersion);
             test("Forge UI registry rejects duplicate IDs and removes an unloaded owner", TestForgeUiRegistry);
             test("Forge UI discovery validates Gauntlet ViewModel and command binding", TestForgeUiDiscovery);
             test("Forge UI policy enforces context and writer gates", TestForgeUiPolicy);
@@ -261,17 +275,855 @@ namespace CalradiaForge.Tests
 
         private static void TestForgeLivePatcher()
         {
-            // Setup detour
             MethodInfo original = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
             MethodInfo replacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
-            
-            string result = TargetMethod();
-            if (result != "Original") throw new Exception("Pre-patch state invalid.");
-            
-            ForgeLivePatcher.ApplyDetour(original, replacement);
-            
-            string patchedResult = TargetMethod();
-            if (patchedResult != "Replacement") throw new Exception("ForgeLivePatcher.ApplyDetour failed! Expected 'Replacement', got: " + patchedResult);
+            bool notified = false;
+            Action<MethodInfo, MethodInfo, MethodInfo> handler = (target, prefix, postfix) =>
+                notified = target == original && prefix == replacement && postfix == null;
+            ForgeLivePatcher.OnPatchRequested += handler;
+            try { ForgeLivePatcher.ApplyPatch(original, replacement, null); }
+            finally { ForgeLivePatcher.OnPatchRequested -= handler; }
+            if (!notified) throw new Exception("Legacy hook API should notify subscribers without applying a patch itself.");
+            if (ForgeDetour.IsPatched(original)) throw new Exception("Notification-only API must not write target memory.");
+        }
+
+        private static void TestForgeDetourFakeMemory()
+        {
+            var original = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var replacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            EnsureNoTrackedDetours("TestForgeDetourFakeMemory");
+            IntPtr[] preparedAddresses = PrepareStableMethodAddresses("TestForgeDetourFakeMemory", original, replacement);
+            IntPtr address = preparedAddresses[0];
+            if (address == preparedAddresses[1])
+                throw new InvalidOperationException("TestForgeDetourFakeMemory: target and replacement resolved to the same prepared address " + Address(address) + ".");
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            byte[] originalBytes = null;
+            Exception testFailure = null;
+            try
+            {
+                ForgeApi.Connect(new TestEngine());
+                originalBytes = adapter.Read(address, 13);
+                adapter.FailNextProtect = true;
+                bool protectionFailed = false;
+                try { ForgeDetour.Patch(original, replacement); }
+                catch (InvalidOperationException) { protectionFailed = true; }
+                if (!protectionFailed || !adapter.Read(address, 13).SequenceEqual(originalBytes))
+                    throw new Exception("Protection failure mismatch: failed=" + protectionFailed + ", target=" + Address(address) +
+                        ", bytesRestored=" + adapter.Read(address, 13).SequenceEqual(originalBytes) + ", tracked=" + ForgeDetour.IsTracked(original) + ".");
+
+                adapter.FailNextFlush = true;
+                bool flushFailed = false;
+                try { ForgeDetour.Patch(original, replacement); }
+                catch (Exception) { flushFailed = true; }
+                if (!flushFailed || ForgeDetour.IsPatched(original) || !adapter.Read(address, 13).SequenceEqual(originalBytes))
+                    throw new Exception("Flush rollback mismatch: failed=" + flushFailed + ", target=" + Address(address) +
+                        ", failureInjected=" + adapter.FlushFailureTriggered + ", bytesRestored=" + adapter.Read(address, 13).SequenceEqual(originalBytes) +
+                        ", tracked=" + ForgeDetour.IsTracked(original) + ", flushCalls=" + adapter.FlushCalls + ".");
+                if (adapter.Protection != 0x20)
+                    throw new Exception("Flush failure rollback left simulated protection 0x" + adapter.Protection.ToString("X") +
+                        " instead of 0x20 at " + Address(address) + ".");
+
+                adapter.FailNextProtectionRestore = true;
+                bool protectionRestoreFailed = false;
+                try { ForgeDetour.Patch(original, replacement); }
+                catch (InvalidOperationException) { protectionRestoreFailed = true; }
+                if (!protectionRestoreFailed || ForgeDetour.IsPatched(original) || !adapter.Read(address, 13).SequenceEqual(originalBytes) || adapter.Protection != 0x20)
+                    throw new Exception("Protection-restore rollback mismatch: failed=" + protectionRestoreFailed + ", target=" + Address(address) +
+                        ", bytesRestored=" + adapter.Read(address, 13).SequenceEqual(originalBytes) + ", protection=0x" + adapter.Protection.ToString("X") +
+                        ", tracked=" + ForgeDetour.IsTracked(original) + ".");
+
+                // A failed rollback can leave the exact jump installed while protection or
+                // cache state is uncertain. Verify must never promote that retained record.
+                adapter.FailNextFlush = true;
+                adapter.FailWriteOnCall = adapter.WriteCalls + 2;
+                bool uncertainWriteFailed = false;
+                try { ForgeDetour.Patch(original, replacement); }
+                catch (AggregateException) { uncertainWriteFailed = true; }
+                string uncertainStatus;
+                bool uncertainVerified = ForgeDetour.Verify(original, out uncertainStatus);
+                if (!uncertainWriteFailed || uncertainVerified || uncertainStatus != "write-state-uncertain" || !ForgeDetour.IsTracked(original))
+                    throw new Exception("Uncertain write was promoted: failed=" + uncertainWriteFailed + ", verified=" + uncertainVerified +
+                        ", status=" + uncertainStatus + ", tracked=" + ForgeDetour.IsTracked(original) + ".");
+                adapter.FailWriteOnCall = 0;
+                if (!ForgeDetour.Unpatch(original) || ForgeDetour.IsTracked(original))
+                    throw new Exception("The isolated fixture could not clean its deliberately uncertain installed image.");
+
+                ForgeDetour.Patch(original, replacement);
+                byte[] installedBytes = adapter.Read(address, 13);
+                if (!ForgeDetour.IsPatched(original)) throw new Exception("Simulated exact jump should be reported intact.");
+                adapter.Tamper(address, 0, 0x90);
+                byte[] foreignBytes = adapter.Read(address, 13);
+                bool foreignReverted=ForgeDetour.Unpatch(original);
+                byte[] afterConflict=adapter.Read(address,13);
+                if (foreignReverted || !afterConflict.SequenceEqual(foreignBytes))
+                    throw new Exception("Foreign-byte check mismatch at " + Address(address) + ": reverted=" + foreignReverted +
+                        ", foreignBytesRetained=" + afterConflict.SequenceEqual(foreignBytes) + ", tracked=" + ForgeDetour.IsTracked(original) +
+                        ", firstByteBefore=0x" + foreignBytes[0].ToString("X2") + ", firstByteAfter=0x" + afterConflict[0].ToString("X2") + ".");
+                adapter.Replace(address, installedBytes);
+                bool restored=ForgeDetour.Unpatch(original);
+                bool repeated=ForgeDetour.Unpatch(original);
+                if (!restored || repeated)
+                    throw new Exception("Restoration check mismatch at " + Address(address) + ": first=" + restored +
+                        ", repeated=" + repeated + ", tracked=" + ForgeDetour.IsTracked(original) + ".");
+                if (!adapter.Read(address, 13).SequenceEqual(originalBytes)) throw new Exception("Simulated original bytes were not restored.");
+            }
+            catch (Exception error)
+            {
+                testFailure = error;
+                throw;
+            }
+            finally
+            {
+                var cleanupFailures = new List<string>();
+                string cleanup = CleanupFakeTarget(adapter, original, address, originalBytes);
+                if (cleanup != null) cleanupFailures.Add(cleanup);
+                try { if (ForgeApi.Registry != null) ForgeApi.Disconnect(); }
+                catch (Exception error) { cleanupFailures.Add("SDK disconnect failed after fake detour cleanup: " + error.Message); }
+                ResetFakeMemoryAdapter(cleanupFailures);
+                ThrowIfFakeCleanupFailed("TestForgeDetourFakeMemory", testFailure, cleanupFailures);
+            }
+        }
+
+        private static void TestForgeDetourPageBoundary()
+        {
+            EnsureNoTrackedDetours("TestForgeDetourPageBoundary");
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            Exception testFailure = null;
+            try
+            {
+                const int writeLength = 13;
+                long pageSize = Environment.SystemPageSize;
+                byte[] original = Enumerable.Range(0, writeLength).Select(index => (byte)(0x20 + index)).ToArray();
+                byte[] installed = Enumerable.Range(0, writeLength).Select(index => (byte)(0x80 + index)).ToArray();
+
+                // Ending exactly on the page boundary is a supported one-page range.
+                IntPtr exactEndAddress = new IntPtr((pageSize * 2) - writeLength);
+                ForgeDetour.WriteExecutableBytesForTests(exactEndAddress, installed, original);
+                if (adapter.ProtectCalls != 2 || adapter.WriteCalls != 1 || adapter.FlushCalls != 1 || adapter.Protection != 0x20)
+                    throw new Exception("A one-page write ending at the page boundary did not complete and restore protection.");
+
+                int protectsBefore = adapter.ProtectCalls;
+                int writesBefore = adapter.WriteCalls;
+                int flushesBefore = adapter.FlushCalls;
+                int readsBefore = adapter.ReadCalls;
+                IntPtr crossingAddress = new IntPtr((pageSize * 3) - (writeLength - 1));
+                bool rejected = false;
+                try { ForgeDetour.WriteExecutableBytesForTests(crossingAddress, installed, original); }
+                catch (InvalidOperationException error)
+                {
+                    rejected = error.Message.IndexOf("cross a system page boundary", StringComparison.Ordinal) >= 0;
+                }
+
+                if (!rejected || adapter.ReadCalls != readsBefore || adapter.ProtectCalls != protectsBefore || adapter.WriteCalls != writesBefore || adapter.FlushCalls != flushesBefore)
+                    throw new Exception("A page-crossing write was not rejected before any executable-memory adapter operation.");
+            }
+            catch (Exception error)
+            {
+                testFailure = error;
+                throw;
+            }
+            finally
+            {
+                var cleanupFailures = new List<string>();
+                ResetFakeMemoryAdapter(cleanupFailures);
+                ThrowIfFakeCleanupFailed("TestForgeDetourPageBoundary", testFailure, cleanupFailures);
+            }
+        }
+
+        private static void TestForgeDetourPatchPageBoundaryCleanup()
+        {
+            var original = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var replacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            EnsureNoTrackedDetours("TestForgeDetourPatchPageBoundaryCleanup");
+            if (ForgePatcher.GetAppliedPatches().Count != 0)
+                throw new InvalidOperationException("TestForgeDetourPatchPageBoundaryCleanup requires an empty legacy receipt registry.");
+            IntPtr address = PrepareStableMethodAddresses("TestForgeDetourPatchPageBoundaryCleanup", original, replacement)[0];
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            byte[] originalBytes = null;
+            Exception testFailure = null;
+            try
+            {
+                ForgeApi.Connect(new TestEngine());
+                originalBytes = adapter.Read(address, 13);
+                int readsBeforeRejection = adapter.ReadCalls;
+                ForgeDetour.SetSystemPageSizeForTests(1);
+                bool rejected = false;
+                try { ForgeDetour.Patch(original, replacement); }
+                catch (InvalidOperationException error)
+                {
+                    rejected = error.Message.IndexOf("cross a system page boundary", StringComparison.Ordinal) >= 0;
+                }
+
+                if (!rejected || ForgeDetour.GetTrackedSnapshots().Count != 0 || ForgeDetour.IsTracked(original) ||
+                    ForgePatcher.GetAppliedPatches().Count != 0 || adapter.ReadCalls != readsBeforeRejection ||
+                    adapter.ProtectCalls != 0 || adapter.WriteCalls != 0 || adapter.FlushCalls != 0)
+                    throw new Exception("Public Patch retained a target/ID or touched executable memory after the pre-write page-boundary rejection.");
+
+                // Reusing the same public route proves the rejected reservation did not keep
+                // the target or its default patch ID in the registry.
+                ForgeDetour.SetSystemPageSizeForTests(ulong.MaxValue);
+                ForgeDetour.Patch(original, replacement);
+                var applied = ForgeDetour.GetTrackedSnapshots();
+                if (applied.Count != 1 || applied[0].State != ForgePatchState.Applied ||
+                    !applied[0].PatchId.StartsWith("direct:", StringComparison.Ordinal) || !ForgeDetour.Unpatch(original) ||
+                    ForgeDetour.GetTrackedSnapshots().Count != 0)
+                    throw new Exception("Public Patch could not reuse and release the target after a rejected pre-write reservation.");
+            }
+            catch (Exception error)
+            {
+                testFailure = error;
+                throw;
+            }
+            finally
+            {
+                var cleanupFailures = new List<string>();
+                try { ForgeDetour.SetSystemPageSizeForTests(null); }
+                catch (Exception error) { cleanupFailures.Add("Page-size test override reset failed: " + error.Message); }
+                string cleanup = CleanupFakeTarget(adapter, original, address, originalBytes);
+                if (cleanup != null) cleanupFailures.Add(cleanup);
+                try { if (ForgeApi.Registry != null) ForgeApi.Disconnect(); }
+                catch (Exception error) { cleanupFailures.Add("SDK disconnect failed after fake direct detour cleanup: " + error.Message); }
+                ResetFakeMemoryAdapter(cleanupFailures);
+                ThrowIfFakeCleanupFailed("TestForgeDetourPatchPageBoundaryCleanup", testFailure, cleanupFailures);
+            }
+        }
+
+        private static void TestPatchBatchPageBoundaryCleanup()
+        {
+            var targetOne = typeof(PatchBatchMethods).GetMethod(nameof(PatchBatchMethods.TargetOne));
+            var targetTwo = typeof(PatchBatchMethods).GetMethod(nameof(PatchBatchMethods.TargetTwo));
+            var replacementOne = typeof(PatchBatchMethods).GetMethod(nameof(PatchBatchMethods.ReplacementOne));
+            var replacementTwo = typeof(PatchBatchMethods).GetMethod(nameof(PatchBatchMethods.ReplacementTwo));
+            EnsureNoTrackedDetours("TestPatchBatchPageBoundaryCleanup");
+            if (ForgePatcher.GetAppliedPatches().Count != 0)
+                throw new InvalidOperationException("TestPatchBatchPageBoundaryCleanup requires an empty legacy receipt registry.");
+            IntPtr[] addresses = PrepareStableMethodAddresses("TestPatchBatchPageBoundaryCleanup", targetOne, replacementOne, targetTwo, replacementTwo);
+            IntPtr firstAddress = addresses[0];
+            IntPtr secondAddress = addresses[2];
+            if (addresses.Distinct().Count() != addresses.Length)
+                throw new InvalidOperationException("TestPatchBatchPageBoundaryCleanup: fixture methods did not resolve to unique prepared addresses.");
+
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            byte[] originalOne = null;
+            byte[] originalTwo = null;
+            Exception testFailure = null;
+            try
+            {
+                ForgeApi.Connect(new TestEngine());
+                originalOne = adapter.Read(firstAddress, 13);
+                originalTwo = adapter.Read(secondAddress, 13);
+                int readsBeforeRejection = adapter.ReadCalls;
+                ForgeDetour.SetSystemPageSizeForTests(1);
+                bool rejected = false;
+                try { ForgePatcher.ApplyAll(typeof(PatchBatchMethods).Assembly); }
+                catch (InvalidOperationException error)
+                {
+                    rejected = error.Message.IndexOf("Patch batch was rejected", StringComparison.Ordinal) >= 0;
+                }
+
+                var rejectedSnapshots = ForgeDetour.GetTrackedSnapshots();
+                var rejectedReceipts = ForgePatcher.GetAppliedPatches();
+                if (!rejected || rejectedSnapshots.Count != 0 || rejectedReceipts.Count != 0 ||
+                    ForgeDetour.IsTracked(targetOne) || ForgeDetour.IsTracked(targetTwo) ||
+                    adapter.ReadCalls != readsBeforeRejection || adapter.ProtectCalls != 0 || adapter.WriteCalls != 0 || adapter.FlushCalls != 0)
+                    throw new Exception("Batch page-boundary rejection retained an ID/target, recorded failure state, or touched executable memory.");
+
+                // Retry the same declaration IDs under a permissive synthetic page size. A
+                // successful retry proves the batch rollback released every reservation.
+                ForgeDetour.SetSystemPageSizeForTests(ulong.MaxValue);
+                if (ForgePatcher.ApplyAll(typeof(PatchBatchMethods).Assembly) != 2 ||
+                    ForgeDetour.GetTrackedSnapshots().Count != 2 || ForgePatcher.GetAppliedPatches().Count != 2)
+                    throw new Exception("The complete batch could not reuse its IDs and targets after the page-boundary rejection.");
+                ForgePatcher.RevertAll();
+                if (ForgeDetour.GetTrackedSnapshots().Count != 0 || ForgePatcher.GetAppliedPatches().Count != 0)
+                    throw new Exception("The successful retry did not release all batch targets and receipts.");
+            }
+            catch (Exception error)
+            {
+                testFailure = error;
+                throw;
+            }
+            finally
+            {
+                var cleanupFailures = new List<string>();
+                try { ForgeDetour.SetSystemPageSizeForTests(ulong.MaxValue); }
+                catch (Exception error) { cleanupFailures.Add("Page-size cleanup override failed: " + error.Message); }
+                string firstCleanup = CleanupFakeTarget(adapter, targetOne, firstAddress, originalOne);
+                if (firstCleanup != null) cleanupFailures.Add(firstCleanup);
+                string secondCleanup = CleanupFakeTarget(adapter, targetTwo, secondAddress, originalTwo);
+                if (secondCleanup != null) cleanupFailures.Add(secondCleanup);
+                try { if (ForgeApi.Registry != null) ForgeApi.Disconnect(); }
+                catch (Exception error) { cleanupFailures.Add("SDK disconnect failed after fake batch cleanup: " + error.Message); }
+                try { ForgeDetour.SetSystemPageSizeForTests(null); }
+                catch (Exception error) { cleanupFailures.Add("Page-size test override reset failed: " + error.Message); }
+                ResetFakeMemoryAdapter(cleanupFailures);
+                ThrowIfFakeCleanupFailed("TestPatchBatchPageBoundaryCleanup", testFailure, cleanupFailures);
+            }
+        }
+
+        private static void TestPatchServiceLifecycle()
+        {
+            var original = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var replacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            var engine = new TestEngine();
+            IForgePatchHandle handle = null;
+            try
+            {
+                ForgeApi.Connect(engine);
+                var staleService = ForgeApi.Patches;
+                if (staleService == null) throw new Exception("Host should expose the optional patch service.");
+                IntPtr targetAddress = original.MethodHandle.GetFunctionPointer();
+                byte[] untouched = adapter.Read(targetAddress, 13);
+                bool badSignatureRejected = false;
+                try { staleService.ApplyMethodReplacement("fixture.bad-signature", "fixture.owner", original, typeof(SdkFeaturesTests).GetMethod(nameof(WrongSignatureMethod), BindingFlags.Static | BindingFlags.NonPublic)); }
+                catch (ArgumentException) { badSignatureRejected = true; }
+                if (!badSignatureRejected || !adapter.Read(targetAddress, 13).SequenceEqual(untouched))
+                    throw new Exception("The explicit service must reject an incompatible signature before writing target bytes.");
+
+                handle = staleService.ApplyMethodReplacement("fixture.patch", "fixture.owner", original, replacement);
+                MethodInfo secondTarget = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethodTwo), BindingFlags.Static | BindingFlags.NonPublic);
+                MethodInfo secondReplacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethodTwo), BindingFlags.Static | BindingFlags.NonPublic);
+                bool sharedIdRejected = false;
+                try { ForgeDetour.Patch(secondTarget, secondReplacement, "fixture.patch", "other.owner"); }
+                catch (InvalidOperationException) { sharedIdRejected = true; }
+                if (!sharedIdRejected || ForgeDetour.IsTracked(secondTarget))
+                    throw new Exception("Patch IDs must be unique across explicit and direct detour paths.");
+                bool duplicateIdRejected = false;
+                try { staleService.ApplyMethodReplacement("fixture.patch", "other.owner", typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic), original); }
+                catch (InvalidOperationException) { duplicateIdRejected = true; }
+                bool duplicateTargetRejected = false;
+                try { staleService.ApplyMethodReplacement("fixture.other", "other.owner", original, replacement); }
+                catch (InvalidOperationException) { duplicateTargetRejected = true; }
+                var snapshots = staleService.GetSnapshots("fixture.owner");
+                if (!duplicateIdRejected || !duplicateTargetRejected || snapshots.Count != 1 || !(snapshots is IList<ForgePatchSnapshot> snapshotList) || !snapshotList.IsReadOnly)
+                    throw new Exception("The explicit service must reject duplicate IDs/targets and return immutable snapshots.");
+                if (handle.Verify().State != ForgePatchState.Applied || !handle.Snapshot.IsIntact)
+                    throw new Exception("Explicit service did not report the simulated detour as applied.");
+                ForgeApi.Disconnect();
+                if (ForgeApi.Patches != null || handle.Snapshot.State != ForgePatchState.Reverted || !handle.Revert().IsReverted || !handle.Revert().IsReverted)
+                    throw new Exception("Disconnect should revert owned patches and keep the handle idempotent.");
+                bool rejected = false;
+                try { staleService.ApplyMethodReplacement("fixture.stale", "fixture.owner", original, replacement); }
+                catch (InvalidOperationException) { rejected = true; }
+                if (!rejected) throw new Exception("A stale service reference must reject post-disconnect applications.");
+
+                bool directRejected = false;
+                try { ForgeDetour.Patch(secondTarget, secondReplacement, "fixture.disconnected.direct", "direct.owner"); }
+                catch (InvalidOperationException) { directRejected = true; }
+                if (!directRejected || ForgeDetour.IsTracked(secondTarget))
+                    throw new Exception("Direct and legacy patch adapters must reject applications after the host disconnects.");
+
+                ForgeApi.Connect(engine);
+                ForgeApi.Connect(engine);
+                var reconnectedService = ForgeApi.Patches;
+                if (!ReferenceEquals(staleService, reconnectedService))
+                    throw new Exception("Reconnecting the same registry should reuse its optional patch service.");
+                var reconnectedHandle = reconnectedService.ApplyMethodReplacement("fixture.reconnected.service", "fixture.owner", original, replacement);
+                if (reconnectedHandle.Verify().State != ForgePatchState.Applied || !reconnectedHandle.Revert().IsReverted)
+                    throw new Exception("A safely reverted service should resume applications after reconnecting the same registry.");
+                ForgeDetour.Patch(secondTarget, secondReplacement, "fixture.reconnected.direct", "direct.owner");
+                if (!ForgeDetour.IsTracked(secondTarget) || !ForgeDetour.Unpatch(secondTarget))
+                    throw new Exception("A successful host reconnection must reopen direct patch applications and permit exact revert.");
+                ForgeApi.Disconnect();
+            }
+            finally
+            {
+                if (ForgeApi.Registry != null) ForgeApi.Disconnect();
+                ForgeDetour.SetMemoryAdapterForTests(null);
+            }
+        }
+
+        private static void TestPatchServiceConflictRetention()
+        {
+            var original = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var replacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            var engine = new TestEngine();
+            IForgePatchHandle handle = null;
+            byte[] installed = null;
+            IntPtr targetAddress = IntPtr.Zero;
+            try
+            {
+                ForgeApi.Connect(engine);
+                handle = ForgeApi.Patches.ApplyMethodReplacement("fixture.conflict", "fixture.owner", original, replacement);
+                targetAddress = original.MethodHandle.GetFunctionPointer();
+                installed = adapter.Read(targetAddress, 13);
+                adapter.Tamper(targetAddress, 0, 0x90);
+                byte[] foreign = adapter.Read(targetAddress, 13);
+                ForgeApi.Disconnect();
+                handle.Dispose();
+                if (handle.Snapshot.State != ForgePatchState.Conflict || handle.Revert().State != ForgePatchState.Conflict || !adapter.Read(targetAddress, 13).SequenceEqual(foreign))
+                    throw new Exception("Disconnect or repeated handle release must preserve foreign target bytes and report Conflict.");
+                bool reconnectBlocked = false;
+                try { engine.Reconnect(); }
+                catch (InvalidOperationException) { reconnectBlocked = true; }
+                if (!reconnectBlocked || handle.Snapshot.State != ForgePatchState.Conflict || !adapter.Read(targetAddress, 13).SequenceEqual(foreign))
+                    throw new Exception("A disconnected patch service must refuse reconnection while foreign target bytes remain.");
+            }
+            finally
+            {
+                if (ForgeApi.Registry != null) ForgeApi.Disconnect();
+                // Remove only this test's synthetic conflict so the process-wide test adapter
+                // can be safely returned to native mode after the assertion has observed it.
+                if (installed != null && targetAddress != IntPtr.Zero)
+                {
+                    adapter.Replace(targetAddress, installed);
+                    if (!ForgeDetour.Unpatch(original)) throw new Exception("Test fixture could not clean up its restored synthetic detour.");
+                }
+                ForgeDetour.SetMemoryAdapterForTests(null);
+            }
+        }
+
+        private static void TestPatchServiceScope()
+        {
+            var ownedTarget = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var ownedReplacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var directTarget = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethodTwo), BindingFlags.Static | BindingFlags.NonPublic);
+            var directReplacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethodTwo), BindingFlags.Static | BindingFlags.NonPublic);
+            EnsureNoTrackedDetours("TestPatchServiceScope");
+            PrepareStableMethodAddresses("TestPatchServiceScope", ownedTarget, ownedReplacement, directTarget, directReplacement);
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            var engine = new TestEngine();
+            IForgePatchService service = null;
+            IForgePatchHandle handle = null;
+            try
+            {
+                ForgeApi.Connect(engine);
+                service = ForgeApi.Patches;
+                if (service == null) throw new Exception("The host did not expose the optional patch capability.");
+                handle = service.ApplyMethodReplacement("fixture.service.owned", "service.owner", ownedTarget, ownedReplacement);
+                ForgeDetour.Patch(directTarget, directReplacement, "fixture.direct.unrelated", "direct.owner");
+                service.Disconnect();
+                var remaining = ForgeDetour.GetTrackedSnapshots();
+                if (handle.Snapshot.State != ForgePatchState.Reverted || remaining.Count != 1 ||
+                    remaining[0].PatchId != "fixture.direct.unrelated" || !ForgeDetour.IsTracked(directTarget))
+                    throw new Exception("Service disconnect must revert its own handles while preserving unrelated direct registry entries.");
+                if (!ForgeDetour.Unpatch(directTarget) || ForgeDetour.GetTrackedSnapshots().Count != 0)
+                    throw new Exception("The isolated direct detour could not be reverted after service-scope verification.");
+            }
+            finally
+            {
+                if (ForgeApi.Registry != null) ForgeApi.Disconnect();
+                if (ForgeDetour.IsTracked(directTarget)) ForgeDetour.Unpatch(directTarget);
+                if (ForgeDetour.IsTracked(ownedTarget)) ForgeDetour.Unpatch(ownedTarget);
+                ForgeDetour.SetMemoryAdapterForTests(null);
+            }
+        }
+
+        private static void TestPatchServiceConnectionReplacement()
+        {
+            var original = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var replacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            var first = new TestEngine();
+            var second = new TestEngine();
+            IForgePatchHandle handle = null;
+            try
+            {
+                ForgeApi.Connect(first);
+                handle = ForgeApi.Patches.ApplyMethodReplacement("fixture.reconnect", "fixture.owner", original, replacement);
+                ForgeApi.Connect(second);
+                if (!ReferenceEquals(ForgeApi.Registry, second) || handle.Snapshot.State != ForgePatchState.Reverted ||
+                    ForgeDetour.GetTrackedSnapshots().Count != 0)
+                    throw new Exception("Replacing a host must disconnect and revert the previous patch service before publication.");
+            }
+            finally
+            {
+                if (ForgeApi.Registry != null) ForgeApi.Disconnect();
+                ForgeDetour.SetMemoryAdapterForTests(null);
+            }
+        }
+
+        private static void TestPatchServiceConnectionReplacementConflict()
+        {
+            var original = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var replacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            EnsureNoTrackedDetours("TestPatchServiceConnectionReplacementConflict");
+            IntPtr targetAddress = PrepareStableMethodAddresses("TestPatchServiceConnectionReplacementConflict", original, replacement)[0];
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            var first = new TestEngine();
+            var second = new TestEngine();
+            IForgePatchHandle handle = null;
+            byte[] installed = null;
+            try
+            {
+                ForgeApi.Connect(first);
+                IForgePatchService service = ForgeApi.Patches;
+                handle = service.ApplyMethodReplacement("fixture.reconnect.conflict", "fixture.owner", original, replacement);
+                installed = ForgeDetour.GetInstalledBytes(original);
+                adapter.Tamper(targetAddress, 0, 0x90);
+
+                bool replacementRejected = false;
+                try { ForgeApi.Connect(second); }
+                catch (InvalidOperationException) { replacementRejected = true; }
+                if (!replacementRejected || !ReferenceEquals(ForgeApi.Registry, first) || !ReferenceEquals(ForgeApi.Patches, service) ||
+                    handle.Snapshot.State != ForgePatchState.Conflict || ForgeDetour.GetTrackedSnapshots().Count != 1)
+                    throw new Exception("A conflicted reconnect must leave the prior host published with its conflict visible for manual resolution.");
+
+                bool applyRejected = false;
+                try { service.ApplyMethodReplacement("fixture.reconnect.stale", "fixture.owner", original, replacement); }
+                catch (InvalidOperationException) { applyRejected = true; }
+                if (!applyRejected)
+                    throw new Exception("A prior service must keep rejecting new patch applications after a failed host replacement.");
+
+                adapter.Replace(targetAddress, installed);
+                if (!handle.Revert().IsReverted || handle.Snapshot.State != ForgePatchState.Reverted)
+                    throw new Exception("The retained conflict handle must allow explicit manual recovery after restoring the recorded bytes.");
+
+                ForgeApi.Connect(second);
+                if (!ReferenceEquals(ForgeApi.Registry, second) || ForgeDetour.GetTrackedSnapshots().Count != 0)
+                    throw new Exception("Host replacement should succeed after the prior conflicted handle is explicitly resolved.");
+            }
+            finally
+            {
+                if (installed != null && ForgeDetour.IsTracked(original)) adapter.Replace(targetAddress, installed);
+                if (ForgeApi.Registry != null) ForgeApi.Disconnect();
+                if (ForgeDetour.IsTracked(original)) ForgeDetour.Unpatch(original);
+                ForgeDetour.SetMemoryAdapterForTests(null);
+            }
+        }
+
+        private static void TestPatchServiceLegacyCleanup()
+        {
+            var original = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var replacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var directTarget = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethodTwo), BindingFlags.Static | BindingFlags.NonPublic);
+            var directReplacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethodTwo), BindingFlags.Static | BindingFlags.NonPublic);
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            try
+            {
+                ForgeApi.Connect(new TestEngine());
+                original.DetourWith(replacement);
+                ForgeLivePatcher.ApplyDetour(directTarget, directReplacement);
+                if (ForgeDetour.GetTrackedSnapshots().Count != 2)
+                    throw new Exception("Legacy and direct calls should enter the same shared detour registry.");
+                ForgeApi.Disconnect();
+                if (ForgeDetour.GetTrackedSnapshots().Count != 0 || ForgePatcher.GetAppliedPatches().Count != 0)
+                    throw new Exception("Disconnect must revert and clear verified direct and legacy receipts.");
+            }
+            finally
+            {
+                if (ForgeApi.Registry != null) ForgeApi.Disconnect();
+                ForgeDetour.SetMemoryAdapterForTests(null);
+            }
+        }
+
+        private static void TestPatchBatchRollback()
+        {
+            var targetOne = typeof(PatchBatchMethods).GetMethod(nameof(PatchBatchMethods.TargetOne));
+            var targetTwo = typeof(PatchBatchMethods).GetMethod(nameof(PatchBatchMethods.TargetTwo));
+            var replacementOne = typeof(PatchBatchMethods).GetMethod(nameof(PatchBatchMethods.ReplacementOne));
+            var replacementTwo = typeof(PatchBatchMethods).GetMethod(nameof(PatchBatchMethods.ReplacementTwo));
+            EnsureNoTrackedDetours("TestPatchBatchRollback");
+            IntPtr[] preparedAddresses = PrepareStableMethodAddresses("TestPatchBatchRollback", targetOne, replacementOne, targetTwo, replacementTwo);
+            IntPtr firstAddress = preparedAddresses[0];
+            IntPtr secondAddress = preparedAddresses[2];
+            if (preparedAddresses.Distinct().Count() != preparedAddresses.Length)
+                throw new InvalidOperationException("TestPatchBatchRollback: fixture methods did not resolve to unique prepared addresses: " +
+                    string.Join(", ", preparedAddresses.Select(Address)) + ".");
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            byte[] originalOne = null;
+            byte[] originalTwo = null;
+            Exception testFailure = null;
+            try
+            {
+                ForgeApi.Connect(new TestEngine());
+                originalOne = adapter.Read(firstAddress, 13);
+                originalTwo = adapter.Read(secondAddress, 13);
+                adapter.FailFlushForAddress = secondAddress;
+                bool failed = false;
+                try { ForgePatcher.ApplyAll(typeof(PatchBatchMethods).Assembly); }
+                catch (InvalidOperationException) { failed = true; }
+                bool firstRestored=adapter.Read(firstAddress, 13).SequenceEqual(originalOne);
+                bool secondRestored=adapter.Read(secondAddress, 13).SequenceEqual(originalTwo);
+                var tracked=ForgeDetour.GetTrackedSnapshots();
+                var receipts=ForgePatcher.GetAppliedPatches();
+                if (!failed || !firstRestored || !secondRestored || tracked.Count != 0 || receipts.Count != 0)
+                    throw new Exception("Batch rollback mismatch: injectedAddress=" + Address(secondAddress) +
+                        ", injectionTriggered=" + adapter.FlushFailureTriggered + ", failed=" + failed +
+                        ", first=" + Address(firstAddress) + "/restored=" + firstRestored +
+                        ", second=" + Address(secondAddress) + "/restored=" + secondRestored +
+                        ", tracked=" + tracked.Count + " [" + string.Join("; ", tracked.Select(item => item.PatchId + ":" + item.State)) +
+                        "], receipts=" + receipts.Count + " [" + string.Join("; ", receipts.Select(item => item.Id + "@" + (item.Original == null ? "<null>" : item.Original.Name))) +
+                        "], flushCalls=" + adapter.FlushCalls + ", lastFlush=" + Address(adapter.LastFlushAddress) + ".");
+            }
+            catch (Exception error)
+            {
+                testFailure = error;
+                throw;
+            }
+            finally
+            {
+                var cleanupFailures = new List<string>();
+                string firstCleanup = CleanupFakeTarget(adapter, targetOne, firstAddress, originalOne);
+                if (firstCleanup != null) cleanupFailures.Add(firstCleanup);
+                string secondCleanup = CleanupFakeTarget(adapter, targetTwo, secondAddress, originalTwo);
+                if (secondCleanup != null) cleanupFailures.Add(secondCleanup);
+                try { if (ForgeApi.Registry != null) ForgeApi.Disconnect(); }
+                catch (Exception error) { cleanupFailures.Add("SDK disconnect failed after fake batch cleanup: " + error.Message); }
+                ResetFakeMemoryAdapter(cleanupFailures);
+                ThrowIfFakeCleanupFailed("TestPatchBatchRollback", testFailure, cleanupFailures);
+            }
+        }
+
+        private static void TestPatchConsoleRoutes()
+        {
+            var original = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var replacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            try
+            {
+                ForgeApi.Connect(new TestEngine());
+                ForgeDetour.Patch(original, replacement, "console.patch.id", "console.owner");
+                string status = ForgeCommands.PatchStatus(new List<string> { "console.owner" });
+                if (!status.Contains("console.patch.id") || !status.Contains("Applied"))
+                    throw new Exception("patch_status must inventory direct shared-registry records by owner.");
+                string byId = ForgeCommands.PatchRevert(new List<string> { "console.patch.id" });
+                if (!byId.Contains("1 reverted") || ForgeDetour.GetTrackedSnapshots().Count != 0)
+                    throw new Exception("patch_revert by ID did not use the shared registry.");
+
+                ForgeDetour.Patch(original, replacement, "console.patch.owner", "console.owner");
+                string byOwner = ForgeCommands.PatchRevert(new List<string> { "console.owner" });
+                if (!byOwner.Contains("1 reverted") || ForgeDetour.GetTrackedSnapshots().Count != 0)
+                    throw new Exception("patch_revert by owner did not use the shared registry.");
+
+                ForgeDetour.Patch(original, replacement, "same", "same");
+                string ambiguous = ForgeCommands.PatchRevert(new List<string> { "same" });
+                if (!ambiguous.Contains("both a patch ID and an owner") || ForgeDetour.GetTrackedSnapshots().Count != 1)
+                    throw new Exception("patch_revert must reject an ID/owner ambiguity without writing.");
+                if (!ForgeDetour.RevertById("same").IsReverted)
+                    throw new Exception("The ambiguous-command fixture could not be safely cleaned up by its exact ID.");
+
+                ForgeDetour.Patch(original, replacement, "all", "console.owner");
+                string reservedAll = ForgeCommands.PatchRevert(new List<string> { "all" });
+                if (!reservedAll.Contains("reserved command") || ForgeDetour.GetTrackedSnapshots().Count != 1)
+                    throw new Exception("patch_revert must reject reserved 'all' collisions without writing.");
+                if (!ForgeDetour.RevertById("all").IsReverted)
+                    throw new Exception("The reserved-command fixture could not be safely cleaned up by its exact ID.");
+
+                ForgeDetour.Patch(original, replacement, "console.patch.owner-all", "all");
+                string reservedOwner = ForgeCommands.PatchRevert(new List<string> { "all" });
+                if (!reservedOwner.Contains("reserved command") || ForgeDetour.GetTrackedSnapshots().Count != 1)
+                    throw new Exception("patch_revert must reject a reserved 'all' owner collision without writing.");
+                if (!ForgeDetour.RevertById("console.patch.owner-all").IsReverted)
+                    throw new Exception("The reserved-owner fixture could not be safely cleaned up by its exact ID.");
+
+                ForgeDetour.Patch(original, replacement, "all", "all");
+                string reservedIdAndOwner = ForgeCommands.PatchRevert(new List<string> { "all" });
+                if (!reservedIdAndOwner.Contains("both a patch ID and an owner") || ForgeDetour.GetTrackedSnapshots().Count != 1)
+                    throw new Exception("patch_revert must reject a reserved 'all' ID/owner collision without writing.");
+                if (!ForgeDetour.RevertById("all").IsReverted)
+                    throw new Exception("The reserved ID/owner fixture could not be safely cleaned up by its exact ID.");
+
+                ForgeDetour.Patch(original, replacement, "console.patch.all", "console.owner");
+                string all = ForgeCommands.PatchRevert(new List<string> { "all" });
+                if (!all.Contains("1 reverted") || ForgeDetour.GetTrackedSnapshots().Count != 0)
+                    throw new Exception("patch_revert all did not safely revert the global inventory.");
+            }
+            finally
+            {
+                if (ForgeApi.Registry != null) ForgeApi.Disconnect();
+                if (ForgeDetour.IsTracked(original)) ForgeDetour.Unpatch(original);
+                ForgeDetour.SetMemoryAdapterForTests(null);
+            }
+        }
+
+        private sealed class FakeExecutableMemoryAdapter : ForgeDetour.IExecutableMemoryAdapter
+        {
+            private readonly Dictionary<IntPtr, byte[]> memory = new Dictionary<IntPtr, byte[]>();
+            public bool Is64BitProcess { get { return true; } }
+            internal bool FailNextProtect;
+            internal bool FailNextFlush;
+            internal bool FailNextProtectionRestore;
+            internal int FailWriteOnCall;
+            internal int ReadCalls;
+            internal int WriteCalls;
+            internal int ProtectCalls;
+            internal IntPtr FailFlushForAddress;
+            internal bool FlushFailureTriggered;
+            internal int FlushCalls;
+            internal IntPtr LastFlushAddress;
+            internal uint Protection = 0x20;
+            public byte[] Read(IntPtr address, int count)
+            {
+                ReadCalls++;
+                byte[] bytes;
+                if (!memory.TryGetValue(address, out bytes))
+                {
+                    bytes = Enumerable.Range(0, count).Select(index => (byte)(0x20 + index)).ToArray();
+                    memory[address] = bytes;
+                }
+                return bytes.Take(count).ToArray();
+            }
+            public void Write(IntPtr address, byte[] bytes)
+            {
+                WriteCalls++;
+                if (FailWriteOnCall != 0 && WriteCalls == FailWriteOnCall)
+                    throw new InvalidOperationException("Injected executable write failure.");
+                memory[address] = (byte[])bytes.Clone();
+            }
+            public bool TryProtect(IntPtr address, int count, uint newProtect, out uint oldProtect, out int error)
+            {
+                ProtectCalls++;
+                if (FailNextProtect && newProtect == 0x40) { FailNextProtect = false; oldProtect = Protection; error = 5; return false; }
+                oldProtect = Protection;
+                if (FailNextProtectionRestore && newProtect != 0x40)
+                {
+                    FailNextProtectionRestore = false;
+                    error = 5;
+                    return false;
+                }
+                Protection = newProtect;
+                error = 0;
+                return true;
+            }
+            public bool Flush(IntPtr address, int count, out int error)
+            {
+                FlushCalls++;
+                LastFlushAddress = address;
+                if (FailFlushForAddress != IntPtr.Zero && address == FailFlushForAddress)
+                {
+                    FailFlushForAddress = IntPtr.Zero;
+                    FlushFailureTriggered = true;
+                    error = 31;
+                    return false;
+                }
+                if (FailNextFlush) { FailNextFlush = false; FlushFailureTriggered = true; error = 31; return false; }
+                error = 0; return true;
+            }
+            internal void Tamper(IntPtr address, int offset, byte value) { memory[address][offset] = value; }
+            internal void Replace(IntPtr address, byte[] bytes) { memory[address] = (byte[])bytes.Clone(); }
+        }
+
+        private static IntPtr[] PrepareStableMethodAddresses(string testName, params MethodInfo[] methods)
+        {
+            if (methods == null || methods.Length == 0)
+                throw new ArgumentException(testName + ": at least one method is required for address preparation.", nameof(methods));
+            for (int index = 0; index < methods.Length; index++)
+            {
+                MethodInfo method = methods[index];
+                if (method == null)
+                    throw new InvalidOperationException(testName + ": method at index " + index + " could not be resolved.");
+                if (method.IsAbstract || method.ContainsGenericParameters || method.IsGenericMethod)
+                    throw new InvalidOperationException(testName + ": fixture method is not a closed concrete method: " + MethodIdentity(method) + ".");
+                System.Runtime.CompilerServices.RuntimeHelpers.PrepareMethod(method.MethodHandle);
+            }
+
+            var addresses = methods.Select(method => method.MethodHandle.GetFunctionPointer()).ToArray();
+            for (int index = 0; index < methods.Length; index++)
+                System.Runtime.CompilerServices.RuntimeHelpers.PrepareMethod(methods[index].MethodHandle);
+            for (int index = 0; index < methods.Length; index++)
+            {
+                IntPtr verified = methods[index].MethodHandle.GetFunctionPointer();
+                if (addresses[index] == IntPtr.Zero || verified != addresses[index])
+                    throw new InvalidOperationException(testName + ": method address changed after preparation for " + MethodIdentity(methods[index]) +
+                        " (first=" + Address(addresses[index]) + ", second=" + Address(verified) + ").");
+            }
+            return addresses;
+        }
+
+        private static void EnsureNoTrackedDetours(string testName)
+        {
+            var tracked = ForgeDetour.GetTrackedSnapshots();
+            if (tracked.Count != 0)
+                throw new InvalidOperationException(testName + ": fake-memory fixture requires an empty detour registry; found " + tracked.Count +
+                    " record(s): " + string.Join("; ", tracked.Select(item => item.PatchId + ":" + item.State + " target=" + item.TargetMethod)) + ".");
+        }
+
+        private static string CleanupFakeTarget(FakeExecutableMemoryAdapter adapter, MethodInfo target, IntPtr preparedAddress, byte[] originalBytes)
+        {
+            var failures = new List<string>();
+            try
+            {
+                var receipts = ForgePatcher.GetAppliedPatches().Where(record => record.Original == target).Reverse().ToArray();
+                if (ForgeDetour.IsTracked(target))
+                {
+                    // The fake adapter is synthetic and owned by this test. Restore only its
+                    // recorded jump, then use the ordinary guarded revert to clear the receipt.
+                    adapter.Replace(preparedAddress, ForgeDetour.GetInstalledBytes(target));
+                    if (receipts.Length > 0)
+                    {
+                        foreach (PatchRecord receipt in receipts) ForgePatcher.Revert(receipt);
+                    }
+                    else if (!ForgeDetour.Unpatch(target))
+                    {
+                        failures.Add("Unpatch returned false for " + MethodIdentity(target) + " at " + Address(preparedAddress) + ".");
+                    }
+                }
+                else if (receipts.Length > 0)
+                {
+                    failures.Add("Legacy receipt(s) remain without a tracked detour for " + MethodIdentity(target) + ": " +
+                        string.Join(", ", receipts.Select(record => record.Id)) + ".");
+                }
+
+                if (ForgeDetour.IsTracked(target)) failures.Add("Detour remains tracked for " + MethodIdentity(target) + ".");
+                var remainingReceipts = ForgePatcher.GetAppliedPatches().Where(record => record.Original == target).Select(record => record.Id).ToArray();
+                if (remainingReceipts.Length > 0)
+                    failures.Add("Legacy receipt cleanup incomplete for " + MethodIdentity(target) + ": " + string.Join(", ", remainingReceipts) + ".");
+                if (originalBytes != null && !adapter.Read(preparedAddress, originalBytes.Length).SequenceEqual(originalBytes))
+                    failures.Add("Synthetic bytes were not restored for " + MethodIdentity(target) + " at " + Address(preparedAddress) + ".");
+            }
+            catch (Exception error)
+            {
+                failures.Add(MethodIdentity(target) + " cleanup threw " + error.GetType().Name + ": " + error.Message);
+            }
+            return failures.Count == 0 ? null : string.Join(" ", failures);
+        }
+
+        private static void ResetFakeMemoryAdapter(List<string> failures)
+        {
+            try
+            {
+                var remaining = ForgeDetour.GetTrackedSnapshots();
+                if (remaining.Count != 0)
+                {
+                    // The fixture verifies an empty registry before installing the adapter,
+                    // so any remaining entry is owned by this test and can get one safe pass.
+                    ForgeDetour.UnpatchAllForLifecycle();
+                    remaining = ForgeDetour.GetTrackedSnapshots();
+                }
+                if (remaining.Count != 0)
+                    failures.Add("Cannot reset fake memory adapter; tracked detours remain: " +
+                        string.Join("; ", remaining.Select(item => item.PatchId + ":" + item.State + " target=" + item.TargetMethod)) + ".");
+                else
+                    ForgeDetour.SetMemoryAdapterForTests(null);
+            }
+            catch (Exception error)
+            {
+                failures.Add("Fake memory adapter reset threw " + error.GetType().Name + ": " + error.Message);
+            }
+        }
+
+        private static void ThrowIfFakeCleanupFailed(string testName, Exception testFailure, List<string> cleanupFailures)
+        {
+            if (cleanupFailures == null || cleanupFailures.Count == 0) return;
+            string detail = testName + ": fake detour cleanup was incomplete: " + string.Join(" | ", cleanupFailures);
+            if (testFailure != null)
+                throw new AggregateException(detail + " Original test failure: " + testFailure.Message, testFailure, new InvalidOperationException(detail));
+            throw new InvalidOperationException(detail);
+        }
+
+        private static string MethodIdentity(MethodInfo method)
+        {
+            return method == null ? "<null>" : (method.DeclaringType == null ? "?" : method.DeclaringType.FullName) + "." + method.Name;
+        }
+
+        private static string Address(IntPtr address)
+        {
+            return address == IntPtr.Zero ? "<zero>" : "0x" + address.ToInt64().ToString("X");
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
@@ -279,6 +1131,15 @@ namespace CalradiaForge.Tests
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static string ReplacementMethod() => "Replacement";
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static string TargetMethodTwo() => "Original two";
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static string ReplacementMethodTwo() => "Replacement two";
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static int WrongSignatureMethod() => 99;
         
         private static void TestForgeApiAutoRegister()
         {
@@ -1378,8 +2239,8 @@ namespace CalradiaForge.Tests
 
         private static void TestForgeApiVersion()
         {
-            if (ForgeApi.Version != 10)
-                throw new Exception($"ForgeApi.Version should be 10. Got: {ForgeApi.Version}");
+            if (ForgeApi.Version != 11)
+                throw new Exception($"ForgeApi.Version should be 11. Got: {ForgeApi.Version}");
         }
 
         private static void TestForgeUiRegistry()

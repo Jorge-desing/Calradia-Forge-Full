@@ -5,194 +5,303 @@ using System.Reflection;
 
 namespace CalradiaForge.Sdk.Patcher
 {
+    /// <summary>Legacy mutable receipt retained for source compatibility.</summary>
     public class PatchRecord
     {
+        public string Id { get; set; }
+        public string Owner { get; set; }
         public MethodInfo Original { get; set; }
         public MethodInfo Replacement { get; set; }
         public string SourceModule { get; set; }
         public byte[] OriginalBytes { get; set; }
 
-        /// <summary>
-        /// Verifies if the JMP instruction is still in place, meaning no other framework has overwritten it.
-        /// </summary>
-        public unsafe bool IsIntact()
+        /// <summary>Checks all installed jump bytes against Forge's tracked record.</summary>
+        public bool IsIntact()
         {
             if (Original == null) return false;
-            try
-            {
-                if (Original.MethodHandle.Value == IntPtr.Zero) return false;
-                IntPtr fnPtr = Original.MethodHandle.GetFunctionPointer();
-                if (fnPtr == IntPtr.Zero) return false;
-                byte* ptr = (byte*)fnPtr;
-                return *ptr == 0x49 && *(ptr + 1) == 0xBB;
-            }
-            catch
-            {
-                return false;
-            }
+            string status;
+            return ForgeDetour.Verify(Original, out status);
         }
     }
 
+    /// <summary>
+    /// Explicit, experimental method replacement for compatibility callers. The complete
+    /// declaration batch is inspected before the first write; it is not thread-safe for a
+    /// target being executed concurrently and does not provide instruction relocation.
+    /// </summary>
     public static class ForgePatcher
     {
-        private static readonly object _syncLock = new object();
+        private static readonly object syncLock = new object();
         private static readonly List<PatchRecord> appliedPatches = new List<PatchRecord>();
 
         public static IReadOnlyList<PatchRecord> GetAppliedPatches()
         {
-            lock (_syncLock)
-            {
-                return appliedPatches.ToList().AsReadOnly();
-            }
+            lock (syncLock) return appliedPatches.Select(Copy).ToList().AsReadOnly();
         }
 
-        /// <summary>
-        /// Audits all applied patches to ensure they haven't been overwritten by other frameworks (like Harmony).
-        /// Returns a list of broken patches.
-        /// </summary>
+        /// <summary>Returns records whose complete installed jump bytes no longer match.</summary>
         public static List<PatchRecord> VerifyIntegrity()
         {
-            lock (_syncLock)
-            {
-                return appliedPatches.Where(p => !p.IsIntact()).ToList();
-            }
+            lock (syncLock) return appliedPatches.Where(record => !record.IsIntact()).Select(Copy).ToList();
         }
 
-        /// <summary>
-        /// Manually registers a patch record into the tracker.
-        /// </summary>
+        /// <summary>Registers a legacy receipt only when it describes a Forge-tracked detour.</summary>
         public static void Register(PatchRecord record)
         {
-            if (record == null) return;
-            lock (_syncLock)
+            if (record == null) throw new ArgumentNullException(nameof(record));
+            if (record.Original == null || record.Replacement == null || !ForgeDetour.IsTracked(record.Original))
+                throw new ArgumentException("Only an active Forge-owned detour can be registered.", nameof(record));
+            if (!ForgeDetour.OriginalBytesMatch(record.Original, record.OriginalBytes))
+                throw new ArgumentException("The receipt's original bytes do not match Forge's tracked record.", nameof(record));
+            lock (syncLock)
             {
-                if (!appliedPatches.Contains(record))
-                {
-                    appliedPatches.Add(record);
-                }
+                if (appliedPatches.Any(existing => existing.Original == record.Original))
+                    throw new InvalidOperationException("A patch record already exists for this target method.");
+                if (string.IsNullOrWhiteSpace(record.Id)) record.Id = ForgeDetour.GetTrackedPatchId(record.Original) ?? MakeLegacyId(record.Original, record.Replacement);
+                if (!ForgeDetour.IsTrackedPatch(record.Original, record.Id))
+                    throw new ArgumentException("The receipt's patch ID does not match Forge's shared detour record.", nameof(record));
+                if (appliedPatches.Any(existing => string.Equals(existing.Id, record.Id, StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException("Patch ID already exists: " + record.Id);
+                appliedPatches.Add(Copy(record));
             }
         }
 
-        /// <summary>
-        /// Reverts a specific patch by restoring its original assembly bytes.
-        /// </summary>
+        /// <summary>Reverts a tracked record only when its installed bytes still match Forge.</summary>
         public static void Revert(PatchRecord record)
         {
-            if (record == null || record.OriginalBytes == null) throw new ArgumentException("Invalid patch record.");
-            MethodSwapper.RestoreMethod(record.Original, record.OriginalBytes);
-            lock (_syncLock)
+            if (record == null || record.Original == null || record.OriginalBytes == null)
+                throw new ArgumentException("Invalid patch record.", nameof(record));
+            if (!ForgeDetour.OriginalBytesMatch(record.Original, record.OriginalBytes))
+                throw new InvalidOperationException("The record does not match the active Forge detour.");
+            if (!ForgeDetour.Unpatch(record.Original))
+                throw new InvalidOperationException("Target bytes changed outside Forge; the foreign modification was not overwritten.");
+            lock (syncLock)
             {
-                appliedPatches.Remove(record);
+                appliedPatches.RemoveAll(existing => existing.Original == record.Original);
             }
         }
 
-        /// <summary>
-        /// Reverts all active patches applied by ForgePatcher.
-        /// </summary>
+        /// <summary>Reverts only records tracked by this legacy registry, in reverse apply order.</summary>
         public static void RevertAll()
         {
-            List<PatchRecord> snapshot;
-            lock (_syncLock)
+            PatchRecord[] snapshot;
+            lock (syncLock) snapshot = appliedPatches.Select(Copy).ToArray();
+            var failures = new List<Exception>();
+            for (int i = snapshot.Length - 1; i >= 0; i--)
             {
-                snapshot = appliedPatches.ToList();
+                try { Revert(snapshot[i]); }
+                catch (Exception error) { failures.Add(error); }
             }
+            if (failures.Count > 0) throw new AggregateException("One or more legacy Forge patches could not be reverted.", failures);
+        }
 
-            // Traverse backwards to avoid index issues when removing
-            for (int i = snapshot.Count - 1; i >= 0; i--)
+        /// <summary>Removes receipts only after the shared detour registry verifies original bytes.</summary>
+        internal static void RemoveVerifiedRevertedRecords()
+        {
+            lock (syncLock)
+                appliedPatches.RemoveAll(record => record.Original != null && record.OriginalBytes != null &&
+                    ForgeDetour.VerifyRestored(record.Original, record.OriginalBytes));
+        }
+
+        /// <summary>Reverts legacy records with a matching descriptive owner label.</summary>
+        public static int RevertOwner(string owner)
+        {
+            if (string.IsNullOrWhiteSpace(owner)) throw new ArgumentException("An owner label is required.", nameof(owner));
+            PatchRecord[] snapshot;
+            lock (syncLock)
+                snapshot = appliedPatches.Where(record => string.Equals(record.Owner ?? record.SourceModule, owner,
+                    StringComparison.OrdinalIgnoreCase)).Select(Copy).ToArray();
+            var failures = new List<Exception>();
+            int reverted = 0;
+            for (int i = snapshot.Length - 1; i >= 0; i--)
             {
-                Revert(snapshot[i]);
+                try { Revert(snapshot[i]); reverted++; }
+                catch (Exception error) { failures.Add(error); }
             }
+            if (failures.Count > 0) throw new AggregateException("One or more owner patches could not be reverted.", failures);
+            return reverted;
         }
 
         /// <summary>
-        /// Scans the provided assembly for methods marked with [ForgePatch]
-        /// and applies the replacement detours automatically.
+        /// Scans exactly the supplied assembly for [ForgePatch] declarations and applies them
+        /// only after every declaration resolves uniquely and passes signature/collision checks.
         /// </summary>
-        /// <param name="assembly">The assembly to scan</param>
-        /// <returns>The number of successful patches applied.</returns>
         public static int ApplyAll(Assembly assembly)
         {
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
+            List<ResolvedPatch> batch = ResolveBatch(assembly);
+            if (batch.Count == 0) return 0;
 
-            int patchesApplied = 0;
+            lock (syncLock)
+            {
+                var ids = new HashSet<string>(appliedPatches.Select(record => record.Id ?? string.Empty), StringComparer.OrdinalIgnoreCase);
+                var targets = new HashSet<MethodInfo>(appliedPatches.Select(record => record.Original));
+                foreach (ResolvedPatch patch in batch)
+                {
+                    if (!ids.Add(patch.Id)) throw new InvalidOperationException("Duplicate patch ID: " + patch.Id);
+                    if (!targets.Add(patch.Target) || ForgeDetour.IsTracked(patch.Target))
+                        throw new InvalidOperationException("Conflicting patch target: " + Identity(patch.Target));
+                }
+
+                string owner = assembly.GetName().Name;
+                var records = new PatchRecord[batch.Count];
+                var originals = new MethodInfo[batch.Count];
+                var replacements = new MethodInfo[batch.Count];
+                var patchIds = new string[batch.Count];
+                var originalByteCopies = new byte[batch.Count][];
+                for (int index = 0; index < batch.Count; index++)
+                {
+                    ResolvedPatch patch = batch[index];
+                    records[index] = new PatchRecord
+                    {
+                        Id = patch.Id,
+                        Owner = owner,
+                        Original = patch.Target,
+                        Replacement = patch.Replacement,
+                        SourceModule = owner
+                    };
+                    originals[index] = patch.Target;
+                    replacements[index] = patch.Replacement;
+                    patchIds[index] = patch.Id;
+                }
+
+                int requiredCapacity = appliedPatches.Count + batch.Count;
+                if (appliedPatches.Capacity < requiredCapacity) appliedPatches.Capacity = requiredCapacity;
+                try
+                {
+                    appliedPatches.AddRange(records);
+                    ForgeDetour.PatchBatch(originals, replacements, patchIds, owner, originalByteCopies);
+                    for (int index = 0; index < records.Length; index++)
+                        records[index].OriginalBytes = originalByteCopies[index];
+                    return records.Length;
+                }
+                catch (Exception applyError)
+                {
+                    var retained = new List<PatchRecord>();
+                    for (int index = 0; index < records.Length; index++)
+                    {
+                        PatchRecord record = records[index];
+                        if (originalByteCopies[index] != null) record.OriginalBytes = originalByteCopies[index];
+                        if (ForgeDetour.IsTrackedPatch(record.Original, record.Id)) retained.Add(record);
+                        else appliedPatches.Remove(record);
+                    }
+                    if (retained.Count > 0)
+                    {
+                        throw new AggregateException("Patch batch application failed and one or more uncertain/conflicting records remain; inspect them and do not retry automatically.", applyError);
+                    }
+                    throw new InvalidOperationException("Patch batch was rejected; already-applied entries were safely reverted.", applyError);
+                }
+            }
+        }
+
+        private sealed class ResolvedPatch
+        {
+            internal string Id;
+            internal MethodInfo Target;
+            internal MethodInfo Replacement;
+        }
+
+        private static List<ResolvedPatch> ResolveBatch(Assembly assembly)
+        {
+            if (assembly.IsDynamic) throw new NotSupportedException("Dynamic assemblies are not supported by explicit patch scanning.");
             Type[] types;
             try { types = assembly.GetTypes(); }
-            catch (ReflectionTypeLoadException e) { types = e.Types.Where(t => t != null).ToArray(); }
-
-            foreach (var type in types)
+            catch (ReflectionTypeLoadException error)
             {
-                MethodInfo[] methods;
-                try { methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance); }
-                catch { continue; } // Skip types that fail method reflection
+                throw new InvalidOperationException("The complete patch assembly could not be inspected; no patch was applied.", error);
+            }
 
-                foreach (var method in methods)
+            var declarations = new List<ResolvedPatch>();
+            foreach (Type type in types.OrderBy(item => item.FullName, StringComparer.Ordinal))
+            {
+                MethodInfo[] methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
+                    BindingFlags.Instance | BindingFlags.DeclaredOnly).OrderBy(item => item.Name, StringComparer.Ordinal).ToArray();
+                foreach (MethodInfo replacement in methods)
                 {
-                    var attributes = method.GetCustomAttributes(typeof(ForgePatchAttribute), false);
-                    foreach (ForgePatchAttribute attr in attributes)
+                    IList<CustomAttributeData> attributes = CustomAttributeData.GetCustomAttributes(replacement);
+                    int declarationIndex = 0;
+                    foreach (CustomAttributeData attribute in attributes.Where(item => item.AttributeType == typeof(ForgePatchAttribute)))
                     {
-                        if (attr.TargetType == null || string.IsNullOrWhiteSpace(attr.TargetMethod))
-                            continue;
-
-                        var parameters = method.GetParameters();
-                        MethodInfo targetMethod = null;
-                        
-                        foreach (var tm in attr.TargetType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+                        declarationIndex++;
+                        if (attribute.ConstructorArguments.Count < 2 || !(attribute.ConstructorArguments[0].Value is Type targetType) ||
+                            !(attribute.ConstructorArguments[1].Value is string targetName) || string.IsNullOrWhiteSpace(targetName))
+                            throw new InvalidOperationException("Invalid ForgePatch declaration on " + Identity(replacement));
+                        if (attribute.ConstructorArguments.Count > 2 && attribute.ConstructorArguments[2].Value != null)
                         {
-                            if (tm.Name == attr.TargetMethod)
-                            {
-                                var targetParams = tm.GetParameters();
-                                
-                                // Check if it's an exact match (both static or both instance)
-                                bool exactMatch = targetParams.Length == parameters.Length;
-                                
-                                // Check if it's a static method patching an instance method (first param is 'this')
-                                bool instanceMatch = !tm.IsStatic && method.IsStatic && parameters.Length == targetParams.Length + 1;
-
-                                if (exactMatch || instanceMatch)
-                                {
-                                    bool match = true;
-                                    int offset = instanceMatch ? 1 : 0;
-
-                                    if (instanceMatch && !attr.TargetType.IsAssignableFrom(parameters[0].ParameterType))
-                                    {
-                                        match = false;
-                                    }
-                                    else
-                                    {
-                                        for (int i = 0; i < targetParams.Length; i++)
-                                        {
-                                            if (parameters[i + offset].ParameterType != targetParams[i].ParameterType)
-                                            {
-                                                match = false;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    if (match)
-                                    {
-                                        targetMethod = tm;
-                                        break;
-                                    }
-                                }
-                            }
+                            var methodType = (ForgeMethodType)Convert.ToInt32(attribute.ConstructorArguments[2].Value);
+                            if (methodType == ForgeMethodType.Getter) targetName = "get_" + targetName;
+                            else if (methodType == ForgeMethodType.Setter) targetName = "set_" + targetName;
                         }
 
-                        if (targetMethod != null)
+                        var candidates = targetType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance)
+                            .Where(target => string.Equals(target.Name, targetName, StringComparison.Ordinal) && ExactSignature(target, replacement))
+                            .ToArray();
+                        if (candidates.Length != 1)
+                            throw new InvalidOperationException(candidates.Length == 0
+                                ? "No exact patch target resolves for " + Identity(replacement) + " -> " + targetType.FullName + "." + targetName
+                                : "Ambiguous exact patch target for " + Identity(replacement) + " -> " + targetType.FullName + "." + targetName);
+                        MethodInfo targetMethod = candidates[0];
+                        ForgeDetour.ValidatePair(targetMethod, replacement);
+                        declarations.Add(new ResolvedPatch
                         {
-                            byte[] backupBytes = MethodSwapper.DetourMethod(targetMethod, method);
-                            appliedPatches.Add(new PatchRecord { Original = targetMethod, Replacement = method, SourceModule = assembly.GetName().Name, OriginalBytes = backupBytes });
-                            patchesApplied++;
-                        }
-                        else
-                        {
-                            throw new MissingMethodException($"ForgePatcher: Could not find target method {attr.TargetType.Name}.{attr.TargetMethod} matching the signature of {type.Name}.{method.Name}");
-                        }
+                            Id = "assembly:" + ForgeDetour.ShortHash(assembly.GetName().Name + ":" + SignatureIdentity(replacement)) + ":" + declarationIndex,
+                            Target = targetMethod,
+                            Replacement = replacement
+                        });
                     }
                 }
             }
-            return patchesApplied;
+
+            var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var targets = new HashSet<MethodInfo>();
+            foreach (ResolvedPatch declaration in declarations)
+            {
+                if (!ids.Add(declaration.Id)) throw new InvalidOperationException("Duplicate patch ID in assembly: " + declaration.Id);
+                if (!targets.Add(declaration.Target)) throw new InvalidOperationException("Multiple declarations target " + Identity(declaration.Target));
+            }
+            return declarations;
+        }
+
+        private static bool ExactSignature(MethodInfo target, MethodInfo replacement)
+        {
+            if (target.IsGenericMethod || replacement.IsGenericMethod || target.ContainsGenericParameters || replacement.ContainsGenericParameters)
+                return false;
+            if (target.IsStatic != replacement.IsStatic || target.CallingConvention != replacement.CallingConvention || target.ReturnType != replacement.ReturnType)
+                return false;
+            ParameterInfo[] left = target.GetParameters();
+            ParameterInfo[] right = replacement.GetParameters();
+            if (left.Length != right.Length) return false;
+            for (int i = 0; i < left.Length; i++)
+                if (left[i].ParameterType != right[i].ParameterType || left[i].IsIn != right[i].IsIn || left[i].IsOut != right[i].IsOut) return false;
+            return true;
+        }
+
+        private static string MakeLegacyId(MethodInfo original, MethodInfo replacement)
+        {
+            return "legacy:" + ForgeDetour.ShortHash(SignatureIdentity(original) + "->" + SignatureIdentity(replacement));
+        }
+
+        private static string SignatureIdentity(MethodInfo method)
+        {
+            return ForgeDetour.SignatureIdentity(method);
+        }
+
+        private static PatchRecord Copy(PatchRecord source)
+        {
+            return new PatchRecord
+            {
+                Id = source.Id,
+                Owner = source.Owner,
+                Original = source.Original,
+                Replacement = source.Replacement,
+                SourceModule = source.SourceModule,
+                OriginalBytes = source.OriginalBytes == null ? null : (byte[])source.OriginalBytes.Clone()
+            };
+        }
+
+        private static string Identity(MethodInfo method)
+        {
+            return (method.DeclaringType == null ? "?" : method.DeclaringType.FullName) + "." + method.Name;
         }
     }
 }
-

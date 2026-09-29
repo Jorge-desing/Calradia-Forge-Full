@@ -858,3 +858,37 @@ Initial developer preview: Gauntlet panel, WPF client, local named pipes, diagno
 - The user repeated the Resource Browser import. The loaded inspector showed `ui_calradiaforge_1` as a 4096×512 texture, with `B8G8R8A8` source data and DXT5 runtime data at 13 mip levels. The import uses file selection and **Update**; inspector **Save** only stores import settings.
 - The installed Steam TPAC and workspace source TPAC are both 539 bytes and match at SHA-256 `8899A48A407591ADA53573EFC0DD699EA47D2A30F32A0C12C1875003F7993047`. Pre-import and post-import backups remain outside the repository and were hash-verified. TpacTool was not used.
 - No new in-game render or F10 observation followed this repeat import; live rendering remains pending. Product version stays 25.2.0; no API, route, command, permission, dependency, or ZIP changed.
+
+## Calradia Forge 25.2.0 patch-engine source follow-up — 2026-09-29 (Rev086)
+
+- Removes implicit patch scanning from module startup; the legacy `InitializeGlobalPatches()` entry remains an obsolete no-op. `ForgePatcher.ApplyAll(assembly)` is explicit and validates the supplied patch batch before writing. Patch Preflight remains read-only and resolves declared targets/callbacks, duplicate IDs, conflicts, and ordering without loading assemblies or invoking callbacks.
+- Adds optional `IForgePatchService` through `ForgeApi.Patches`, advancing `ForgeApi.Version` from 10 to 11 without changing `IForgeRegistry` implementers. `ForgeDetour`, `MethodSwapper`, and patch records share one write/verification path. Reversion checks exact bytes, reports foreign modifications as conflicts, and requests instruction-cache flushing while checking executable-page protection changes. Adds `cf.patch_status [owner]` and `cf.patch_revert <id|owner|all>`; Patch Preflight over IPC remains read-only.
+- The backend remains experimental: it does not suspend threads, decode or relocate overwritten instructions, or guarantee safety while a target method is executing. No Bannerlord or Modding Kit runtime test was performed for this entry. The disposable x64 fixture and its BAT integration are present, but BAT execution/results and full regression results remain pending; no test pass is claimed here.
+- Product version remains 25.2.0; ForgeWeave and distribution ZIPs are unchanged.
+
+## Calradia Forge patch-engine verification follow-up — 2026-09-29 (Rev087)
+
+- Completed the isolated x64 detour fixture through `tests/CalradiaForge.DetourFixture/Run-DetourFixture.bat --no-pause`. The launcher builds into a unique temporary directory and removes only that output; the serial fixture verified the target result sequence `15 → 32 → 15` and exact revert.
+- `cmd.exe /c "tools\Run-CalradiaForge-Tests.bat --core-only --no-pause <nul"` passed with clean `net472` and `net8.0` builds, 0 warnings and 0 errors, Core 361/361, the isolated native detour fixture, and ForgeWeave 73/73. Regressions include explicit batch rollback, conflicted host reconnection/manual recovery, service ownership, byte-state uncertainty, and reserved `all` command collisions.
+- This follow-up updates Rev086's pending test status with the completed BAT evidence. No Bannerlord or Modding Kit runtime session was started. Fixtures invoke targets serially and do not prove safety when another thread may execute a target during a write; the patch backend remains experimental.
+- Product version remains 25.2.0; SDK capability version is 11. No ForgeWeave, IPC write route, or distribution ZIP changed.
+
+## Calradia Forge patch-engine safety follow-up — 2026-09-29 (Rev088)
+
+- Reject detour writes that cross a system page boundary before changing memory protection; add boundary and no-write regressions. `TypeReference.From` and Patch Preflight now preserve and compare generic parameter owner/position (`!0` versus `!!0`) so same-name type and method parameters cannot alias.
+- Add the separate optional `IForgePatchServiceLifecycle` capability to reopen a disconnected built-in patch service only after each prior record and original bytes are verified reverted with no tracked target. Keeping it separate avoids adding a required member to existing `IForgePatchService` implementations.
+- The integrated BAT retry passed clean `net472`/`net8.0` builds with 0 warnings/errors, Core 363/363, the serial x64 detour fixture (`15 → 32 → 15`, exact revert), and ForgeWeave 73/73. An earlier integrated attempt reported one non-reproducible Core failure; the isolated Core BAT and subsequent integrated run both passed.
+- No Bannerlord or Modding Kit runtime session was started. The serial fixture does not establish safety against concurrent execution during a code write; the detour backend remains experimental. Product version remains 25.2.0, `ForgeApi.Version` remains 11, and ForgeWeave, IPC write routes, and distribution ZIPs are unchanged.
+
+## Calradia Forge patch-boundary preflight correction — 2026-09-29 (Rev089)
+
+- Moves page-span rejection in direct and batch patch routes ahead of any original-byte read or registry reservation. A rejected batch validates every span before reading or reserving any target, so the same IDs and targets remain retryable.
+- Adds public-route regressions for direct `Patch` and `ForgePatcher.ApplyAll`, verifying unchanged read/protect/write/flush counts, empty receipts after rejection, and successful reuse under a permitted synthetic page size.
+- The latest Core BAT run passed 363/363 managed regressions and compiled the disposable `net472` x64 fixture with zero warnings or errors. The serial native fixture then blocked and was stopped; the latest overall BAT run and native smoke are therefore not reported as passing. The fixture BAT now bounds its child-process wait.
+- This follow-up supersedes Rev088's fixture-pass statement for the latest tree only; it preserves Rev088 as the record of the earlier successful run. No Bannerlord or Modding Kit session was started. The detour backend remains experimental and has no concurrent-execution safety guarantee. Product version remains 25.2.0, `ForgeApi.Version` remains 11, and ZIPs remain unchanged.
+
+## Calradia Forge fixture-launcher status correction — 2026-09-29 (Rev090)
+
+- A PowerShell timeout wrapper around the disposable native fixture did not return control reliably and was removed. The fixture BAT is restored to direct child-process launch; no timeout guarantee is claimed.
+- The current native smoke remains blocked/unverified. The latest managed Core regressions pass 363/363 and the x64 fixture compiles cleanly, but the Core BAT does not complete because its native child stalls. Earlier successful fixture evidence remains scoped to the earlier tree recorded in Rev088.
+- This entry corrects only the timeout statement in Rev089. No module/game session or ZIP change occurred; product version remains 25.2.0 and the patch backend remains experimental.

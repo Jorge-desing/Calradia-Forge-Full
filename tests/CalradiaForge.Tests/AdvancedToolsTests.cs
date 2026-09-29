@@ -341,6 +341,7 @@ namespace CalradiaForge.Tests
 
         public static void Run(Action<string, Action> test)
         {
+            GauntletComposerTests.Run(test);
             test("Perk Tree Scaffold generates valid C# with unique perk IDs", TestPerkTreeScaffold);
             test("Diplomatic Matrix generates valid XML and balanced relations", TestDiplomaticMatrix);
             test("Gauntlet Brush XML contains required layers and valid #RRGGBBAA hex", TestGauntletBrushSynthesis);
@@ -362,7 +363,7 @@ namespace CalradiaForge.Tests
             test("Lifecycle & Memory Leak Guards (ForgeCampaignEvents, ForgeData, CampaignVariableInspector)", TestLifecycleAndMemoryLeakGuards);
             test("ForgeSaveChunker prevents 31KB TaleWorlds serializer corruption", TestForgeSaveChunker);
             test("ForgeMissionLogicBuilder adheres to mission lifecycle & interaction hooks", TestForgeMissionLogicBuilder);
-            test("ForgeDetour restores original instruction bytes on unpatch", TestForgeDetourUnpatch);
+            test("ForgeDetour rejects incompatible signatures before native writes", TestForgeDetourUnpatch);
             test("ForgeUI clears extension-page handlers", TestForgeUI_Clear);
             test("PanelViewModel & CalradiaForge.xml UI telemetry, clear output, and empty-state placeholder", TestPanelViewModelAndPrefabPolish);
             test("Gauntlet evidence ledger retains 160 DIP at 1280x720 without colliding with controls", TestGauntletEvidenceLedgerGeometry);
@@ -878,45 +879,21 @@ namespace MyCustomMod.QuestBehaviors
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int DummyReplacementDetourMethod() => 99;
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string DummyWrongSignatureDetourMethod() => "wrong signature";
+
         private static void TestForgeDetourUnpatch()
         {
             var origMethod = typeof(AdvancedToolsTests).GetMethod(nameof(DummyOriginalDetourMethod), BindingFlags.NonPublic | BindingFlags.Static);
-            var replMethod = typeof(AdvancedToolsTests).GetMethod(nameof(DummyReplacementDetourMethod), BindingFlags.NonPublic | BindingFlags.Static);
+            var wrongMethod = typeof(AdvancedToolsTests).GetMethod(nameof(DummyWrongSignatureDetourMethod), BindingFlags.NonPublic | BindingFlags.Static);
 
-            if (origMethod == null || replMethod == null)
+            if (origMethod == null || wrongMethod == null)
                 throw new Exception("Failed to reflect dummy detour methods.");
-
-            // Detour patching only runs on 64-bit architecture
-            if (IntPtr.Size == 8)
-            {
-                ForgeDetour.Patch(origMethod, replMethod);
-                if (!ForgeDetour.IsPatched(origMethod))
-                    throw new Exception("IsPatched should return true after Patch.");
-                if (DummyOriginalDetourMethod() != 99)
-                    throw new Exception("Original method did not branch to replacement.");
-
-                bool unpatched = ForgeDetour.Unpatch(origMethod);
-                if (!unpatched)
-                    throw new Exception("Unpatch returned false for active patch.");
-                if (ForgeDetour.IsPatched(origMethod))
-                    throw new Exception("IsPatched should return false after Unpatch.");
-                if (DummyOriginalDetourMethod() != 42)
-                    throw new Exception("Original method instructions were not restored after Unpatch.");
-
-                // Test UnpatchAll
-                ForgeDetour.Patch(origMethod, replMethod);
-                ForgeDetour.UnpatchAll();
-                if (ForgeDetour.IsPatched(origMethod))
-                    throw new Exception("IsPatched should return false after UnpatchAll.");
-                if (DummyOriginalDetourMethod() != 42)
-                    throw new Exception("Original method instructions were not restored after UnpatchAll.");
-            }
-            else
-            {
-                // In 32-bit test runner, verify API surface safely
-                if (ForgeDetour.IsPatched(origMethod))
-                    throw new Exception("IsPatched should be false initially.");
-            }
+            bool rejected = false;
+            try { ForgeDetour.Patch(origMethod, wrongMethod); }
+            catch (ArgumentException) { rejected = true; }
+            if (!rejected) throw new Exception("Detour must reject an incompatible return signature before writing.");
+            if (ForgeDetour.IsPatched(origMethod)) throw new Exception("Rejected preflight must not create a tracked detour.");
         }
 
         private static void TestForgeUI_Clear()
@@ -2054,8 +2031,9 @@ namespace MyCustomMod.QuestBehaviors
                 !vm.Contains("No output lines match this filter.") ||
                 !vm.Contains("public void ExecuteClearOutputFilter() => OutputFilterText = string.Empty;"))
                 throw new Exception("PanelViewModel must filter cached source output, show a localized no-match state, and clear only the query.");
-            if (!vm.Contains("public string EvidenceHeading => T(\"Evidence\");"))
-                throw new Exception("The evidence header must use a short localized label instead of a route title that can collide with the filter.");
+            if (!vm.Contains("public string EvidenceHeading => T(\"Evidence\");") ||
+                !vm.Contains("public string OutputHeading => IsGauntletComposerPackageVisible ? T(\"Generated package\") : EvidenceHeading;"))
+                throw new Exception("Evidence and generated-package headers must use short localized labels instead of route titles that can collide with the filter.");
 
             XDocument prefab = XDocument.Load(Path.GetFullPath("modules/CalradiaForge/GUI/Prefabs/CalradiaForge.xml"));
             XElement input = prefab.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeOutputFilterInput");
