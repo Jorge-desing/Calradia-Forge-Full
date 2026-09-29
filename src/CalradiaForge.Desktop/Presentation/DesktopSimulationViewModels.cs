@@ -854,6 +854,24 @@ namespace CalradiaForge.Desktop.Presentation
             OptimalEnterprise = "Smithy & Brewery (+580 d/day Combined Revenue)";
             RecalculateEconomy();
         }
+
+        public void CycleScenario(int index)
+        {
+            if (index % 2 == 1)
+            {
+                SetEpicroteaScenario();
+            }
+            else
+            {
+                Settlement = "Marunath (Prosperity: 5,420 · Loyalty: 64.0/100 · Security: 72.0/100)";
+                ProsperityChange = "+4.2 / day (Growing Economy)";
+                FoodStorage = "184 (+14/day Surplus)";
+                Garrison = "165 Regular Troops (Effective Deterrent)";
+                RebellionRisk = "8.6% (Stable · Threshold for Unrest: 45.0%)";
+                OptimalEnterprise = "Silversmith (+340 d/day · 41.1d Payback Period)";
+                RecalculateEconomy();
+            }
+        }
         public string StudioDocumentation => "Bannerlord Dynamic Market Equilibrium & Workshop Simulation: Models settlement supply/demand elasticity, raw material consumption, worker wages, and daily production cycles.";
         public string ArchitecturalInvariants => "1. Workshop production must verify input item availability before deducting.\n2. Prevent ItemRoster underflow when consuming raw materials.\n3. Custom workshops must declare <WorkshopType> in workshops.xml and register via CampaignGameStarter.\n4. Keep daily production cycles stateless with respect to save persistence.";
         public string StudioCaveat => "Direct deduction of items from settlement ItemRoster without inventory quantity bounds checking causes silent save game inventory corruption.";

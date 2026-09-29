@@ -515,6 +515,9 @@
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,4" VerticalAlignment="Center">
              <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" TextWrapping="Wrap"><Run Text="SILVERSMITH "/><Run Text="{DynamicResource Viz.Workshop.OptimalLabel}"/><Run Text=" (+340d)"/></TextBlock>
            </Border>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="8,0,0,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Imperial Craftsman &amp; Guild Medallion Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-guild-medallion-rev092.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
           </StackPanel>
          </Grid>
         </Border>

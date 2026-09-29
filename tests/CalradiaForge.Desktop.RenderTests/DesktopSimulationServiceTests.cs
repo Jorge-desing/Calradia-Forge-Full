@@ -50,6 +50,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies Rev090 audio, security, hierarchy, generator, and live telemetry");
         Rev091GenericOperationAndVisualTelemetry();
         Console.WriteLine("PASS Desktop simulation verifies Rev091 generic operation scan latency and visual telemetry");
+        Rev092WorkshopGuildAndCommandPaletteVisualTelemetry();
+        Console.WriteLine("PASS Desktop simulation verifies Rev092 workshop guild medallion and scenario cycling telemetry");
     }
 
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
@@ -830,5 +832,18 @@ internal static class DesktopSimulationServiceTests
         genericVm.CycleScenario(2);
         Check(genericVm.ScanLatencyMs == 1.2, "Deterministic bounded route scenario must record 1.2 ms scan latency.");
         Check(genericVm.ExecutionMode == "Deterministic Bounded Route", "Scenario 2 must restore Deterministic Bounded Route.");
+    }
+
+    static void Rev092WorkshopGuildAndCommandPaletteVisualTelemetry()
+    {
+        var workshopVm = new WorkshopDashboardViewModel();
+        Check(workshopVm.Settlement.Contains("Marunath"), "Workshop dashboard must initialize with Marunath settlement.");
+        Check(workshopVm.EconomicCycleTimelineDays == 18.0, "Workshop dashboard must initialize with 18.0 days timeline.");
+        workshopVm.CycleScenario(1);
+        Check(workshopVm.Settlement.Contains("Epicrotea"), "Scenario 1 must switch to Epicrotea settlement.");
+        Check(workshopVm.OptimalEnterprise.Contains("Smithy & Brewery"), "Epicrotea scenario must identify Smithy & Brewery as optimal.");
+        workshopVm.CycleScenario(2);
+        Check(workshopVm.Settlement.Contains("Marunath"), "Scenario 2 must restore Marunath settlement.");
+        Check(workshopVm.OptimalEnterprise.Contains("Silversmith"), "Marunath scenario must restore Silversmith as optimal.");
     }
 }

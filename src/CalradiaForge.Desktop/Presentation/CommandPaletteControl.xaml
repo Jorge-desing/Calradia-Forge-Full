@@ -48,6 +48,29 @@
         </TextBox.InputBindings>
        </TextBox>
       </StackPanel>
+      <Border DockPanel.Dock="Bottom" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Margin="0,10,0,0" Padding="0,8,0,0">
+       <Grid>
+        <Grid.ColumnDefinitions>
+         <ColumnDefinition Width="*"/>
+         <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+         <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="5,1" Margin="0,0,6,0">
+          <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="↑↓ NAVIGATE"/>
+         </Border>
+         <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Padding="5,1" Margin="0,0,6,0">
+          <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="↵ SELECT"/>
+         </Border>
+         <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="5,1">
+          <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="ESC DISMISS"/>
+         </Border>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+         <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" Text="CALRADIA FORGE WORKBENCH · " VerticalAlignment="Center"/>
+         <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="STANDALONE PE" VerticalAlignment="Center"/>
+        </StackPanel>
+       </Grid>
+      </Border>
       <ListBox AutomationProperties.AutomationId="CommandPaletteToolList" AutomationProperties.Name="{DynamicResource Ui.CommandPalette}" Background="Transparent" BorderThickness="0" ItemsSource="{Binding PaletteTools}" Margin="0,12,0,0" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" SelectedItem="{Binding SelectedTool}" VirtualizingPanel.CacheLength="1,1" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.VirtualizationMode="Recycling">
        <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling"/></ItemsPanelTemplate></ListBox.ItemsPanel>
        <ListBox.ItemTemplate>
@@ -57,8 +80,11 @@
            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
            <StackPanel>
             <StackPanel Orientation="Horizontal">
-             <Ellipse Width="6" Height="6" Fill="{DynamicResource VerdigrisBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+             <Ellipse Width="6" Height="6" Fill="{Binding CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}" VerticalAlignment="Center" Margin="0,0,6,0"/>
              <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Title}"/>
+             <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Margin="8,0,0,0" Padding="4,0" VerticalAlignment="Center">
+              <TextBlock FontSize="7.5" FontWeight="SemiBold" Foreground="{Binding CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding Group}"/>
+             </Border>
             </StackPanel>
             <TextBlock FontSize="9.5" Foreground="{DynamicResource MutedTextBrush}" Margin="12,2,0,0" Text="{Binding Id}"/>
            </StackPanel>
