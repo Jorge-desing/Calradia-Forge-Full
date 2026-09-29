@@ -558,6 +558,13 @@ namespace CalradiaForge.Desktop.Presentation
             Headroom = "+3.2 dB Headroom (Pristine Decay)";
             ActivePreset = "Voice Clarity";
         }
+
+        public void CycleScenario(int index)
+        {
+            var presets = new[] { "Default Flat", "Bass Boost", "Voice Clarity", "Combat Punch" };
+            var selected = presets[Math.Abs(index) % presets.Length];
+            ApplyEqualizerPreset(selected);
+        }
         public string StudioDocumentation => "TaleWorlds FMOD Audio Architecture: Manages 8-band frequency spectrums, decibel levels, waveform analysis, and mixer bus routing for 2D UI and 3D positional mission emitters.";
         public string ArchitecturalInvariants => "1. Audio assets must reside in Modules/<ModId>/ModuleSounds/ as Vorbis .ogg or PCM .wav.\n2. Manifest declared in ModuleData/module_sounds.xml registered under <XmlName id=\"Sounds\" />.\n3. sound_category must match an active TaleWorlds mixer bus (ui, mission_combat, ambient, voice).\n4. 3D emitters must specify valid min/max attenuation distances.";
         public string StudioCaveat => "Never use uncompressed 32-bit float WAV files for long background music or dialog lines. Use compressed 16-bit 44.1kHz Vorbis OGG to prevent audio buffer exhaustion.";
@@ -1664,6 +1671,13 @@ namespace CalradiaForge.Desktop.Presentation
             set => Set(ref securityRiskDensityTrajectory, value);
         }
 
+        double auditScanElapsedMs = 84.5;
+        public double AuditScanElapsedMs
+        {
+            get => auditScanElapsedMs;
+            set => Set(ref auditScanElapsedMs, value);
+        }
+
         public SecurityRuleCheckViewModel RuleACheck { get; private set; }
         public SecurityRuleCheckViewModel RuleBCheck { get; private set; }
         public SecurityRuleCheckViewModel RuleCCheck { get; private set; }
@@ -1754,6 +1768,7 @@ namespace CalradiaForge.Desktop.Presentation
                     RiskScore = "0.0% RISK · LEVEL: SECURE";
                     RiskLevel = "SECURE [PASS]";
                     RiskBrushKey = "VerdigrisBrush";
+                    AuditScanElapsedMs = 84.5;
                     break;
                 case 1:
                     TargetAssembly = "TaleWorlds.CampaignSystem.dll (Native Engine)";
@@ -1761,6 +1776,7 @@ namespace CalradiaForge.Desktop.Presentation
                     RiskScore = "ENGINE NATIVE · REFERENCE ONLY";
                     RiskLevel = "VERIFIED [ENGINE]";
                     RiskBrushKey = "BrassBrush";
+                    AuditScanElapsedMs = 142.0;
                     break;
                 case 2:
                     TargetAssembly = "CustomSubModule.dll (Third-Party Addon)";
@@ -1768,6 +1784,7 @@ namespace CalradiaForge.Desktop.Presentation
                     RiskScore = "SANDBOXED INSPECTION";
                     RiskLevel = "AUDITED [OK]";
                     RiskBrushKey = "VerdigrisBrush";
+                    AuditScanElapsedMs = 62.8;
                     break;
             }
             AuditActiveRules();
@@ -1916,6 +1933,13 @@ namespace CalradiaForge.Desktop.Presentation
             set => Set(ref moduleLoadLatencyTrajectory, value);
         }
 
+        double bootSequenceElapsedMs = 460.0;
+        public double BootSequenceElapsedMs
+        {
+            get => bootSequenceElapsedMs;
+            set => Set(ref bootSequenceElapsedMs, value);
+        }
+
         public ModulePipelineNodeViewModel SelectedModule
         {
             get => selectedModule;
@@ -2000,18 +2024,21 @@ namespace CalradiaForge.Desktop.Presentation
                 ManifestId = "CalradiaForge";
                 Version = "v25.0.0";
                 SubModuleXmlStatus = "100% VALID MANIFEST (STANDARD STACK)";
+                BootSequenceElapsedMs = 460.0;
             }
             else if (sc == 1)
             {
                 ManifestId = "CalradiaForge.Minimal";
                 Version = "v25.0.0-custom";
                 SubModuleXmlStatus = "SANDBOX COMPATIBILITY STACK";
+                BootSequenceElapsedMs = 310.0;
             }
             else
             {
                 ManifestId = "CalradiaForge.Ecosystem";
                 Version = "v25.0.0-eco";
                 SubModuleXmlStatus = "MULTI-MOD COEXISTENCE MATRIX";
+                BootSequenceElapsedMs = 680.0;
             }
             var nodes = ScenarioNodes[sc];
             for (int i = 0; i < nodes.Length; i++)
@@ -2521,6 +2548,13 @@ namespace CalradiaForge.Desktop.Presentation
             set => Set(ref synthesisThroughputTrajectory, value);
         }
 
+        double synthesisElapsedMs = 28.5;
+        public double SynthesisElapsedMs
+        {
+            get => synthesisElapsedMs;
+            set => Set(ref synthesisElapsedMs, value);
+        }
+
         public string MixerCategoryStatus => "Mixer Buses: ui (2D Interface), mission_combat (3D Combat) & ambient";
         public string FormatCompliance => "Vorbis .OGG / 16-bit 44.1kHz PCM Zero-Latency Decoding";
 
@@ -2604,18 +2638,21 @@ namespace CalradiaForge.Desktop.Presentation
                 TargetOutput = "ModuleSounds/module_sounds.xml";
                 SchemaStandard = "Audio Manifest Definition (bannerlord_audio_system.md)";
                 ValidationStatus = "100% VALIDATED AUDIO SCHEMA";
+                SynthesisElapsedMs = 28.5;
             }
             else if (sc == 1)
             {
                 TargetOutput = "GUI/Prefabs/CalradiaForgePanel.xml";
                 SchemaStandard = "Gauntlet UI Prefab Specification (bannerlord_gauntlet_ui.md)";
                 ValidationStatus = "100% VALIDATED GAUNTLET PREFAB";
+                SynthesisElapsedMs = 45.2;
             }
             else
             {
                 TargetOutput = "ModuleData/custom_troops.xml";
                 SchemaStandard = "Troop Character Specification (bannerlord_troop_character.md)";
                 ValidationStatus = "100% VALIDATED TROOP SCHEMA";
+                SynthesisElapsedMs = 19.8;
             }
             var targetBlueprints = ScenarioBlueprints[sc];
             for (int i = 0; i < targetBlueprints.Length; i++) blueprintNodes.Add(targetBlueprints[i]);
@@ -3756,6 +3793,50 @@ namespace CalradiaForge.Desktop.Presentation
 
         public double MemoryGaugeValue { get => memoryGaugeValue; private set => Set(ref memoryGaugeValue, value); }
         public double RingBufferGaugeValue { get => ringBufferGaugeValue; private set => Set(ref ringBufferGaugeValue, value); }
+
+        public void CycleScenario(int index)
+        {
+            var sc = index % 3;
+            if (sc == 0)
+            {
+                SessionTitle = "CalradiaForge.Pipe.Live · Named Pipe APM Mesh";
+                ActivePipeUri = @"\\.\pipe\CalradiaForge.Live (IPC Stream Mode)";
+                ConnectionMetrics = "Connected Clients: 1 Active · Protocol: ForgeProtocol v2 · TLS/Auth: Local Loopback";
+                CurrentPacketTimestamp = 42.5;
+                MemoryGaugeValue = 42.5;
+                RingBufferGaugeValue = 68.0;
+                PipeEventThroughputTrajectory = new List<double>
+                {
+                    120.0, 145.0, 138.0, 160.0, 175.0, 190.0, 210.0, 205.0, 240.0, 260.0, 280.0, 295.0, 310.0, 330.0, 350.0, 375.0
+                };
+            }
+            else if (sc == 1)
+            {
+                SessionTitle = "CalradiaForge.Pipe.HighLoad · High Concurrency Stream";
+                ActivePipeUri = @"\\.\pipe\CalradiaForge.Live (Batch Burst Mode)";
+                ConnectionMetrics = "Connected Clients: 2 Active · Protocol: ForgeProtocol v2 · High-Throughput Pipe";
+                CurrentPacketTimestamp = 54.0;
+                MemoryGaugeValue = 61.2;
+                RingBufferGaugeValue = 82.5;
+                PipeEventThroughputTrajectory = new List<double>
+                {
+                    250.0, 280.0, 310.0, 340.0, 370.0, 410.0, 450.0, 480.0, 520.0, 560.0, 600.0, 640.0, 680.0, 710.0, 740.0, 780.0
+                };
+            }
+            else
+            {
+                SessionTitle = "CalradiaForge.Pipe.Diagnostics · Diagnostic Loopback";
+                ActivePipeUri = @"\\.\pipe\CalradiaForge.Live (Loopback Probe)";
+                ConnectionMetrics = "Connected Clients: 1 Active · Protocol: Loopback Mock · Thread Affinity Pinned";
+                CurrentPacketTimestamp = 18.2;
+                MemoryGaugeValue = 28.0;
+                RingBufferGaugeValue = 35.0;
+                PipeEventThroughputTrajectory = new List<double>
+                {
+                    60.0, 65.0, 70.0, 68.0, 75.0, 80.0, 82.0, 85.0, 88.0, 92.0, 90.0, 95.0, 98.0, 102.0, 105.0, 110.0
+                };
+            }
+        }
 
         public string StudioDocumentation => "Calradia Forge Live Session & IPC Telemetry Architecture: Connects standalone desktop tools to in-game Bannerlord via low-latency Named Pipes. Features real-time APM profiling, ForgeWeave event bus streaming, threadpool isolation, and zero game-thread contention.";
         public string ArchitecturalInvariants => "1. Named Pipe handlers must never block the game simulation thread.\n2. Ring buffer operations must employ zero-allocation interlocked index advancement.\n3. Disconnections or timeouts must trigger immediate circuit breakers without throwing.\n4. Event payloads must be deserialized into pooled or immutable records.";

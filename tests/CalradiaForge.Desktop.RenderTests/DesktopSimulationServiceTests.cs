@@ -46,6 +46,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies Rev088 troop progression, combat doctrine, and caravan trade visual telemetry");
         Rev089CampaignDiagnosticsDeliveryGauntletVisualTelemetry();
         Console.WriteLine("PASS Desktop simulation verifies Rev089 campaign, diagnostics, delivery, and gauntlet visual telemetry");
+        Rev090AudioSecurityHierarchyGeneratorTelemetry();
+        Console.WriteLine("PASS Desktop simulation verifies Rev090 audio, security, hierarchy, generator, and live telemetry");
     }
 
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
@@ -762,5 +764,57 @@ internal static class DesktopSimulationServiceTests
             "Cycling diagnostics scenario must activate sandbox triage certification phase.");
         Check(diagVm.ForensicScanElapsedMs > 200.0,
             "Sandbox/deep inspection scenario must update forensic scan latency.");
+    }
+
+    static void Rev090AudioSecurityHierarchyGeneratorTelemetry()
+    {
+        // 1. AudioStudioDashboardViewModel
+        var audioVm = new AudioStudioDashboardViewModel();
+        audioVm.CycleScenario(1);
+        Check(audioVm.ActivePreset == "Bass Boost", "Cycling audio scenario to 1 must activate Bass Boost preset.");
+        Check(audioVm.PeakDbfs.Contains("-0.8 dBFS"), "Bass Boost preset must configure -0.8 dBFS peak.");
+        Check(audioVm.CurrentPlaybackTimestamp == 0.45, "Bass Boost preset must position playback chronometer at 0.45s.");
+        audioVm.CycleScenario(2);
+        Check(audioVm.ActivePreset == "Voice Clarity", "Cycling audio scenario to 2 must activate Voice Clarity preset.");
+        Check(audioVm.PeakDbfs.Contains("-2.1 dBFS"), "Voice Clarity preset must configure -2.1 dBFS peak.");
+        audioVm.CycleScenario(3);
+        Check(audioVm.ActivePreset == "Combat Punch", "Cycling audio scenario to 3 must activate Combat Punch preset.");
+
+        // 2. CodeSecurityDashboardViewModel
+        var securityVm = new CodeSecurityDashboardViewModel();
+        Check(securityVm.AuditScanElapsedMs > 0.0, "CodeSecurity dashboard must expose non-zero scan elapsed ms.");
+        securityVm.CycleScenario(1);
+        Check(securityVm.AuditScanElapsedMs == 142.0, "Engine native reference scenario must record 142.0 ms scan latency.");
+        Check(securityVm.TargetAssembly.Contains("TaleWorlds.CampaignSystem.dll"), "Scenario 1 must target TaleWorlds.CampaignSystem.dll.");
+        securityVm.CycleScenario(2);
+        Check(securityVm.AuditScanElapsedMs == 62.8, "Sandboxed third-party scan must record 62.8 ms latency.");
+
+        // 3. ModuleHierarchyDashboardViewModel
+        var hierarchyVm = new ModuleHierarchyDashboardViewModel();
+        Check(hierarchyVm.BootSequenceElapsedMs > 0.0, "ModuleHierarchy dashboard must expose non-zero boot sequence elapsed ms.");
+        hierarchyVm.CycleScenario(1);
+        Check(hierarchyVm.BootSequenceElapsedMs == 310.0, "Minimal stack scenario must record 310.0 ms boot latency.");
+        Check(hierarchyVm.ManifestId == "CalradiaForge.Minimal", "Scenario 1 must target CalradiaForge.Minimal.");
+        hierarchyVm.CycleScenario(2);
+        Check(hierarchyVm.BootSequenceElapsedMs == 680.0, "Multi-mod ecosystem scenario must record 680.0 ms boot latency.");
+
+        // 4. ComponentGeneratorDashboardViewModel
+        var generatorVm = new ComponentGeneratorDashboardViewModel();
+        Check(generatorVm.SynthesisElapsedMs > 0.0, "ComponentGenerator dashboard must expose non-zero synthesis elapsed ms.");
+        generatorVm.CycleScenario(1);
+        Check(generatorVm.SynthesisElapsedMs == 45.2, "Gauntlet prefab synthesis scenario must record 45.2 ms synthesis time.");
+        Check(generatorVm.TargetOutput.Contains("Prefabs"), "Scenario 1 must target Gauntlet prefabs.");
+        generatorVm.CycleScenario(2);
+        Check(generatorVm.SynthesisElapsedMs == 19.8, "Troop character synthesis scenario must record 19.8 ms synthesis time.");
+
+        // 5. LiveSessionDashboardViewModel
+        var liveVm = new LiveSessionDashboardViewModel();
+        liveVm.CycleScenario(1);
+        Check(liveVm.CurrentPacketTimestamp == 54.0, "High concurrency scenario must record 54.0s packet timestamp.");
+        Check(liveVm.SessionTitle.Contains("HighLoad"), "Scenario 1 must switch to high concurrency APM session.");
+        Check(liveVm.PipeEventThroughputTrajectory != null && liveVm.PipeEventThroughputTrajectory.Count == 16, "High-load session must expose 16-point throughput trajectory.");
+        liveVm.CycleScenario(2);
+        Check(liveVm.CurrentPacketTimestamp == 18.2, "Diagnostics loopback scenario must record 18.2s packet timestamp.");
+        Check(liveVm.SessionTitle.Contains("Diagnostics"), "Scenario 2 must switch to loopback diagnostic session.");
     }
 }

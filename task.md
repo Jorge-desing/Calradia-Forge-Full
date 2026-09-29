@@ -622,4 +622,47 @@
 - [x] Traducir nombre y ayuda en todos los catálogos actuales; actualizar la guía EN/ES.
 - [x] Ejecutar compilación Release, gate stateless y suites requeridas; confirmar F10 en Bannerlord. El usuario confirmó manualmente que Ctrl+P abre la paleta; la automatización CUA no lo reprodujo de forma fiable, así que la selección del generador sigue sin confirmación visual en vivo.
 
+## Pulido integral del Gauntlet Page Blueprint — 2026-09-28
+- [x] Separar el texto generado en prefab XML, ViewModel C#, localización inglesa e integración de SubModule; distinguir prefijo de página, ID exacto del módulo y namespace C#.
+- [x] Aclarar sustituciones, unicidad de IDs, límites, integración con overrides existentes, comportamiento de ejemplo y que la salida no escribe archivos.
+- [x] Enfocar el campo de título al elegir la ruta sin generar, añadir copia de salida completa y conservar `ForgeCopy` como confirmación de copia de campaña.
+- [x] Añadir el nuevo texto de interfaz a los 13 catálogos y sincronizar la guía EN/ES.
+- [x] Añadir regresiones para entradas límite/Unicode, XML e IDs de scaffold, callbacks sin duplicados y bindings del botón/teclado.
+- [x] Ejecutar Release, gate stateless, suite completa, auditoría Gauntlet y auditoría de localización.
+- [x] Desplegar a Steam v25.2.0 con respaldo e inspección de hashes; confirmar que TPAC no cambió.
+- [x] Probar F10 en Bannerlord: el panel abrió y cerró a 1920×1080; cerrar el juego y reiniciar Ordenador al terminar.
+- [ ] Completar en vivo Ctrl+P, navegación, foco, generación y copia completa; CUA no reprodujo Ctrl+P de forma fiable, así que la ruta Blueprint sigue sin confirmación visual de esta compilación.
+
+## Gran Ronda de Mejoras Gráficas y Telemetría Visual WPF (Rev090) — 2026-09-28
+- [x] Fase 1: Generación y Normalización de Activos Tácticos HQ (`high-quality-image-generation`)
+  - [x] Generar el Medallón Imperial del Centurión Calrádico con `generate_image` siguiendo las 9 dimensiones de la arquitectura de prompts.
+  - [x] Normalizar activo mediante `tools/process_high_quality_asset.py` (POT 512x512 RGBA, máscara alfa, dilatación de 2px, sRGB, SHA-256 verificado).
+  - [x] Embeber textura en `src/CalradiaForge.Desktop/Resources/Textures/calradia-centurion-medallion-rev090.png` y registrar en `CalradiaForge.Desktop.csproj` y `tools/prepare_desktop_textures.py`.
+- [x] Fase 2: Enriquecimiento de Modelos de Vista y Sincronización de Escenarios (`DesktopSimulationViewModels.cs` & `WorkspacePageViewModel.cs`)
+  - [x] Exponer `CycleScenario(int index)` en `AudioStudioDashboardViewModel` con conmutación dinámica de 4 presets.
+  - [x] Exponer `AuditScanElapsedMs` en `CodeSecurityDashboardViewModel` y sincronizar en `CycleScenario`.
+  - [x] Exponer `BootSequenceElapsedMs` en `ModuleHierarchyDashboardViewModel` y sincronizar en `CycleScenario`.
+  - [x] Exponer `SynthesisElapsedMs` en `ComponentGeneratorDashboardViewModel` y sincronizar en `CycleScenario`.
+  - [x] Exponer `CycleScenario(int index)` en `LiveSessionDashboardViewModel` con 3 perfiles APM diferenciados.
+  - [x] Cablear conmutación unificada en `WorkspacePageViewModel.CyclePreset()`.
+- [x] Fase 3: Enriquecimiento Visual en XAML (`ToolPageTemplates.xaml`)
+  - [x] Integrar Medallón del Centurión en cabeceras de `AudioMixerInspectorDashboardTemplate`, `CodeSecurityAuditorDashboardTemplate`, `ModuleHierarchyValidatorDashboardTemplate`, `ComponentGeneratorStudioDashboardTemplate` y `LiveSessionViewTemplate`.
+  - [x] Integrar cronómetro graduado `ForgeTimelineRuler` en `CodeSecurityAuditorDashboardTemplate` (escala 0..250 ms, "SCAN LATENCY").
+  - [x] Integrar cronómetro graduado `ForgeTimelineRuler` en `ModuleHierarchyValidatorDashboardTemplate` (escala 0..1200 ms, "BOOT ORDER").
+  - [x] Integrar cronómetro graduado `ForgeTimelineRuler` en `ComponentGeneratorStudioDashboardTemplate` (escala 0..100 ms, "SYNTHESIS").
+  - [x] Preservar estrictamente el invariante de Regla C: conteo exacto de 9 plantillas `*DashboardTemplate`.
+- [x] Fase 4: Suite de Pruebas y Verificación Integral de 6 Capas
+  - [x] Implementar prueba unitaria `Rev090AudioSecurityHierarchyGeneratorTelemetry()` en `DesktopSimulationServiceTests.cs`.
+  - [x] Compilar solución en Release (0 errores, 0 advertencias).
+  - [x] Verificar compuerta de persistencia stateless (4/4 passed).
+  - [x] Ejecutar pruebas Desktop MVVM y contratos estáticos (63/63 passed).
+  - [x] Ejecutar pruebas de renderizado WPF headless (292/292 passed, 182 pases de layout).
+  - [x] Ejecutar suite de pruebas completa Core & ForgeWeave (667/667 passed).
+  - [x] Ejecutar agentes autónomos Antigravity (31/31 passed).
+  - [x] Ejecutar smoke test Windows UI Automation (23/23 registros observados).
+- [x] Fase 5: Registro de Aprendizaje, Empaquetado y Sincronización Git
+  - [x] Redactar Propuesta 44 en `learning_proposal.md` (`/learn`).
+  - [x] Empaquetar distribución con `tools/package.ps1` (3 archivos ZIP generados en `artifacts/`).
+  - [x] Sincronizar y push a GitHub (`main`) bajo la Regla E.
+
 

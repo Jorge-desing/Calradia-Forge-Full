@@ -699,7 +699,8 @@ namespace CalradiaForge.Desktop.Presentation
             }
             else if (IsLiveSession)
             {
-                Evidence.Add(new("Live Session / Preset", "Loaded", $"Cycled Live Session telemetry preset #{presetCycleIndex % 2 + 1}"));
+                LiveSessionDashboard?.CycleScenario(presetCycleIndex);
+                Evidence.Add(new("Live Session / Preset", "Loaded", $"Cycled Live Session telemetry preset #{presetCycleIndex % 3 + 1}: {LiveSessionDashboard?.SessionTitle}"));
                 Raise(nameof(LiveSessionDashboard));
                 Raise(nameof(PresetActionLabel));
             }

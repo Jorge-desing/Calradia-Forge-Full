@@ -32,6 +32,7 @@
     <Resource Include="Resources/Textures/calradia-astrolabe-dial-rev086.png" />
     <Resource Include="Resources/Textures/calradia-aquila-seal-rev087.png" />
     <Resource Include="Resources/Textures/calradia-laurel-crest-rev089.png" />
+    <Resource Include="Resources/Textures/calradia-centurion-medallion-rev090.png" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />

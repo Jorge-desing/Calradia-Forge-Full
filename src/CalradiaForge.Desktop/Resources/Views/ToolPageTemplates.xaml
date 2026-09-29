@@ -344,12 +344,15 @@
            </StackPanel>
            <presentation:ForgeStepProgress Steps="{Binding AudioStudioDashboard.AudioDspPipelineSteps}" Height="40" Margin="22,4,0,0"/>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
-           <StackPanel Orientation="Horizontal">
-            <Path Data="{StaticResource Icon.Shield}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource VerdigrisBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
-            <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{DynamicResource Viz.Audio.NoClipping}"/>
-           </StackPanel>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-centurion-medallion-rev090.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+             <Path Data="{StaticResource Icon.Shield}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource VerdigrisBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{DynamicResource Viz.Audio.NoClipping}"/>
+            </StackPanel>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Body: Equalizer, Oscilloscope Waveform & VU Meters -->
@@ -844,6 +847,7 @@
            </StackPanel>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-centurion-medallion-rev090.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
            <presentation:ForgeArcGauge
                Value="{Binding CodeSecurityDashboard.StatelessSecurityScoreGauge}"
                MinValue="0"
@@ -941,6 +945,21 @@
             <TextBlock FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="SECURITY COMPLIANCE &amp; RISK DENSITY ENVELOPE (%)"/>
             <TextBlock FontSize="8" Foreground="{DynamicResource VerdigrisBrush}" HorizontalAlignment="Right" Text="100.0% VERIFIED · ZERO CORRUPTION RISK"/>
            </Grid>
+           <presentation:ForgeTimelineRuler
+               DockPanel.Dock="Bottom"
+               TotalDuration="250"
+               CurrentTime="{Binding CodeSecurityDashboard.AuditScanElapsedMs, Mode=OneWay}"
+               MajorInterval="50"
+               MinorInterval="10"
+               UnitLabel="ms"
+               ShowLabels="True"
+               RulerBrush="{DynamicResource BorderBrush}"
+               TickBrush="{DynamicResource MutedTextBrush}"
+               MarkerBrush="{DynamicResource VerdigrisBrush}"
+               LabelBrush="{DynamicResource PaperBrush}"
+               MarkerLabel="SCAN LATENCY"
+               Height="32"
+               Margin="0,4,0,0"/>
            <presentation:ForgeAreaChart
                DataPoints="{Binding CodeSecurityDashboard.SecurityRiskDensityTrajectory}"
                Stroke="{DynamicResource VerdigrisBrush}"
@@ -953,7 +972,7 @@
                ShowBaseline="True"
                ValueUnit="%"
                FormatString="N1"
-               Height="72"/>
+               Height="54"/>
           </DockPanel>
          </Border>
         </Grid>
@@ -986,6 +1005,7 @@
            </StackPanel>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-centurion-medallion-rev090.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
            <presentation:ForgeArcGauge
                Value="{Binding ModuleHierarchyDashboard.ModuleIntegrityScoreGauge}"
                MinValue="0"
@@ -1064,6 +1084,21 @@
             </StackPanel>
             <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" Text="Deterministic Graph Traversal (16 Sub-Phases)"/>
            </Grid>
+           <presentation:ForgeTimelineRuler
+               DockPanel.Dock="Bottom"
+               TotalDuration="1200"
+               CurrentTime="{Binding ModuleHierarchyDashboard.BootSequenceElapsedMs, Mode=OneWay}"
+               MajorInterval="200"
+               MinorInterval="50"
+               UnitLabel="ms"
+               ShowLabels="True"
+               RulerBrush="{DynamicResource BorderBrush}"
+               TickBrush="{DynamicResource MutedTextBrush}"
+               MarkerBrush="{DynamicResource BrassBrush}"
+               LabelBrush="{DynamicResource PaperBrush}"
+               MarkerLabel="BOOT ORDER"
+               Height="32"
+               Margin="0,4,0,0"/>
            <presentation:ForgeAreaChart
                DataPoints="{Binding ModuleHierarchyDashboard.ModuleLoadLatencyTrajectory}"
                Stroke="{DynamicResource BrassBrush}"
@@ -1076,7 +1111,7 @@
                ShowBaseline="True"
                ValueUnit="ms"
                FormatString="N1"
-               Height="72"/>
+               Height="54"/>
           </DockPanel>
          </Border>
         </Grid>
@@ -1305,6 +1340,7 @@
            </StackPanel>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-centurion-medallion-rev090.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
            <presentation:ForgeArcGauge
                Value="{Binding ComponentGeneratorDashboard.TemplateValidationScoreGauge}"
                MinValue="0"
@@ -1391,6 +1427,21 @@
              </StackPanel>
              <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" Text="AST KB/sec"/>
             </Grid>
+            <presentation:ForgeTimelineRuler
+                DockPanel.Dock="Bottom"
+                TotalDuration="100"
+                CurrentTime="{Binding ComponentGeneratorDashboard.SynthesisElapsedMs, Mode=OneWay}"
+                MajorInterval="20"
+                MinorInterval="5"
+                UnitLabel="ms"
+                ShowLabels="True"
+                RulerBrush="{DynamicResource BorderBrush}"
+                TickBrush="{DynamicResource MutedTextBrush}"
+                MarkerBrush="{DynamicResource VerdigrisBrush}"
+                LabelBrush="{DynamicResource PaperBrush}"
+                MarkerLabel="SYNTHESIS"
+                Height="32"
+                Margin="0,4,0,0"/>
             <presentation:ForgeAreaChart
                 DataPoints="{Binding ComponentGeneratorDashboard.SynthesisThroughputTrajectory}"
                 Stroke="{DynamicResource VerdigrisBrush}"
@@ -1403,7 +1454,7 @@
                 ShowBaseline="True"
                 ValueUnit="KB/s"
                 FormatString="N1"
-                Height="72"/>
+                Height="54"/>
            </DockPanel>
           </Border>
          </Grid>
@@ -2212,12 +2263,15 @@
            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,1,0,0" Text="{Binding LiveSessionDashboard.ConnectionMetrics, Mode=OneWay}"/>
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding LiveSessionDashboard.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
-          <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Grid.Column="1" Padding="8,3" VerticalAlignment="Center">
-           <StackPanel Orientation="Horizontal">
-            <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
-            <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="PIPE STREAM ONLINE"/>
-           </StackPanel>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-centurion-medallion-rev090.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+             <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
+             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="PIPE STREAM ONLINE"/>
+            </StackPanel>
+           </Border>
+          </StackPanel>
          </Grid>
         </Border>
         <!-- Body: Pipeline Steps, Timeline Ruler, and Telemetry 3-Column Workstation -->

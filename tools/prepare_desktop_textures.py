@@ -83,6 +83,7 @@ PRESERVED_UNPACKAGED_VARIANTS = {
     "calradia-astrolabe-dial-rev086.png",
     "calradia-aquila-seal-rev087.png",
     "calradia-laurel-crest-rev089.png",
+    "calradia-centurion-medallion-rev090.png",
 }
 
 
