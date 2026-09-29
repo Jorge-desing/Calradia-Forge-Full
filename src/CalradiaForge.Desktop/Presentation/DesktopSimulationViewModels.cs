@@ -975,6 +975,28 @@ namespace CalradiaForge.Desktop.Presentation
                 : 48.0;
             ConsolidationIndex = $"{consolidationBase:0.0}% (Cluster Cohesion)";
             ClusterSummary = $"{FactCount} Semantic Nodes · {EpisodicCount} Episodic Streams · {ProceduralCount} Tactic Graphs";
+
+            ProceduralPolicyAxes = ["Combat", "Diplomacy", "Trade", "Governance", "Recon"];
+            if (heroId == "hero_rhagaea" || culture == "Empire")
+            {
+                ProceduralPolicyValues = [0.85, 0.95, 0.70, 0.90, 0.65];
+                ProceduralPolicyComparisonValues = [0.70, 0.80, 0.75, 0.85, 0.60];
+            }
+            else if (heroId == "hero_derthert" || culture == "Vlandia")
+            {
+                ProceduralPolicyValues = [0.90, 0.60, 0.65, 0.80, 0.50];
+                ProceduralPolicyComparisonValues = [0.85, 0.65, 0.60, 0.75, 0.55];
+            }
+            else if (heroId == "hero_monchug" || culture == "Khuzait")
+            {
+                ProceduralPolicyValues = [0.95, 0.45, 0.55, 0.70, 0.85];
+                ProceduralPolicyComparisonValues = [0.90, 0.50, 0.60, 0.65, 0.80];
+            }
+            else
+            {
+                ProceduralPolicyValues = [0.80, 0.70, 0.70, 0.75, 0.65];
+                ProceduralPolicyComparisonValues = [0.75, 0.70, 0.70, 0.75, 0.65];
+            }
         }
 
         public string HeroId { get; }
@@ -984,6 +1006,9 @@ namespace CalradiaForge.Desktop.Presentation
         public IReadOnlyList<MemoryFactItem> SemanticFacts { get; }
         public IReadOnlyList<string> EpisodicEvents { get; }
         public IReadOnlyList<string> ProceduralTactics { get; }
+        public IReadOnlyList<string> ProceduralPolicyAxes { get; }
+        public IReadOnlyList<double> ProceduralPolicyValues { get; }
+        public IReadOnlyList<double> ProceduralPolicyComparisonValues { get; }
         public int FactCount { get; }
         public int EpisodicCount { get; }
         public int ProceduralCount { get; }
@@ -1236,6 +1261,14 @@ namespace CalradiaForge.Desktop.Presentation
         public double MemorySlotUtilizationGaugeValue => CapacityPercentage;
         public double CognitiveCacheHitRateGauge => 94.2;
 
+        static readonly string[] DefaultRadarAxes = ["Combat", "Diplomacy", "Trade", "Governance", "Recon"];
+        static readonly double[] DefaultRadarValues = [0.80, 0.70, 0.70, 0.75, 0.65];
+        static readonly double[] DefaultRadarComparisonValues = [0.75, 0.70, 0.70, 0.75, 0.65];
+
+        public IReadOnlyList<string> ProceduralPolicyRadarAxes => selectedAgent?.ProceduralPolicyAxes ?? DefaultRadarAxes;
+        public IReadOnlyList<double> ProceduralPolicyRadarValues => selectedAgent?.ProceduralPolicyValues ?? DefaultRadarValues;
+        public IReadOnlyList<double> ProceduralPolicyRadarComparisonValues => selectedAgent?.ProceduralPolicyComparisonValues ?? DefaultRadarComparisonValues;
+
         public string Architecture => "CoALA Cognitive Architecture (Short-Term Working + Bounded Episodic + Semantic Facts + Utility Decay)";
         public string CapacitySummary { get => capacitySummary; set => Set(ref capacitySummary, value); }
         public double CapacityPercentage { get => capacityPercentage; set => Set(ref capacityPercentage, value); }
@@ -1363,6 +1396,9 @@ namespace CalradiaForge.Desktop.Presentation
             Raise(nameof(FilteredFactsSummary));
             Raise(nameof(ActiveClusterOverview));
             Raise(nameof(ActiveConsolidationRate));
+            Raise(nameof(ProceduralPolicyRadarAxes));
+            Raise(nameof(ProceduralPolicyRadarValues));
+            Raise(nameof(ProceduralPolicyRadarComparisonValues));
         }
 
         public string SearchQuery
@@ -1452,6 +1488,9 @@ namespace CalradiaForge.Desktop.Presentation
                     Raise(nameof(FilteredEpisodicEvents));
                     Raise(nameof(FilteredProceduralTactics));
                     Raise(nameof(FilteredFactsSummary));
+                    Raise(nameof(ProceduralPolicyRadarAxes));
+                    Raise(nameof(ProceduralPolicyRadarValues));
+                    Raise(nameof(ProceduralPolicyRadarComparisonValues));
                 }
             }
         }
@@ -1469,6 +1508,9 @@ namespace CalradiaForge.Desktop.Presentation
             SelectedAgent = targetSet[0];
             Raise(nameof(ActiveClusterOverview));
             Raise(nameof(ActiveConsolidationRate));
+            Raise(nameof(ProceduralPolicyRadarAxes));
+            Raise(nameof(ProceduralPolicyRadarValues));
+            Raise(nameof(ProceduralPolicyRadarComparisonValues));
             if (activeScenarioIndex == 0)
             {
                 CapacitySummary = "6 / 100 Agent Slots Active · 6.0% Memory Utilization (T=0h Active)";

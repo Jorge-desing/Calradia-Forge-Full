@@ -85,6 +85,7 @@ PRESERVED_UNPACKAGED_VARIANTS = {
     "calradia-laurel-crest-rev089.png",
     "calradia-centurion-medallion-rev090.png",
     "calradia-guild-medallion-rev092.png",
+    "calradia-mind-medallion-rev093.png",
 }
 
 

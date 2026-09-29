@@ -52,6 +52,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies Rev091 generic operation scan latency and visual telemetry");
         Rev092WorkshopGuildAndCommandPaletteVisualTelemetry();
         Console.WriteLine("PASS Desktop simulation verifies Rev092 workshop guild medallion and scenario cycling telemetry");
+        Rev093AgentCognitiveMindAndProceduralRadarTelemetry();
+        Console.WriteLine("PASS Desktop simulation verifies Rev093 CoALA cognitive mind medallion and procedural policy radar telemetry");
     }
 
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
@@ -845,5 +847,38 @@ internal static class DesktopSimulationServiceTests
         workshopVm.CycleScenario(2);
         Check(workshopVm.Settlement.Contains("Marunath"), "Scenario 2 must restore Marunath settlement.");
         Check(workshopVm.OptimalEnterprise.Contains("Silversmith"), "Marunath scenario must restore Silversmith as optimal.");
+    }
+
+    static void Rev093AgentCognitiveMindAndProceduralRadarTelemetry()
+    {
+        var memVm = new AgentMemoryDashboardViewModel();
+        Check(memVm.ProceduralPolicyRadarAxes != null && memVm.ProceduralPolicyRadarAxes.Count == 5,
+            "AgentMemory dashboard must expose 5 procedural policy radar axes.");
+        Check(memVm.ProceduralPolicyRadarValues != null && memVm.ProceduralPolicyRadarValues.Count == 5,
+            "AgentMemory dashboard must expose 5 procedural policy radar values.");
+        Check(memVm.ProceduralPolicyRadarComparisonValues != null && memVm.ProceduralPolicyRadarComparisonValues.Count == 5,
+            "AgentMemory dashboard must expose 5 comparison baseline values.");
+
+        // Baseline agent: Empress Rhagaea
+        Check(memVm.SelectedAgent.Name.Contains("Rhagaea"), "Initial agent must be Empress Rhagaea.");
+        Check(memVm.ProceduralPolicyRadarValues[1] == 0.95, "Rhagaea must have 0.95 diplomacy score.");
+        Check(memVm.ProceduralPolicyRadarValues[0] == 0.85, "Rhagaea must have 0.85 combat score.");
+
+        // Select King Derthert
+        memVm.SelectAgentCommand.Execute(memVm.Agents[1]);
+        Check(memVm.SelectedAgent.Name.Contains("Derthert"), "Selected agent must be King Derthert.");
+        Check(memVm.ProceduralPolicyRadarValues[0] == 0.90, "Derthert must have 0.90 combat score.");
+        Check(memVm.ProceduralPolicyRadarValues[1] == 0.60, "Derthert must have 0.60 diplomacy score.");
+
+        // Select Khan Monchug
+        memVm.SelectAgentCommand.Execute(memVm.Agents[2]);
+        Check(memVm.SelectedAgent.Name.Contains("Monchug"), "Selected agent must be Khan Monchug.");
+        Check(memVm.ProceduralPolicyRadarValues[0] == 0.95, "Monchug must have 0.95 combat score.");
+        Check(memVm.ProceduralPolicyRadarValues[4] == 0.85, "Monchug must have 0.85 recon score.");
+
+        // Scenario cycling preserves procedural radar coherence
+        memVm.CycleScenario(1);
+        Check(memVm.ProceduralPolicyRadarAxes.Count == 5, "Scenario 1 must preserve 5 policy axes.");
+        Check(memVm.ProceduralPolicyRadarValues.Count == 5, "Scenario 1 must preserve 5 policy values.");
     }
 }

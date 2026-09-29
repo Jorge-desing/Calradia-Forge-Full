@@ -693,9 +693,9 @@
           </StackPanel>
           <!-- Cognitive Slot Telemetry & Agent Switcher -->
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-           <!-- Imperial Authenticated Aquila Seal Badge -->
-           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,6,0" Padding="3" Width="40" Height="40" ToolTip="Imperial CoALA Seal Authenticated">
-            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-aquila-seal-rev087.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <!-- Imperial Authenticated CoALA Cognitive Mind Medallion (Rev093) -->
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,6,0" Padding="2" Width="40" Height="40" ToolTip="CoALA Cognitive Architecture &amp; Memory Matrix Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-mind-medallion-rev093.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
            </Border>
            <!-- Memory Slot Gauge -->
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,6,0" Padding="4,2">
@@ -809,16 +809,43 @@
          <!-- Tier 3: Procedural Memory -->
          <Border Background="{DynamicResource RailSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Grid.Column="2" Padding="8">
           <DockPanel LastChildFill="True">
-            <TextBlock DockPanel.Dock="Top" FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,5" Text="{DynamicResource Viz.Memory.Procedural}"/>
-           <ItemsControl ItemsSource="{Binding AgentMemoryDashboard.FilteredProceduralTactics}">
-            <ItemsControl.ItemTemplate>
-             <DataTemplate>
-              <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="0,3">
-               <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="{Binding}" TextWrapping="Wrap"/>
-              </Border>
-             </DataTemplate>
-            </ItemsControl.ItemTemplate>
-           </ItemsControl>
+           <TextBlock DockPanel.Dock="Top" FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Margin="0,0,0,4" Text="{DynamicResource Viz.Memory.Procedural}"/>
+           <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,4" Padding="5,2">
+            <Grid>
+             <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+             </Grid.ColumnDefinitions>
+             <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="POLICY WEIGHT PROFILE"/>
+             <Border Grid.Column="1" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Padding="3,0">
+              <TextBlock FontSize="7" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="ACTIVE vs REALM"/>
+             </Border>
+            </Grid>
+           </Border>
+           <presentation:ForgeRadarChart
+               DockPanel.Dock="Top"
+               AxisLabels="{Binding AgentMemoryDashboard.ProceduralPolicyRadarAxes}"
+               Values="{Binding AgentMemoryDashboard.ProceduralPolicyRadarValues}"
+               ComparisonValues="{Binding AgentMemoryDashboard.ProceduralPolicyRadarComparisonValues}"
+               Stroke="{DynamicResource BrassBrush}"
+               Fill="{DynamicResource BrassBrush}"
+               ComparisonStroke="{DynamicResource VerdigrisBrush}"
+               ComparisonFill="{DynamicResource VerdigrisBrush}"
+               GridBrush="{DynamicResource BorderBrush}"
+               AxisLabelBrush="{DynamicResource PaperBrush}"
+               Height="96"
+               Margin="0,0,0,4"/>
+           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding AgentMemoryDashboard.FilteredProceduralTactics}">
+             <ItemsControl.ItemTemplate>
+              <DataTemplate>
+               <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="0,3">
+                <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Text="{Binding}" TextWrapping="Wrap"/>
+               </Border>
+              </DataTemplate>
+             </ItemsControl.ItemTemplate>
+            </ItemsControl>
+           </ScrollViewer>
           </DockPanel>
          </Border>
         </Grid>
@@ -850,7 +877,9 @@
            </StackPanel>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-centurion-medallion-rev090.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,8,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Imperial Code Security &amp; Stateless Rule Auditor Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-centurion-medallion-rev090.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
            <presentation:ForgeArcGauge
                Value="{Binding CodeSecurityDashboard.StatelessSecurityScoreGauge}"
                MinValue="0"
@@ -1008,7 +1037,9 @@
            </StackPanel>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-centurion-medallion-rev090.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,8,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="SubModule XML Dependency &amp; DAG Hierarchy Validated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-centurion-medallion-rev090.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
            <presentation:ForgeArcGauge
                Value="{Binding ModuleHierarchyDashboard.ModuleIntegrityScoreGauge}"
                MinValue="0"

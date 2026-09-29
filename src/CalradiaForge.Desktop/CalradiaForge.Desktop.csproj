@@ -34,6 +34,7 @@
     <Resource Include="Resources/Textures/calradia-laurel-crest-rev089.png" />
     <Resource Include="Resources/Textures/calradia-centurion-medallion-rev090.png" />
     <Resource Include="Resources/Textures/calradia-guild-medallion-rev092.png" />
+    <Resource Include="Resources/Textures/calradia-mind-medallion-rev093.png" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
