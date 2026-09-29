@@ -40,6 +40,14 @@ Before staging or committing changes, ensure that:
    git status --porcelain
    ```
    Verify all modified and untracked files. Distinguish intentional project changes (source, UI, tests, docs, assets, scripts) from external debris (build outputs, logs, pycache).
+
+1b. **⚠️ AUTORÍA DE SESIÓN — Solo Comprometer Cambios Propios (CRÍTICO):**
+   - **SOLO** stagear y commitear los archivos que el agente **actual** modificó o creó en la **sesión presente**.
+   - Los cambios preexistentes en el working tree (de sesiones anteriores, subagents, stash pops, o trabajo acumulado sin commitear) **NO** deben incluirse a menos que el usuario lo pida explícitamente.
+   - **Cómo identificar los cambios propios:** Rastrear qué herramientas (`write_to_file`, `replace_file_content`, `run_command`) usé yo en esta sesión y qué archivos tocaron. Si aparecen archivos en `git status` que no recuerdo haber modificado, son de otra sesión.
+   - **Señal de alerta:** Si `git status --porcelain` muestra decenas de archivos inesperados, pausar y preguntar al usuario cuáles quiere incluir antes de hacer `git add` masivo.
+   - La Rule E de `AGENTS.md` ("stage ALL intentional workspace modifications") se refiere a los cambios **propios de esta sesión** — no autoriza a apropiar el trabajo de otros agentes o sesiones anteriores.
+
 2. **Comprehensive Project Staging & Exclusion of External Garbage:**
    - **Full Project Changes Included:** Always stage all intentional project modifications, features, fixes, documentation, ledger DOCX/annexes, tests, and assets. Never arbitrarily exclude valid repository changes under the assumption they are "external".
    - **Strict Exclusion of External Garbage (Zero External Spillover):** NEVER stage or commit:
