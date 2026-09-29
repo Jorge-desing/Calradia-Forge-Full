@@ -39,7 +39,7 @@
              <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Troop.CountBadge}"/>
             </StackPanel>
            </Border>
-           <Image Source="/CalradiaForge.Desktop;component/Resources/calradia-aquila-seal-rev087.png" Width="36" Height="36" Margin="8,0,0,0" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-aquila-seal-rev087.png" Width="36" Height="36" Margin="8,0,0,0" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
           </StackPanel>
          </Grid>
         </Border>
@@ -692,7 +692,7 @@
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
            <!-- Imperial Authenticated Aquila Seal Badge -->
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,6,0" Padding="3" Width="40" Height="40" ToolTip="Imperial CoALA Seal Authenticated">
-            <Image Source="pack://application:,,,/Resources/Textures/calradia-aquila-seal-rev087.png" Stretch="Uniform"/>
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-aquila-seal-rev087.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
            </Border>
            <!-- Memory Slot Gauge -->
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,6,0" Padding="4,2">
@@ -1152,7 +1152,7 @@
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
            <!-- Imperial Aquila War Seal Badge -->
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,6,0" Padding="2" Width="44" Height="44" ToolTip="Imperial Calradic Aquila War Seal (Authenticated)">
-            <Image Source="pack://application:,,,/Resources/Textures/calradia-aquila-seal-rev087.png" Stretch="Uniform"/>
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-aquila-seal-rev087.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
            </Border>
            <presentation:ForgeArcGauge
                Value="{Binding KingdomDiplomacyDashboard.ImperialStabilityGauge}"
@@ -1505,7 +1505,7 @@
              <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="4 BATTLE COHORTS"/>
             </StackPanel>
            </Border>
-           <Image Source="/CalradiaForge.Desktop;component/Resources/calradia-aquila-seal-rev087.png" Width="36" Height="36" Margin="8,0,0,0" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-aquila-seal-rev087.png" Width="36" Height="36" Margin="8,0,0,0" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
           </StackPanel>
          </Grid>
         </Border>
@@ -1706,7 +1706,7 @@
              <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="5 ARBITRAGE GOODS"/>
             </StackPanel>
            </Border>
-           <Image Source="/CalradiaForge.Desktop;component/Resources/calradia-aquila-seal-rev087.png" Width="36" Height="36" Margin="8,0,0,0" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-aquila-seal-rev087.png" Width="36" Height="36" Margin="8,0,0,0" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
           </StackPanel>
          </Grid>
         </Border>
@@ -2904,6 +2904,9 @@
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding GenericOperationDashboard.ScanStatusBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="3" Padding="8,4" VerticalAlignment="Center">
             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{Binding GenericOperationDashboard.ScanStatusBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{DynamicResource Viz.Operation.Ready}"/>
            </Border>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="8,0,0,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Imperial War Room Diagnostic Seal Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-centurion-medallion-rev090.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
           </StackPanel>
          </Grid>
         </Border>
@@ -3067,6 +3070,22 @@
                  Height="20" Margin="10,0,10,0"/>
              <TextBlock FontSize="7.5" Foreground="{DynamicResource VerdigrisBrush}" Grid.Column="2" Text="IPC Latency: 1.2ms (Zero-Lock)" VerticalAlignment="Center"/>
             </Grid>
+            <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" DockPanel.Dock="Top" Margin="0,0,0,4" Padding="4,2">
+             <DockPanel LastChildFill="True">
+              <TextBlock DockPanel.Dock="Left" FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="SCAN LATENCY CHRONOMETER (10.0 MS)" VerticalAlignment="Center" Margin="0,0,8,0"/>
+              <presentation:ForgeTimelineRuler
+                  CurrentTime="{Binding GenericOperationDashboard.ScanLatencyMs, Mode=OneWay}"
+                  TotalDuration="10.0"
+                  MajorInterval="2.0"
+                  MinorInterval="0.5"
+                  UnitLabel="ms"
+                  RulerBrush="{DynamicResource BorderBrush}"
+                  TickBrush="{DynamicResource PaperBrush}"
+                  MarkerBrush="{DynamicResource VerdigrisBrush}"
+                  LabelBrush="{DynamicResource BrassBrush}"
+                  Height="24"/>
+             </DockPanel>
+            </Border>
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding GenericOperationDashboard.DiagnosticFindings}">
              <ItemsControl.ItemTemplate>

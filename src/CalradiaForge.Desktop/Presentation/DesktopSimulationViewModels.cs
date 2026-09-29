@@ -2766,10 +2766,12 @@ namespace CalradiaForge.Desktop.Presentation
         ];
         IReadOnlyList<double> executionLatencyTrajectory = DefaultExecutionLatencyTrajectory;
         double bufferUtilizationGaugeValue = 42.0;
+        double scanLatencyMs = 1.2;
         public double EngineThroughputGauge => 72.4;
 
         public IReadOnlyList<double> ExecutionLatencyTrajectory { get => executionLatencyTrajectory; private set => Set(ref executionLatencyTrajectory, value); }
         public double BufferUtilizationGaugeValue { get => bufferUtilizationGaugeValue; private set => Set(ref bufferUtilizationGaugeValue, value); }
+        public double ScanLatencyMs { get => scanLatencyMs; private set => Set(ref scanLatencyMs, value); }
 
         public IReadOnlyList<ForgeStepItem> OperationPipelineSteps { get; } =
         [
@@ -2828,6 +2830,7 @@ namespace CalradiaForge.Desktop.Presentation
                 ThreadIsolationText = "Background Worker Pipeline";
                 ExecutionBoundsText = "Adaptive 30s Guard Timeout";
                 BufferUtilizationGaugeValue = 64.5;
+                ScanLatencyMs = 3.8;
             }
             else
             {
@@ -2839,6 +2842,7 @@ namespace CalradiaForge.Desktop.Presentation
                 ThreadIsolationText = "Strict UI Thread Isolation (Net8.0)";
                 ExecutionBoundsText = "Bounded Async CancellationToken";
                 BufferUtilizationGaugeValue = 42.0;
+                ScanLatencyMs = 1.2;
             }
             RunDiagnosticScan();
         }

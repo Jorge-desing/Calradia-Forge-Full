@@ -48,6 +48,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies Rev089 campaign, diagnostics, delivery, and gauntlet visual telemetry");
         Rev090AudioSecurityHierarchyGeneratorTelemetry();
         Console.WriteLine("PASS Desktop simulation verifies Rev090 audio, security, hierarchy, generator, and live telemetry");
+        Rev091GenericOperationAndVisualTelemetry();
+        Console.WriteLine("PASS Desktop simulation verifies Rev091 generic operation scan latency and visual telemetry");
     }
 
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
@@ -816,5 +818,17 @@ internal static class DesktopSimulationServiceTests
         liveVm.CycleScenario(2);
         Check(liveVm.CurrentPacketTimestamp == 18.2, "Diagnostics loopback scenario must record 18.2s packet timestamp.");
         Check(liveVm.SessionTitle.Contains("Diagnostics"), "Scenario 2 must switch to loopback diagnostic session.");
+    }
+
+    static void Rev091GenericOperationAndVisualTelemetry()
+    {
+        var genericVm = new GenericOperationDashboardViewModel();
+        Check(genericVm.ScanLatencyMs == 1.2, "Generic operation dashboard must initialize with 1.2 ms scan latency.");
+        genericVm.CycleScenario(1);
+        Check(genericVm.ScanLatencyMs == 3.8, "Exhaustive diagnostic mode scenario must record 3.8 ms scan latency.");
+        Check(genericVm.ExecutionMode == "Exhaustive Diagnostic Mode", "Scenario 1 must switch to Exhaustive Diagnostic Mode.");
+        genericVm.CycleScenario(2);
+        Check(genericVm.ScanLatencyMs == 1.2, "Deterministic bounded route scenario must record 1.2 ms scan latency.");
+        Check(genericVm.ExecutionMode == "Deterministic Bounded Route", "Scenario 2 must restore Deterministic Bounded Route.");
     }
 }
