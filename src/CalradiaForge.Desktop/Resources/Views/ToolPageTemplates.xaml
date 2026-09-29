@@ -1167,8 +1167,8 @@
             <Path Data="{StaticResource GameIcon.knight_banner}" Fill="{DynamicResource BrassBrush}" Height="15" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="15"/>
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Diplomacy.Title}" VerticalAlignment="Center"/>
            </StackPanel>
-           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0"><Run Text="{DynamicResource Viz.Diplomacy.RealmLabel}"/><Run Text=": "/><Run Text="{Binding KingdomDiplomacyDashboard.PlayerFaction}"/></TextBlock>
-            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,3,0,0"><Run Text="{DynamicResource Viz.Diplomacy.MonarchLabel}"/><Run Text=": "/><Run Text="{Binding KingdomDiplomacyDashboard.PlayerRuler}"/></TextBlock>
+           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="21,2,0,0"><Run Text="{DynamicResource Viz.Diplomacy.RealmLabel}"/><Run Text=": "/><Run Text="{Binding KingdomDiplomacyDashboard.PlayerFaction, Mode=OneWay}"/></TextBlock>
+            <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="21,3,0,0"><Run Text="{DynamicResource Viz.Diplomacy.MonarchLabel}"/><Run Text=": "/><Run Text="{Binding KingdomDiplomacyDashboard.PlayerRuler, Mode=OneWay}"/></TextBlock>
             <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="21,4,0,0" Text="{Binding KingdomDiplomacyDashboard.StudioCaveat}" TextWrapping="Wrap"/>
            <StackPanel Orientation="Horizontal" Margin="21,3,0,0">
             <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,4,0" Text="Tension:"/>
@@ -1248,7 +1248,7 @@
                <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Height="8" Margin="0,3,0,3">
                 <ProgressBar Background="Transparent" BorderThickness="0" Foreground="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" Maximum="100" Value="{Binding TensionLevel}"/>
                </Border>
-               <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}"><Run Text="{DynamicResource Viz.Diplomacy.BorderConflictRiskLabel}"/><Run Text=": "/><Run Text="{Binding BorderConflictProbability}"/><Run Text="%"/></TextBlock>
+               <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}"><Run Text="{DynamicResource Viz.Diplomacy.BorderConflictRiskLabel}"/><Run Text=": "/><Run Text="{Binding BorderConflictProbability, Mode=OneWay}"/><Run Text="%"/></TextBlock>
               </StackPanel>
              </Border>
             </DataTemplate>
