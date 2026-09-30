@@ -40,6 +40,11 @@
     <Resource Include="Resources/Textures/calradia-hierarchy-seal-rev095.png" />
     <Resource Include="Resources/Textures/calradia-diplomacy-medallion-rev095.png" />
     <Resource Include="Resources/Textures/calradia-mechanism-medallion-rev095.png" />
+    <Resource Include="Resources/Textures/calradia-troop-crest-rev096.png" />
+    <Resource Include="Resources/Textures/calradia-cohort-badge-rev096.png" />
+    <Resource Include="Resources/Textures/calradia-trade-sigil-rev096.png" />
+    <Resource Include="Resources/Textures/calradia-pipe-seal-rev096.png" />
+    <Resource Include="Resources/Textures/calradia-sentinel-eye-rev096.png" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />

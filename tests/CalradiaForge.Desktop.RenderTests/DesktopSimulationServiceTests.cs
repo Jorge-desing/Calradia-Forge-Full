@@ -56,6 +56,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies Rev093 CoALA cognitive mind medallion and procedural policy radar telemetry");
         Rev095FiveStudioMedallionUpgrades();
         Console.WriteLine("PASS Desktop simulation verifies Rev095 five thematic studio medallions registered and XAML templates upgraded");
+        Rev096FiveResidualIconUpgrades();
+        Console.WriteLine("PASS Desktop simulation verifies Rev096 five residual icon upgrades — troop crest, cohort badge, trade sigil, pipe seal, sentinel eye");
     }
 
     static void Rev095FiveStudioMedallionUpgrades()
@@ -929,5 +931,51 @@ internal static class DesktopSimulationServiceTests
         memVm.CycleScenario(1);
         Check(memVm.ProceduralPolicyRadarAxes.Count == 5, "Scenario 1 must preserve 5 policy axes.");
         Check(memVm.ProceduralPolicyRadarValues.Count == 5, "Scenario 1 must preserve 5 policy values.");
+    }
+
+    static void Rev096FiveResidualIconUpgrades()
+    {
+        // Rev096: Verify 5 thematic icons replaced all remaining generic aquila/centurion placeholders.
+        string xamlPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "CalradiaForge.Desktop", "Resources", "Views", "ToolPageTemplates.xaml");
+        string csprojPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "CalradiaForge.Desktop", "CalradiaForge.Desktop.csproj");
+        string xaml = File.ReadAllText(xamlPath);
+        string csproj = File.ReadAllText(csprojPath);
+
+        // Rule C: exactly 9 DashboardTemplates
+        int templateCount = System.Text.RegularExpressions.Regex.Matches(
+            xaml, @"<DataTemplate x:Key=""\w+DashboardTemplate""").Count;
+        Check(templateCount == 9, $"Rule C: expected 9 DashboardTemplates, got {templateCount}.");
+
+        // Propuesta 48: zero TwoWay Run.Text bindings
+        int twoway = System.Text.RegularExpressions.Regex.Matches(
+            xaml, @"<Run[^>]+Text=""\{Binding[^""]*Mode=TwoWay[^""]*\}""").Count;
+        Check(twoway == 0, $"Propuesta 48: found {twoway} TwoWay Run.Text bindings — must be 0.");
+
+        // Rev096: all 5 new thematic icons referenced in XAML and registered in csproj
+        string[] rev096Assets = {
+            "calradia-troop-crest-rev096",
+            "calradia-cohort-badge-rev096",
+            "calradia-trade-sigil-rev096",
+            "calradia-pipe-seal-rev096",
+            "calradia-sentinel-eye-rev096",
+        };
+        foreach (var asset in rev096Assets)
+        {
+            Check(xaml.Contains(asset), $"XAML must reference {asset} (Rev096 residual icon upgrade).");
+            Check(csproj.Contains(asset + ".png"), $"csproj must register {asset}.png as Resource.");
+        }
+
+        // TroopTreeVisualizer zone must no longer use aquila-seal-rev087
+        int troopZoneStart = xaml.IndexOf("TroopTreeVisualizerDashboardTemplate", StringComparison.Ordinal);
+        int troopZoneEnd = xaml.IndexOf("AudioMixerInspectorDashboardTemplate", StringComparison.Ordinal);
+        string troopZone = xaml.Substring(troopZoneStart, troopZoneEnd - troopZoneStart);
+        Check(!troopZone.Contains("aquila-seal-rev087"),
+            "TroopTreeVisualizer zone must not contain aquila-seal-rev087 after Rev096 upgrade.");
+
+        // 28x28 centurion-rev090 must be gone (upgraded to 36x36 pipe-seal)
+        Check(!xaml.Contains("calradia-centurion-medallion-rev090.png\" Height=\"28\" Width=\"28\""),
+            "28x28 centurion-rev090 icon must be replaced by 36x36 pipe-seal-rev096 in Rev096.");
     }
 }

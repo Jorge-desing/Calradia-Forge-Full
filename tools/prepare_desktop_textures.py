@@ -92,6 +92,11 @@ PRESERVED_UNPACKAGED_VARIANTS = {
     "calradia-hierarchy-seal-rev095.png",
     "calradia-diplomacy-medallion-rev095.png",
     "calradia-mechanism-medallion-rev095.png",
+    "calradia-troop-crest-rev096.png",
+    "calradia-cohort-badge-rev096.png",
+    "calradia-trade-sigil-rev096.png",
+    "calradia-pipe-seal-rev096.png",
+    "calradia-sentinel-eye-rev096.png",
 }
 
 

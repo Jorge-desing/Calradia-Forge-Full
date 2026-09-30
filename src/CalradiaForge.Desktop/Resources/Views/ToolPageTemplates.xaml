@@ -39,7 +39,9 @@
              <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Troop.CountBadge}"/>
             </StackPanel>
            </Border>
-           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-aquila-seal-rev087.png" Width="36" Height="36" Margin="8,0,0,0" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="8,0,0,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Calradia Dynastic Troop Progression Crest — Tier I-VI Genealogy Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-troop-crest-rev096.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
           </StackPanel>
          </Grid>
         </Border>
@@ -1545,7 +1547,9 @@
              <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="4 BATTLE COHORTS"/>
             </StackPanel>
            </Border>
-           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-aquila-seal-rev087.png" Width="36" Height="36" Margin="8,0,0,0" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="8,0,0,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Imperial Battle Cohort Tactical Badge — Formation Command Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-cohort-badge-rev096.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
           </StackPanel>
          </Grid>
         </Border>
@@ -1746,7 +1750,9 @@
              <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="5 ARBITRAGE GOODS"/>
             </StackPanel>
            </Border>
-           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-aquila-seal-rev087.png" Width="36" Height="36" Margin="8,0,0,0" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Margin="8,0,0,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Merchant Guild Trade Sigil — Commodity Arbitrage Route Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-trade-sigil-rev096.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
           </StackPanel>
          </Grid>
         </Border>
@@ -2304,7 +2310,9 @@
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding LiveSessionDashboard.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-centurion-medallion-rev090.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,8,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Alchemical IPC Pipe Transmission Seal — Live Session Protocol Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-pipe-seal-rev096.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
             <StackPanel Orientation="Horizontal">
              <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
@@ -2944,8 +2952,8 @@
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding GenericOperationDashboard.ScanStatusBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="3" Padding="8,4" VerticalAlignment="Center">
             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{Binding GenericOperationDashboard.ScanStatusBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{DynamicResource Viz.Operation.Ready}"/>
            </Border>
-           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="8,0,0,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Imperial War Room Diagnostic Seal Authenticated">
-            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-centurion-medallion-rev090.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="8,0,0,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Tactical Sentinel Eye — Imperial Intelligence &amp; Navigation Seal Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-sentinel-eye-rev096.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
            </Border>
           </StackPanel>
          </Grid>
