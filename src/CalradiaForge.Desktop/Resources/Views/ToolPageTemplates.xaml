@@ -1252,7 +1252,7 @@
                </Grid>
                <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding TensionText}"/>
                <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Height="8" Margin="0,3,0,3">
-                <ProgressBar Background="Transparent" BorderThickness="0" Foreground="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" Maximum="100" Value="{Binding TensionLevel}"/>
+                <ProgressBar Background="Transparent" BorderThickness="0" Foreground="{Binding TensionBrushKey, Converter={StaticResource BrushKeyConverter}}" Maximum="100" Value="{Binding TensionLevel, Mode=OneWay}"/>
                </Border>
                <TextBlock FontSize="7.5" Foreground="{DynamicResource MutedTextBrush}"><Run Text="{DynamicResource Viz.Diplomacy.BorderConflictRiskLabel}"/><Run Text=": "/><Run Text="{Binding BorderConflictProbability, Mode=OneWay}"/><Run Text="%"/></TextBlock>
               </StackPanel>
