@@ -54,6 +54,7 @@ struct OriginalLookupCache { void** slot = nullptr; void* original = nullptr; };
 // polling can therefore bypass the shared registry lock after the first hit.
 thread_local OriginalLookupCache last_original_lookup;
 FactoryFn original_factory = nullptr;
+KeyboardSendFn original_send_input = nullptr;
 volatile LONG iat_hooks = 0, factory_calls = 0, pool_hooks = 0, session_hooks = 0;
 volatile LONG border_interfaces = 0, border_noops = 0, hook_errors = 0;
 volatile LONG deferred_capture = 0;
@@ -530,8 +531,9 @@ bool GetLoadedImageSize(HMODULE module, SIZE_T& image_size) noexcept {
     return true;
 }
 
-bool FindActivationFactoryIat(const BYTE* image, SIZE_T buffer_size, SIZE_T& thunk_offset,
-                              bool require_mapped_read = false) noexcept {
+bool FindNamedIat(const BYTE* image, SIZE_T buffer_size, SIZE_T& thunk_offset,
+                  const char* expected_import, const char* expected_module,
+                  bool require_mapped_read = false) noexcept {
     if (!image || buffer_size < sizeof(IMAGE_DOS_HEADER)) return false;
     const auto dos = ReadImageValue<IMAGE_DOS_HEADER>(image, buffer_size, 0, require_mapped_read);
     if (!dos || dos->e_magic != IMAGE_DOS_SIGNATURE ||
@@ -564,6 +566,8 @@ bool FindActivationFactoryIat(const BYTE* image, SIZE_T buffer_size, SIZE_T& thu
         if (descriptor->Name >= image_size ||
             !HasTerminatedString(image, image_size, descriptor->Name, require_mapped_read) ||
             !descriptor->FirstThunk || descriptor->FirstThunk >= image_size) return false;
+        const bool matching_module = !expected_module ||
+            _stricmp(reinterpret_cast<const char*>(image + descriptor->Name), expected_module) == 0;
         // Without OriginalFirstThunk, FirstThunk contains resolved addresses
         // in a loaded image and cannot be used to recover import names.
         if (!descriptor->OriginalFirstThunk) continue;
@@ -585,7 +589,7 @@ bool FindActivationFactoryIat(const BYTE* image, SIZE_T buffer_size, SIZE_T& thu
             const SIZE_T import_name_rva = static_cast<SIZE_T>(names->u1.AddressOfData);
             if (import_name_rva > image_size || image_size - import_name_rva < sizeof(WORD) + 1 ||
                 !HasTerminatedString(image, image_size, import_name_rva + sizeof(WORD), require_mapped_read)) return false;
-            if (IsNamedImport(image, image_size, import_name_rva, "RoGetActivationFactory", require_mapped_read)) {
+            if (matching_module && IsNamedImport(image, image_size, import_name_rva, expected_import, require_mapped_read)) {
                 if (addresses->u1.Function == 0) return false;
                 if (found && resolved_offset != address_rva) return false;
                 resolved_offset = address_rva;
@@ -597,6 +601,106 @@ bool FindActivationFactoryIat(const BYTE* image, SIZE_T buffer_size, SIZE_T& thu
     if (!terminated || !found) return false;
     thunk_offset = resolved_offset;
     return true;
+}
+
+bool FindActivationFactoryIat(const BYTE* image, SIZE_T size, SIZE_T& offset,
+                              bool require_mapped_read = false) noexcept {
+    return FindNamedIat(image, size, offset, "RoGetActivationFactory", nullptr, require_mapped_read);
+}
+
+bool KeyboardHelperProfile(const BYTE* image, SIZE_T size, SIZE_T offset,
+                           bool mapped = false) noexcept {
+    // Mapped-image anchors were audited against the @oai/sky 0.7.5 helper.
+    // Installation ownership also verifies the recorded helper/DLL hashes.
+    // These mapped-image anchors enable only that audited keyboard path; they
+    // never change existing capture support for unknown helper versions.
+    constexpr BYTE constructor[] = {
+        0x48,0x8d,0x44,0x24,0x20, 0xc7,0x00,0x01,0x00,0x00,0x00,
+        0x66,0x89,0x48,0x08, 0x66,0x83,0x60,0x0a,0x00,
+        0x44,0x89,0x40,0x0c, 0x83,0x60,0x10,0x00,
+        0x48,0x83,0x60,0x18,0x00, 0xba,0x01,0x00,0x00,0x00,
+        0x48,0x89,0xc1, 0xe8,0xf2,0xfa,0xff,0xff };
+    if (size != 0x17e000 || offset != 0x1774d0) return false;
+    const auto dos = ReadImageValue<IMAGE_DOS_HEADER>(image, size, 0, mapped);
+    if (!dos || dos->e_magic != IMAGE_DOS_SIGNATURE || dos->e_lfanew < 0) return false;
+    const auto nt = ReadImageValue<IMAGE_NT_HEADERS64>(image, size, static_cast<SIZE_T>(dos->e_lfanew), mapped);
+    if (!nt || nt->Signature != IMAGE_NT_SIGNATURE || nt->FileHeader.Machine != IMAGE_FILE_MACHINE_AMD64 ||
+        nt->FileHeader.TimeDateStamp != 0x6ab98f85 || nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC ||
+        nt->OptionalHeader.SizeOfImage != size || nt->OptionalHeader.AddressOfEntryPoint != 0x1410) return false;
+    constexpr SIZE_T anchor = 0xafa57;
+    if (anchor > size || sizeof(constructor) > size - anchor ||
+        (mapped && !IsReadableImageRange(image, image + anchor, sizeof(constructor)))) return false;
+    return std::memcmp(image + anchor, constructor, sizeof(constructor)) == 0;
+}
+
+UINT SendInputWithScans(UINT count, LPINPUT inputs, int input_size, HKL layout,
+                       KeyboardMapFn mapper, KeyboardSendFn sender) noexcept {
+    const DWORD incoming_error = GetLastError();
+    if (!sender) return 0;
+    if (!mapper || !inputs || input_size != sizeof(INPUT) || count == 0 || count > 4096)
+        return sender(count, inputs, input_size);
+    auto copy = new (std::nothrow) INPUT[count];
+    if (!copy) {
+        SetLastError(incoming_error);
+        return sender(count, inputs, input_size);
+    }
+    std::memcpy(copy, inputs, sizeof(INPUT) * count);
+    bool changed = false;
+    for (UINT index = 0; index < count; ++index) {
+        auto& item = copy[index];
+        if (item.type != INPUT_KEYBOARD || item.ki.wVk == 0 || item.ki.wScan != 0 ||
+            (item.ki.dwFlags & (KEYEVENTF_UNICODE | KEYEVENTF_SCANCODE)) != 0) continue;
+        const UINT scan = mapper(item.ki.wVk, MAPVK_VK_TO_VSC_EX, layout);
+        if ((scan & 0xff) == 0 || (scan & 0xffff0000) != 0 ||
+            ((scan & 0xff00) != 0 && (scan & 0xff00) != 0xe000)) continue;
+        item.ki.wScan = static_cast<WORD>(scan & 0xff);
+        if ((scan & 0xff00) == 0xe000) item.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
+        changed = true;
+    }
+    SetLastError(incoming_error);
+    const UINT sent = sender(count, changed ? copy : inputs, input_size);
+    const DWORD error = GetLastError();
+    delete[] copy;
+    SetLastError(error);
+    return sent;
+}
+
+HKL WINAPI ForegroundKeyboardLayout() noexcept {
+    HWND foreground = GetForegroundWindow();
+    DWORD thread = foreground ? GetWindowThreadProcessId(foreground, nullptr) : 0;
+    return GetKeyboardLayout(thread);
+}
+
+UINT SendInputWithLookup(UINT count, LPINPUT inputs, int size, HKL(WINAPI* lookup)(),
+                         KeyboardMapFn mapper, KeyboardSendFn sender) noexcept {
+    const DWORD incoming_error = GetLastError();
+    const HKL layout = lookup ? lookup() : nullptr;
+    SetLastError(incoming_error);
+    return SendInputWithScans(count, inputs, size, layout, mapper, sender);
+}
+
+UINT WINAPI SendInputWithKeyboardScans(UINT count, LPINPUT inputs, int size) noexcept {
+    return SendInputWithLookup(count, inputs, size, &ForegroundKeyboardLayout, &MapVirtualKeyExW, original_send_input);
+}
+
+void HookKeyboardInput(BYTE* image, SIZE_T size) noexcept {
+    SIZE_T offset = 0;
+    if (!FindNamedIat(image, size, offset, "SendInput", "user32.dll", true) ||
+        !KeyboardHelperProfile(image, size, offset, true)) return;
+    auto slot = reinterpret_cast<void**>(image + offset);
+    void* original = *slot;
+    if (!original) return;
+    DWORD protection = 0;
+    if (!VirtualProtect(slot, sizeof(void*), PAGE_READWRITE, &protection)) return;
+    original_send_input = reinterpret_cast<KeyboardSendFn>(original);
+    InterlockedExchangePointer(slot, reinterpret_cast<void*>(&SendInputWithKeyboardScans));
+    DWORD ignored = 0;
+    if (!VirtualProtect(slot, sizeof(void*), protection, &ignored)) {
+        InterlockedExchangePointer(slot, original);
+        VirtualProtect(slot, sizeof(void*), protection, &ignored);
+        original_send_input = nullptr;
+        InterlockedIncrement(&hook_errors);
+    }
 }
 }
 
@@ -653,7 +757,27 @@ bool Initialize(HMODULE executable) noexcept {
         return false;
     }
     InterlockedIncrement(&iat_hooks);
+    HookKeyboardInput(base, image_size);
     return true;
+}
+
+bool FindSendInputIatForTest(const void* image, size_t size, size_t& offset) noexcept {
+    return FindNamedIat(static_cast<const BYTE*>(image), size, offset, "SendInput", "user32.dll");
+}
+
+bool IsKeyboardHelperProfileForTest(const void* image, size_t size, size_t offset) noexcept {
+    return KeyboardHelperProfile(static_cast<const BYTE*>(image), size, offset);
+}
+
+UINT SendInputWithScansForTest(UINT count, LPINPUT inputs, int size, HKL layout,
+                              KeyboardMapFn mapper, KeyboardSendFn sender) noexcept {
+    return SendInputWithScans(count, inputs, size, layout, mapper, sender);
+}
+
+// Internal fake-lookup seam, not exported from the proxy DLL.
+UINT SendInputWithLookupForTest(UINT count, LPINPUT inputs, int size, HKL(WINAPI* lookup)(),
+                               KeyboardMapFn mapper, KeyboardSendFn sender) noexcept {
+    return SendInputWithLookup(count, inputs, size, lookup, mapper, sender);
 }
 
 bool FindActivationFactoryIatForTest(const void* image, size_t image_size,

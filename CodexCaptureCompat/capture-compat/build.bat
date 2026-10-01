@@ -44,10 +44,10 @@ cl.exe %COMMON_FLAGS% /c "%PROJECT_DIR%src\compat.cpp" "%PROJECT_DIR%src\proxy.c
 if errorlevel 1 (echo C++ source compilation failed.& popd& exit /b 1)
 ml64.exe /nologo /c "%PROJECT_DIR%src\version.asm"
 if errorlevel 1 (echo MASM assembly failed.& popd& exit /b 1)
-link.exe /nologo /dll /machine:x64 /dynamicbase /nxcompat /guard:cf /out:version.dll /implib:proxy.lib /def:"%PROJECT_DIR%src\version.def" compat.obj proxy.obj frame_dispatch.obj version.obj windowsapp.lib
+link.exe /nologo /dll /machine:x64 /dynamicbase /nxcompat /guard:cf /out:version.dll /implib:proxy.lib /def:"%PROJECT_DIR%src\version.def" compat.obj proxy.obj frame_dispatch.obj version.obj windowsapp.lib user32.lib
 if errorlevel 1 (echo Proxy linking failed.& popd& exit /b 1)
 
-cl.exe %COMMON_FLAGS% "%PROJECT_DIR%tests\core_tests.cpp" compat.obj frame_dispatch.obj /Fe:core_tests.exe /link windowsapp.lib /dynamicbase /nxcompat
+cl.exe %COMMON_FLAGS% "%PROJECT_DIR%tests\core_tests.cpp" compat.obj frame_dispatch.obj /Fe:core_tests.exe /link windowsapp.lib user32.lib /dynamicbase /nxcompat
 if errorlevel 1 (echo Core test build failed.& popd& exit /b 1)
 cl.exe %COMMON_FLAGS% "%PROJECT_DIR%tests\dispatch_tests.cpp" frame_dispatch.obj /Fe:dispatch_tests.exe /link windowsapp.lib /dynamicbase /nxcompat
 if errorlevel 1 (echo Dispatch test build failed.& popd& exit /b 1)

@@ -10,6 +10,10 @@
 #include <vector>
 
 using namespace capture_compat;
+namespace capture_compat {
+UINT SendInputWithLookupForTest(UINT count, LPINPUT inputs, int size, HKL(WINAPI* lookup)(),
+                               KeyboardMapFn mapper, KeyboardSendFn sender) noexcept;
+}
 namespace {
 void Check(bool value, const char* message) {
     if (!value) { std::fprintf(stderr, "FAIL: %s\n", message); std::exit(1); }
@@ -121,6 +125,137 @@ void TestBoundedImportParser() {
     Check(!FindActivationFactoryIatForTest(mapped, 0x2000, offset, true),
           "unterminated string cannot be read across a no-access page");
     VirtualFree(mapped, 0, MEM_RELEASE);
+}
+
+HKL expected_keyboard_layout = reinterpret_cast<HKL>(0x080a080a);
+std::vector<INPUT> observed_keyboard_inputs;
+LPINPUT observed_keyboard_pointer = nullptr;
+UINT keyboard_map_calls = 0;
+
+UINT WINAPI FakeKeyboardMap(UINT key, UINT mode, HKL layout) {
+    Check(mode == MAPVK_VK_TO_VSC_EX && layout == expected_keyboard_layout, "keyboard mapping uses the supplied target layout");
+    ++keyboard_map_calls;
+    if (key == VK_F10) return 0x44;
+    if (key == VK_OEM_3) return 0x29;
+    if (key == VK_RCONTROL) return 0xe01d;
+    if (key == VK_PAUSE) return 0xe145;
+    return 0;
+}
+
+UINT WINAPI FakeKeyboardSend(UINT count, LPINPUT inputs, int size) {
+    Check(size == sizeof(INPUT), "keyboard sender receives original INPUT size");
+    observed_keyboard_pointer = inputs;
+    observed_keyboard_inputs.assign(inputs, inputs + count);
+    SetLastError(1234);
+    return count;
+}
+
+HKL WINAPI FakeKeyboardLayoutLookup() {
+    SetLastError(777);
+    return expected_keyboard_layout;
+}
+
+UINT WINAPI ErrorChangingKeyboardMap(UINT key, UINT mode, HKL layout) {
+    const UINT scan = FakeKeyboardMap(key, mode, layout);
+    SetLastError(888);
+    return scan;
+}
+
+UINT WINAPI ErrorPreservingKeyboardSend(UINT count, LPINPUT inputs, int size) {
+    Check(GetLastError() == 4567, "sender observes caller's original last error after lookup and mapping");
+    const DWORD error = GetLastError();
+    const UINT sent = FakeKeyboardSend(count, inputs, size);
+    SetLastError(error);
+    return sent;
+}
+
+void TestKeyboardScanAdapter() {
+    std::vector<INPUT> inputs(8);
+    for (auto& item : inputs) {
+        item.type = INPUT_KEYBOARD;
+        item.ki.wVk = VK_F10;
+        item.ki.time = 123;
+        item.ki.dwExtraInfo = 0x12345678;
+    }
+    inputs[1].ki.wVk = VK_OEM_3;
+    inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+    inputs[2].ki.wVk = VK_RCONTROL;
+    inputs[2].ki.dwFlags = KEYEVENTF_KEYUP;
+    inputs[3].ki.dwFlags = KEYEVENTF_UNICODE;
+    inputs[4].type = INPUT_MOUSE;
+    inputs[4].mi.dx = 12;
+    inputs[4].mi.dwFlags = MOUSEEVENTF_MOVE;
+    inputs[5].ki.wScan = 0x11;
+    inputs[6].ki.wVk = VK_PAUSE;
+    inputs[7].ki.dwFlags = KEYEVENTF_SCANCODE;
+    const auto original = inputs;
+    keyboard_map_calls = 0;
+    Check(SendInputWithScansForTest(static_cast<UINT>(inputs.size()), inputs.data(), sizeof(INPUT),
+        expected_keyboard_layout, &FakeKeyboardMap, &FakeKeyboardSend) == inputs.size(), "scan adapter preserves send count");
+    Check(GetLastError() == 1234, "scan adapter preserves sender last error");
+    Check(std::memcmp(inputs.data(), original.data(), inputs.size() * sizeof(INPUT)) == 0, "scan adapter never mutates caller inputs");
+    Check(observed_keyboard_pointer != inputs.data() && keyboard_map_calls == 4, "only missing non-Unicode virtual-key scans are mapped in a copy");
+    Check(observed_keyboard_inputs[0].ki.wScan == 0x44 && observed_keyboard_inputs[0].ki.wVk == VK_F10 &&
+        observed_keyboard_inputs[0].ki.dwFlags == 0, "F10 receives scan while preserving virtual-key mode");
+    Check(observed_keyboard_inputs[1].ki.wScan == 0x29 && observed_keyboard_inputs[1].ki.dwFlags == KEYEVENTF_KEYUP,
+        "OEM3 keyup receives scan and keeps release flag");
+    Check(observed_keyboard_inputs[2].ki.wScan == 0x1d &&
+        observed_keyboard_inputs[2].ki.dwFlags == (KEYEVENTF_KEYUP | KEYEVENTF_EXTENDEDKEY), "extended mapped keys retain release and extension");
+    for (size_t index = 0; index < inputs.size(); ++index) {
+        Check(observed_keyboard_inputs[index].ki.time == original[index].ki.time &&
+            observed_keyboard_inputs[index].ki.dwExtraInfo == original[index].ki.dwExtraInfo, "input timestamp and extra information preserved");
+        if (index >= 3) Check(std::memcmp(&observed_keyboard_inputs[index], &original[index], sizeof(INPUT)) == 0,
+            "Unicode, mouse, existing scans, E1 special scans, and scan-mode inputs pass through unchanged");
+    }
+    INPUT unmapped{};
+    unmapped.type = INPUT_KEYBOARD;
+    unmapped.ki.wVk = VK_HELP;
+    Check(SendInputWithScansForTest(1, &unmapped, sizeof(INPUT), expected_keyboard_layout,
+        &FakeKeyboardMap, &FakeKeyboardSend) == 1 && observed_keyboard_pointer == &unmapped,
+        "unmapped keyboard input keeps original sender pointer");
+    INPUT mapped{};
+    mapped.type = INPUT_KEYBOARD;
+    mapped.ki.wVk = VK_F10;
+    SetLastError(4567);
+    Check(SendInputWithLookupForTest(1, &mapped, sizeof(INPUT), &FakeKeyboardLayoutLookup,
+        &ErrorChangingKeyboardMap, &ErrorPreservingKeyboardSend) == 1 && GetLastError() == 4567,
+        "lookup, mapping, and copy cleanup preserve unchanged sender last error");
+    SetLastError(4567);
+    Check(SendInputWithLookupForTest(1, &unmapped, sizeof(INPUT), &FakeKeyboardLayoutLookup,
+        &ErrorChangingKeyboardMap, &ErrorPreservingKeyboardSend) == 1 && GetLastError() == 4567 &&
+        observed_keyboard_pointer == &unmapped, "unmapped passthrough preserves unchanged sender last error");
+    SetLastError(4567);
+    Check(SendInputWithLookupForTest(1, &mapped, sizeof(INPUT), &FakeKeyboardLayoutLookup,
+        nullptr, &ErrorPreservingKeyboardSend) == 1 && GetLastError() == 4567,
+        "early passthrough restores last error after layout lookup");
+
+    auto image = MakePeImportFixture();
+    std::memcpy(image.data() + 0x300, "UsEr32.DlL", sizeof("UsEr32.DlL"));
+    auto name = reinterpret_cast<IMAGE_IMPORT_BY_NAME*>(image.data() + 0x600);
+    std::memcpy(name->Name, "SendInput", sizeof("SendInput"));
+    size_t offset = 0;
+    Check(FindSendInputIatForTest(image.data(), image.size(), offset) && offset == 0x500, "bounded parser finds only named USER32 SendInput import");
+    std::memcpy(image.data() + 0x300, "other.dll", sizeof("other.dll"));
+    Check(!FindSendInputIatForTest(image.data(), image.size(), offset), "SendInput from another module rejected");
+    Check(!IsKeyboardHelperProfileForTest(image.data(), image.size(), offset), "small probe image does not enable keyboard hook");
+
+    image.resize(0x17e000);
+    auto nt = reinterpret_cast<IMAGE_NT_HEADERS64*>(image.data() + 0x80);
+    nt->FileHeader.TimeDateStamp = 0x6ab98f85;
+    nt->OptionalHeader.SizeOfImage = static_cast<DWORD>(image.size());
+    nt->OptionalHeader.AddressOfEntryPoint = 0x1410;
+    const BYTE anchor[] = {0x48,0x8d,0x44,0x24,0x20,0xc7,0x00,0x01,0x00,0x00,0x00,
+        0x66,0x89,0x48,0x08,0x66,0x83,0x60,0x0a,0x00,0x44,0x89,0x40,0x0c,
+        0x83,0x60,0x10,0x00,0x48,0x83,0x60,0x18,0x00,0xba,0x01,0x00,0x00,0x00,
+        0x48,0x89,0xc1,0xe8,0xf2,0xfa,0xff,0xff};
+    std::memcpy(image.data() + 0xafa57, anchor, sizeof(anchor));
+    Check(IsKeyboardHelperProfileForTest(image.data(), image.size(), 0x1774d0), "exact mapped helper profile accepted");
+    Check(!IsKeyboardHelperProfileForTest(image.data(), image.size(), 0x1774d8), "drifted SendInput slot rejected");
+    image[0xafa66] ^= 1;
+    Check(!IsKeyboardHelperProfileForTest(image.data(), image.size(), 0x1774d0), "drifted zero-scan constructor anchor rejected");
+    image[0xafa66] ^= 1;
+    nt->FileHeader.TimeDateStamp++;
+    Check(!IsKeyboardHelperProfileForTest(image.data(), image.size(), 0x1774d0), "unknown helper timestamp rejected");
 }
 
 struct DeferredRaceContext {
@@ -262,6 +397,7 @@ __declspec(noinline) HRESULT Query(capture::IGraphicsCaptureSession* session, RE
 
 int main() {
     TestBoundedImportParser();
+    TestKeyboardScanAdapter();
     TestCloseDuringPendingSubscriptionCommit();
     auto missing = new FakeSession(E_NOINTERFACE);
     auto base = static_cast<capture::IGraphicsCaptureSession*>(missing);

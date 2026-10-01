@@ -256,6 +256,59 @@ function Assert-CursorRecoveryFixtures {
     if (Update-CuaCursorRecoveryState -State $visibleAtExit -HelperActive $false -CursorVisible $true) { throw 'A visible cursor at session exit triggered an unnecessary system reset.' }
 }
 
+function Assert-KnownStagingPromotionFixtures {
+    $tokens = $null
+    $parseErrors = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile($maintainer, [ref]$tokens, [ref]$parseErrors)
+    if ($parseErrors.Count -gt 0) { throw 'Cannot parse staging migration guard.' }
+    $definitions = @($ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $true))
+    foreach ($name in @('Get-FullPathForComparison', 'Test-PathWithin', 'Test-ReparsePoint', 'Test-PathChainHasReparsePoint', 'Test-KnownStagingRecord')) {
+        $definition = $definitions | Where-Object { $_.Name -ceq $name } | Select-Object -First 1
+        if (-not $definition) { throw "Missing migration guard dependency: $name" }
+        . ([scriptblock]::Create($definition.Extent.Text))
+    }
+    $script:OwnerMarker = 'CodexCaptureCompat.RuntimeWatcher.v1'
+    $script:TaskName = 'CodexCaptureCompat-RuntimeWatcher'
+    $knownId = '1b30f7d4d73226ca'
+    $helperHash = 'ABDD75DF576B3CBCC7ED170DE1B4F27A65C81E25768A9B0B46D682FB586FB483'
+    $dllHash = '52CA7BFD990F99344F233E136D6F9B03BB793D906B8493E2A4BD368843DFBE84'
+    $suffix = 'bin\node_modules\@oai\sky\bin\windows\codex-computer-use.exe'
+    $helper = Join-Path $runtimeRoot "$knownId\$suffix"
+    $candidate = [pscustomobject]@{ RuntimeId = $knownId; HelperPath = $helper; Directory = [IO.Path]::GetDirectoryName($helper) }
+    $record = New-FixtureInstallRecord -HelperPath (Join-Path $runtimeRoot ".staging-$knownId-rYoK98\$suffix") -HelperHash $helperHash -DllHash $dllHash
+    # These are guard-only inputs. Synthetic hashes do not claim the fake helper
+    # has the production bytes; ScanOnce supplies hashes computed from actual files.
+    if (-not (Test-KnownStagingRecord $record $candidate $runtimeRoot $helperHash $dllHash)) { throw 'Known staging promotion guard rejected the exact pinned profile.' }
+    foreach ($field in @('schemaVersion', 'ownerMarker', 'managedBy', 'helperSha256', 'dllSha256', 'helperPath')) {
+        $copy = $record | ConvertTo-Json | ConvertFrom-Json
+        $copy.$field = if ($field -eq 'schemaVersion') { '1' } elseif ($field -eq 'helperPath') {
+            Join-Path $runtimeRoot ".staging-other-rYoK98\$suffix"
+        } else { 'foreign' }
+        if (Test-KnownStagingRecord $copy $candidate $runtimeRoot $helperHash $dllHash) { throw "Migration accepted foreign $field." }
+    }
+    if ((Test-KnownStagingRecord $record $candidate $runtimeRoot ('0' * 64) $dllHash) -or
+        (Test-KnownStagingRecord $record $candidate $runtimeRoot $helperHash ('0' * 64))) { throw 'Migration accepted changed observed hashes.' }
+    foreach ($oldPath in @(
+        (Join-Path $fixtureRoot ".staging-$knownId-rYoK98\$suffix"),
+        (Join-Path $runtimeRoot ".staging-$knownId-rYoK98\wrong\codex-computer-use.exe"),
+        (Join-Path $runtimeRoot "$knownId\$suffix"),
+        (Join-Path $runtimeRoot ".staging-$knownId-rYoK98\..\$knownId\$suffix"))) {
+        $copy = $record | ConvertTo-Json | ConvertFrom-Json; $copy.helperPath = $oldPath
+        if (Test-KnownStagingRecord $copy $candidate $runtimeRoot $helperHash $dllHash) { throw 'Migration accepted unrelated or noncanonical staging path.' }
+    }
+    $wrongCandidate = [pscustomobject]@{ RuntimeId = 'unknown'; HelperPath = $helper; Directory = $candidate.Directory }
+    if (Test-KnownStagingRecord $record $wrongCandidate $runtimeRoot $helperHash $dllHash) { throw 'Migration accepted an unknown runtime.' }
+    # Prove rejection if a path-chain check detects a reparse point, without
+    # requiring link privileges or modifying the real runtime tree.
+    function Test-PathChainHasReparsePoint { param([string]$Path) return $true }
+    if (Test-KnownStagingRecord $record $candidate $runtimeRoot $helperHash $dllHash) { throw 'Migration accepted a reparse path chain.' }
+    $transaction = ($definitions | Where-Object { $_.Name -ceq 'Install-RuntimeCandidateTransaction' }).Extent.Text
+    if ($transaction -notmatch '\[switch\]\$RecordOnly' -or $transaction -notmatch 'Save-VerifiedBackup -Path \$RecordPath' -or
+        $transaction -notmatch 'Restore-RuntimeTransaction') { throw 'Record-only migration lost verified backup or rollback support.' }
+    $scan = ($definitions | Where-Object { $_.Name -ceq 'Invoke-RuntimeScan' }).Extent.Text
+    if ($scan -notmatch 'Test-KnownStagingRecord' -or $scan -notmatch '-RecordOnly') { throw 'Scan does not route the pinned migration through the existing transaction.' }
+}
+
 function New-ScheduledTaskFixture {
     param([string]$Arguments, [string]$UserId, [string]$RunLevel = 'Limited', [string]$Description = $script:TaskDescription, [string]$Execute)
     return [pscustomobject]@{
@@ -530,7 +583,8 @@ try {
     if ((Get-Sha256 $unexpectedDll) -ne $unexpectedDllHash) { throw 'Unexpected DLL bytes were overwritten during same-path helper reconciliation.' }
     if ((Get-Sha256 $unexpectedDllRecordPath) -ne $unexpectedRecordHash) { throw 'Ownership metadata for a mismatched unexpected DLL was rewritten.' }
 
-    'PASS: exact scheduled-task ownership, cursor recovery lifecycle and path scoping, strict install ownership, corrupt/foreign preservation, read-only Status, payload/runtime transaction recovery, bounded log rotation, idempotency, exact-path scope, owned upgrade, verified backups, same-path helper update recovery, missing-DLL restoration, and unexpected-DLL preservation. Reparse-point ancestor guard: ' + $script:ReparsePointFixtureStatus
+    Assert-KnownStagingPromotionFixtures
+    'PASS: exact scheduled-task ownership, cursor recovery lifecycle and path scoping, strict install ownership, corrupt/foreign preservation, read-only Status, payload/runtime transaction recovery, bounded log rotation, idempotency, exact-path scope, owned upgrade, verified backups, same-path helper update recovery, missing-DLL restoration, unexpected-DLL preservation, and hash-pinned staging-promotion guard fixtures. Reparse-point ancestor guard: ' + $script:ReparsePointFixtureStatus
 } finally {
     $validationRoot = Join-Path $project 'validation'
     if ((Test-Path -LiteralPath $fixtureRoot -PathType Container) -and (Test-Path -LiteralPath $validationRoot -PathType Container)) {

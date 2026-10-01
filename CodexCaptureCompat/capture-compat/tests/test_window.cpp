@@ -17,6 +17,10 @@ constexpr int kInputId = 103;
 constexpr int kCtrlKCommand = 104;
 constexpr int kShiftF6Command = 105;
 constexpr int kAltF8Command = 106;
+constexpr int kKeyboardStatusId = 107;
+constexpr int kAltOem3Command = 108;
+constexpr int kAltShiftOem3Command = 109;
+constexpr int kAltOem5Command = 110;
 constexpr UINT_PTR kAutoCloseTimerId = 1;
 constexpr UINT_PTR kMeasurementTimerId = 2;
 constexpr size_t kMaximumPointerSamples = 131072;
@@ -54,6 +58,16 @@ struct PointerMeasurement {
 HWND g_status = nullptr;
 HWND g_input = nullptr;
 HWND g_button = nullptr;
+HWND g_keyboard_status = nullptr;
+unsigned g_f10_down = 0;
+unsigned g_f10_up = 0;
+unsigned g_oem3_down = 0;
+unsigned g_oem3_up = 0;
+unsigned g_oem5_down = 0;
+unsigned g_oem5_up = 0;
+unsigned g_last_scan = 0;
+unsigned g_down_scan = 0, g_up_scan = 0;
+const wchar_t* g_keyboard_observation = L"Keyboard probe ready";
 PointerMeasurement g_measurement;
 
 void RecordPointerEvent(PointerEvent event, WPARAM w, LPARAM l) {
@@ -229,6 +243,47 @@ void SetFixtureStatus(const wchar_t* value) {
     if (g_status) SetWindowTextW(g_status, value);
 }
 
+void UpdateKeyboardStatus() {
+    if (!g_keyboard_status) return;
+    wchar_t text[512]{};
+    swprintf_s(text, L"%ls; scan=0x%02X; down/up scans=0x%02X/0x%02X\r\nF10 down/up=%u/%u; OEM3 down/up=%u/%u; OEM5 down/up=%u/%u\r\nCurrently pressed: Ctrl=%d Alt=%d Shift=%d",
+        g_keyboard_observation, g_last_scan, g_down_scan, g_up_scan, g_f10_down, g_f10_up, g_oem3_down, g_oem3_up,
+        g_oem5_down, g_oem5_up,
+        (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0,
+        (GetAsyncKeyState(VK_MENU) & 0x8000) != 0,
+        (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0);
+    SetWindowTextW(g_keyboard_status, text);
+}
+
+void ObserveFixtureKeyboard(const MSG& message, HWND window) {
+    // Observe only queued messages addressed to this fixture or its controls.
+    // The normal accelerator/dialog dispatch still receives every message.
+    if (message.hwnd != window && !IsChild(window, message.hwnd)) return;
+    const bool down = message.message == WM_KEYDOWN || message.message == WM_SYSKEYDOWN;
+    const bool up = message.message == WM_KEYUP || message.message == WM_SYSKEYUP;
+    if (!down && !up) return;
+    if (message.wParam == VK_F10 || message.wParam == VK_OEM_3 || message.wParam == VK_OEM_5) {
+        g_last_scan = static_cast<unsigned>((message.lParam >> 16) & 0xff);
+        if (down) g_down_scan = g_last_scan; else g_up_scan = g_last_scan;
+        if (message.wParam == VK_F10) {
+            if (down) ++g_f10_down; else ++g_f10_up;
+            g_keyboard_observation = down ? L"Observed F10 down" : L"Observed F10 up";
+        } else if (message.wParam == VK_OEM_3) {
+            if (down) ++g_oem3_down; else ++g_oem3_up;
+            // Keep the accelerator observation when its matching key-up arrives.
+            if (down) g_keyboard_observation = L"Observed OEM3 down";
+        } else {
+            if (down) ++g_oem5_down; else ++g_oem5_up;
+            if (down) g_keyboard_observation = L"Observed OEM5 down";
+        }
+        UpdateKeyboardStatus();
+    } else if (message.wParam == VK_CONTROL || message.wParam == VK_LCONTROL || message.wParam == VK_RCONTROL ||
+        message.wParam == VK_MENU || message.wParam == VK_LMENU || message.wParam == VK_RMENU ||
+        message.wParam == VK_SHIFT || message.wParam == VK_LSHIFT || message.wParam == VK_RSHIFT) {
+        UpdateKeyboardStatus();
+    }
+}
+
 LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM w, LPARAM l) {
     if (message == WM_MOUSEMOVE) RecordPointerEvent(PointerEvent::MouseMove, w, l);
     else if (message == WM_MOVING) RecordPointerEvent(PointerEvent::Moving, w, l);
@@ -249,7 +304,10 @@ LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM w, LPARAM l) {
         g_button = CreateWindowExW(0, L"BUTTON", L"Safe fixture control",
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON, 24, 124, 200, 36, window,
             reinterpret_cast<HMENU>(static_cast<INT_PTR>(kButtonId)), create->hInstance, nullptr);
-        if (!g_status || !g_input || !g_button) return -1;
+        g_keyboard_status = CreateWindowExW(0, L"STATIC", L"Keyboard probe ready; no global hook is installed.",
+            WS_CHILD | WS_VISIBLE | SS_LEFT, 24, 178, 560, 100, window,
+            reinterpret_cast<HMENU>(static_cast<INT_PTR>(kKeyboardStatusId)), create->hInstance, nullptr);
+        if (!g_status || !g_input || !g_button || !g_keyboard_status) return -1;
         return 0;
     }
     if (message == WM_COMMAND) {
@@ -268,6 +326,12 @@ LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM w, LPARAM l) {
         }
         if (l == 0 && command == kAltF8Command) {
             SetFixtureStatus(L"Observed Alt+F8.");
+            return 0;
+        }
+        if (l == 0 && (command == kAltOem3Command || command == kAltShiftOem3Command || command == kAltOem5Command)) {
+            g_keyboard_observation = command == kAltOem5Command ? L"Observed Alt+OEM5" :
+                command == kAltOem3Command ? L"Observed Alt+OEM3" : L"Observed Alt+Shift+OEM3";
+            UpdateKeyboardStatus();
             return 0;
         }
     }
@@ -309,6 +373,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
         { static_cast<BYTE>(FVIRTKEY | FCONTROL), 'K', kCtrlKCommand },
         { static_cast<BYTE>(FVIRTKEY | FSHIFT), VK_F6, kShiftF6Command },
         { static_cast<BYTE>(FVIRTKEY | FALT), VK_F8, kAltF8Command },
+        { static_cast<BYTE>(FVIRTKEY | FALT), VK_OEM_3, kAltOem3Command },
+        { static_cast<BYTE>(FVIRTKEY | FALT | FSHIFT), VK_OEM_3, kAltShiftOem3Command },
+        { static_cast<BYTE>(FVIRTKEY | FALT), VK_OEM_5, kAltOem5Command },
     };
     HACCEL accelerators = CreateAcceleratorTableW(const_cast<LPACCEL>(entries), ARRAYSIZE(entries));
     if (!accelerators) { DestroyWindow(window); return 1; }
@@ -325,6 +392,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
     }
     MSG message{};
     while (GetMessageW(&message, nullptr, 0, 0) > 0) {
+        ObserveFixtureKeyboard(message, window);
         if (!TranslateAcceleratorW(window, accelerators, &message) &&
             !IsDialogMessageW(window, &message)) {
             TranslateMessage(&message);

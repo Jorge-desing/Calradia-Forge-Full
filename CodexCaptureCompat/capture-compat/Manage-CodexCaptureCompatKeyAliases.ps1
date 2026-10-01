@@ -23,6 +23,15 @@ $script:Anchor = 'function b(e){return e}'
 $script:Replacement = 'function b(e){const t=({control:"Ctrl_L",ctrl:"Ctrl_L",control_l:"Ctrl_L",control_r:"Ctrl_R",ctrl_l:"Ctrl_L",ctrl_r:"Ctrl_R"})[e.toLowerCase()];return t||e}'
 $script:OwnerMarker = 'CodexCaptureCompat.SkyKeyAliases.v1'
 $script:StateRoot = Join-Path $env:LOCALAPPDATA 'OpenAI\Codex\CodexCaptureCompat\SkyKeyAliases'
+$requestedRuntimeId = [IO.Path]::GetFileName([IO.Path]::GetFullPath($RuntimePath).TrimEnd('\', '/'))
+if ($requestedRuntimeId -ceq '1b30f7d4d73226ca') {
+    # Independently checked profile; preserve the older installation and ownership records.
+    $script:ExpectedRuntimeId = '1b30f7d4d73226ca'
+    $script:ExpectedArchiveVersion = '0.0.27/20260927214556-b77d38801cca'
+    $script:ExpectedPackageVersion = '0.7.5'
+    $script:ExpectedPackageJsonSha256 = '000390844265EA878B968E5489B4F1245CC8F793F2959006506FDDD085580C6B'
+    $script:StateRoot = Join-Path $script:StateRoot $script:ExpectedRuntimeId
+}
 $script:Encoding = New-Object System.Text.UTF8Encoding($false, $true)
 $script:WriteMutex = $null
 $script:WriteMutexAcquired = $false
@@ -98,7 +107,7 @@ function Assert-ExactTarget {
     if ($packageJsonHash -cne $script:ExpectedPackageJsonSha256) { throw "Unknown @oai/sky package.json SHA-256: $packageJsonHash" }
     $packageJson = Get-Content -LiteralPath $packageJsonPath -Raw | ConvertFrom-Json -ErrorAction Stop
     if ([string]$packageJson.name -cne '@oai/sky' -or [string]$packageJson.version -cne $script:ExpectedPackageVersion) {
-        throw 'Package identity/version does not match the allowlisted @oai/sky 0.7.4 profile.'
+        throw "Package identity/version does not match the allowlisted @oai/sky $script:ExpectedPackageVersion profile."
     }
 
     $target = Join-Path $actualPackage 'dist\project\cua\sky_js\src\targets\windows\internal\computer_use_client_base.js'

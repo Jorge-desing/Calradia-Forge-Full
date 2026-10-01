@@ -264,6 +264,42 @@ function Test-RecordMetadata {
     return [string]::Equals([string]$Record.helperSha256, $HelperHash, [StringComparison]::OrdinalIgnoreCase)
 }
 
+function Test-KnownStagingRecord {
+    param([object]$Record, [object]$Candidate, [string]$Root, [string]$HelperHash, [string]$DllHash)
+    # Only the observed, hash-pinned runtime promotion is eligible. Other moved
+    # records remain foreign; this is not a general ownership-adoption route.
+    $runtimeId = '1b30f7d4d73226ca'
+    $knownHelperHash = 'ABDD75DF576B3CBCC7ED170DE1B4F27A65C81E25768A9B0B46D682FB586FB483'
+    $knownDllHash = '52CA7BFD990F99344F233E136D6F9B03BB793D906B8493E2A4BD368843DFBE84'
+    if (-not $Record -or -not $Candidate -or $Candidate.RuntimeId -cne $runtimeId) { return $false }
+    if ($Record.schemaVersion -isnot [int] -and $Record.schemaVersion -isnot [long]) { return $false }
+    if ($Record.schemaVersion -ne 1 -or $Record.ownerMarker -cne $script:OwnerMarker -or
+        $Record.managedBy -cne $script:TaskName) { return $false }
+    foreach ($hash in @($HelperHash, [string]$Record.helperSha256)) {
+        if (-not [string]::Equals($hash, $knownHelperHash, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+    }
+    foreach ($hash in @($DllHash, [string]$Record.dllSha256)) {
+        if (-not [string]::Equals($hash, $knownDllHash, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+    }
+    try {
+        $fullRoot = [IO.Path]::GetFullPath($Root).TrimEnd('\')
+        $suffix = 'bin\node_modules\@oai\sky\bin\windows\codex-computer-use.exe'
+        $expectedHelper = Join-Path $fullRoot "$runtimeId\$suffix"
+        $oldHelper = [IO.Path]::GetFullPath([string]$Record.helperPath)
+        if (-not [string]::Equals([string]$Record.helperPath, $oldHelper, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+        if (-not [string]::Equals([IO.Path]::GetFullPath($Candidate.HelperPath), $expectedHelper, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+        if (-not [string]::Equals([IO.Path]::GetFullPath($Candidate.Directory), [IO.Path]::GetDirectoryName($expectedHelper), [StringComparison]::OrdinalIgnoreCase)) { return $false }
+        if (-not (Test-PathWithin -Path $oldHelper -Root $fullRoot)) { return $false }
+        $relative = $oldHelper.Substring($fullRoot.Length + 1)
+        if ($relative -cnotmatch ('^\.staging-' + $runtimeId + '-[A-Za-z0-9_-]+\\' + [regex]::Escape($suffix) + '$')) { return $false }
+        foreach ($path in @($fullRoot, $oldHelper, $expectedHelper,
+            (Join-Path $Candidate.Directory 'version.dll'), (Join-Path $Candidate.Directory 'codex-capture-compat.install.json'))) {
+            if (Test-PathChainHasReparsePoint -Path $path) { return $false }
+        }
+    } catch { return $false }
+    return $true
+}
+
 function Read-InstallRecord {
     param([string]$Path)
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
@@ -463,7 +499,8 @@ function Install-RuntimeCandidateTransaction {
         [Parameter(Mandatory)][string]$RuntimeRootPath,
         [Parameter(Mandatory)][string]$DllSource,
         [Parameter(Mandatory)][string]$SourceHash,
-        [Parameter(Mandatory)][string]$RecordPath
+        [Parameter(Mandatory)][string]$RecordPath,
+        [switch]$RecordOnly
     )
     $target = Join-Path $Candidate.Directory 'version.dll'
     $targetExists = Test-Path -LiteralPath $target -PathType Leaf
@@ -494,7 +531,13 @@ function Install-RuntimeCandidateTransaction {
     }
     Write-JsonAtomically -Path $journalPath -Value $journal
     try {
-        Set-VerifiedFile -Source $DllSource -Destination $target -ExpectedHash $SourceHash
+        if ($RecordOnly) {
+            if (-not $targetExists -or (Get-FileSha256 -Path $target) -ne $SourceHash) {
+                throw 'Record-only promotion requires the unchanged verified installed DLL.'
+            }
+        } else {
+            Set-VerifiedFile -Source $DllSource -Destination $target -ExpectedHash $SourceHash
+        }
         $journal.state = 'DllInstalled'
         Write-JsonAtomically -Path $journalPath -Value $journal
         Write-JsonAtomically -Path $RecordPath -Value ([pscustomobject]@{}) -JsonText $recordJson
@@ -636,6 +679,13 @@ function Invoke-RuntimeScan {
         $helperHash = Get-FileSha256 -Path $candidate.HelperPath
         $targetExists = Test-Path -LiteralPath $target -PathType Leaf
         $targetHash = if ($targetExists) { Get-FileSha256 -Path $target } else { $null }
+        if (Test-KnownStagingRecord -Record $record -Candidate $candidate -Root $Root -HelperHash $helperHash -DllHash $targetHash) {
+            # The existing journal retains verified DLL/record backups and restores
+            # them if the atomic record write fails or the process is interrupted.
+            Install-RuntimeCandidateTransaction -Candidate $candidate -RuntimeRootPath $Root -DllSource $target -SourceHash $targetHash -RecordPath $recordPath -RecordOnly
+            $record = Read-InstallRecord -Path $recordPath
+            Write-MaintenanceLog -Event 'migrated-known-staging-record' -Path $recordPath -Detail 'Hash-pinned runtime promotion committed with verified backups; existing DLL bytes were preserved.'
+        }
         $recordIdentityOwns = Test-RecordIdentity -Record $record -HelperPath $candidate.HelperPath
         $recordMetadataOwns = Test-RecordMetadata -Record $record -HelperPath $candidate.HelperPath -HelperHash $helperHash
         $recordOwnsOrCanReconcile = $recordIdentityOwns -and (-not $targetExists -or [string]::Equals([string]$record.dllSha256, [string]$targetHash, [StringComparison]::OrdinalIgnoreCase))

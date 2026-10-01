@@ -31,6 +31,12 @@ void GetStatus(Status& result) noexcept;
 // from the proxy DLL and never modifies the supplied image.
 bool FindActivationFactoryIatForTest(const void* image, size_t image_size,
                                     size_t& thunk_offset, bool require_mapped_read = false) noexcept;
+bool FindSendInputIatForTest(const void* image, size_t image_size, size_t& thunk_offset) noexcept;
+bool IsKeyboardHelperProfileForTest(const void* image, size_t image_size, size_t thunk_offset) noexcept;
+using KeyboardMapFn = UINT(WINAPI*)(UINT, UINT, HKL);
+using KeyboardSendFn = UINT(WINAPI*)(UINT, LPINPUT, int);
+UINT SendInputWithScansForTest(UINT count, LPINPUT inputs, int input_size, HKL layout,
+                              KeyboardMapFn mapper, KeyboardSendFn sender) noexcept;
 
 // Internal subscription lifecycle seams. These are not DLL exports; they let
 // native tests exercise the same pending/commit/cancel transitions as AddFrame.
