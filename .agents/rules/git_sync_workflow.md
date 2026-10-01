@@ -1,6 +1,6 @@
 ---
 name: git-sync-workflow
-description: Require one scoped Git commit when each user request, objective, or plan is complete; push only on request.
+description: Require a scoped commit at objective completion, push only on request, and verify the exact remote commit and its checks after every push.
 trigger: always_on
 ---
 
@@ -82,3 +82,12 @@ Before pushing a release or a change whose workflow requires full validation, en
    - The commit hash and message.
    - The remote repository and target branch.
    - The list of key files and subsystems synchronized.
+
+3. **Mandatory Post-Push Review:**
+   - Record the full SHA that was pushed. Verify the destination branch points to that SHA using `git ls-remote` or the GitHub API; a successful push alone does not establish build or test success.
+   - Inspect GitHub Actions runs, check runs, and commit statuses for that exact SHA. Do not substitute green checks from an earlier commit or another branch. Use the GitHub connector when available, otherwise authenticated GitHub API/CLI access without exposing credentials.
+   - Wait for applicable checks to finish during the active request, using bounded waits and progress updates. If a check fails, retrieve its job logs, identify the failing phase, correct task-related defects, rerun the relevant local BAT validation, and push the correction when synchronization is already authorized. Review the replacement SHA again.
+   - Check that the complete intended diff was delivered and that no caches, secrets, proprietary assemblies or generated test captures entered the commit. Recheck the working tree for intentional changes still awaiting delivery.
+   - Report commit/branch synchronization and remote validation separately, with links to the matching runs. Missing, queued, cancelled, inaccessible or still-running checks are **pending/unavailable**, not passing. Explain external blockers without claiming completion of unverified checks.
+   - Historical failed runs remain immutable. Do not rewrite Git history, force-push, delete failed evidence, disable tests or weaken assertions merely to remove red indicators. New successful checks establish recovery for the new SHA.
+   - Do not create another commit solely to record successful remote checks; report their evidence in the response to avoid an endless commit/check cycle. A separately requested permanent evidence record is a new scoped documentation change and its push must also be reviewed.

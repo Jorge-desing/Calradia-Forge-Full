@@ -219,7 +219,7 @@ function Read-ValidatedTpacInventoryReport([string]$Path) {
     $assetsValue = Get-RequiredInventoryProperty $report 'assets' $reportPath
     if ($assetsValue -isnot [System.Array]) { throw "Inventory report assets field is not a JSON array: $reportPath" }
     $assets = @($assetsValue)
-    if ($assets.Count -eq 0 -or $assets.Count -gt 100000) { throw "Inventory report asset count is outside the supported range 1–100000: $reportPath" }
+    if ($assets.Count -eq 0 -or $assets.Count -gt 100000) { throw "Inventory report asset count is outside the supported range 1-100000: $reportPath" }
     if ($declaredCount -ne $assets.Count) { throw "Inventory report asset count does not match its package header: $reportPath" }
     $byGuid = New-Object 'System.Collections.Generic.Dictionary[string,object]' ([StringComparer]::OrdinalIgnoreCase)
     foreach ($asset in $assets) {

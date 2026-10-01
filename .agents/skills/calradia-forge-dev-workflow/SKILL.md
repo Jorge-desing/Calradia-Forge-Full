@@ -75,6 +75,6 @@ py -3.12 -m unittest tests/test_forge_agents.py
   powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1 -Version "<version>"
   ```
   *(Utiliza `FastPackageEngine`: poda de directorios raíz, staging cero-residuos en memoria y compresión paralela multihilo)*.
-- Sincronizar cambios y subir a GitHub siguiendo `RULE[git_sync_workflow.md]` (`git push origin main`) previa verificación de compresión e integridad de hashes SHA-256.
+- Commit at objective completion and push only when authorized, following [Git synchronization rules](../../rules/git_sync_workflow.md). Preserve unrelated work and exclude generated output and external files.
+- After every push, verify the remote branch SHA and review Actions/check runs and commit statuses for that exact commit. Wait for applicable checks; investigate failures from their logs, validate corrections through BAT and review the next pushed SHA. Report synchronization separately from remote validation, linking matching runs. Pending or unavailable checks never count as passed, and historical failures are not rewritten. Report successful remote evidence without generating a new evidence-only commit unless the user requests one.
 - Update canonical codemaps (`docs/CODEMAP_*.md`) if behaviors, models, or memory facts were modified.
-

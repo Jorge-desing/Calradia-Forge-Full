@@ -1,5 +1,9 @@
 # Changelog
 
+## Post-push review and inventory encoding — 2026-09-30 (Registry Rev102)
+
+- Git rules and the development skill require review of the exact pushed SHA and its remote checks, separating delivery from validation. Windows PowerShell inventory diagnostics now use an ASCII range separator; a Windows-1252 parser regression passes through BAT. Remote d59db82 passed WPF 293/293 but exposed the inventory encoding failure; the next remote validation remains pending.
+
 ## Isolated WPF runner viewport — 2026-09-30 (Registry Rev101)
 
 - The render fixture expands only its isolated HWND tracking bounds so a smaller hosted display cannot constrain the fixed 1360×820 DIP matrix. A regression exercises native 1024×768 limits; the application and display configuration are unchanged. Desktop BAT passed 65/65 and WPF render 293/293 with 182 layout passes and a clean build. The first pushed ledger workflow passed; CI compiled and passed Desktop but exposed this render-host constraint. Remote checks for this correction remain pending.

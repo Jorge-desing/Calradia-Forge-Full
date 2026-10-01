@@ -1,6 +1,11 @@
 $ErrorActionPreference = 'Stop'
 $modulePath = Join-Path $PSScriptRoot '..\tools\TpacInventory.psm1'
 $cliPath = Join-Path $PSScriptRoot '..\tools\Compare-CalradiaForge-TpacInventory.ps1'
+$ansiSource = [Text.Encoding]::GetEncoding(1252).GetString([IO.File]::ReadAllBytes($modulePath))
+$parseTokens = $null
+$parseErrors = $null
+[Management.Automation.Language.Parser]::ParseInput($ansiSource, [ref]$parseTokens, [ref]$parseErrors) | Out-Null
+if ($parseErrors.Count -gt 0) { throw 'Inventory module must parse under Windows PowerShell ANSI decoding as well as UTF-8.' }
 $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
 $fixtureRoot = Join-Path $tempRoot ('CalradiaForge-TpacInventoryCompare-' + [Guid]::NewGuid().ToString('N'))
 [IO.Directory]::CreateDirectory($fixtureRoot) | Out-Null

@@ -1,5 +1,9 @@
 # Lista de cambios
 
+## Revisión post-push y codificación del inventario — 2026-09-30 (Registro Rev102)
+
+- Las reglas Git y la skill de desarrollo exigen revisar el SHA subido exacto y sus checks remotos, separando entrega de validación. Los diagnósticos de inventario Windows PowerShell usan un separador ASCII; una regresión del parser Windows-1252 aprueba mediante BAT. La revisión remota d59db82 aprobó WPF 293/293, pero expuso el fallo de codificación del inventario; la siguiente validación remota sigue pendiente.
+
 ## Viewport WPF aislado del runner — 2026-09-30 (Registro Rev101)
 
 - El fixture de render amplía únicamente los límites de seguimiento de su HWND aislado para que una pantalla alojada menor no limite la matriz fija de 1360×820 DIP. Una regresión ejercita límites nativos de 1024×768; la aplicación y la configuración de pantalla permanecen intactas. El BAT Desktop aprobó 65/65 y render WPF 293/293 con 182 pases de layout y compilación limpia. El primer workflow del registro subido aprobó; CI compiló y aprobó Desktop, pero expuso esta limitación del host de render. Las comprobaciones remotas de esta corrección siguen pendientes.
