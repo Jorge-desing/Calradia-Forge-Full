@@ -2,6 +2,8 @@
 
 Whenever a new version, milestone, or significant update is reached, you MUST automatically run the release packaging workflow and verify all distribution artifacts.
 
+This includes milestones at the unchanged product version. Follow the direct completion gates in AGENTS.md and CODEX.md and [auto_packaging.md](auto_packaging.md). An explicit user no-ZIP instruction for the current request takes precedence; documentation-only maintenance needs packaging only when requested. Failed prerequisites or missing archives must be reported as incomplete. Generated archives and evidence stay in ignored `artifacts/`, outside Git commits.
+
 ## 1. Release Packaging Command
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1 -Version "<version>"
@@ -31,8 +33,8 @@ The packaging script produces three verified release archives in `artifacts/`:
 
 ## 3. Manifests & Integrity Evidence
 Upon successful packaging, the following audit files are generated in `artifacts/`:
-- **`package-sha256-<version>.txt`**: Cryptographic SHA-256 hashes of all three archives.
-- **`package-audit-<version>.json`**: Automated audit report confirming archive hygiene, entry counts, and path safety.
+- **`package-sha256-<version-without-dots>.txt`**: Cryptographic SHA-256 hashes of all three archives; independently verify every digest before delivery.
+- **`package-audit-<version-without-dots>.json`**: Automated audit report confirming archive hygiene, entry counts, and path safety. For 25.2.0 the suffix is `2520`.
 
 ## 4. Distribution Safety & Hygiene Checks
 Every package must satisfy the following strict validation checks before release:

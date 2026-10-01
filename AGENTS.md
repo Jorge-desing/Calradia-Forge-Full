@@ -45,7 +45,7 @@ Calradia Forge is an advanced modding framework, live developer tooling suite, a
 
 ### Rule D: Distribution Safety Guidelines
 - Never package raw proprietary game engine DLLs (`TaleWorlds.*.dll`) or user save files in release archives.
-- Never include batch scripts (`.bat`) or PowerShell scripts (`.ps1`) in user-facing distribution zips.
+- Never include development/test batch scripts (`.bat`) or PowerShell scripts (`.ps1`) in user-facing distribution ZIPs. The sole runtime-launcher exception is `Desktop/Run-CalradiaForge-Desktop.bat` in the Desktop archive, required by its app-host-free distribution; do not generalize this exception to other scripts.
 - Strip NTFS `:Zone.Identifier` alternate data streams from assemblies before distribution.
 
 ### Rule E: Project Scope Staging & Zero External Garbage
@@ -64,6 +64,12 @@ Calradia Forge is an advanced modding framework, live developer tooling suite, a
 ---
 
 ## 3. Essential Commands & Verification Playbook
+
+### Mandatory Distribution Completion Gate
+- At completion of a release, milestone, significant code/feature update, or an explicit packaging request, generate the three current-version distribution ZIPs before reporting completion. This applies even when the product version is unchanged; a commit or green CI is not a substitute for packaging.
+- Follow [.agents/rules/auto_packaging.md](.agents/rules/auto_packaging.md): run the canonical packaging pipeline, require its archive audit to pass, and verify the SHA-256 of each output against the generated hash manifest. Report clickable absolute paths to all three ZIPs and the audit/hash evidence.
+- Preserve an explicit user instruction not to generate ZIPs for the current request. Documentation-only maintenance does not independently trigger packaging unless requested. Do not silently skip packaging: report a failed prerequisite or missing archive as incomplete.
+- Keep release ZIPs, staging trees, audit reports, and hash manifests in ignored `artifacts/`; never stage them in Git. Do not bump the version, publish a release, push, install, or launch the game merely to satisfy this gate. Commit intentional source/rule/documentation changes under Rule E.
 
 Always execute commands with non-interactive flags and appropriate working directories.
 

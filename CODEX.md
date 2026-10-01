@@ -41,6 +41,12 @@ See [AGENTS.md](AGENTS.md) for the complete multi-agent specification.
 
 ## 2. Command Playbook
 
+### Mandatory Distribution Completion Gate
+- Before completing a release, milestone, significant code/feature update, or explicit packaging request, generate and verify the three current-version distribution ZIPs. An unchanged version, a successful commit, or green CI does not waive this gate.
+- Follow [.agents/rules/auto_packaging.md](.agents/rules/auto_packaging.md). Require the canonical package pipeline and archive audit to succeed; compare each ZIP's SHA-256 with the generated manifest. Include absolute clickable ZIP paths and audit/hash evidence in delivery.
+- An explicit user instruction not to generate ZIPs for the current request takes precedence. Documentation-only maintenance needs no packaging unless requested. If prerequisites fail or an output is missing, report packaging as incomplete instead of claiming delivery.
+- Keep generated archives and packaging evidence in ignored `artifacts/`, outside commits. This gate does not authorize a version bump, publication, remote push, installation, or game launch.
+
 ### Build Solution (Release)
 ```powershell
 dotnet build CalradiaForge.sln -c Release -v:minimal

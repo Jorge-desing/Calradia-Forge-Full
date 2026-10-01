@@ -1,6 +1,6 @@
 ---
 name: calradia-forge-dev-workflow
-description: End-to-end engineering workflow for Calradia Forge changes. Routes work by target framework and subsystem, selects relevant tests and audits, and handles release packaging only when requested.
+description: End-to-end engineering workflow for Calradia Forge changes. Routes work by target framework and subsystem, selects relevant tests and audits, and enforces verified release packaging at milestone completion or on request.
 metadata:
   version: "1.0.0"
   author: "calradia-forge-team"
@@ -29,7 +29,7 @@ This isolated project skill contains Calradia Forge's required lifecycle and ver
 [1. Local Planning] ──► [2. Gateway & TFM] ──► [3. Safe Implementation]
          ▲                                                │
          │                                                ▼
-[6. Docs & Release] ◄── [5. Release Packaging (when requested)] ◄── [4. Test Verification]
+[6. Docs & Release] ◄── [5. Required Distribution Gate] ◄── [4. Test Verification]
 ```
 
 ### Stage 1: Local Planning & Vibe Coding (`task.md`)
@@ -75,6 +75,7 @@ py -3.12 -m unittest tests/test_forge_agents.py
   powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1 -Version "<version>"
   ```
   *(Utiliza `FastPackageEngine`: poda de directorios raíz, staging cero-residuos en memoria y compresión paralela multihilo)*.
+- Packaging is mandatory after significant code/feature updates even without a version change. Honor explicit no-ZIP instructions for the current request; documentation-only maintenance does not independently trigger packaging. Require all three archives, a passing audit and matching SHA-256 hashes before claiming distribution delivery. Link their absolute paths and evidence; keep generated artifacts out of Git. A failed prerequisite must be reported as incomplete, not silently skipped.
 - Commit at objective completion and push only when authorized, following [Git synchronization rules](../../rules/git_sync_workflow.md). Preserve unrelated work and exclude generated output and external files.
 - After every push, verify the remote branch SHA and review Actions/check runs and commit statuses for that exact commit. Wait for applicable checks; investigate failures from their logs, validate corrections through BAT and review the next pushed SHA. Report synchronization separately from remote validation, linking matching runs. Pending or unavailable checks never count as passed, and historical failures are not rewritten. Report successful remote evidence without generating a new evidence-only commit unless the user requests one.
 - Update canonical codemaps (`docs/CODEMAP_*.md`) if behaviors, models, or memory facts were modified.
