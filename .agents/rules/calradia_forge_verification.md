@@ -421,31 +421,8 @@ chmod +x .git/hooks/pre-commit
 ## 8. Continuous Integration
 
 ### GitHub Actions Pattern
-```yaml
-name: Verification
 
-on: [push, pull_request]
-
-jobs:
-  verify:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: '4.7.2'
-      
-      - name: Build Solution
-        run: dotnet build CalradiaForge.sln -c Release
-      
-      - name: Run Verification
-        run: powershell -File tools/verify_stateless_behavior.ps1
-      
-      - name: Run Unit Tests
-        run: dotnet test tests/CalradiaForge.Tests/CalradiaForge.Tests.csproj
-```
+Use the checked-in `.github/workflows/ci.yml` as the executable source of truth, not a copied full-solution build on a runner without game assemblies. Commit `6f9f4eb` selected checkout v5, setup-dotnet v5 and setup-python v6 for Node.js 24. Setup .NET SDK 8.0.x; `net472` is a target framework, not an SDK version. The hosted Windows job invokes `Run-CalradiaForge-Tests.bat --portable-only --no-pause` and `Verify-CalradiaForge-StatelessBehavior.bat --portable`; game-dependent builds require separately validated local assemblies. After an authorized push, review annotations and checks for the exact SHA per [git synchronization](git_sync_workflow.md).
 
 ### Azure DevOps Pattern
 ```yaml
@@ -736,10 +713,10 @@ dotnet build CalradiaForge.sln -c Release
 powershell -File tools/verify_stateless_behavior.ps1
 
 # 4. Run unit tests
-dotnet test tests/CalradiaForge.Tests/
+cmd.exe /c "tools\Run-CalradiaForge-Tests.bat --core-only --no-pause <nul"
 
 # 5. (Optional) Run full test suite
-dotnet test --configuration Release
+cmd.exe /c "tools\Run-CalradiaForge-Tests.bat --no-pause <nul"
 
 # 6. Commit (pre-commit hook will verify again)
 git commit -m "Description"

@@ -694,3 +694,10 @@
 - [x] Capture intermittent storage failure HRESULT 80070497 and implement bounded recovery for error 1175 only, preserving File.Replace and propagating uncertain/permanent failures. Evidence: Rev105 EN/ES and deterministic fault-injection regression.
 - [x] Verify Core 402/402 plus isolated fixture in five further BAT runs, ForgeWeave 73/73, Desktop 65/65, WPF 293 cases/182 layout passes, and protected ledger integrity through Rev105.
 - Delivery remains subject to the exact-SHA post-push gate in AGENTS.md; report matching remote check URLs after completion, without creating an evidence-only commit cycle.
+
+## Rules and skills: verified recent-commit knowledge — 2026-10-01
+- [x] Check recent commit diffs and current atomic replacement, failure assertions, CI and distribution workflows.
+- [x] Consolidate source-backed lessons, distinguish ongoing hook work from committed evidence, and synchronize AGENTS/CODEX guidance.
+- [x] Replace obsolete CI examples and fixed historical test thresholds with current BAT workflows and observed evidence.
+- [x] Validate changed skill structure through BAT, check new local reference targets and review scoped staging; commit documentation without push.
+- Evidence: both changed workflow/testing skills pass quick_validate; the ledger BAT audit exits 0 and reports 12 existing missing Spanish counterparts, which remain unresolved. Ongoing hook implementation is not included in this documentation commit.

@@ -6,6 +6,10 @@ trigger: always_on
 
 # Advanced Development Workflow
 
+## Source-backed knowledge updates
+
+Inspect commit diffs and current source before transferring lessons into rules or skills. Separate committed evidence, ongoing working-tree behavior and pending live validation. For persistence, tests, CI and delivery, read [verified recent-commit lessons](../skills/calradia-forge-dev-workflow/references/recent-commit-lessons.md). Do not turn historical suite counts or timings into fixed acceptance criteria without a current requirement.
+
 When performing complex development tasks, you must automatically leverage the following specialized skills based on context:
 
 1. **UI/UX Design & Formatting:**

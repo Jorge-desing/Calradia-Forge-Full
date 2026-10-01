@@ -151,6 +151,8 @@ All technical documentation under `docs/` must maintain strict conceptual parity
 
 ## 6. Skills Taxonomy & Gateway Routing
 
+When updating agent knowledge, ground lessons in commit diffs and current source, distinguish pending working-tree changes from validated committed behavior, and retain evidence limits. Read `.agents/skills/calradia-forge-dev-workflow/references/recent-commit-lessons.md` for persistence, failure tests, CI and distribution. Historical test counts and timings are not universal thresholds.
+
 The repository houses 45 specialized agent skills organized into 7 functional clusters in `.agents/skills/`:
 - **Primary Gateways**:
   - `calradia-forge-dotnet`: First step for all .NET, C#, and MSBuild tasks.

@@ -15,6 +15,8 @@ Use this dedicated workspace skill for disciplined end-to-end software engineeri
 
 This isolated project skill contains Calradia Forge's required lifecycle and verification gates; it does not depend on an upstream workflow plugin being installed or remaining unchanged. The protected local [`superpowers`](../superpowers/SKILL.md) snapshot remains as a backup of source knowledge. This skill and its linked project specialists are the active source of truth.
 
+For persistence, failure assertions, CI and distribution changes, read [verified recent-commit lessons](references/recent-commit-lessons.md). Recheck current source and distinguish committed evidence from pending work.
+
 ## Before starting complex work
 
 - Re-read the current user request and applicable workspace rules, including after context compaction; direct user instructions take precedence.
@@ -45,20 +47,22 @@ This isolated project skill contains Calradia Forge's required lifecycle and ver
 - Consult [`ponytail`](../ponytail/SKILL.md) to trace the real flow and stop at the smallest correct coding change.
 - Never add speculative abstractions, unrequested interfaces, or unused parameters.
 - Preserve 100% of existing public APIs and backward compatibility.
+- For atomic settings/report replacement, retain `AtomicFileReplacement.Replace` and its `File.Replace` operation. Commit `3f7170c` permits at most four attempts only for `IOException.HResult == 0x80070497` (Win32 1175) while both source and destination still exist, waiting 20/40/60 ms between attempts. Never replace this with delete/move or retry errors 1176/1177, which have uncertain file outcomes. This bounds a specific refusal; it does not certify the entire persistence transaction.
 
 ### Stage 4: Rigorous Test & Multi-Agent Verification
 Execute the official non-interactive test suite and agent verification pipelines:
 ```powershell
 # 1. Statelessness & architectural constraints
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify_stateless_behavior.ps1
+cmd.exe /c "tools\Verify-CalradiaForge-StatelessBehavior.bat <nul"
 
-# 2. Master test runner (Assets, Core 250 tests, ForgeWeave 37 tests, Desktop 51 tests, Render 274 tests)
+# 2. Master test runner (report the actual counts emitted by the current run)
 cmd.exe /c "tools\Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul"
 
 # 3. Google Antigravity Autonomous Agents verification suite
-py -3.12 tools/run_forge_agents.py verify
-py -3.12 -m unittest tests/test_forge_agents.py
+cmd.exe /c "tools\Run-CalradiaForge-Python-Checks.bat --agents --no-pause <nul"
 ```
+
+For replacement-failure tests, follow `4c5b16c`: capture the exception in `catch` and assert its reference identity after the block. A check inside `catch` alone cannot establish that an exception occurred. `tools/Setup-CalradiaForge-Python.bat` gives requirement downloads `pip --timeout 120 --retries 5`; those are bounded transport retries, not a guarantee that the whole response body, environment setup or optional agent runtime will succeed.
 
 ### Stage 5: Static Audit, Autonomous BugHunting & Quality Review
 - Run `ModRuleAuditor.Audit()` to check for architectural violations (`GEMINI_CAMPAIGN_SHADOWING`, `FORGEWEAVE_UNTHROTTLED_PULSE`, `FORGEWEAVE_UNSAFE_WRITER`, `DESKTOP_PATH_SHADOWING`, `WPF_CONVERTER_SIGNATURE`).
@@ -76,6 +80,7 @@ py -3.12 -m unittest tests/test_forge_agents.py
   ```
   *(Utiliza `FastPackageEngine`: poda de directorios raíz, staging cero-residuos en memoria y compresión paralela multihilo)*.
 - Packaging is mandatory after significant code/feature updates even without a version change. Honor explicit no-ZIP instructions for the current request; documentation-only maintenance does not independently trigger packaging. Require all three archives, a passing audit and matching SHA-256 hashes before claiming distribution delivery. Link their absolute paths and evidence; keep generated artifacts out of Git. A failed prerequisite must be reported as incomplete, not silently skipped.
+- The completion gate is language-independent (`3470169`, `6963aa3`): include applicable existing localized resources and validate their parity without inventing languages/translations. Keep ZIPs, staging, audit reports and manifests in ignored `artifacts/`. Read the evidence filenames emitted by the pipeline: version `25.2.0` produces `package-audit-2520.json` and `package-sha256-2520.txt`, not dotted suffixes. This gate does not authorize a version bump, publication, push, installation or game launch.
 - Commit at objective completion and push only when authorized, following [Git synchronization rules](../../rules/git_sync_workflow.md). Preserve unrelated work and exclude generated output and external files.
 - After every push, verify the remote branch SHA and review Actions/check runs and commit statuses for that exact commit. Wait for applicable checks; investigate failures from their logs, validate corrections through BAT and review the next pushed SHA. Report synchronization separately from remote validation, linking matching runs. Pending or unavailable checks never count as passed, and historical failures are not rewritten. Report successful remote evidence without generating a new evidence-only commit unless the user requests one.
 - Update canonical codemaps (`docs/CODEMAP_*.md`) if behaviors, models, or memory facts were modified.

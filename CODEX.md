@@ -117,6 +117,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1
 
 ## 4. Skills Taxonomy & Gateways
 
+When updating agent knowledge, ground lessons in commit diffs and current source, distinguish pending working-tree changes from validated committed behavior, and retain evidence limits. Read `.agents/skills/calradia-forge-dev-workflow/references/recent-commit-lessons.md` for persistence, failure tests, CI and distribution. Historical test counts and timings are not universal thresholds.
+
 When working with skills in `.agents/skills/`:
 - Use `calradia-forge-dotnet` for C# / MSBuild tasks.
 - Use `/calradia-forge-docs` for documentation tasks (governed by `.agents/rules/calradia_forge_docs.md`).

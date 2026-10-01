@@ -1,9 +1,10 @@
 ---
 name: test-architect
 description: Comprehensive multi-stage test architecture and verification strategy for Bannerlord mods and Calradia Forge. Orchestrating pure unit tests, static C# and XAML contract testing, headless WPF layout/render passes, Windows UI Automation, and non-interactive batch runners.
-risk: safe
-source: Calradia Forge Agent Ecosystem (Apache 2.0)
-date_added: 2026-09-28
+metadata:
+  risk: safe
+  source: Calradia Forge Agent Ecosystem (Apache 2.0)
+  date_added: "2026-09-28"
 ---
 
 # Test Architect: Multi-Stage Verification & Static Contract Testing
@@ -11,6 +12,8 @@ date_added: 2026-09-28
 Testing complex game mods and developer workbenches is notoriously difficult. Relying exclusively on manual testing requires launching the full game from Steam, waiting 60+ seconds through splash screens, and manually setting up campaign conditions. When tests break, developers guess at which layer failed. A master test architect implements a **5-Stage Verification Pyramid** combining static source contract analysis, pure unit tests, headless WPF layout verification, out-of-process Windows UI Automation, and automated distribution gates.
 
 ---
+
+For source-backed persistence, failure-test, CI and distribution details, read [recent-commit lessons](../calradia-forge-dev-workflow/references/recent-commit-lessons.md).
 
 ## 1. Core Principles
 
@@ -29,6 +32,16 @@ Testing complex game mods and developer workbenches is notoriously difficult. Re
 4. **Static Token & Regex Invariance**:
    - Automated tests in `tests/CalradiaForge.Desktop.Tests/Program.cs` check source tokens via `File.ReadAllText`.
    - Never alter or remove protected contract tokens (e.g. required template regex counts, guarded desktop route messages).
+
+5. **Failure Must Be Observed**:
+   - Following `4c5b16c`, capture the exception in `catch`, then assert after that block that the expected exception occurred and retains its reference identity. A conditional assertion inside `catch` passes silently if no exception is thrown.
+   - The atomic replacement fixture (`3f7170c`) covers the exact `IOException.HResult == 0x80070497` (Win32 1175) refusal: at most four attempts and delays of 20/40/60 ms, only while both files exist. Verify persistent refusal propagation, unchanged destination and retained staged file. Errors 1176/1177 and a missing staged source are not retried. The helper keeps `File.Replace`; these tests do not establish all persistence or filesystem failure outcomes.
+   - `tools/Setup-CalradiaForge-Python.bat` uses `pip --timeout 120 --retries 5` for requirement downloads. Treat this as bounded download retry configuration; do not infer complete response-body delivery or a working optional runtime from it.
+
+6. **Distribution and Remote Evidence**:
+   - At release, milestone, significant feature completion or explicit packaging requests, require the three current-version ZIPs even when the version is unchanged; honor an explicit no-ZIP instruction. Documentation-only maintenance does not independently trigger packaging. This applies in every conversation/interface language and includes existing localized resources without inventing translations.
+   - Keep archives, staging, audit reports and hash manifests in ignored `artifacts/`; require a passing archive audit and independently matching SHA-256 hashes. Use emitted filenames: `25.2.0` maps to `package-audit-2520.json` and `package-sha256-2520.txt`. Tests or green CI are not archive evidence.
+   - A scoped objective commit does not authorize a push. After an explicitly authorized push, verify the remote branch at the exact pushed SHA and await applicable Actions/check runs/commit statuses for that SHA. Retrieve failing logs, validate task-related corrections through BAT and review the next pushed SHA under the existing authorization. Pending/inaccessible checks remain unverified; link the matching final runs.
 
 ---
 
@@ -74,10 +87,10 @@ Construct batch files that never hang in headless automated execution.
 @echo off
 setlocal
 :: Ensure child consoles are hidden and input is detached
-cmd.exe /c "dotnet test tests/CalradiaForge.Tests/CalradiaForge.Tests.csproj -c Release --no-build <nul"
+cmd.exe /c "tools\Run-CalradiaForge-Tests.bat --core-only --skip-build --no-pause <nul"
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify_stateless_behavior.ps1
+call tools\Verify-CalradiaForge-StatelessBehavior.bat
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 exit /b 0
@@ -138,6 +151,6 @@ public static void AssertLayoutPerformance(Visual visualRoot, int maxVisitedNode
 
 1. [ ] **Non-Interactive Batch Gate**: All test batch files accept `--no-pause` and pipe `<nul`.
 2. [ ] **Static Contract Fidelity**: Automated tests verify all 6 mandatory desktop contract tokens.
-3. [ ] **Stateless Verification Gate**: `tools\verify_stateless_behavior.ps1` passes 4/4 criteria.
-4. [ ] **Headless Render Pass Verification**: WPF render tests complete 289+ cases under 16,000 ms.
-5. [ ] **Zero External Test Residue**: Test execution leaves no `.log` or debug dump files uncleaned.
+3. [ ] **Stateless Verification Gate**: The stateless BAT gate passes all checks emitted by the current run.
+4. [ ] **Headless Render Pass Verification**: WPF render tests retain required coverage and report actual case counts, layout passes and scoped timings; compare equivalent before/after runs rather than enforcing a historical count or duration.
+5. [ ] **Zero External Test Residue**: Keep diagnostic evidence in ignored `artifacts/`; exclude logs, dumps and generated captures from commits and distribution.
