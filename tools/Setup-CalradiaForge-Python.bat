@@ -77,7 +77,7 @@ if errorlevel 1 (
 )
 
 echo [Python] Installing requirements-dev.txt into the repository .venv...
-"%VENV_PYTHON%" -m pip install --disable-pip-version-check --upgrade -r "%ROOT%\requirements-dev.txt"
+"%VENV_PYTHON%" -m pip install --disable-pip-version-check --timeout 120 --retries 5 --upgrade -r "%ROOT%\requirements-dev.txt"
 if errorlevel 1 (
     set "RESULT=1"
     goto failed
@@ -93,7 +93,7 @@ if errorlevel 1 (
 
 if not "%INSTALL_AGENTS%"=="1" goto success
 echo [Python] Installing agents\requirements.txt into the repository .venv...
-"%VENV_PYTHON%" -m pip install --disable-pip-version-check --upgrade -r "%ROOT%\agents\requirements.txt"
+"%VENV_PYTHON%" -m pip install --disable-pip-version-check --timeout 120 --retries 5 --upgrade -r "%ROOT%\agents\requirements.txt"
 if errorlevel 1 (
     set "RESULT=1"
     goto failed

@@ -162,8 +162,10 @@ namespace CalradiaForge.Tests
 
                 File.WriteAllText(source,"next"); attempts=0; delays.Clear();
                 var persistent=new IOException("fixture persistent refusal",unchecked((int)0x80070497));
+                IOException caught=null;
                 try { AtomicFileReplacement.Replace(source,destination,(_,__)=>{attempts++;throw persistent;},delays.Add); }
-                catch(IOException error) { if(!ReferenceEquals(error,persistent)) throw; }
+                catch(IOException error) { caught=error; }
+                if(!ReferenceEquals(caught,persistent)) throw new Exception("Persistent replacement failure was not propagated unchanged.");
                 if(attempts!=4 || !delays.SequenceEqual(new[]{20,40,60}) || File.ReadAllText(source)!="next" || File.ReadAllText(destination)!="new")
                     throw new Exception("Persistent refusal did not retain both files within its retry budget.");
 
@@ -171,14 +173,18 @@ namespace CalradiaForge.Tests
                 {
                     attempts=0; delays.Clear();
                     var failure=new IOException("fixture non-retryable error",unchecked((int)0x80070000)|code);
+                    caught=null;
                     try { AtomicFileReplacement.Replace(source,destination,(_,__)=>{attempts++;throw failure;},delays.Add); }
-                    catch(IOException error) { if(!ReferenceEquals(error,failure)) throw; }
+                    catch(IOException error) { caught=error; }
+                    if(!ReferenceEquals(caught,failure)) throw new Exception("Non-retryable replacement failure was not propagated unchanged.");
                     if(attempts!=1 || delays.Count!=0 || File.ReadAllText(destination)!="new")
                         throw new Exception("A non-retryable replacement error was retried or changed the destination.");
                 }
                 File.Delete(source); attempts=0; delays.Clear();
+                caught=null;
                 try { AtomicFileReplacement.Replace(source,destination,(_,__)=>{attempts++;throw persistent;},delays.Add); }
-                catch(IOException error) { if(!ReferenceEquals(error,persistent)) throw; }
+                catch(IOException error) { caught=error; }
+                if(!ReferenceEquals(caught,persistent)) throw new Exception("Missing-source replacement failure was not propagated unchanged.");
                 if(attempts!=1 || delays.Count!=0) throw new Exception("Missing staged output was retried.");
             }
             finally { Directory.Delete(directory,true); }
