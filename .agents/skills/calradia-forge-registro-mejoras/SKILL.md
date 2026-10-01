@@ -95,3 +95,7 @@ Should output JSON reporting all verified records with zero errors.
 - **Lock Collision (`.integrity.lock` or `.append.lock`):** If a previous run crashed or was aborted, verify that no Python process is active, inspect the lock file, and delete it if stale.
 - **Prefix Invariance Failure:** Occurs if python-docx altered an existing table, style, or paragraph during document loading. Never use generic word automation; strictly rely on `append_detailed_changelog_revision.py`.
 - **Holes in Revisions:** All numbers from `Rev001` to `RevXXX` must exist contiguously. If a number is missing, the tool will refuse to execute to avoid ambiguous hash chains.
+
+## Verified hook and delivery lessons
+
+For Finalizer/ILHook boundaries, confirmation selection, serial measurement and packaging from a scoped snapshot, read [hook delivery lessons](../calradia-forge-dev-workflow/references/hook-delivery-lessons.md). Recheck current source and preserve the distinction between passing fixtures and pending live main-menu validation.

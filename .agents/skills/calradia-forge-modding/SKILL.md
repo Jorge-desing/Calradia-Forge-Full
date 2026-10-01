@@ -66,3 +66,7 @@ See [bannerlord-shared-patterns](../bannerlord-shared-patterns/SKILL.md) for the
 ### IL cleanup evidence limits
 
 A thrown IL Undo can leave a transformed body installed although MonoMod reports IsApplied=false. Preserve the uncertain handle and shared target reservation; do not certify subsequent removal from that flag alone. Forge requires host restart for this unresolved case. Runtime callbacks and new applications remain closed during unload. An exact activation that completed explicit Apply may still reconstruct during an external chain rebuild while it remains owned and Undo is not uncertain; callback shutdown or a closed host gate alone does not revoke that reconstruction. An activation without prior Apply authorization may rebuild only inside synchronous owned Undo under the service lock and approved caller-thread/context scope. The disposable BAT fixture covers failed Undo and serial chain-rebuild cases, not general live concurrency. See `docs/PATCH_BLUEPRINTS.md` for utility bounds and confirmation contracts.
+
+## Verified hook and delivery lessons
+
+For Finalizer/ILHook boundaries, confirmation selection, serial measurement and packaging from a scoped snapshot, read [hook delivery lessons](../calradia-forge-dev-workflow/references/hook-delivery-lessons.md). Recheck current source and preserve the distinction between passing fixtures and pending live main-menu validation.

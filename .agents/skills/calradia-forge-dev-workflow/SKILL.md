@@ -88,3 +88,5 @@ For replacement-failure tests, follow `4c5b16c`: capture the exception in `catch
 ## Explicit follow-up delivery
 
 A later explicit push request supersedes an earlier local-only delivery instruction for that completed objective. Push the objective and requested guide corrections without asking again, then keep the request active through exact-SHA remote validation and task-related CI repairs. Inspect the full outgoing commit range and preserve unrelated concurrent work. This permission does not include publishing releases or force-pushing. Follow [Git synchronization rules](../../rules/git_sync_workflow.md) for the authoritative post-push gate.
+
+For experimental hooks and delivery in a shared checkout, read [hook delivery lessons](references/hook-delivery-lessons.md).

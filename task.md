@@ -728,3 +728,9 @@
 - [x] Verify the protected DOCX ledger through Rev113; preserve earlier revisions and record append-only EN/ES entries.
 - [x] Commit all intentional changes for this combined objective; do not push.
 - [ ] Complete live in-game hook verification. No mutation was attempted, and no campaign or battle was opened.
+
+## Skills: explicit hook delivery lessons — 2026-10-01
+- [x] Ground Finalizer/ILHook, workbench confirmation, serial benchmarks and scoped packaging lessons in d8c0def/4541754 and current source.
+- [x] Update six skill gateways with one shared reference; preserve concurrent unstaged skill edits.
+- [x] Validate all six skills through the BAT quick-validator and check new local links.
+- [x] Create the scoped documentation commit; remote push is outside this new request.

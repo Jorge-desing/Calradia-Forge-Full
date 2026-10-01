@@ -89,3 +89,7 @@ Use this skill for `src/CalradiaForge.Desktop/`, its WPF presentation, and its d
   - Module topology visualizers (ModuleHierarchyDashboardViewModel) must support in-memory reordering (MoveModuleUp, MoveModuleDown, ResetLoadOrder) and heuristic conflict warnings (LoadOrderWarning) without mutating game files.
 - **Real-Time IPC Telemetry in Footer:**
   - The telemetry ping control in WorkbenchFooterControl.xaml must remain within a compact horizontal stack in Column 0, preserving the central shortcut hint's margins and satisfying AssertFooterFitsShellViewport.
+
+## Verified hook and delivery lessons
+
+For Finalizer/ILHook boundaries, confirmation selection, serial measurement and packaging from a scoped snapshot, read [hook delivery lessons](../calradia-forge-dev-workflow/references/hook-delivery-lessons.md). Recheck current source and preserve the distinction between passing fixtures and pending live main-menu validation.

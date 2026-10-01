@@ -187,3 +187,7 @@ public static string ReassembleChunks(IReadOnlyList<string> chunks)
 3. [ ] **Pre-Sized Collections**: All intermediate lists and dictionaries specify capacity in constructor calls.
 4. [ ] **Bounded Ring Buffers**: In-memory telemetry collections limit retention to 2,048 items max.
 5. [ ] **Single-Thread Dispatch**: Simulation calls from background threads are marshaled through `GameThreadActionDispatch`.
+
+## Verified hook and delivery lessons
+
+For Finalizer/ILHook boundaries, confirmation selection, serial measurement and packaging from a scoped snapshot, read [hook delivery lessons](../calradia-forge-dev-workflow/references/hook-delivery-lessons.md). Recheck current source and preserve the distinction between passing fixtures and pending live main-menu validation.
