@@ -44,12 +44,7 @@
         <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource InkBrush}" Text="{DynamicResource Ui.CommandPalette}" TextWrapping="Wrap" VerticalAlignment="Center"/>
        </StackPanel>
       </Button>
-      <Button AutomationProperties.AutomationId="HookWorkbenchOpenButton" AutomationProperties.Name="{DynamicResource Ui.HooksOpen}" Command="{Binding OpenHookWorkbenchCommand}" FontSize="9" Margin="1,0,2,0" MinHeight="36" Padding="5,4" Style="{StaticResource TacticalActionButton}" ToolTip="{DynamicResource Ui.HookWorkbenchHelp}" VerticalAlignment="Center" Width="38">
-       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-        <Path Data="{StaticResource GameIcon.gear_hammer}" Fill="{DynamicResource BrassBrush}" Focusable="False" Height="17" IsHitTestVisible="False" Stretch="Uniform" Width="17"/>
-       </StackPanel>
-      </Button>
-      <StackPanel AutomationProperties.AutomationId="LanguageSettingGroup" Margin="1,0,1,0" VerticalAlignment="Center" Width="52">
+      <StackPanel AutomationProperties.AutomationId="LanguageSettingGroup" Margin="1,0,1,0" VerticalAlignment="Center" Width="88">
        <TextBlock FontSize="{DynamicResource Token.LabelFont}" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.Language}" TextTrimming="CharacterEllipsis"/>
        <ComboBox AutomationProperties.AutomationId="LanguageSelector" AutomationProperties.Name="{DynamicResource Ui.Language}" Height="32" ItemsSource="{Binding SupportedLanguages}" Margin="0,1,0,0" MinWidth="0" SelectedItem="{Binding LanguageCode}" ToolTip="{DynamicResource Ui.Language}">
         <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap"/></DataTemplate></ComboBox.ItemTemplate>

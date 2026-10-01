@@ -38,12 +38,12 @@
      <Border Background="{DynamicResource BrassBrush}" CornerRadius="0,0,3,3" Height="2" HorizontalAlignment="Stretch" Opacity="0.45" VerticalAlignment="Bottom"/>
     </Grid>
    </Border>
-   <Border AutomationProperties.AutomationId="WorkOrderApplicationStatus" AutomationProperties.Name="{Binding Status}" Margin="6,0" MinWidth="0" Style="{StaticResource OrderCard}" ToolTip="{Binding Status}" Width="178">
+   <Border AutomationProperties.AutomationId="WorkOrderApplicationStatus" AutomationProperties.Name="{Binding ActiveRouteStatus}" Margin="6,0" MinWidth="0" Style="{StaticResource OrderCard}" ToolTip="{Binding ActiveRouteStatus}" Width="178">
     <Grid>
      <Path Data="{StaticResource GameIcon.gears}" Fill="{DynamicResource BrassBrush}" Focusable="False" Height="14" HorizontalAlignment="Right" IsHitTestVisible="False" Opacity="{DynamicResource Token.StatusIconOpacity}" Stretch="Uniform" VerticalAlignment="Top" Width="14"/>
      <StackPanel Margin="0,0,16,0">
       <TextBlock FontSize="{DynamicResource Token.LabelFont}" Style="{StaticResource KickerText}" Text="{DynamicResource Ui.ActiveTool}" TextWrapping="Wrap"/>
-      <TextBlock MaxHeight="42" FontSize="12" Style="{StaticResource OrderValue}" Text="{Binding Status}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" ToolTip="{Binding Status}"/>
+      <TextBlock AutomationProperties.AutomationId="ActiveRouteStatusText" MaxHeight="42" FontSize="12" Style="{StaticResource OrderValue}" Text="{Binding ActiveRouteStatus}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" ToolTip="{Binding ActiveRouteStatus}"/>
       <TextBlock FontSize="10" Foreground="{DynamicResource WarningBrush}" Text="{Binding ThemeMessage}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" ToolTip="{Binding ThemeMessage}">
        <TextBlock.Style>
         <Style TargetType="TextBlock">

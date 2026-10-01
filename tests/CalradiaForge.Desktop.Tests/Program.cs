@@ -213,9 +213,12 @@ internal static class Program
         Check(app.Contains("Group.ToggleCommand") && app.Contains("DataContext.SelectToolCommand") && app.Contains("DataContext.ToggleFavoriteCommand"), "Rail group, route, and favorite controls must retain their commands");
         var railViewModels = ReadSourceText(Desktop("Presentation/WorkbenchViewModels.cs"));
         Check(railViewModels.Contains("public bool IsSelected") && shell.Contains("previousEntry.IsSelected = false") &&
-              shell.Contains("selectedEntry.IsSelected = true") && app.Contains("Binding IsSelected") &&
+              shell.Contains("selectedEntry.IsSelected = !IsHookWorkbenchOpen") &&
+              shell.Contains("selectedEntry.IsSelected = !value") &&
+              shell.Contains("toolEntry.IsSelected = !isHookWorkbenchOpen && ReferenceEquals(tool, selectedTool)") &&
+              app.Contains("Binding IsSelected") &&
               app.Contains("ComboSelectedBrush") && app.Contains("ComboSelectedTextBrush") && app.Contains("FocusBrush"),
-            "The active rail route must have observable selection styling while preserving keyboard focus feedback.");
+            "The selected rail route must have observable styling, yield to an active dedicated route, and preserve keyboard focus feedback.");
         Check(xaml.Contains("AutomationProperties.AutomationId=\"OperationalSearchHint\"") &&
               xaml.Contains("{DynamicResource Ui.SearchHint}") && xaml.Contains("IsHitTestVisible=\"False\""),
             "The operational search must provide a localized, passive empty-field hint.");

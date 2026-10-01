@@ -171,7 +171,7 @@ namespace CalradiaForge.Desktop.Presentation
             {
                 if (!Set(ref showFavoritesOnly, value)) return;
                 RefreshVisibleTools();
-                if (!VisibleTools.Contains(SelectedTool)) SelectedTool = VisibleTools.FirstOrDefault();
+                EnsureSelectedToolVisible();
                 Status = showFavoritesOnly ? "Filtering favorite tools only" : "Showing all tools";
             }
         }
@@ -198,31 +198,49 @@ namespace CalradiaForge.Desktop.Presentation
             set
             {
                 if (!Set(ref isHookWorkbenchOpen, value)) return;
+                if (selectedTool != null && toolRailEntries.TryGetValue(selectedTool, out var selectedEntry))
+                    selectedEntry.IsSelected = !value;
+                Raise(nameof(ActiveRouteStatus));
                 if (value)
                 {
                     HookWorkbench.NotifyConnectionChanged();
                     if (HookWorkbench.RefreshSnapshotsCommand.CanExecute(null)) HookWorkbench.RefreshSnapshotsCommand.Execute(null);
                 }
+                else
+                {
+                    // A remembered tool may have been filtered out while Hook Workbench
+                    // was active. Reconcile against the visible rail before returning to
+                    // the regular route so the active page always has a reachable entry.
+                    EnsureSelectedToolVisible();
+                }
             }
         }
+        public string ActiveRouteStatus => IsHookWorkbenchOpen
+            ? localization.GetText("Ui.HookWorkbench", "Hook Workbench")
+            : Status;
         public ToolDefinition SelectedTool
         {
             get => selectedTool;
             set
             {
+                // Selecting the remembered route from the rail is still navigation even
+                // when it is already the selected tool beneath the Hook Workbench route.
+                if (value != null)
+                {
+                    IsHookWorkbenchOpen = false;
+                    IsCommandPaletteOpen = false;
+                }
                 var previous = selectedTool;
                 if (!Set(ref selectedTool, value)) return;
                 if (previous != null && toolRailEntries.TryGetValue(previous, out var previousEntry))
                     previousEntry.IsSelected = false;
                 if (value != null && toolRailEntries.TryGetValue(value, out var selectedEntry))
-                    selectedEntry.IsSelected = true;
+                    selectedEntry.IsSelected = !IsHookWorkbenchOpen;
                 if (value == null)
                 {
                     ReleaseCurrentPage();
                     return;
                 }
-                IsHookWorkbenchOpen = false;
-                IsCommandPaletteOpen = false;
                 Select(value);
             }
         }
@@ -235,7 +253,7 @@ namespace CalradiaForge.Desktop.Presentation
                 var next = string.Equals(value, allAreas, StringComparison.Ordinal) ? string.Empty : value ?? string.Empty;
                 if (!Set(ref selectedCategory, next)) return;
                 RefreshVisibleTools();
-                if (!VisibleTools.Contains(SelectedTool)) SelectedTool = VisibleTools.FirstOrDefault();
+                EnsureSelectedToolVisible();
             }
         }
         public string Filter
@@ -245,13 +263,21 @@ namespace CalradiaForge.Desktop.Presentation
             {
                 if (!Set(ref filter, value ?? string.Empty)) return;
                 RefreshVisibleTools();
-                if (!VisibleTools.Contains(SelectedTool)) SelectedTool = VisibleTools.FirstOrDefault();
+                EnsureSelectedToolVisible();
             }
         }
         internal void ClearFilter()
         {
             Filter = string.Empty;
             SearchFocusRequest++;
+        }
+
+        void EnsureSelectedToolVisible()
+        {
+            // Changing rail filters while the dedicated Hook route is selected must not
+            // silently navigate away from it or discard the remembered tool route.
+            if (IsHookWorkbenchOpen || VisibleTools.Contains(SelectedTool)) return;
+            SelectedTool = VisibleTools.FirstOrDefault();
         }
         public string PaletteFilter
         {
@@ -269,7 +295,14 @@ namespace CalradiaForge.Desktop.Presentation
         public bool IsContextDossierOpen { get => isContextDossierOpen; set => Set(ref isContextDossierOpen, value); }
         public bool DecorativeAccentsEnabled { get => decorativeAccentsEnabled; set => Set(ref decorativeAccentsEnabled, value); }
         public bool IsEvidenceExpanded { get => CurrentWorkbenchPage?.EvidenceLedger.IsExpanded == true; set { if (CurrentWorkbenchPage != null) CurrentWorkbenchPage.EvidenceLedger.IsExpanded = value; Raise(); } }
-        public string Status { get => status; private set => Set(ref status, value); }
+        public string Status
+        {
+            get => status;
+            private set
+            {
+                if (Set(ref status, value)) Raise(nameof(ActiveRouteStatus));
+            }
+        }
         public int SearchFocusRequest { get => searchFocusRequest; private set => Set(ref searchFocusRequest, value); }
         public string LanguageCode
         {
@@ -527,7 +560,7 @@ namespace CalradiaForge.Desktop.Presentation
                         toolEntry = new OperationalRailToolEntryViewModel(tool);
                         toolRailEntries.Add(tool, toolEntry);
                     }
-                    toolEntry.IsSelected = ReferenceEquals(tool, selectedTool);
+                    toolEntry.IsSelected = !isHookWorkbenchOpen && ReferenceEquals(tool, selectedTool);
                     entries.Add(toolEntry);
                 }
             }

@@ -19,6 +19,24 @@
         </Image>
         <TextBlock Grid.Column="1" Style="{StaticResource SectionHeading}" Text="{DynamicResource Ui.Operations}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
        </Grid>
+       <Button AutomationProperties.AutomationId="HookWorkbenchNavigationButton" AutomationProperties.Name="{DynamicResource Ui.HookWorkbench}" Command="{Binding OpenHookWorkbenchCommand}" HorizontalContentAlignment="Stretch" Margin="0,0,0,4" MinHeight="36" Padding="7,4" ToolTip="{DynamicResource Ui.HookWorkbenchHelp}">
+        <Button.Style>
+         <Style BasedOn="{StaticResource TacticalActionButton}" TargetType="Button">
+          <Setter Property="Background" Value="{DynamicResource FrameSurfaceSolidBrush}"/>
+          <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+          <Style.Triggers>
+           <DataTrigger Binding="{Binding IsHookWorkbenchOpen}" Value="True">
+            <Setter Property="Background" Value="{DynamicResource DeepPineBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrassBrush}"/>
+           </DataTrigger>
+          </Style.Triggers>
+         </Style>
+        </Button.Style>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+         <Path Data="{StaticResource GameIcon.gear_hammer}" Fill="{DynamicResource BrassBrush}" Focusable="False" Height="15" IsHitTestVisible="False" Margin="0,0,6,0" Stretch="Uniform" Width="15"/>
+         <TextBlock FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="{DynamicResource Ui.HookWorkbench}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center"/>
+        </StackPanel>
+       </Button>
        <Grid Margin="0,0,0,3">
         <Path Data="{StaticResource GameIcon.magnifying_glass}" Fill="{DynamicResource BrassBrush}" Height="13" HorizontalAlignment="Left" IsHitTestVisible="False" Margin="8,0,0,0" Panel.ZIndex="1" Stretch="Uniform" VerticalAlignment="Center" Width="13"/>
         <TextBox x:Name="OperationalSearchTextBox" AutomationProperties.AutomationId="OperationalSearchFilter" AutomationProperties.Name="{DynamicResource Ui.Search}" MinHeight="42" Padding="27,6,39,6" Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" ToolTip="{DynamicResource Ui.SearchHint}" VerticalContentAlignment="Center" services:FocusRequestBehavior.Request="{Binding SearchFocusRequest}"/>

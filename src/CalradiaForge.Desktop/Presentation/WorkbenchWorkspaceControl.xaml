@@ -81,6 +81,8 @@
  </Border>
  </presentation:AdaptiveWorkbenchPanel>
  </ScrollViewer>
- <presentation:HookWorkbenchControl AutomationProperties.AutomationId="HookWorkbenchPage" DataContext="{Binding HookWorkbench}" Visibility="{Binding IsHookWorkbenchOpen, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+ <ScrollViewer AutomationProperties.AutomationId="HookWorkbenchScrollViewport" Background="Transparent" BorderThickness="0" CanContentScroll="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Visibility="{Binding DataContext.IsHookWorkbenchOpen, RelativeSource={RelativeSource AncestorType={x:Type presentation:WorkbenchShellView}}, Converter={StaticResource BooleanToVisibilityConverter}}">
+  <presentation:HookWorkbenchControl AutomationProperties.AutomationId="HookWorkbenchPage" DataContext="{Binding HookWorkbench}"/>
+ </ScrollViewer>
 </Grid>
 </UserControl>

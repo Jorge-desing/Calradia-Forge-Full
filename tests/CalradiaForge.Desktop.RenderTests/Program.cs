@@ -132,6 +132,8 @@ internal static class Program
             Check(languageResources.Length == 1 && languageResources[0].Source.OriginalString.EndsWith("Strings.en.xaml", StringComparison.OrdinalIgnoreCase),
                 "English startup must reuse one fallback catalog instead of merging duplicate language dictionaries.");
             Render(window);
+            AssertHookWorkbenchShellIntegration(app, window, shell, Path.GetDirectoryName(Path.GetFullPath(output)) ?? ".");
+            records.Add(new { test = "hook-workbench-shell-visibility-and-responsive-surface", locales = 13, themes = 3, viewport = "980x680 DIP plus 1360x820 DIP", passed = true });
             AssertHeaderActionSizing(window);
             records.Add(new { test = "header-actions-consistent-activation-size", passed = true });
             AssertStatusCardsHaveClearLabelsAndPassiveIcons(window, app);
@@ -1476,7 +1478,7 @@ internal static class Program
         var statusCard = Descendants(window).OfType<Border>().SingleOrDefault(border =>
             string.Equals(AutomationProperties.GetAutomationId(border), "WorkOrderApplicationStatus", StringComparison.Ordinal));
         var statusText = statusCard == null ? null : Descendants(statusCard).OfType<TextBlock>().SingleOrDefault(block =>
-            BindingOperations.GetBinding(block, TextBlock.TextProperty)?.Path?.Path == "Status");
+            BindingOperations.GetBinding(block, TextBlock.TextProperty)?.Path?.Path == "ActiveRouteStatus");
         Check(statusText != null && statusText.IsVisible && statusText.TextWrapping == TextWrapping.Wrap &&
               statusText.TextTrimming == TextTrimming.CharacterEllipsis && statusText.MaxHeight >= 30,
             "The application status card must wrap long route names at the minimum window width and keep the full value available through its tooltip.");
@@ -1767,6 +1769,209 @@ internal static class Program
             Check(blockBounds.Left >= -1 && blockBounds.Top >= -1 && blockBounds.Right <= surface.ActualWidth + 2 && blockBounds.Bottom <= surface.ActualHeight + 2,
                 $"A visible label extends outside the Desktop surface at language {languageCode}: {block.Text}; bounds {blockBounds}, surface {surface.ActualWidth:0.#}x{surface.ActualHeight:0.#}.");
         }
+    }
+
+    static void AssertHookWorkbenchShellIntegration(Application app, Window window, object shell, string artifactDirectory)
+    {
+        var shellType = shell.GetType();
+        var hookOpen = shellType.GetProperty("IsHookWorkbenchOpen");
+        Check(hookOpen != null && hookOpen.CanWrite, "The isolated render shell must expose the existing hook-workbench view state.");
+        var hookViewport = Descendants(window).OfType<ScrollViewer>().SingleOrDefault(element =>
+            string.Equals(AutomationProperties.GetAutomationId(element), "HookWorkbenchScrollViewport", StringComparison.Ordinal));
+        var hookPage = hookViewport?.Content as HookWorkbenchControl;
+        var normalViewport = Descendants(window).OfType<ScrollViewer>().SingleOrDefault(element =>
+            string.Equals(AutomationProperties.GetAutomationId(element), "ResponsiveWorkbenchScrollViewport", StringComparison.Ordinal));
+        var navigationButton = Descendants(window).OfType<Button>().SingleOrDefault(element =>
+            string.Equals(AutomationProperties.GetAutomationId(element), "HookWorkbenchNavigationButton", StringComparison.Ordinal));
+        var headerHookButton = Descendants(window).OfType<Button>().FirstOrDefault(element =>
+            string.Equals(AutomationProperties.GetAutomationId(element), "HookWorkbenchOpenButton", StringComparison.Ordinal));
+        Check(hookViewport != null && hookPage != null && normalViewport != null && navigationButton != null && headerHookButton == null,
+            "Hook Workbench must be a dedicated navigation route, not a global header overlay; its page must remain a separate scrollable surface.");
+        var selectedToolProperty = shellType.GetProperty("SelectedTool");
+        var originalSelectedTool = selectedToolProperty?.GetValue(shell);
+        var railEntries = shellType.GetProperty("OperationalRailEntries")?.GetValue(shell) as System.Collections.IEnumerable;
+        var originalToolEntry = railEntries?.Cast<object>().FirstOrDefault(entry =>
+            ReferenceEquals(entry.GetType().GetProperty("Tool")?.GetValue(entry), originalSelectedTool));
+        var originalToolEntrySelected = originalToolEntry?.GetType().GetProperty("IsSelected");
+        var activeRouteStatusText = Descendants(window).OfType<TextBlock>().SingleOrDefault(element =>
+            string.Equals(AutomationProperties.GetAutomationId(element), "ActiveRouteStatusText", StringComparison.Ordinal));
+        Check(originalToolEntrySelected != null && activeRouteStatusText != null,
+            "The shell must expose the selected rail entry and active-route status for route-state verification.");
+
+        var themes = new[] { "war-table", "parchment", "high-contrast" };
+        var languages = new[] { "en", "es", "pt", "de", "fr", "it", "pl", "ru", "tr", "zh-HANS", "zh-HANT", "ja", "ko" };
+        Directory.CreateDirectory(artifactDirectory);
+        var savedOpenPreview = false;
+
+        foreach (var themeId in themes)
+        foreach (var languageCode in languages)
+        {
+            SetPresentationForRender(app, shell, themeId, languageCode);
+            window.Width = window.MinWidth;
+            window.Height = window.MinHeight;
+            RefreshSelectorBindings(window);
+
+            hookOpen.SetValue(shell, false);
+            Render(window);
+            Check(hookViewport.Visibility == Visibility.Collapsed && !hookViewport.IsVisible && hookViewport.ActualWidth <= 0.1,
+                $"The hook workbench must be collapsed and absent from hit testing while closed ({themeId}/{languageCode}).");
+            Check(normalViewport.Visibility == Visibility.Visible && normalViewport.IsVisible && normalViewport.ActualWidth > 0,
+                $"The regular tool route must remain visible while the hook workbench is closed ({themeId}/{languageCode}).");
+
+            Check(navigationButton.Command != null && navigationButton.Command.CanExecute(navigationButton.CommandParameter),
+                $"The dedicated Hook Workbench route must be enabled before navigation ({themeId}/{languageCode}).");
+            navigationButton.Command.Execute(navigationButton.CommandParameter);
+            Check((bool)hookOpen.GetValue(shell),
+                $"The dedicated navigation item must open Hook Workbench ({themeId}/{languageCode}).");
+            Render(window);
+            Check(hookViewport.Visibility == Visibility.Visible && hookViewport.IsVisible && hookViewport.ActualWidth > 0 && hookViewport.ActualHeight > 0,
+                $"The dedicated Hook Workbench navigation route must open in the available shell area ({themeId}/{languageCode}).");
+            Check(normalViewport.Visibility == Visibility.Collapsed && !normalViewport.IsVisible && normalViewport.ActualWidth <= 0.1,
+                $"Only the selected Hook Workbench route may occupy the workspace; the other route remains available from navigation ({themeId}/{languageCode}).");
+            Check(navigationButton.IsVisible && navigationButton.IsEnabled,
+                $"Hook Workbench navigation must remain visible while its dedicated route is selected ({themeId}/{languageCode}).");
+            Check(Equals(navigationButton.BorderBrush, app.TryFindResource("BrassBrush")),
+                $"The selected Hook Workbench route must receive its brass active-state border ({themeId}/{languageCode}).");
+            Check(ReferenceEquals(selectedToolProperty?.GetValue(shell), originalSelectedTool),
+                $"Opening Hook Workbench must preserve the previously selected tool ({themeId}/{languageCode}).");
+            Check(!(bool)originalToolEntrySelected.GetValue(originalToolEntry),
+                $"The remembered tool must not appear active at the same time as Hook Workbench ({themeId}/{languageCode}).");
+            Check(string.Equals(activeRouteStatusText.Text, app.TryFindResource("Ui.HookWorkbench") as string, StringComparison.Ordinal),
+                $"The status strip must identify Hook Workbench as the active route ({themeId}/{languageCode}).");
+            var catalog = shellType.GetProperty("Catalog")?.GetValue(shell);
+            var catalogTools = catalog?.GetType().GetProperty("Tools")?.GetValue(catalog);
+            var catalogCount = (int?)catalogTools?.GetType().GetProperty("Count")?.GetValue(catalogTools);
+            Check(catalogCount == 194,
+                $"Opening Hook Workbench must preserve all 194 registered routes ({themeId}/{languageCode}).");
+            Check(hookPage.IsVisible && hookPage.ActualWidth > 0 && hookPage.ActualHeight > 0 &&
+                  hookPage.ActualWidth <= hookViewport.ActualWidth + 1,
+                $"The hook-workbench content must remain inside its responsive viewport ({themeId}/{languageCode}); page={hookPage.ActualWidth:0.#}x{hookPage.ActualHeight:0.#}, viewport={hookViewport.ActualWidth:0.#}x{hookViewport.ActualHeight:0.#}.");
+            Check(hookViewport.ScrollableWidth <= 1,
+                $"The hook-workbench surface must not introduce horizontal overflow ({themeId}/{languageCode}).");
+
+            foreach (var automationId in new[]
+            {
+                "HookWorkbenchCloseButton", "HookEligibilityMessage", "HookOwnerFilter", "HookTargetFilter",
+                "HookTypeFilter", "RegisteredHooksViewport", "HookSelectionStatus", "HookWorkbenchStatus"
+            })
+            {
+                var element = Descendants(hookPage).OfType<FrameworkElement>().SingleOrDefault(candidate =>
+                    string.Equals(AutomationProperties.GetAutomationId(candidate), automationId, StringComparison.Ordinal));
+                Check(element != null && element.IsVisible && element.ActualWidth > 0 && element.ActualHeight > 0,
+                    $"The open hook workbench lost its {automationId} control in {themeId}/{languageCode}.");
+                var bounds = Bounds(element, hookPage);
+                Check(bounds.Left >= -1 && bounds.Top >= -1 && bounds.Right <= hookPage.ActualWidth + 2 && bounds.Bottom <= hookPage.ActualHeight + 2,
+                    $"Hook-workbench control {automationId} exceeds its own content surface in {themeId}/{languageCode}: {bounds}.");
+            }
+
+            var emptyInventory = Descendants(hookPage).OfType<TextBlock>().SingleOrDefault(block =>
+                BindingOperations.GetBinding(block, TextBlock.TextProperty)?.Path?.Path == "EmptyInventoryMessage");
+            Check(emptyInventory != null && emptyInventory.IsVisible && !string.IsNullOrWhiteSpace(emptyInventory.Text),
+                $"The hook-workbench empty inventory must remain visible and localized in {themeId}/{languageCode}.");
+
+            var closeButton = Descendants(hookPage).OfType<Button>().Single(element =>
+                string.Equals(AutomationProperties.GetAutomationId(element), "HookWorkbenchCloseButton", StringComparison.Ordinal));
+            var closeBounds = Bounds(closeButton, window);
+            var viewportBounds = Bounds(hookViewport, window);
+            var center = new Point(closeBounds.Left + closeBounds.Width / 2, closeBounds.Top + closeBounds.Height / 2);
+            Check(viewportBounds.Contains(center) && closeButton.IsHitTestVisible &&
+                  HasVisualAncestorOrSelf(VisualTreeHelper.HitTest(window, center)?.VisualHit, closeButton),
+                $"The visible hook close control must receive hit testing instead of the hidden tool route ({themeId}/{languageCode}).");
+
+            if (!savedOpenPreview && themeId == "war-table" && languageCode == "en")
+            {
+                SavePreview(window, Path.Combine(artifactDirectory, "desktop-hook-workbench-open-minimum-current.png"));
+                savedOpenPreview = true;
+            }
+        }
+
+        SetPresentationForRender(app, shell, "war-table", "en");
+        window.Width = 1360;
+        window.Height = 820;
+        RefreshSelectorBindings(window);
+        navigationButton.Command?.Execute(null);
+        Render(window);
+        Check(hookViewport.IsVisible && hookPage.ActualWidth > 0 && hookPage.ActualWidth <= hookViewport.ActualWidth + 1,
+            "The hook workbench must also remain responsive at the normal 1360x820-DIP viewport.");
+        var closeButtonAtNormalSize = Descendants(hookPage).OfType<Button>().Single(element =>
+            string.Equals(AutomationProperties.GetAutomationId(element), "HookWorkbenchCloseButton", StringComparison.Ordinal));
+        closeButtonAtNormalSize.Command?.Execute(null);
+        Render(window);
+        Check(normalViewport.IsVisible && !hookViewport.IsVisible,
+            "Closing the dedicated Hook Workbench route must restore the previously selected regular route.");
+        Check(ReferenceEquals(selectedToolProperty?.GetValue(shell), originalSelectedTool),
+            "Opening and closing Hook Workbench must not replace or clear the selected tool route.");
+        Check((bool)originalToolEntrySelected.GetValue(originalToolEntry),
+            "Closing Hook Workbench must restore the previous tool's active rail marker.");
+
+        var visibleTools = shellType.GetProperty("VisibleTools")?.GetValue(shell) as IEnumerable<ToolDefinition>;
+        var alternateTool = visibleTools?.FirstOrDefault(tool => !ReferenceEquals(tool, originalSelectedTool));
+        var selectToolCommand = shellType.GetProperty("SelectToolCommand")?.GetValue(shell) as RelayCommand;
+        Check(alternateTool != null && selectToolCommand != null,
+            "The render shell must expose a second regular route for navigation restoration checks.");
+        navigationButton.Command?.Execute(null);
+        Check((bool)hookOpen.GetValue(shell), "Hook Workbench must open before switching back to a regular route.");
+        shellType.GetProperty("Filter")?.SetValue(shell, "__hook_route_no_match__");
+        Render(window);
+        Check((bool)hookOpen.GetValue(shell) && ReferenceEquals(selectedToolProperty.GetValue(shell), originalSelectedTool) &&
+              hookViewport.IsVisible && !normalViewport.IsVisible,
+            "Changing the rail filter, including to an empty result, must not dismiss or replace the dedicated Hook Workbench route.");
+        shellType.GetProperty("Filter")?.SetValue(shell, string.Empty);
+        Render(window);
+        var rememberedToolButton = Descendants(window).OfType<Button>().SingleOrDefault(button =>
+            ReferenceEquals(button.Command, selectToolCommand) && ReferenceEquals(button.CommandParameter, originalSelectedTool));
+        Check(rememberedToolButton != null,
+            "The remembered regular route must remain selectable from its realized rail button.");
+        rememberedToolButton.Command.Execute(rememberedToolButton.CommandParameter);
+        Render(window);
+        Check(!(bool)hookOpen.GetValue(shell) && normalViewport.IsVisible && !hookViewport.IsVisible &&
+              ReferenceEquals(selectedToolProperty.GetValue(shell), originalSelectedTool) &&
+              (bool)originalToolEntrySelected.GetValue(originalToolEntry),
+            "Selecting the already remembered tool from navigation must close Hook Workbench and restore its selected state.");
+
+        navigationButton.Command?.Execute(null);
+        Render(window);
+        var alternateToolButton = Descendants(window).OfType<Button>().SingleOrDefault(button =>
+            ReferenceEquals(button.Command, selectToolCommand) && ReferenceEquals(button.CommandParameter, alternateTool));
+        Check(alternateToolButton != null,
+            "The alternate regular route must remain available through its realized rail button while Hook Workbench is selected.");
+        alternateToolButton.Command.Execute(alternateToolButton.CommandParameter);
+        Render(window);
+        Check(!(bool)hookOpen.GetValue(shell) && normalViewport.IsVisible && !hookViewport.IsVisible &&
+              ReferenceEquals(selectedToolProperty.GetValue(shell), alternateTool),
+            "Selecting a regular tool from the navigation rail must leave Hook Workbench and display that tool without deleting either route.");
+
+        navigationButton.Command?.Execute(null);
+        Check((bool)hookOpen.GetValue(shell), "Hook Workbench must open before closing it with an unmatched rail filter.");
+        shellType.GetProperty("Filter")?.SetValue(shell, "__hook_route_no_match__");
+        Render(window);
+        Check(((IEnumerable)shellType.GetProperty("VisibleTools").GetValue(shell)).Cast<object>().Count() == 0,
+            "The unmatched rail filter must produce no regular routes while Hook Workbench remains selected.");
+        var closeAfterEmptyFilter = Descendants(hookPage).OfType<Button>().Single(element =>
+            string.Equals(AutomationProperties.GetAutomationId(element), "HookWorkbenchCloseButton", StringComparison.Ordinal));
+        closeAfterEmptyFilter.Command?.Execute(null);
+        Render(window);
+        Check(!(bool)hookOpen.GetValue(shell) && normalViewport.IsVisible && !hookViewport.IsVisible &&
+              selectedToolProperty.GetValue(shell) == null,
+            "Closing Hook Workbench with no visible regular routes must not leave an inaccessible remembered page selected.");
+        shellType.GetProperty("Filter")?.SetValue(shell, string.Empty);
+        Render(window);
+        var restoredSelection = selectedToolProperty.GetValue(shell);
+        Check(restoredSelection != null &&
+              ((IEnumerable)shellType.GetProperty("VisibleTools").GetValue(shell)).Cast<object>().Contains(restoredSelection) &&
+              railEntries.Cast<object>().Any(entry => ReferenceEquals(entry.GetType().GetProperty("Tool")?.GetValue(entry), restoredSelection) &&
+                  (bool)entry.GetType().GetProperty("IsSelected").GetValue(entry)),
+            "Clearing the unmatched filter after closing Hook Workbench must restore a visible, active regular route.");
+    }
+
+    static bool HasVisualAncestorOrSelf(DependencyObject node, DependencyObject expectedAncestor)
+    {
+        while (node != null)
+        {
+            if (ReferenceEquals(node, expectedAncestor)) return true;
+            node = VisualTreeHelper.GetParent(node);
+        }
+        return false;
     }
 
     static object AssertOperationalRailVirtualization(Application app, Window window, object shell)
