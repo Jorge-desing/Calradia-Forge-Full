@@ -34,6 +34,7 @@ See [AGENTS.md](AGENTS.md) for the complete multi-agent specification.
    - At the end of each repository-changing request, objective, or plan, commit all intentional project changes attributable to it; capture the baseline and exclude unrelated pre-existing work. Intermediate steps need no separate commits.
    - Always include all intentional objective changes (code, UI, tests, docs, assets) in the scoped commit. See .agents/rules/git_sync_workflow.md.
    - A commit does not authorize a remote push; push only when explicitly requested.
+   - **Mandatory after every authorized push:** Verify the remote branch equals the pushed SHA and wait for its applicable Actions/check runs and commit statuses. If they fail, read their logs, correct the task-related cause, validate through BAT, push under the existing authorization and review the replacement SHA. Do not end the objective as complete after push alone, local success, an earlier green commit or a pending check. Report genuine external blockers as unverified. Include the final SHA and matching remote run links. This gate is direct session guidance and does not depend on loading a skill; details are in .agents/rules/git_sync_workflow.md.
    - Strictly exclude external debris: caches (`bin/`, `obj/`, `artifacts/`, `__pycache__/`, `*.pyc`), logs (`*.log`), game saves (`*.sav`), secrets (`.env`), and OS metadata.
 
 ---
@@ -130,4 +131,3 @@ While Google Antigravity discovers `.agents/rules/*.md` automatically via direct
 7. **Packaging & Git Sync**: `auto_packaging.md`, `calradia_forge_packaging.md`, `packaging_version.md`, `git_sync_workflow.md`.
 
 *Instruction for Codex:* Before editing C#, XML, WPF, or automation scripts, read the corresponding rule file from `.agents/rules/<rule>.md` to maintain full project compliance.
-
