@@ -685,3 +685,12 @@
 - [x] Enrutar launchers BAT/PowerShell y workflows por el intérprete local; añadir el launcher BAT para `quick_validate.py`.
 - [x] Documentar instalación y uso en inglés/español; verificar creación/idempotencia del entorno, validación de skills, Ruff, pruebas Python y exclusión de `.venv` del empaquetado.
 - Nota de validación: el perfil base pasó y las suites Asset Pipeline (11) e Image Pipeline (5) pasaron; `quick_validate.py` y Ruff pasaron. La instalación opcional Antigravity falló dos veces por respuesta de red truncada (`InvalidChunkLength`). Las auditorías generales informan discrepancias del estado concurrente del prefab y documentación, fuera del alcance del entorno Python.
+
+## Explicit patch and Prefix/Postfix completion review — 2026-10-01
+- [x] Review inert registration/bootstrap, exact preflight, shared detour reservations, immutable SDK snapshots, explicit console controls, and lifecycle recovery against the requested plan.
+- [x] Review the pinned net472 MonoMod integration and dependency/license boundaries; user accepted documented integration review rather than requiring independent security certification. Evidence: Rev104 EN/ES and protected ledger.
+- [x] Verify guarded WPF ID-only plans, explicit confirmation, single-use token, exact main-menu context, and no executable definitions over IPC.
+- [x] Run real serial detour/hook fixtures exclusively through BAT; retain the explicit limit that passing fixtures does not certify concurrent target execution.
+- [x] Capture intermittent storage failure HRESULT 80070497 and implement bounded recovery for error 1175 only, preserving File.Replace and propagating uncertain/permanent failures. Evidence: Rev105 EN/ES and deterministic fault-injection regression.
+- [x] Verify Core 402/402 plus isolated fixture in five further BAT runs, ForgeWeave 73/73, Desktop 65/65, WPF 293 cases/182 layout passes, and protected ledger integrity through Rev105.
+- Delivery remains subject to the exact-SHA post-push gate in AGENTS.md; report matching remote check URLs after completion, without creating an evidence-only commit cycle.

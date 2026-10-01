@@ -25,6 +25,7 @@ namespace CalradiaForge.Tests
         {
             test("ModSettings serialization and caching", TestModSettings);
             test("ModSettings reports safe-save outcomes and preserves committed data on failure", TestModSettingsSafeSave);
+            test("Atomic replacement retries only unchanged Win32 1175 outcomes within a bounded budget", TestAtomicReplacementRecovery);
             test("CampaignVariableInspector tracking and snapshots", TestCampaignVariableInspector);
             test("Legacy patch hook API only emits its documented request notification", TestForgeLivePatcher);
             test("ForgeDetour rejects a page-crossing write before changing memory protection", TestForgeDetourPageBoundary);
@@ -142,6 +143,47 @@ namespace CalradiaForge.Tests
             if (cached != loaded) throw new Exception("ModSettings cache failed.");
         }
 
+        private static void TestAtomicReplacementRecovery()
+        {
+            var directory=Path.Combine(Path.GetTempPath(),"cf_replace_"+Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            var source=Path.Combine(directory,"source.tmp");
+            var destination=Path.Combine(directory,"destination.json");
+            try
+            {
+                File.WriteAllText(source,"new"); File.WriteAllText(destination,"old");
+                int attempts=0; var delays=new List<int>();
+                AtomicFileReplacement.Replace(source,destination,(from,to)=>{
+                    if(++attempts<=2) throw new IOException("fixture transient refusal",unchecked((int)0x80070497));
+                    File.Replace(from,to,null);
+                },delays.Add);
+                if(attempts!=3 || !delays.SequenceEqual(new[]{20,40}) || File.ReadAllText(destination)!="new" || File.Exists(source))
+                    throw new Exception("Transient replacement did not preserve the atomic commit and bounded delays.");
+
+                File.WriteAllText(source,"next"); attempts=0; delays.Clear();
+                var persistent=new IOException("fixture persistent refusal",unchecked((int)0x80070497));
+                try { AtomicFileReplacement.Replace(source,destination,(_,__)=>{attempts++;throw persistent;},delays.Add); }
+                catch(IOException error) { if(!ReferenceEquals(error,persistent)) throw; }
+                if(attempts!=4 || !delays.SequenceEqual(new[]{20,40,60}) || File.ReadAllText(source)!="next" || File.ReadAllText(destination)!="new")
+                    throw new Exception("Persistent refusal did not retain both files within its retry budget.");
+
+                foreach(var code in new[]{32,5,1176,1177})
+                {
+                    attempts=0; delays.Clear();
+                    var failure=new IOException("fixture non-retryable error",unchecked((int)0x80070000)|code);
+                    try { AtomicFileReplacement.Replace(source,destination,(_,__)=>{attempts++;throw failure;},delays.Add); }
+                    catch(IOException error) { if(!ReferenceEquals(error,failure)) throw; }
+                    if(attempts!=1 || delays.Count!=0 || File.ReadAllText(destination)!="new")
+                        throw new Exception("A non-retryable replacement error was retried or changed the destination.");
+                }
+                File.Delete(source); attempts=0; delays.Clear();
+                try { AtomicFileReplacement.Replace(source,destination,(_,__)=>{attempts++;throw persistent;},delays.Add); }
+                catch(IOException error) { if(!ReferenceEquals(error,persistent)) throw; }
+                if(attempts!=1 || delays.Count!=0) throw new Exception("Missing staged output was retried.");
+            }
+            finally { Directory.Delete(directory,true); }
+        }
+
         private static void TestModSettingsSafeSave()
         {
             var previousSerializer=ModSettings.DefaultSerializer;
@@ -209,7 +251,10 @@ namespace CalradiaForge.Tests
                 for(var index=0;index<aliasSaves.Length;index++)
                 {
                     if(aliasSaves[index].Result.State!=ModSettingsSaveState.Saved)
-                        throw new Exception("Concurrent case aliases did not serialize their atomic file commits.");
+                        throw new Exception("Concurrent case aliases did not serialize their atomic file commits: save " + index +
+                            " returned " + aliasSaves[index].Result.State + " (" + aliasSaves[index].Result.FailureReason +
+                            "; HRESULT=" + aliasSaves[index].Result.Error?.HResult.ToString("X8") + ").",
+                            aliasSaves[index].Result.Error);
                 }
                 var finalAliasSettings=ModSettings.Get<DummyConfig>(id);
                 if(finalAliasSettings==null || File.ReadAllText(path)!=finalAliasSettings.Name)

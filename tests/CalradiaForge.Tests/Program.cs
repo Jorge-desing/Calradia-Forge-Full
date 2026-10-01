@@ -45,7 +45,19 @@ class Program
             AssemblyWorkbenchTests.Run(Test, temp);
             
             Test("JSON roundtrip with unicode and HTML",()=>{var r=new Request{Argument="Español <script>\n"};Equal(Json.Deserialize<Request>(Json.Serialize(r)).Argument,r.Argument);});
-            Test("Atomic settings replacement",()=>{var p=Path.Combine(temp,"settings.json");Json.Save(p,new Settings{Language="en"});Json.Save(p,new Settings{Language="es"});Equal(Json.Deserialize<Settings>(File.ReadAllText(p)).Language,"es");});
+            Test("Atomic settings replacement",()=>{
+                var p=Path.Combine(temp,"settings.json");
+                Json.Save(p,new Settings{Language="en"});
+                try { Json.Save(p,new Settings{Language="es"}); }
+                catch(IOException error) {
+                    string retainedLanguage;
+                    try { retainedLanguage=Json.Deserialize<Settings>(File.ReadAllText(p)).Language; }
+                    catch(Exception inspectionError) { retainedLanguage="unavailable ("+inspectionError.GetType().Name+")"; }
+                    throw new IOException("Atomic settings replacement failed; HRESULT="+error.HResult.ToString("X8")+
+                        "; retained language="+retainedLanguage+".",error);
+                }
+                Equal(Json.Deserialize<Settings>(File.ReadAllText(p)).Language,"es");
+            });
             Test("Healthy module",()=>{var d=Folder("healthy");Module(d,"A","");Equal(ModuleValidator.Inspect(d).Findings.Count,0);});
             Test("Dependency version difference is a warning",()=>{var d=Folder("version-difference");Module(d,"A","<DependedModule Id='B' DependentVersion='v2'/>");Module(d,"B","");var finding=ModuleValidator.Inspect(d).Findings.Single();Equal(finding.Code,"dependency_version_difference");Equal(finding.Level,"Warning");True(finding.File.EndsWith("SubModule.xml"));});
             Test("Matching dependency version has no finding",()=>{var d=Folder("version-match");Module(d,"A","<DependedModule Id='B' DependentVersion='v1'/>");Module(d,"B","");Equal(ModuleValidator.Inspect(d).Findings.Count,0);});

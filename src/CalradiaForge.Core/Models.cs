@@ -15,7 +15,7 @@ namespace CalradiaForge.Core
         {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)));
             var tmp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-            try { File.WriteAllText(tmp, Serialize(value), Encoding.UTF8); if(File.Exists(path)) File.Replace(tmp,path,null); else File.Move(tmp,path); }
+            try { File.WriteAllText(tmp, Serialize(value), Encoding.UTF8); if(File.Exists(path)) AtomicFileReplacement.Replace(tmp,path); else File.Move(tmp,path); }
             finally { if(File.Exists(tmp)) File.Delete(tmp); }
         }
     }

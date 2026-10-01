@@ -173,7 +173,7 @@ namespace CalradiaForge.Sdk
                     {
                         if (File.Exists(path))
                         {
-                            File.Replace(temporaryPath, path, null);
+                            AtomicFileReplacement.Replace(temporaryPath, path);
                         }
                         else
                         {
