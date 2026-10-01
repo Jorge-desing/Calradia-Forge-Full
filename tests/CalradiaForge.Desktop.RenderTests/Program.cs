@@ -111,8 +111,12 @@ internal static class Program
                     "Workbench group icon mapping is not semantic for " + entry.Key);
             records.Add(new { test = "game-icons-resources-and-semantic-group-mapping", passed = true, icons = semanticGameIcons.Length });
             window = new MainWindow { ShowInTaskbar = false, ShowActivated = false, Left = -10000, Top = -10000 };
+            IsolatedRenderDesktop.AllowFixedViewport(window);
             NonActivatingWindowBehavior.Apply(window);
             window.Show();
+            IsolatedRenderDesktop.VerifySmallDisplayBounds(window);
+            PrepareFixedDipViewport(window);
+            records.Add(new { test = "isolated-fixed-viewport-survives-small-native-display", passed = true });
             Check(NonActivatingWindowBehavior.HasNoActivateStyle(window),
                 "The off-screen render window must carry WS_EX_NOACTIVATE before rendering starts.");
             var shell = window.DataContext;
@@ -595,7 +599,7 @@ internal static class Program
         Check(window.MinWidth >= 980 && window.MinHeight >= 680,
             "The render matrix must preserve the Desktop window's 980x680 DIP minimum size.");
         Check(Math.Abs(window.Width - 1360) < 0.1 && Math.Abs(window.Height - 820) < 0.1,
-            "The fixed-DIP render host must preserve its 1360x820 logical viewport.");
+            $"The fixed-DIP render host must preserve its 1360x820 logical viewport; actual {window.Width}x{window.Height}.");
         Check(surface.LayoutTransform == Transform.Identity,
             "The fixed-DIP render host must not claim scaled WPF layout geometry through LayoutTransform.");
     }

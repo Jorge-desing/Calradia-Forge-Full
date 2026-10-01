@@ -1,5 +1,9 @@
 # Changelog
 
+## Isolated WPF runner viewport — 2026-09-30 (Registry Rev101)
+
+- The render fixture expands only its isolated HWND tracking bounds so a smaller hosted display cannot constrain the fixed 1360×820 DIP matrix. A regression exercises native 1024×768 limits; the application and display configuration are unchanged. Desktop BAT passed 65/65 and WPF render 293/293 with 182 layout passes and a clean build. The first pushed ledger workflow passed; CI compiled and passed Desktop but exposed this render-host constraint. Remote checks for this correction remain pending.
+
 ## Hosted CI recovery — 2026-09-30 (Registry Rev100)
 
 - Hosted CI builds portable targets through `CalradiaForge.Portable.slnf` and the BAT launcher; local Bannerlord integration retains `net472` and requires licensed TaleWorlds assemblies through `GameBin`. Core remains multi-targeted. Ledger audits recognize split Desktop ViewModels and immutable patch snapshots. Decorative overlap checks honor source-verified mutually exclusive workspace visibility and the current evidence-margin condition. Full local tests passed Core 401/401, ForgeWeave 73/73, Desktop 65/65 and WPF render 292/292; Python CI checks passed 12 asset fixtures, 5 image tests, Ruff and sprite/icon checks. The optional agent dependency installation encountered a truncated package-mirror response locally. New GitHub checks are pending at this revision; historical failed runs remain in Actions history.

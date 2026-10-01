@@ -1,5 +1,9 @@
 # Lista de cambios
 
+## Viewport WPF aislado del runner — 2026-09-30 (Registro Rev101)
+
+- El fixture de render amplía únicamente los límites de seguimiento de su HWND aislado para que una pantalla alojada menor no limite la matriz fija de 1360×820 DIP. Una regresión ejercita límites nativos de 1024×768; la aplicación y la configuración de pantalla permanecen intactas. El BAT Desktop aprobó 65/65 y render WPF 293/293 con 182 pases de layout y compilación limpia. El primer workflow del registro subido aprobó; CI compiló y aprobó Desktop, pero expuso esta limitación del host de render. Las comprobaciones remotas de esta corrección siguen pendientes.
+
 ## Recuperación de CI alojada — 30-09-2026 (Registro Rev100)
 
 - La CI alojada compila destinos portables mediante `CalradiaForge.Portable.slnf` y el launcher BAT; la integración local de Bannerlord conserva `net472` y requiere ensamblados TaleWorlds licenciados mediante `GameBin`. Core mantiene sus dos destinos. Las auditorías del registro reconocen los ViewModels Desktop divididos y los snapshots inmutables de parches. La auditoría de solapamientos respeta la visibilidad mutuamente excluyente comprobada en fuentes y la condición actual del margen de evidencia. Pasaron las pruebas locales Core 401/401, ForgeWeave 73/73, Desktop 65/65 y render WPF 292/292; las verificaciones Python pasaron 12 fixtures de assets, 5 pruebas de imágenes, Ruff y auditorías de sprites/iconos. La instalación opcional de agentes encontró una respuesta truncada del mirror local. Los nuevos checks GitHub quedan pendientes en esta revisión; las ejecuciones históricas fallidas permanecen en Actions.
