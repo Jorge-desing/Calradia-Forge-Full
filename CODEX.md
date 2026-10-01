@@ -31,7 +31,9 @@ See [AGENTS.md](AGENTS.md) for the complete multi-agent specification.
    - Every file under `docs/` must have both English (`<TOPIC>.md`) and Spanish (`<TOPIC>.es.md`) versions.
 
 6. **Project Scope Staging & Zero External Garbage**:
-   - Always stage ALL intentional project changes (code, UI, tests, docs, assets).
+   - At the end of each repository-changing request, objective, or plan, commit all intentional project changes attributable to it; capture the baseline and exclude unrelated pre-existing work. Intermediate steps need no separate commits.
+   - Always include all intentional objective changes (code, UI, tests, docs, assets) in the scoped commit. See .agents/rules/git_sync_workflow.md.
+   - A commit does not authorize a remote push; push only when explicitly requested.
    - Strictly exclude external debris: caches (`bin/`, `obj/`, `artifacts/`, `__pycache__/`, `*.pyc`), logs (`*.log`), game saves (`*.sav`), secrets (`.env`), and OS metadata.
 
 ---

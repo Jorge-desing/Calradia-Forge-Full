@@ -49,7 +49,9 @@ Calradia Forge is an advanced modding framework, live developer tooling suite, a
 - Strip NTFS `:Zone.Identifier` alternate data streams from assemblies before distribution.
 
 ### Rule E: Project Scope Staging & Zero External Garbage
-- **Full Project Scope**: When committing and pushing to the remote repository, always stage ALL intentional workspace modifications, features, tests, documentation, annexes, and assets. Never omit valid project changes under the mistaken assumption that they are "external".
+- **Chat-Scoped Commit**: At the end of each request, objective, or plan that changes repository files, commit all intentional project changes attributable to that complete request/objective/plan, including changes made by delegated agents. Intermediate steps do not need separate commits. Capture the working-tree baseline first; do not absorb unrelated pre-existing work. See .agents/rules/git_sync_workflow.md.
+- **Full Objective Scope**: At objective completion, stage all intentional project modifications, features, tests, documentation, annexes, and assets attributable to that objective. Never omit valid task changes under the mistaken assumption that they are "external".
+- **No Implicit Push**: A commit is required for repository changes, but pushing to a remote still requires an explicit user request.
 - **Strictly Prohibited (Zero External Garbage)**: Never stage or commit files external to the project:
   1. Build artifacts and caches (`bin/`, `obj/`, `artifacts/`, `.vs/`, `.idea/`, `__pycache__/`, `*.pyc`).
   2. Crash logs, dump files, and traces (`*.log`, `*.cfcrash`).
@@ -163,5 +165,5 @@ In addition to root invariants, the repository maintains 43 modular rules in `.a
 | **Documentation & Ledger** | `calradia_forge_docs.md`<br>`docs_generation_workflow.md` | Strict English/Spanish parity (`docs/<TOPIC>.md` $\leftrightarrow$ `.es.md`), DocFX compilation, and SHA-256 append-only ledger integrity. |
 | **Verification & Distribution** | `calradia_forge_verification.md`<br>`distribution_safety.md` | Build verification, 5-stage test suite, static source reflection contracts, and exclusion of game DLLs/scripts/zone streams. |
 | **Codex & Multi-Agent** | `codex_compatibility.md`<br>`development_workflow.md` | OpenAI Codex CLI cross-parity, Windows 10 Computer Use proxy (`CodexCaptureCompat`), and Antigravity subagent coordination. |
-| **Packaging & Git Workflow** | `auto_packaging.md`<br>`calradia_forge_packaging.md`<br>`packaging_version.md`<br>`git_sync_workflow.md` | Automated ZIP packaging (`FastPackageEngine`), version synchronization, pre-push verification gates, and GitHub synchronization. |
+| **Packaging & Git Workflow** | `auto_packaging.md`<br>`calradia_forge_packaging.md`<br>`packaging_version.md`<br>`git_sync_workflow.md` | Automated ZIP packaging (`FastPackageEngine`), version synchronization, chat-scoped commits at objective completion, and explicit GitHub synchronization. |
 
