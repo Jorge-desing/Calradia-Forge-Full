@@ -1,5 +1,9 @@
 # Lista de cambios
 
+## Auditorías actuales de gestión de parches — 2026-10-01 (Registro Rev103)
+
+- Las auditorías de agentes siguen la sincronización de recibos y la verificación del detour registrado actuales, en lugar de nombres obsoletos, con cinco regresiones que rechazan protecciones ausentes. La verificación stateless alojada usa el gateway BAT portable. Las comprobaciones Python locales aprueban; la validación remota de agentes opcionales queda pendiente. La evidencia estática de gestión no demuestra seguridad concurrente del destino.
+
 ## Revisión post-push y codificación del inventario — 2026-09-30 (Registro Rev102)
 
 - Las reglas Git y la skill de desarrollo exigen revisar el SHA subido exacto y sus checks remotos, separando entrega de validación. Los diagnósticos de inventario Windows PowerShell usan un separador ASCII; una regresión del parser Windows-1252 aprueba mediante BAT. La revisión remota d59db82 aprobó WPF 293/293, pero expuso el fallo de codificación del inventario; la siguiente validación remota sigue pendiente.

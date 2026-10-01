@@ -80,14 +80,9 @@ def verify_stateless_behavior(raw: bool = False) -> str:
     if not script_path.exists():
         return f"Error: Verification script '{script_path}' not found."
 
-    cmd = [
-        "powershell.exe",
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        str(script_path),
-    ]
+    cmd = ["cmd.exe", "/d", "/c", "tools\\Verify-CalradiaForge-StatelessBehavior.bat"]
+    if os.environ.get("GITHUB_ACTIONS", "").lower() == "true":
+        cmd.append("--portable")
     try:
         proc = subprocess.run(
             cmd,
@@ -821,14 +816,13 @@ def audit_concurrency_hazards(raw: bool = False) -> str:
     else:
         issues.append("GameLocalization.cs not found.")
 
-    # 6. ForgePatcher concurrency and JIT pointer checks
+    # 6. Legacy receipts delegate byte/pointer verification to the tracked detour registry.
     forge_patcher_path = repo_root / "src" / "CalradiaForge.Sdk" / "Patcher" / "ForgePatcher.cs"
     if forge_patcher_path.exists():
         patcher_text = forge_patcher_path.read_text(encoding="utf-8", errors="ignore")
-        if "_syncLock" not in patcher_text or "lock (_syncLock)" not in patcher_text:
-            issues.append("ForgePatcher.cs does not implement _syncLock for thread-safe patch list management.")
-        if "IntPtr.Zero" not in patcher_text:
-            issues.append("ForgePatcher.cs: PatchRecord.IsIntact() does not validate function pointer against IntPtr.Zero.")
+        detour_path = repo_root / "src" / "CalradiaForge.Sdk" / "ForgeDetour.cs"
+        detour_text = detour_path.read_text(encoding="utf-8") if detour_path.exists() else ""
+        issues.extend(_patch_concurrency_issues(patcher_text, detour_text))
     else:
         issues.append("ForgePatcher.cs not found.")
 
@@ -842,11 +836,26 @@ def audit_concurrency_hazards(raw: bool = False) -> str:
             "  - Desktop PipeClient: SemaphoreSlim gate ensures thread-safe asynchronous IPC streaming.\n"
             "  - Game Thread Dispatch: Engine calls are strictly marshaled via GameThreadActionDispatch.\n"
             "  - GameLocalization: ConcurrentDictionary guarantees thread-safe token caching across threads.\n"
-            "  - ForgePatcher: _syncLock thread synchronization and defensive IntPtr pointer validation in IsIntact()."
+            "  - ForgePatcher: syncLock guards receipts; ForgeDetour Gate guards tracked byte verification and rejects null installation pointers.\n"
+            "  - Scope: static management checks do not establish safety for concurrent execution of patched targets."
         )
 
     distilled, _ = ForgeTokenCompactor.distill("audit_concurrency_hazards", raw_res, force_raw=raw)
     return distilled
+
+
+def _patch_concurrency_issues(patcher_text: str, detour_text: str) -> List[str]:
+    """Check current management anchors, without claiming native execution safety."""
+    issues: List[str] = []
+    if "readonly object syncLock" not in patcher_text or "lock (syncLock)" not in patcher_text:
+        issues.append("ForgePatcher.cs does not synchronize patch receipt management on syncLock.")
+    if "ForgeDetour.IsTrackedReceipt(" not in patcher_text or "ForgeDetour.Verify(" not in patcher_text:
+        issues.append("ForgePatcher.cs does not delegate receipt identity and byte integrity verification to ForgeDetour.")
+    if "lock (Gate)" not in detour_text or "Active.TryGetValue(address, out state)" not in detour_text:
+        issues.append("ForgeDetour.cs does not guard tracked record verification on Gate.")
+    if "address == IntPtr.Zero || replacementAddress == IntPtr.Zero" not in detour_text:
+        issues.append("ForgeDetour.cs does not reject null target and replacement pointers before installation.")
+    return issues
 
 
 ALL_REPO_TOOLS = [

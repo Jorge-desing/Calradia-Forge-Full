@@ -1,5 +1,9 @@
 # Changelog
 
+## Current patch management audits — 2026-10-01 (Registry Rev103)
+
+- Agent audits follow current receipt synchronization and tracked detour verification instead of obsolete names, with five regressions rejecting missing protections. Hosted agent stateless verification uses the portable BAT gateway. Local Python checks pass; remote optional-agent validation is pending. Static management evidence does not prove concurrent-target safety.
+
 ## Post-push review and inventory encoding — 2026-09-30 (Registry Rev102)
 
 - Git rules and the development skill require review of the exact pushed SHA and its remote checks, separating delivery from validation. Windows PowerShell inventory diagnostics now use an ASCII range separator; a Windows-1252 parser regression passes through BAT. Remote d59db82 passed WPF 293/293 but exposed the inventory encoding failure; the next remote validation remains pending.

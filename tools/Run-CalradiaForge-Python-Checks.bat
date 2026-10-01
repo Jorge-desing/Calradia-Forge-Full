@@ -54,6 +54,9 @@ if errorlevel 1 goto failed
 echo [Python] Running image pipeline unit suite...
 "%PYTHON%" -m unittest tests\test_high_quality_image_pipeline.py
 if errorlevel 1 goto failed
+echo [Python] Running SDK-independent agent tool audit regressions...
+"%PYTHON%" -m unittest tests\test_forge_tool_audits.py
+if errorlevel 1 goto failed
 if "%RUN_AGENT_TESTS%"=="0" goto ci_success
 "%PYTHON%" -c "from google.antigravity import LocalAgentConfig, types; import google.genai"
 if errorlevel 1 (
