@@ -31,10 +31,22 @@ Forget writing complex `SyncData` behaviors for simple variables.
 - Logs automatically route to the game's UI and the master `session.log` safely.
 
 ## ⚠️ Critical Rules
-> Universal safety rules (no `Campaign` namespace, no Harmony) are in `bannerlord-shared-patterns` and `GEMINI.md`.
+> Universal safety rules (no `Campaign` namespace and no Harmony dependency) are in `bannerlord-shared-patterns` and `GEMINI.md`.
 
 1. **Data Attachment:** Do not attach `ForgeData` to non-`MBObjectBase` entities (like `ItemRosterElement`); data will silently fail to save.
 2. **`Localization` namespace collision:** Never name a namespace or class `Localization` — it shadows `TaleWorlds.Localization`.
+
+## Explicit Prefix/Postfix hooks (experimental)
+
+Use the regular `GameModel` decorator pattern for campaign simulation changes. Calradia Forge also exposes a separate experimental, optional Prefix/Postfix hook capability through `ForgeApi.Hooks`; it is not Harmony and is not a substitute for a `GameModel` decorator.
+
+- Hook declarations are inert. Module startup does not scan assemblies or apply them automatically; application must be an explicit, reviewed operation.
+- The current management gate permits Apply and Revert only on the exact game-owned Bannerlord main-menu screen, on the game thread, with no campaign, mission, or multiplayer session active. Dispatch also checks that gate for each invocation: while a detour remains installed outside the approved context, Forge calls the original target and skips its callbacks. Callbacks may resume if the approved context returns. This is a context policy, not a thread-quiescence guarantee.
+- Prefix/Postfix callbacks execute synchronously on the target caller's thread when the host gate allows them. Treat them as trusted in-process code, keep their work bounded, and do not use them to alter campaign simulation; use `GameModel` decorators instead.
+- The current game-host backend uses MonoMod RuntimeDetour for the `net472` target. It supports Prefix/Postfix only; do not add Harmony or assume Finalizer/Transpiler support.
+- Unload/disconnect attempts to remove Forge-owned hooks in reverse order and can be refused or report unresolved state when safe removal cannot be established. Check hook snapshots after failures; do not claim a hook was removed merely because unload began.
+
+See [bannerlord-shared-patterns](../bannerlord-shared-patterns/SKILL.md) for the simulation extension pattern and its distinction from experimental hooks.
 
 ## Asset and UI workflows
 

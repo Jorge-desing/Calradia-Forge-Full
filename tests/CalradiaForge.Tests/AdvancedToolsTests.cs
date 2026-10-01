@@ -162,7 +162,7 @@ namespace CalradiaForge.Tests
             string panelViewModel = File.ReadAllText(panelViewModelPath);
             if (!panelViewModel.Contains("[DataSourceProperty] public float PrimaryActionButtonWidth => _isDetailedMode && !evidenceFocused ? 100f : 164f;") ||
                 !panelViewModel.Contains("nameof(PrimaryActionButtonWidth)") ||
-                !panelViewModel.Contains("public bool IsPlaybookVisible => _isDetailedMode && !evidenceFocused && !_isKeyHelpOpen;") ||
+                !panelViewModel.Contains("public bool IsPlaybookVisible => _isDetailedMode && !evidenceFocused && !_isKeyHelpOpen && !IsCampaignRuleBuilderActive;") ||
                 !panelViewModel.Contains("OnPropertyChanged(nameof(IsPlaybookVisible));"))
                 throw new Exception("PanelViewModel must publish and notify the adaptive detailed-mode primary action width.");
             string[] playbookWrapContracts =
@@ -342,6 +342,7 @@ namespace CalradiaForge.Tests
         public static void Run(Action<string, Action> test)
         {
             GauntletComposerTests.Run(test);
+            CampaignRuleBuilderTests.Run(test);
             test("Perk Tree Scaffold generates valid C# with unique perk IDs", TestPerkTreeScaffold);
             test("Diplomatic Matrix generates valid XML and balanced relations", TestDiplomaticMatrix);
             test("Gauntlet Brush XML contains required layers and valid #RRGGBBAA hex", TestGauntletBrushSynthesis);
@@ -2032,7 +2033,7 @@ namespace MyCustomMod.QuestBehaviors
                 !vm.Contains("public void ExecuteClearOutputFilter() => OutputFilterText = string.Empty;"))
                 throw new Exception("PanelViewModel must filter cached source output, show a localized no-match state, and clear only the query.");
             if (!vm.Contains("public string EvidenceHeading => T(\"Evidence\");") ||
-                !vm.Contains("public string OutputHeading => IsGauntletComposerPackageVisible ? T(\"Generated package\") : EvidenceHeading;"))
+                !vm.Contains("public string OutputHeading => IsGauntletComposerPackageVisible || IsCampaignRuleBuilderPackageVisible ? T(\"Generated package\") : EvidenceHeading;"))
                 throw new Exception("Evidence and generated-package headers must use short localized labels instead of route titles that can collide with the filter.");
 
             XDocument prefab = XDocument.Load(Path.GetFullPath("modules/CalradiaForge/GUI/Prefabs/CalradiaForge.xml"));

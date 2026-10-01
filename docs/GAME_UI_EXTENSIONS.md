@@ -71,6 +71,18 @@ Draft persistence is explicit. **Save Draft** writes schema version 1 to `%LOCAL
 
 The composer generates text in memory. It does not create or modify files in the user's module and does not change the public SDK API.
 
+## In-game Campaign Rule Builder
+
+Open the navigation palette with `Ctrl+P` and select **Campaign Rule Builder** in the Novice group. Its route ID is `novice-campaign-rule-builder`. The left column contains an ordered list of up to eight rules. The right column edits the selected rule as **When / If / Then** and shows a preview based on fixed sample facts. Each rule keeps its ID when moved. Internal scroll areas keep the bottom **Save draft**, **Validate**, **Generate**, and **Copy package** actions available on smaller viewports.
+
+Choose one of seven campaign events: `WeeklyTickEvent`, `DailyTickHeroEvent`, `DailyTickSettlementEvent`, `HeroComesOfAgeEvent`, `HeroGainedSkill`, `OnHeroJoinedPartyEvent`, or `OnClanCreatedEvent`. A rule can contain two condition groups with up to three conditions each. Conditions within a group are combined with AND; group B is an OR alternative to group A. The condition and target choices follow the data available from the selected event. The available actions grant gold, change influence, grant renown, or change the player's relationship with the event hero. Incompatible event, action, and target combinations are rejected before generation.
+
+`DailyTickHeroEvent` and `DailyTickSettlementEvent` are per-entity daily events. Each rule is evaluated for the hero or settlement delivered by that event; actions run only when the rule's conditions match. A player-targeted reward can therefore repeat across matching hero or settlement events. `WeeklyTickEvent` is a campaign-wide weekly occurrence. The preview and generated validation report call out the two per-entity daily events.
+
+The preview only evaluates sample data. **Validate** checks the draft without running any campaign action. **Generate** requires at least one rule and creates a complete text package: a `CampaignBehaviorBase` class for `net472`, integration instructions for the existing `OnGameStart` override, and a validation report. Rules sharing an event use one `AddNonSerializedListener` subscription. The generated behavior has an empty `SyncData`, no `SaveableTypeDefiner`, and a reentrancy guard. **Copy package** copies the complete output even when its presentation is paginated. Review and adapt the generated rules before integrating them into a separate module: once installed there, their actions can change a saved campaign on each matching event.
+
+Saving is explicit. On the first visit with no saved file, the builder shows one in-memory starter row in the ordered list. It is not restored from disk and is not saved automatically. Clicking the event name edits that same row; **Add rule** appends another row. **Save draft** writes the current list as schema version 1 to `%LOCALAPPDATA%\CalradiaForge\campaign-rule-builder.json` atomically, with a 64 KiB size limit. A damaged, oversized, or future-version draft is reported and kept until the user explicitly saves a replacement. The builder itself does not register generated behaviors, write module source files, or mutate the current campaign.
+
 ## Contextual help and icons
 
 The in-game Help action shows short offline summaries derived from SDK XML documentation and localized in Bannerlord's active language. DocFX is used at build time only. Game-icons.net SVG source and attributed transparent sprite-part PNGs are included with Modules; Bannerlord's SpriteSheetGenerator and Resource Browser must pack those PNGs into the game's sprite resources before a Gauntlet prefab references them.

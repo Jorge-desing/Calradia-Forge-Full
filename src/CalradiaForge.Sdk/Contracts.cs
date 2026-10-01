@@ -146,7 +146,8 @@ namespace CalradiaForge.Sdk
         public static TypeReference From(Type type)
         {
             if(type==null)return null;
-            var assembly=type.IsGenericParameter?type.Module?.Assembly:type.Assembly;
+            var genericOwner=type.IsGenericParameter?(type.DeclaringMethod?.DeclaringType??type.DeclaringType):null;
+            var assembly=type.IsGenericParameter?(genericOwner?.Assembly??type.Module?.Assembly):type.Assembly;
             var fullName=type.IsGenericParameter
                 ? (type.DeclaringMethod==null?"!":"!!")+type.GenericParameterPosition
                 : type.FullName??type.Name;
@@ -166,6 +167,7 @@ namespace CalradiaForge.Sdk
         public static MethodReference From(MethodBase method)
         {
             if(method==null)return null;
+            method=NormalizeMethod(method);
             var info=method as MethodInfo;
             return new MethodReference {
                 AssemblyName=method.DeclaringType?.Assembly.GetName().Name,
@@ -177,6 +179,45 @@ namespace CalradiaForge.Sdk
                 ReturnType=info==null?null:TypeReference.From(info.ReturnType),
                 IsStatic=method.IsStatic
             };
+        }
+
+        // A closed generic MethodInfo describes one constructed invocation, while a
+        // blueprint identifies the reusable declaration that reflection can resolve
+        // from the loaded assembly. Convert both closed method arguments and a closed
+        // generic declaring type back to their definitions before capturing its shape.
+        static MethodBase NormalizeMethod(MethodBase method)
+        {
+            var info=method as MethodInfo;
+            if(info!=null && info.IsGenericMethod && !info.IsGenericMethodDefinition)
+                method=info.GetGenericMethodDefinition();
+
+            var declaringType=method.DeclaringType;
+            if(declaringType==null || !declaringType.IsConstructedGenericType)return method;
+
+            try
+            {
+                var definition=declaringType.GetGenericTypeDefinition();
+                const BindingFlags flags=BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance|BindingFlags.Static|BindingFlags.DeclaredOnly;
+                IEnumerable<MethodBase> candidates;
+                if(method.IsConstructor && method.IsStatic)
+                {
+                    var initializer=definition.TypeInitializer;
+                    candidates=initializer==null?Enumerable.Empty<MethodBase>():new MethodBase[]{initializer};
+                }
+                else candidates=method.IsConstructor
+                    ? definition.GetConstructors(flags).Cast<MethodBase>()
+                    : definition.GetMethods(flags).Cast<MethodBase>();
+                var token=method.MetadataToken;
+                var module=method.Module;
+                var matches=candidates.Where(candidate=>candidate.MetadataToken==token && candidate.Module==module).ToList();
+                if(matches.Count==1)return matches[0];
+            }
+            catch(Exception error)
+            {
+                throw new ArgumentException("Cannot capture a member declared on a constructed generic type. Pass the member from its generic type definition so MethodReference.From can preserve the open signature.",nameof(method),error);
+            }
+
+            throw new ArgumentException("Cannot uniquely map a member declared on a constructed generic type to its definition. Pass the member from the generic type definition so MethodReference.From can preserve the open signature.",nameof(method));
         }
     }
     public sealed class PatchBlueprint
@@ -461,7 +502,7 @@ namespace CalradiaForge.Sdk
 
     public static class ForgeApi
     {
-        public const int Version = 11;
+        public const int Version = 12;
         static readonly object availabilityGate=new object();
         static readonly object connectionGate=new object();
         static IForgeRegistry registry;
@@ -490,6 +531,7 @@ namespace CalradiaForge.Sdk
         }
         static IPatchBlueprintRegistry patchBlueprints;
         static IForgePatchService patches;
+        static IForgeHookService hooks;
         static IForgeEventRegistry events;
         static IForgeReplayRegistry replays;
         static IForgeSettingsRegistry settings;
@@ -507,6 +549,9 @@ namespace CalradiaForge.Sdk
         /// <summary>Gets the optional explicit method-patching capability when the connected host provides it.</summary>
         /// <remarks>Check this property at runtime; <see cref="Version"/> is a compile-time constant and is not a capability probe.</remarks>
         public static IForgePatchService Patches { get {lock(availabilityGate)return patches;} }
+        /// <summary>Gets the optional explicitly managed Prefix/Postfix hook capability.</summary>
+        /// <remarks>Check this capability at runtime. Hook registration is inert until an explicit host Apply operation succeeds.</remarks>
+        public static IForgeHookService Hooks { get {lock(availabilityGate)return hooks;} }
         public static IForgeEventRegistry Events { get {lock(availabilityGate)return events;} }
         public static bool PublishCustomEvent(string topic, IEnumerable<KeyValuePair<string, string>> data = null) => Events?.PublishCustom(topic, data) ?? false;
         public static IForgeReplayRegistry Replays { get {lock(availabilityGate)return replays;} }
@@ -710,30 +755,120 @@ namespace CalradiaForge.Sdk
             lock(connectionGate) ConnectCore(registry);
         }
 
+        /// <summary>Disconnects Forge during host unload while keeping raw patch applications closed if cleanup is rejected.</summary>
+        /// <remarks>Unlike an ordinary disconnect retry, unload must not reopen application routes after teardown begins.</remarks>
+        public static void DisconnectForUnload()
+        {
+            lock(connectionGate) DisconnectCore(true);
+        }
+
         static void ConnectCore(IForgeRegistry registry)
         {
             if(registry==null)throw new ArgumentNullException(nameof(registry));
             IForgeRegistry priorRegistry;
             IForgePatchService priorPatches;
+            IForgeHookService priorHooks;
             lock(availabilityGate)
             {
                 priorRegistry=ForgeApi.registry;
                 priorPatches=patches;
+                priorHooks=hooks;
             }
             if(!ReferenceEquals(priorRegistry,registry))
             {
+                EnsureHookDisconnectAllowed(priorHooks, "replace the Forge registry");
                 ForgeDetour.StopAcceptingApplications();
-                priorPatches?.Disconnect();
-                try { ForgeDetour.UnpatchAll(); }
-                catch { /* Exact status remains in ForgeDetour snapshots; do not retry during this transition. */ }
-                ForgePatcher.RemoveVerifiedRevertedRecords();
-                var outstanding=ForgeDetour.GetTrackedSnapshots();
-                if(outstanding.Count>0)
-                    throw new InvalidOperationException("The previous Forge connection retains patch conflicts or uncertain detours. Resolve them before replacing the registry.");
+                try
+                {
+                    priorHooks?.Disconnect();
+                    var unresolvedHooks=UnresolvedHooks(priorHooks);
+                    if(unresolvedHooks.Length>0)
+                        throw new InvalidOperationException("The previous Forge hook service retains active or uncertain hooks: "+string.Join(", ",unresolvedHooks.Select(snapshot=>snapshot?.Id??"<invalid>"))+". Resolve them before replacing the registry.");
+                    // Some composite registries (for example TestEngine) expose both
+                    // optional services and perform both cleanups in one Disconnect call.
+                    if(priorPatches!=null && !ReferenceEquals(priorHooks,priorPatches)) priorPatches.Disconnect();
+                    var unresolvedPatches=UnresolvedPatches(priorPatches);
+                    if(unresolvedPatches.Length>0)
+                        throw new InvalidOperationException("The previous Forge patch service retains active or uncertain patches: "+string.Join(", ",unresolvedPatches.Select(snapshot=>snapshot?.PatchId??"<invalid>"))+". Resolve them before replacing the registry.");
+                    try { ForgeDetour.UnpatchAll(); }
+                    catch { /* Exact status remains in ForgeDetour snapshots; do not retry during this transition. */ }
+                    ForgePatcher.RemoveVerifiedRevertedRecords();
+                    var outstanding=ForgeDetour.GetTrackedSnapshots();
+                    if(outstanding.Count>0)
+                        throw new InvalidOperationException("The previous Forge connection retains patch conflicts or uncertain detours. Resolve them before replacing the registry.");
+                }
+                catch(Exception transitionError)
+                {
+                    // Reconnect is idempotent for a service that never completed its
+                    // disconnect. Attempt it even when active snapshots remain; a service
+                    // that did disconnect must prove it can safely reopen, while a conflict
+                    // keeps raw applications closed and the original exception visible.
+                    var restoreErrors=new List<Exception>();
+                    bool lifecyclesRestored=ReconnectServices(priorPatches,priorHooks,restoreErrors);
+                    bool canResumeApplications=lifecyclesRestored && restoreErrors.Count==0 &&
+                        ForgeDetour.GetTrackedSnapshots().Count==0;
+                    if(canResumeApplications) ForgeDetour.AllowApplications();
+                    if(restoreErrors.Count>0 && UnresolvedPatches(priorPatches).Length==0 && UnresolvedHooks(priorHooks).Length==0)
+                    {
+                        restoreErrors.Insert(0,transitionError);
+                        throw new AggregateException("The previous Forge host remains published, but one or more clean services could not be restored after connection replacement failed.",restoreErrors);
+                    }
+                    throw;
+                }
             }
             // Reopen the incoming host's optional service only after its prior records prove
             // cleanly reverted. Do this before publishing it or reopening direct detours.
-            (registry as IForgePatchServiceLifecycle)?.Reconnect();
+            var incomingPatchLifecycle=registry as IForgePatchServiceLifecycle;
+            var incomingHookLifecycle=registry as IForgeHookServiceLifecycle;
+            bool incomingPatchesAttempted=false;
+            bool incomingHooksAttempted=false;
+            try
+            {
+                if(incomingPatchLifecycle!=null)
+                {
+                    incomingPatchesAttempted=true;
+                    if(incomingHookLifecycle!=null && ReferenceEquals(incomingPatchLifecycle,incomingHookLifecycle))
+                        incomingHooksAttempted=true;
+                    incomingPatchLifecycle.Reconnect();
+                }
+                if(incomingHookLifecycle!=null && !ReferenceEquals(incomingPatchLifecycle,incomingHookLifecycle))
+                {
+                    incomingHooksAttempted=true;
+                    incomingHookLifecycle.Reconnect();
+                }
+            }
+            catch(Exception reconnectError)
+            {
+                // A replacement failure must not leave the previous, already-cleaned host
+                // published with its lifecycle closed and raw applications paused.
+                if(!ReferenceEquals(priorRegistry,registry)&&priorRegistry!=null)
+                {
+                    var rollbackErrors=new List<Exception>();
+                    IForgeHookService incomingHookService=registry as IForgeHookService;
+                    IForgePatchService incomingPatchService=registry as IForgePatchService;
+                    if(incomingHooksAttempted)
+                    {
+                        try { incomingHookService?.Disconnect(); }
+                        catch(Exception error) { rollbackErrors.Add(error); }
+                    }
+                    bool sharedLifecycleAttempt=incomingPatchesAttempted&&incomingHooksAttempted&&
+                        ReferenceEquals(incomingPatchLifecycle,incomingHookLifecycle);
+                    if(incomingPatchesAttempted && !(sharedLifecycleAttempt&&ReferenceEquals(incomingPatchService,incomingHookService)))
+                    {
+                        try { incomingPatchService?.Disconnect(); }
+                        catch(Exception error) { rollbackErrors.Add(error); }
+                    }
+                    ReconnectLifecycles(priorRegistry as IForgePatchServiceLifecycle,
+                        priorRegistry as IForgeHookServiceLifecycle,rollbackErrors);
+                    if(rollbackErrors.Count==0) ForgeDetour.AllowApplications();
+                    else
+                    {
+                        rollbackErrors.Insert(0,reconnectError);
+                        throw new AggregateException("The incoming Forge host failed to reconnect and the previous host could not be fully restored.",rollbackErrors);
+                    }
+                }
+                throw;
+            }
             SharedLibraryRegistry previous;
             Action<IForgeRegistry> subscribers;
             Action<IForgeRegistry,long,int> lifecycleSubscribers;
@@ -747,6 +882,7 @@ namespace CalradiaForge.Sdk
                 ForgeApi.registry=registry;
                 patchBlueprints=registry as IPatchBlueprintRegistry;
                 patches=registry as IForgePatchService;
+                hooks=registry as IForgeHookService;
                 events=registry as IForgeEventRegistry;
                 replays=registry as IForgeReplayRegistry;
                 settings=registry as IForgeSettingsRegistry;
@@ -976,22 +1112,75 @@ namespace CalradiaForge.Sdk
             lock(connectionGate) DisconnectCore();
         }
 
-        static void DisconnectCore()
+        static void DisconnectCore(bool keepApplicationsClosedOnFailure = false)
         {
+            IForgeRegistry priorRegistry;
+            IForgePatchService previousPatches;
+            IForgeHookService previousHooks;
+            lock(availabilityGate)
+            {
+                priorRegistry=registry;
+                previousPatches=patches;
+                previousHooks=hooks;
+            }
+
+            // Do not unpublish the hook capability until its teardown has completed and the
+            // service reports no active or uncertain records. If cleanup throws or leaves a
+            // conflict, clients must retain a route to inspect and recover the service.
+            if(keepApplicationsClosedOnFailure) ForgeDetour.StopAcceptingApplications();
+            EnsureHookDisconnectAllowed(previousHooks, "disconnect ForgeApi");
             ForgeDetour.StopAcceptingApplications();
             SharedLibraryRegistry previous;
-            IForgePatchService previousPatches;
             IForgeUiRegistry previousUi;
             Action<IForgeRegistry,long,int> lifecycleSubscribers;
             long generation;
             int connectionThreadId;
+            try
+            {
+                previousHooks?.Disconnect();
+                var unresolvedHooks=UnresolvedHooks(previousHooks);
+                if(unresolvedHooks.Length>0)
+                    throw new InvalidOperationException("Forge hook disconnection retained active or uncertain hooks: "+string.Join(", ",unresolvedHooks.Select(snapshot=>snapshot?.Id??"<invalid>"))+". The hook service remains published for recovery.");
+
+                // Patch cleanup also precedes unpublishing. Keep its capability available when
+                // a conflict or uncertain write still needs explicit inspection and recovery.
+                if(previousPatches!=null && !ReferenceEquals(previousHooks,previousPatches)) previousPatches.Disconnect();
+                var unresolvedPatches=UnresolvedPatches(previousPatches);
+                if(unresolvedPatches.Length>0)
+                    throw new InvalidOperationException("Forge patch disconnection retained active or uncertain patches: "+string.Join(", ",unresolvedPatches.Select(snapshot=>snapshot?.PatchId??"<invalid>"))+". The patch service remains published for recovery.");
+            }
+            catch(Exception transitionError)
+            {
+                // Reconnect is idempotent when a service rejected cleanup before changing
+                // its accepting state. If a service did disconnect and cannot reopen due to
+                // a conflict, preserve the original error and leave raw applications closed.
+                var restoreErrors=new List<Exception>();
+                bool lifecyclesRestored=ReconnectServices(previousPatches,previousHooks,restoreErrors);
+                bool canResumeApplications=!keepApplicationsClosedOnFailure && lifecyclesRestored && restoreErrors.Count==0 &&
+                    ForgeDetour.GetTrackedSnapshots().Count==0;
+                if(canResumeApplications) ForgeDetour.AllowApplications();
+                else
+                {
+                    if(restoreErrors.Count>0 && UnresolvedPatches(previousPatches).Length==0 && UnresolvedHooks(previousHooks).Length==0)
+                    {
+                        restoreErrors.Insert(0,transitionError);
+                        throw new AggregateException("Forge disconnection was not published; one or more clean services could not be restored, so raw patch applications remain closed.",restoreErrors);
+                    }
+                }
+                throw;
+            }
+
             lock(availabilityGate)
             {
+                // The connection gate serializes Connect/Disconnect, but verify the snapshot
+                // before clearing public capability references so unexpected mutation cannot
+                // detach a service that was not the one just cleaned up.
+                if(!ReferenceEquals(registry,priorRegistry)||!ReferenceEquals(hooks,previousHooks))
+                    throw new InvalidOperationException("The Forge connection changed while disconnect cleanup was running; published services were retained.");
                 previous=libraries;
-                previousPatches=patches;
                 previousUi=ui;
                 connectionThreadId=registryThreadId;
-                libraries=null;patchBlueprints=null;patches=null;events=null;replays=null;settings=null;logger=null;input=null;saveManager=null;debug=null;agentManager=null;analyses=null;runtimeCapabilities=null;ui=null;registry=null;
+                libraries=null;patchBlueprints=null;patches=null;hooks=null;events=null;replays=null;settings=null;logger=null;input=null;saveManager=null;debug=null;agentManager=null;analyses=null;runtimeCapabilities=null;ui=null;registry=null;
                 registryThreadId=0;
                 UiPagesRemoved=null;
                 lifecycleSubscribers=registryChanged;
@@ -999,8 +1188,6 @@ namespace CalradiaForge.Sdk
             }
             var errors=new List<Exception>();
             try { previous?.Dispose(); }
-            catch(Exception ex) { errors.Add(ex); }
-            try { previousPatches?.Disconnect(); }
             catch(Exception ex) { errors.Add(ex); }
             ForgeDetour.UnpatchAllForLifecycle();
             try { ForgePatcher.RemoveVerifiedRevertedRecords(); }
@@ -1018,6 +1205,56 @@ namespace CalradiaForge.Sdk
                 catch(Exception ex) { errors.Add(ex); }
             }
             if(errors.Count>0)throw new AggregateException("One or more Forge services or lifecycle subscribers failed during disconnection.",errors);
+        }
+
+        static void EnsureHookDisconnectAllowed(IForgeHookService service,string operation)
+        {
+            var guard=service as IForgeHookServiceDisconnectGuard;
+            string reason;
+            if(guard!=null&&!guard.CanDisconnect(out reason))
+                throw new InvalidOperationException("Cannot "+operation+" safely: "+(string.IsNullOrWhiteSpace(reason)?"active or uncertain hooks remain":reason));
+        }
+
+        static ForgeHookSnapshot[] UnresolvedHooks(IForgeHookService service)
+        {
+            if(service==null)return Array.Empty<ForgeHookSnapshot>();
+            return (service.GetSnapshots()??Array.Empty<ForgeHookSnapshot>())
+                .Where(snapshot=>snapshot==null||snapshot.State==ForgeHookState.Applied||snapshot.State==ForgeHookState.Conflict||snapshot.State==ForgeHookState.Failed)
+                .ToArray();
+        }
+
+        static ForgePatchSnapshot[] UnresolvedPatches(IForgePatchService service)
+        {
+            if(service==null)return Array.Empty<ForgePatchSnapshot>();
+            return (service.GetSnapshots()??Array.Empty<ForgePatchSnapshot>())
+                .Where(snapshot=>snapshot==null||snapshot.State==ForgePatchState.Applied||snapshot.State==ForgePatchState.Conflict||snapshot.State==ForgePatchState.Failed)
+                .ToArray();
+        }
+
+        static bool ReconnectServices(IForgePatchService patchService,IForgeHookService hookService,IList<Exception> errors)
+        {
+            IForgePatchServiceLifecycle patchLifecycle=patchService as IForgePatchServiceLifecycle;
+            IForgeHookServiceLifecycle hookLifecycle=hookService as IForgeHookServiceLifecycle;
+            bool restored=(patchService==null||patchLifecycle!=null)&&(hookService==null||hookLifecycle!=null);
+            return ReconnectLifecycles(patchLifecycle,hookLifecycle,errors)&&restored;
+        }
+
+        static bool ReconnectLifecycles(IForgePatchServiceLifecycle patchLifecycle,IForgeHookServiceLifecycle hookLifecycle,IList<Exception> errors)
+        {
+            bool restored=true;
+            if(patchLifecycle!=null)
+            {
+                try { patchLifecycle.Reconnect(); }
+                catch(Exception error) { errors?.Add(error); restored=false; }
+            }
+            // Hosts such as TestEngine implement both lifecycle interfaces on the same
+            // object; one idempotent call restores both halves and avoids duplicate work.
+            if(hookLifecycle!=null && !ReferenceEquals(patchLifecycle,hookLifecycle))
+            {
+                try { hookLifecycle.Reconnect(); }
+                catch(Exception error) { errors?.Add(error); restored=false; }
+            }
+            return restored;
         }
     }
 }

@@ -128,7 +128,7 @@ namespace CalradiaForge.Core
     public static class ForgeProtocol
     {
         public const int Version = 1;
-        static readonly string[] actions = new[] { "hello", "summary", "scan", "modules", "dependencies", "diagnostics", "logs", "inspect", "pin", "compare", "snapshots", "unpin", "tests", "commands", "command", "test-mode", "confirm-copy", "run", "run-batch", "metrics", "framework", "event-journal", "replay", "harmony", "patch-blueprints", "patch-preflight", "report", "export", "panel-open", "panel-close", "language", "agent-memory" };
+        static readonly string[] actions = new[] { "hello", "summary", "scan", "modules", "dependencies", "diagnostics", "logs", "inspect", "pin", "compare", "snapshots", "unpin", "tests", "commands", "command", "test-mode", "confirm-copy", "run", "run-batch", "metrics", "framework", "event-journal", "replay", "harmony", "patch-blueprints", "patch-preflight", "hook-snapshots", "hook-apply-plan", "hook-apply-confirm", "hook-revert-plan", "hook-revert-confirm", "hook-plan-cancel", "report", "export", "panel-open", "panel-close", "language", "agent-memory" };
         public static IReadOnlyList<string> Actions => actions;
         public static string[] Hello(string suiteVersion,string targetGameVersion)
         {

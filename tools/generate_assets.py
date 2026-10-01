@@ -1,12 +1,75 @@
 """Generate deterministic, static UI assets and module manifests (no game files modified)."""
 from pathlib import Path
 import sys
+import re
 import xml.etree.ElementTree as E
 import struct, zlib, json, hashlib
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = E.parse(ROOT/'Directory.Build.props').find('.//CalradiaForgeVersion').text
 GAUNTLET_ONLY = '--gauntlet-only' in sys.argv
+PREFAB_ONLY = '--prefab-only' in sys.argv
+SUPPORTED_LOCALIZATION_LANGUAGES=('en','es','pt','de','fr','it','pl','ru','tr','zh-HANS','zh-HANT','ja','ko')
+navigation_palette=json.loads((ROOT/'localization/navigation-palette.json').read_text(encoding='utf-8'))
+for source,localized in navigation_palette.items():
+    if localized.get('en')!=source or set(localized)!=set(SUPPORTED_LOCALIZATION_LANGUAGES) or any(not isinstance(value,str) or not value.strip() for value in localized.values()):
+        raise ValueError('Incomplete navigation palette translation: '+source)
+gauntlet_composer_source=json.loads((ROOT/'localization/gauntlet-composer.json').read_text(encoding='utf-8'))
+composer_languages=gauntlet_composer_source.get('languages',[])
+composer_entries=gauntlet_composer_source.get('entries',[])
+if composer_languages!=list(SUPPORTED_LOCALIZATION_LANGUAGES) or not isinstance(composer_entries,list):
+    raise ValueError('Gauntlet Composer translation locales or entry list differ from supported languages.')
+gauntlet_composer={}
+for entry in composer_entries:
+    source=entry.get('key','')
+    values=entry.get('values',[])
+    if not isinstance(source,str) or not source.strip() or source in gauntlet_composer or not isinstance(values,list) or len(values)!=len(composer_languages):
+        raise ValueError('Invalid or duplicate Gauntlet Composer translation entry: '+str(source))
+    localized=dict(zip(composer_languages,values))
+    if localized.get('en')!=source or any(not isinstance(value,str) or not value.strip() for value in localized.values()):
+        raise ValueError('Incomplete Gauntlet Composer translation: '+source)
+    if source in navigation_palette:
+        raise ValueError('Gauntlet Composer translation duplicates navigation palette key: '+source)
+    gauntlet_composer[source]=localized
+if not gauntlet_composer:
+    raise ValueError('Gauntlet Composer translation source is empty.')
+panel_source=(ROOT/'src/CalradiaForge.Mod/PanelViewModel.cs').read_text(encoding='utf-8')
+composer_required_texts=set()
+for line in panel_source.splitlines():
+    if 'GauntletComposer' in line or 'OutputHeading' in line:
+        composer_required_texts.update(re.findall(r'T\("([^"\n]+)"\)',line))
+    if '_gauntletComposerStatusKey =' in line or 'SetGauntletComposerStatus(' in line:
+        composer_required_texts.update(re.findall(r'"([^"\n]+)"',line))
+composer_required_texts.discard('Search / argument')
+missing_composer_texts=composer_required_texts.difference(gauntlet_composer)
+if missing_composer_texts:
+    raise ValueError('Gauntlet Composer UI text lacks translations: '+', '.join(sorted(missing_composer_texts)))
+rule_source=json.loads((ROOT/'localization/campaign-rule-builder.json').read_text(encoding='utf-8'))
+if rule_source.get('languages')!=list(SUPPORTED_LOCALIZATION_LANGUAGES):
+    raise ValueError('Campaign Rule Builder translation locales differ from supported languages.')
+campaign_rule_texts={}
+for entry in rule_source.get('entries',[]):
+    source=entry.get('key','')
+    values=entry.get('values',[])
+    if not isinstance(source,str) or not source.strip() or source in campaign_rule_texts or not isinstance(values,list) or len(values)!=len(SUPPORTED_LOCALIZATION_LANGUAGES):
+        raise ValueError('Invalid Campaign Rule Builder translation entry: '+str(source))
+    localized=dict(zip(SUPPORTED_LOCALIZATION_LANGUAGES,values))
+    if localized['en']!=source or any(not isinstance(value,str) or not value.strip() for value in localized.values()):
+        raise ValueError('Incomplete Campaign Rule Builder translation: '+source)
+    if source in navigation_palette or source in gauntlet_composer:
+        raise ValueError('Campaign Rule Builder translation duplicates a prior key: '+source)
+    campaign_rule_texts[source]=localized
+if not campaign_rule_texts:
+    raise ValueError('Campaign Rule Builder translation source is empty.')
+rule_required_texts=set()
+for line in panel_source.splitlines():
+    if 'CampaignRuleBuilder' in line or 'NoviceCampaignRuleBuilder' in line:
+        rule_required_texts.update(re.findall(r'T\("([^"\n]+)"\)',line))
+    if '_campaignRuleBuilderStatusKey =' in line or 'SetCampaignRuleBuilderStatus(' in line:
+        rule_required_texts.update(re.findall(r'"([^"\n]+)"',line))
+missing_rule_texts=rule_required_texts.difference(campaign_rule_texts).difference(gauntlet_composer).difference(navigation_palette)
+if missing_rule_texts:
+    raise ValueError('Campaign Rule Builder UI text lacks translations: '+', '.join(sorted(missing_rule_texts)))
 def write_xml(path, root, encoding='utf-8'):
     path.parent.mkdir(parents=True, exist_ok=True)
     # E.indent(root)
@@ -26,7 +89,7 @@ def manifest(module_id, dll, cls, dependencies):
     for tag,value in [('Name',module_id),('DLLName',dll),('SubModuleClassType',cls)]:E.SubElement(sm,tag,value=value)
     tags=E.SubElement(sm,'Tags');E.SubElement(tags,'Tag',key='DedicatedServerType',value='none');E.SubElement(tags,'Tag',key='IsNoRenderModeElement',value='false')
     write_xml(ROOT/'modules'/module_id/'SubModule.xml',root)
-if not GAUNTLET_ONLY:
+if not GAUNTLET_ONLY and not PREFAB_ONLY:
     manifest('CalradiaForge','CalradiaForge.Mod.dll','CalradiaForge.Mod.SubModule',['Native','SandBoxCore'])
     manifest('CalradiaForgeExamples','CalradiaForge.Examples.dll','CalradiaForge.Examples.SubModule',['Native','SandBoxCore','CalradiaForge'])
     manifest('CalradiaForgePriceProvider','CalradiaForge.PriceProvider.dll','CalradiaForge.PriceProvider.SubModule',['Native','SandBoxCore','CalradiaForge'])
@@ -213,7 +276,8 @@ def copy_imagegen_textures():
             raise ValueError(f'Refusing to remove {retired_output}: destination, dated archive, and checksum do not match')
         retired_output.unlink()
 
-copy_imagegen_textures()
+if not PREFAB_ONLY:
+    copy_imagegen_textures()
 
 root=E.Element('Prefab'); window=E.SubElement(root,'Window')
 shade=E.SubElement(window,'Widget',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Sprite='BlankWhiteSquare_9',Color='#000000CC')
@@ -313,7 +377,8 @@ E.SubElement(children,'TextWidget',Id='ForgeCurrentSection',DoNotAcceptEvents='t
 # lines for the longest source string without moving the command host or ledger.
 E.SubElement(children,'TextWidget',Id='ForgeSectionHelp',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='46',MaxWidth='520',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='134',Brush='CalradiaForge.Muted',Text='@SectionHelpLabel',HorizontalAlignment='Left',**{'Brush.FontSize':'12'})
 focus=E.SubElement(E.SubElement(children,'ListPanel',Id='ForgeEvidenceToggle',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='336',SuggestedHeight='46',MarginTop='97',MarginRight='24',HorizontalAlignment='Right',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
-icon_button(focus,'ToggleEvidenceFocus','calradiaforge_scroll_unfurled','@FocusEvidenceLabel')
+evidence_focus=icon_button(focus,'ToggleEvidenceFocus','calradiaforge_scroll_unfurled','@FocusEvidenceLabel')
+evidence_focus.set('IsVisible','@IsEvidenceToggleVisible')
 icon_button(focus,'SdkCatalogButton','calradiaforge_open_book','@SdkCatalogHint',command='ExecuteCategorySdk')
 icon_button(focus,'CycleModderRoleButton','calradiaforge_knight_banner','@ActiveModderRoleHint',command='ExecuteCycleModderRole')
 icon_button(focus,'ToggleDetailMode','calradiaforge_magnifying_glass','@DetailModeHint')
@@ -369,10 +434,10 @@ for cmd,label in [('Refresh','Refresh'),('Scan','Scan'),('Pin','Pin'),('Compare'
 button(quick_actions,'Run','@RunLabel','@PrimaryActionButtonWidth',height=42,brush='CalradiaForge.Primary')
 
 # Evidence ledger stays on an untextured, high-contrast surface; existing page navigation remains intact.
-body_frame=E.SubElement(children,'Widget',Id='ForgeEvidenceFrame',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='@EvidenceTop',MarginBottom='178',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
+body_frame=E.SubElement(children,'Widget',Id='ForgeEvidenceFrame',IsVisible='@IsEvidenceFrameVisible',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='@EvidenceTop',MarginBottom='178',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
 body=E.SubElement(E.SubElement(body_frame,'Children'),'Widget',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginTop='1',MarginRight='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0A0D0BFF')
 evidence_children=E.SubElement(body,'Children')
-E.SubElement(evidence_children,'TextWidget',Id='ForgeEvidenceHeading',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='205',SuggestedHeight='31',MarginLeft='16',MarginTop='6',Brush='CalradiaForge.HeaderGold',Text='@EvidenceHeading',**{'Brush.FontSize':'22'})
+E.SubElement(evidence_children,'TextWidget',Id='ForgeEvidenceHeading',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='205',SuggestedHeight='31',MarginLeft='16',MarginTop='6',Brush='CalradiaForge.HeaderGold',Text='@OutputHeading',**{'Brush.FontSize':'22'})
 E.SubElement(evidence_children,'TextWidget',Id='ForgeEvidencePage',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='135',SuggestedHeight='31',HorizontalAlignment='Right',MarginRight='11',MarginTop='6',Brush='CalradiaForge.Gold',Text='@PageLabel',**{'Brush.FontSize':'19'})
 filter_row=E.SubElement(evidence_children,'Widget',Id='ForgeOutputFilterRow',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='32',MarginLeft='225',MarginTop='5',MarginRight='150')
 filter_row_children=E.SubElement(filter_row,'Children')
@@ -429,9 +494,239 @@ for cmd,label,width in [('OpenAssemblyWorkbench','OpenAssemblyWorkbenchLabel',27
 assembly_actions=horizontal_row('ForgeAssemblyActionDeck',visibility='IsAssemblyWorkbench',bottom=99)
 for cmd,label,width in [('AssemblyList','AssemblyListLabel',164),('AssemblySelect','AssemblySelectLabel',164),('AssemblyInspect','AssemblyInspectLabel',164),('AssemblyPreview','AssemblyPreviewLabel',164),('AssemblyApply','AssemblyApplyLabel',164)]:button(assembly_actions,cmd,'@'+label,width,height=42)
 
-page_actions=horizontal_row('ForgePaginationAndUtilityDeck',bottom=47)
+page_actions=horizontal_row('ForgePaginationAndUtilityDeck',visibility='IsComposerPaginationVisible',bottom=47)
 for cmd,label,width in [('Previous','PreviousLabel',112),('Next','NextLabel',112),('Snapshots','SnapshotsLabel',145),('Dependencies','DependenciesLabel',145),('Remove','RemoveLabel',155),('Close','CloseLabel',112)]:button(page_actions,cmd,'@'+label,width,height=42,margin_right=7)
 button(page_actions,'ToggleKeyHelp','?',42,height=42,margin_right=0,hint='@KeyHelpHint')
+
+# Gauntlet Page Composer: a local, data-bound editor surface. The preview uses
+# only the component ViewModels below; it never loads generated XML or invokes
+# game/campaign operations.
+composer_workspace=E.SubElement(children,'Widget',Id='ForgeComposerWorkspace',IsVisible='@IsGauntletComposerWorkspaceVisible',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='280',MarginRight='24',MarginTop='180',MarginBottom='155',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
+composer_surface=E.SubElement(E.SubElement(composer_workspace,'Children'),'Widget',Id='ForgeComposerSurface',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginRight='1',MarginTop='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0A0D0BFF')
+composer_children=E.SubElement(composer_surface,'Children')
+E.SubElement(composer_children,'TextWidget',Id='ForgeComposerTitleLabel',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='220',SuggestedHeight='24',MarginLeft='12',MarginTop='7',Brush='CalradiaForge.Gold',Text='@GauntletComposerTitleLabel',**{'Brush.FontSize':'16'})
+composer_title_frame=E.SubElement(composer_children,'Widget',Id='ForgeComposerTitleFrame',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='34',MarginLeft='12',MarginRight='12',MarginTop='31',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
+composer_title_inner=E.SubElement(E.SubElement(composer_title_frame,'Children'),'Widget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginRight='1',MarginTop='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0D1511FF')
+E.SubElement(E.SubElement(composer_title_inner,'Children'),'EditableTextWidget',Id='ForgeComposerPageTitle',IsFocusable='true',UpdateTextOnTyping='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='10',MarginRight='10',Brush='GameTip.Text',Text='@GauntletComposerTitle')
+
+composer_left=E.SubElement(composer_children,'Widget',Id='ForgeComposerLeftColumn',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='316',MarginLeft='12',MarginTop='72',MarginBottom='12',Sprite='BlankWhiteSquare_9',Color='#14211CFF')
+composer_left_children=E.SubElement(composer_left,'Children')
+E.SubElement(composer_left_children,'TextWidget',Id='ForgeComposerCatalogHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='26',MarginLeft='10',MarginRight='10',MarginTop='4',Brush='CalradiaForge.HeaderGold',Text='@GauntletComposerCatalogHeading',**{'Brush.FontSize':'18'})
+composer_left_scroll=E.SubElement(composer_left_children,'ScrollablePanel',Id='ForgeComposerLeftScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='8',MarginRight='12',MarginTop='32',MarginBottom='10',ClipRect='ForgeComposerLeftClip',InnerPanel='ForgeComposerLeftClip\\ForgeComposerLeftContent',VerticalScrollbar='..\\ForgeComposerLeftScrollBar')
+scrollbar(composer_left_children,'ForgeComposerLeftScrollBar',32,10,12)
+composer_left_scroll_children=E.SubElement(composer_left_scroll,'Children')
+composer_left_clip=E.SubElement(composer_left_scroll_children,'Widget',Id='ForgeComposerLeftClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
+composer_left_content=E.SubElement(E.SubElement(composer_left_clip,'Children'),'ListPanel',Id='ForgeComposerLeftContent',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+composer_left_content_children=E.SubElement(composer_left_content,'Children')
+composer_catalog=E.SubElement(composer_left_content_children,'ListPanel',Id='ForgeComposerCatalog',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+composer_catalog_children=E.SubElement(composer_catalog,'Children')
+for kind,label in [('Heading','GauntletComposerAddHeadingLabel'),('Text','GauntletComposerAddTextLabel'),('Field','GauntletComposerAddFieldLabel'),('Button','GauntletComposerAddButtonLabel'),('Metric','GauntletComposerAddMetricLabel'),('List','GauntletComposerAddListLabel'),('Toggle','GauntletComposerAddToggleLabel'),('Progress','GauntletComposerAddProgressLabel'),('Selector','GauntletComposerAddSelectorLabel')]:
+    add_button=button(composer_catalog_children,'ComposerAdd'+kind,'@'+label,276,height=34,margin_right=0,margin_bottom=4)
+    add_button.set('IsDisabled','@GauntletComposerAtCapacity')
+
+E.SubElement(composer_left_content_children,'TextWidget',Id='ForgeComposerOrderHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='30',MarginLeft='2',MarginRight='4',MarginTop='12',Brush='CalradiaForge.HeaderGold',Text='@GauntletComposerOrderHeading',**{'Brush.FontSize':'18'})
+E.SubElement(composer_left_content_children,'TextWidget',Id='ForgeComposerCount',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='22',MarginLeft='2',MarginRight='4',Brush='CalradiaForge.Muted',Text='@GauntletComposerCountLabel',**{'Brush.FontSize':'13'})
+composer_blocks=E.SubElement(composer_left_content_children,'ListPanel',Id='ForgeComposerBlocks',DataSource='{GauntletComposerBlocks}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+composer_block_template=E.SubElement(composer_blocks,'ItemTemplate')
+composer_block_button=E.SubElement(composer_block_template,'ButtonWidget',IsFocusable='true',IsSelected='@IsSelected',DoNotPassEventsToChildren='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='44',MarginBottom='4',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteSelect'})
+composer_block_children=E.SubElement(composer_block_button,'Children')
+E.SubElement(composer_block_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='20',MarginLeft='8',MarginRight='8',MarginTop='2',Brush='CalradiaForge.Gold',Text='@TypeLabel',**{'Brush.FontSize':'12'})
+E.SubElement(composer_block_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='20',MarginLeft='8',MarginRight='8',MarginTop='21',Brush='CalradiaForge.ButtonText',Text='@Label',**{'Brush.FontSize':'14'})
+
+composer_right=E.SubElement(composer_children,'Widget',Id='ForgeComposerRightColumn',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='340',MarginRight='12',MarginTop='72',MarginBottom='12',Sprite='BlankWhiteSquare_9',Color='#14211CFF')
+composer_right_children=E.SubElement(composer_right,'Children')
+E.SubElement(composer_right_children,'TextWidget',Id='ForgeComposerPropertiesHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='26',MarginLeft='10',MarginRight='10',MarginTop='4',Brush='CalradiaForge.HeaderGold',Text='@GauntletComposerPropertiesHeading',**{'Brush.FontSize':'18'})
+composer_right_scroll=E.SubElement(composer_right_children,'ScrollablePanel',Id='ForgeComposerRightScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='10',MarginRight='12',MarginTop='32',MarginBottom='10',ClipRect='ForgeComposerRightClip',InnerPanel='ForgeComposerRightClip\\ForgeComposerRightContent',VerticalScrollbar='..\\ForgeComposerRightScrollBar')
+scrollbar(composer_right_children,'ForgeComposerRightScrollBar',32,10,12)
+composer_right_scroll_children=E.SubElement(composer_right_scroll,'Children')
+composer_right_clip=E.SubElement(composer_right_scroll_children,'Widget',Id='ForgeComposerRightClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
+composer_right_content=E.SubElement(E.SubElement(composer_right_clip,'Children'),'ListPanel',Id='ForgeComposerRightContent',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+composer_right_content_children=E.SubElement(composer_right_content,'Children')
+E.SubElement(composer_right_content_children,'TextWidget',Id='ForgeComposerSelectedKind',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='24',MarginLeft='2',MarginRight='6',Brush='CalradiaForge.Gold',Text='@GauntletComposerSelectedKindLabel',**{'Brush.FontSize':'14'})
+
+def composer_editable_row(parent, widget_id, label_binding, value_binding, visible=None):
+    attrs={'Id':widget_id,'WidthSizePolicy':'StretchToParent','HeightSizePolicy':'Fixed','SuggestedHeight':'66','MarginBottom':'5'}
+    if visible:
+        attrs['IsVisible']='@'+visible
+    row=E.SubElement(parent,'Widget',**attrs)
+    row_children=E.SubElement(row,'Children')
+    E.SubElement(row_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='20',Brush='CalradiaForge.Muted',Text='@'+label_binding,**{'Brush.FontSize':'13'})
+    frame=E.SubElement(row_children,'Widget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='38',MarginTop='22',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
+    inner=E.SubElement(E.SubElement(frame,'Children'),'Widget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginRight='1',MarginTop='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0D1511FF')
+    E.SubElement(E.SubElement(inner,'Children'),'EditableTextWidget',IsFocusable='true',UpdateTextOnTyping='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='8',MarginRight='8',Brush='GameTip.Text',Text='@'+value_binding)
+
+composer_editable_row(composer_right_content_children,'ForgeComposerLabelEditor','GauntletComposerLabelFieldLabel','GauntletComposerSelectedLabel','GauntletComposerHasSelection')
+composer_editable_row(composer_right_content_children,'ForgeComposerTextEditor','GauntletComposerTextFieldLabel','GauntletComposerSelectedText','GauntletComposerHasSelection')
+composer_editable_row(composer_right_content_children,'ForgeComposerOptionsEditor','GauntletComposerOptionsFieldLabel','GauntletComposerSelectedOptions','GauntletComposerOptionsVisible')
+composer_editable_row(composer_right_content_children,'ForgeComposerProgressEditor','GauntletComposerProgressFieldLabel','GauntletComposerSelectedProgress','GauntletComposerProgressVisible')
+composer_select_actions=E.SubElement(composer_right_content_children,'ListPanel',Id='ForgeComposerSelectionActions',IsVisible='@GauntletComposerHasSelection',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='38',MarginTop='2',MarginBottom='4',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
+composer_select_children=E.SubElement(composer_select_actions,'Children')
+for cmd,label,width,handler in [('ComposerPreviousBlock','GauntletComposerPreviousLabel',98,'ExecuteComposerPreviousBlock'),('ComposerNextBlock','GauntletComposerNextLabel',98,'ExecuteComposerNextBlock'),('ComposerMoveUp','GauntletComposerMoveUpLabel',82,'ExecuteComposerMoveUp'),('ComposerMoveDown','GauntletComposerMoveDownLabel',82,'ExecuteComposerMoveDown'),('ComposerRemove','GauntletComposerRemoveLabel',88,'ExecuteComposerRemove')]:
+    control=button(composer_select_children,cmd,'@'+label,width,height=34,margin_right=4 if cmd!='ComposerRemove' else 0)
+    control.set('Command.Click',handler)
+E.SubElement(composer_right_content_children,'TextWidget',Id='ForgeComposerEmptyState',IsVisible='@GauntletComposerIsEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='46',MarginLeft='4',MarginRight='8',Brush='CalradiaForge.Muted',Text='@GauntletComposerEmptyLabel',VerticalAlignment='Center',ClipContents='true',**{'Brush.FontSize':'15'})
+composer_sample_actions=E.SubElement(composer_right_content_children,'ListPanel',Id='ForgeComposerSampleActions',IsVisible='@GauntletComposerHasSelection',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='34',MarginTop='4',MarginBottom='6',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
+composer_sample_children=E.SubElement(composer_sample_actions,'Children')
+sample_button=button(composer_sample_children,'ComposerSampleButton','@GauntletComposerTryButtonLabel',128,height=32,margin_right=5)
+sample_button.set('IsVisible','@GauntletComposerSampleButtonVisible')
+sample_button.set('Command.Click','ExecuteComposerSampleButton')
+sample_toggle=button(composer_sample_children,'ComposerSampleToggle','@GauntletComposerToggleSampleLabel',142,height=32,margin_right=5)
+sample_toggle.set('IsVisible','@GauntletComposerSampleToggleVisible')
+sample_toggle.set('Command.Click','ExecuteComposerSampleToggle')
+sample_next=button(composer_sample_children,'ComposerSampleNextOption','@GauntletComposerNextSampleLabel',130,height=32,margin_right=0)
+sample_next.set('IsVisible','@GauntletComposerSampleSelectorVisible')
+sample_next.set('Command.Click','ExecuteComposerSampleNextOption')
+E.SubElement(composer_right_content_children,'TextWidget',Id='ForgeComposerSampleValue',IsVisible='@GauntletComposerHasSelection',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='22',MarginLeft='3',MarginRight='8',Brush='CalradiaForge.Muted',Text='@GauntletComposerSampleValueLabel',**{'Brush.FontSize':'13'})
+E.SubElement(composer_right_content_children,'TextWidget',Id='ForgeComposerPreviewHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='25',MarginLeft='2',MarginRight='6',MarginTop='6',Brush='CalradiaForge.HeaderGold',Text='@GauntletComposerPreviewHeading',**{'Brush.FontSize':'17'})
+E.SubElement(composer_right_content_children,'TextWidget',Id='ForgeComposerPreviewEmpty',IsVisible='@GauntletComposerIsEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='48',MarginLeft='4',MarginRight='8',Brush='CalradiaForge.Muted',Text='@GauntletComposerEmptyLabel',VerticalAlignment='Center',ClipContents='true',**{'Brush.FontSize':'15'})
+
+composer_preview=E.SubElement(composer_right_content_children,'ListPanel',Id='ForgeComposerPreviewBlocks',DataSource='{GauntletComposerBlocks}',IsVisible='@GauntletComposerHasBlocks',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',MarginTop='6',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+composer_preview_template=E.SubElement(composer_preview,'ItemTemplate')
+composer_preview_item=E.SubElement(composer_preview_template,'ListPanel',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',MarginBottom='8',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+composer_preview_children=E.SubElement(composer_preview_item,'Children')
+E.SubElement(composer_preview_children,'TextWidget',IsVisible='@IsHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='32',Brush='CalradiaForge.HeaderGold',Text='@Label',**{'Brush.FontSize':'21'})
+E.SubElement(composer_preview_children,'TextWidget',IsVisible='@IsText',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',MarginLeft='2',MarginRight='8',Brush='GameTip.Text',Text='@Text',ClipContents='true',**{'Brush.FontSize':'16'})
+field_preview=E.SubElement(composer_preview_children,'Widget',IsVisible='@IsField',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='48')
+field_preview_children=E.SubElement(field_preview,'Children')
+E.SubElement(field_preview_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='145',Brush='CalradiaForge.Gold',Text='@Label',VerticalAlignment='Center',ClipContents='true',**{'Brush.FontSize':'14'})
+E.SubElement(field_preview_children,'EditableTextWidget',IsFocusable='true',UpdateTextOnTyping='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='150',MarginRight='5',Brush='GameTip.Text',Text='@Text')
+button_preview=E.SubElement(composer_preview_children,'ButtonWidget',IsVisible='@IsButton',IsFocusable='true',DoNotPassEventsToChildren='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='42',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteSampleAction'})
+E.SubElement(E.SubElement(button_preview,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.ButtonText',Text='@SampleButtonLabel',HorizontalAlignment='Center',VerticalAlignment='Center')
+metric_preview=E.SubElement(composer_preview_children,'ListPanel',IsVisible='@IsMetric',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='38',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
+metric_children=E.SubElement(metric_preview,'Children')
+E.SubElement(metric_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.Gold',Text='@Label',VerticalAlignment='Center')
+E.SubElement(metric_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='140',Brush='CalradiaForge.TerminalText',Text='@ValueText',HorizontalAlignment='Right',VerticalAlignment='Center')
+list_preview=E.SubElement(composer_preview_children,'ListPanel',Id='ForgeComposerPreviewList',IsVisible='@IsList',DataSource='{Options}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+list_template=E.SubElement(list_preview,'ItemTemplate')
+list_option=E.SubElement(list_template,'ButtonWidget',IsFocusable='true',IsSelected='@IsSelected',DoNotPassEventsToChildren='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='32',MarginBottom='3',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteSelect'})
+E.SubElement(E.SubElement(list_option,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='8',MarginRight='8',Brush='CalradiaForge.ButtonText',Text='@Label',VerticalAlignment='Center')
+toggle_preview=E.SubElement(composer_preview_children,'ListPanel',IsVisible='@IsToggle',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='42',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
+toggle_preview_children=E.SubElement(toggle_preview,'Children')
+toggle_button=E.SubElement(toggle_preview_children,'ButtonWidget',IsFocusable='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='42',SuggestedHeight='42',ButtonType='Toggle',IsSelected='@IsOn',ToggleIndicator='ForgeComposerPreviewToggleIndicator',Brush='SPOptions.Checkbox.Empty.Button')
+E.SubElement(E.SubElement(toggle_button,'Children'),'ImageWidget',Id='ForgeComposerPreviewToggleIndicator',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='SPOptions.Checkbox.Full.Button')
+E.SubElement(toggle_preview_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='10',Brush='CalradiaForge.ButtonText',Text='@Label',VerticalAlignment='Center')
+progress_preview=E.SubElement(composer_preview_children,'ListPanel',IsVisible='@IsProgress',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='56',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+progress_children=E.SubElement(progress_preview,'Children')
+E.SubElement(progress_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='20',Brush='CalradiaForge.Gold',Text='@Label',**{'Brush.FontSize':'14'})
+preview_fill_bar=E.SubElement(progress_children,'FillBarWidget',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='260',SuggestedHeight='27',HorizontalAlignment='Left',VerticalAlignment='Center',ContainerWidget='ForgeComposerPreviewProgressContainer',FillWidget='ForgeComposerPreviewProgressFillParent\\ForgeComposerPreviewProgressFill',MaxAmountAsFloat='1',InitialAmountAsFloat='@ProgressAmount')
+preview_fill_children=E.SubElement(preview_fill_bar,'Children')
+progress_fill_parent=E.SubElement(preview_fill_children,'Widget',Id='ForgeComposerPreviewProgressFillParent',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='240',SuggestedHeight='14',MarginLeft='10',MarginRight='10',Sprite='BlankWhiteSquare_9',Color='#6FB183FF')
+E.SubElement(E.SubElement(progress_fill_parent,'Children'),'Widget',Id='ForgeComposerPreviewProgressFill',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
+E.SubElement(preview_fill_children,'Widget',Id='ForgeComposerPreviewProgressContainer',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Sprite='BlankWhiteSquare_9',Color='#27392FFF')
+selector_preview=E.SubElement(composer_preview_children,'SelectorWidget',IsVisible='@IsSelector',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',CurrentSelectedIndex='@SelectedOptionIndex',Container='ForgeComposerPreviewSelectorGrid')
+selector_children=E.SubElement(selector_preview,'Children')
+selector_grid=E.SubElement(selector_children,'NavigatableGridWidget',Id='ForgeComposerPreviewSelectorGrid',DataSource='{Options}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',ColumnCount='1',DefaultCellHeight='34',DefaultCellWidth='280')
+selector_template=E.SubElement(selector_grid,'ItemTemplate')
+selector_option=E.SubElement(selector_template,'ButtonWidget',IsFocusable='true',IsSelected='@IsSelected',DoNotPassEventsToChildren='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='32',MarginBottom='2',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteSelect'})
+E.SubElement(E.SubElement(selector_option,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='8',MarginRight='8',Brush='CalradiaForge.ButtonText',Text='@Label',VerticalAlignment='Center')
+
+composer_actions=horizontal_row('ForgeComposerActionDeck',visibility='IsGauntletComposerActive',bottom=99)
+save_draft=button(composer_actions,'ComposerSave','@GauntletComposerSaveLabel',150,height=42,margin_right=8)
+save_draft.set('IsVisible','@IsGauntletComposerWorkspaceVisible')
+save_draft.set('Command.Click','ExecuteComposerSaveDraft')
+generate_package=button(composer_actions,'ComposerGenerate','@GauntletComposerGenerateLabel',150,height=42,brush='CalradiaForge.Primary',margin_right=8)
+generate_package.set('IsVisible','@IsGauntletComposerWorkspaceVisible')
+generate_package.set('Command.Click','ExecuteComposerGenerate')
+copy_package=button(composer_actions,'ComposerCopy','@GauntletComposerCopyLabel',166,height=42,margin_right=8)
+copy_package.set('IsVisible','@IsGauntletComposerPackageVisible')
+copy_package.set('Command.Click','ExecuteComposerCopyPackage')
+edit_draft=button(composer_actions,'ComposerEdit','@GauntletComposerEditLabel',150,height=42,margin_right=8)
+edit_draft.set('IsVisible','@IsGauntletComposerPackageVisible')
+edit_draft.set('Command.Click','ExecuteComposerEditDraft')
+E.SubElement(composer_actions,'TextWidget',Id='ForgeComposerStatus',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='4',MarginRight='4',Brush='CalradiaForge.Muted',Text='@GauntletComposerStatusLabel',VerticalAlignment='Center',ClipContents='true',**{'Brush.FontSize':'13'})
+
+# Campaign Rule Builder keeps authoring controls in two independently scrolling
+# columns. The preview is display-only and cannot execute campaign actions.
+rule_workspace=E.SubElement(children,'Widget',Id='ForgeCampaignRuleWorkspace',IsVisible='@IsCampaignRuleBuilderWorkspaceVisible',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='280',MarginRight='24',MarginTop='180',MarginBottom='155',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
+rule_surface=E.SubElement(E.SubElement(rule_workspace,'Children'),'Widget',Id='ForgeCampaignRuleSurface',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginRight='1',MarginTop='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0A0D0BFF')
+rule_children=E.SubElement(rule_surface,'Children')
+
+rule_left=E.SubElement(rule_children,'Widget',Id='ForgeCampaignRuleLeftColumn',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='316',MarginLeft='12',MarginTop='12',MarginBottom='12',Sprite='BlankWhiteSquare_9',Color='#14211CFF')
+rule_left_children=E.SubElement(rule_left,'Children')
+E.SubElement(rule_left_children,'TextWidget',Id='ForgeCampaignRuleCatalogHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='26',MarginLeft='10',MarginRight='10',MarginTop='4',Brush='CalradiaForge.HeaderGold',Text='@CampaignRuleBuilderCatalogLabel',**{'Brush.FontSize':'18'})
+rule_add=button(rule_left_children,'CampaignRuleAdd','@CampaignRuleBuilderAddRuleLabel',282,height=36,margin_right=0)
+rule_add.set('MarginLeft','10')
+rule_add.set('MarginTop','34')
+rule_add.set('Command.Click','ExecuteCampaignRuleBuilderAdd')
+rule_add.set('IsDisabled','@CampaignRuleBuilderAtCapacity')
+E.SubElement(rule_left_children,'TextWidget',Id='ForgeCampaignRuleCount',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='20',MarginLeft='10',MarginRight='10',MarginTop='76',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderCountLabel',**{'Brush.FontSize':'13'})
+rule_left_scroll=E.SubElement(rule_left_children,'ScrollablePanel',Id='ForgeCampaignRuleLeftScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='8',MarginRight='12',MarginTop='101',MarginBottom='52',ClipRect='ForgeCampaignRuleLeftClip',InnerPanel='ForgeCampaignRuleLeftClip\\ForgeCampaignRuleList',VerticalScrollbar='..\\ForgeCampaignRuleLeftScrollbar')
+rule_left_clip=E.SubElement(E.SubElement(rule_left_scroll,'Children'),'Widget',Id='ForgeCampaignRuleLeftClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
+rule_list=E.SubElement(E.SubElement(rule_left_clip,'Children'),'ListPanel',Id='ForgeCampaignRuleList',DataSource='{CampaignRuleBuilderRules}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+rule_template=E.SubElement(rule_list,'ItemTemplate')
+rule_entry=E.SubElement(rule_template,'ButtonWidget',Id='ForgeCampaignRuleRow',IsFocusable='true',IsSelected='@IsSelected',DoNotPassEventsToChildren='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='54',MarginBottom='4',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteSelect'})
+rule_entry_children=E.SubElement(rule_entry,'Children')
+E.SubElement(rule_entry_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='18',MarginLeft='8',MarginRight='8',MarginTop='2',Brush='CalradiaForge.Gold',Text='@Id',**{'Brush.FontSize':'12'})
+E.SubElement(rule_entry_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='30',MarginLeft='8',MarginRight='8',MarginTop='20',Brush='CalradiaForge.ButtonText',Text='@Summary',ClipContents='true',**{'Brush.FontSize':'13'})
+scrollbar(rule_left_children,'ForgeCampaignRuleLeftScrollbar',101,52,12)
+E.SubElement(rule_left_children,'TextWidget',Id='ForgeCampaignRuleEmpty',IsVisible='@CampaignRuleBuilderIsEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='44',MarginLeft='12',MarginRight='12',MarginTop='105',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderEmptyLabel',ClipContents='true',**{'Brush.FontSize':'14'})
+rule_order_actions=E.SubElement(E.SubElement(rule_left_children,'ListPanel',Id='ForgeCampaignRuleOrderActions',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='36',MarginLeft='8',MarginRight='8',MarginBottom='8',VerticalAlignment='Bottom',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
+for command,glyph,label,width,handler in [('CampaignRulePrevious','‹','CampaignRuleBuilderPreviousLabel',52,'ExecuteCampaignRuleBuilderSelectPrevious'),('CampaignRuleNext','›','CampaignRuleBuilderNextLabel',52,'ExecuteCampaignRuleBuilderSelectNext'),('CampaignRuleUp','↑','CampaignRuleBuilderMoveUpLabel',48,'ExecuteCampaignRuleBuilderMoveUp'),('CampaignRuleDown','↓','CampaignRuleBuilderMoveDownLabel',48,'ExecuteCampaignRuleBuilderMoveDown'),('CampaignRuleRemove','×','CampaignRuleBuilderRemoveRuleLabel',48,'ExecuteCampaignRuleBuilderRemove')]:
+    control=button(rule_order_actions,command,glyph,width,height=32,margin_right=3,hint='@'+label)
+    control.set('Command.Click',handler)
+
+rule_right=E.SubElement(rule_children,'Widget',Id='ForgeCampaignRuleRightColumn',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='340',MarginRight='12',MarginTop='12',MarginBottom='12',Sprite='BlankWhiteSquare_9',Color='#14211CFF')
+rule_right_children=E.SubElement(rule_right,'Children')
+E.SubElement(rule_right_children,'TextWidget',Id='ForgeCampaignRulePropertiesHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='26',MarginLeft='10',MarginRight='10',MarginTop='4',Brush='CalradiaForge.HeaderGold',Text='@CampaignRuleBuilderPropertiesLabel',**{'Brush.FontSize':'18'})
+rule_right_scroll=E.SubElement(rule_right_children,'ScrollablePanel',Id='ForgeCampaignRuleRightScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='10',MarginRight='12',MarginTop='32',MarginBottom='10',ClipRect='ForgeCampaignRuleRightClip',InnerPanel='ForgeCampaignRuleRightClip\\ForgeCampaignRuleRightContent',VerticalScrollbar='..\\ForgeCampaignRuleRightScrollbar')
+rule_right_clip=E.SubElement(E.SubElement(rule_right_scroll,'Children'),'Widget',Id='ForgeCampaignRuleRightClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
+rule_right_content=E.SubElement(E.SubElement(rule_right_clip,'Children'),'ListPanel',Id='ForgeCampaignRuleRightContent',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+rule_right_items=E.SubElement(rule_right_content,'Children')
+E.SubElement(rule_right_items,'TextWidget',Id='ForgeCampaignRuleNoSelection',IsVisible='@CampaignRuleBuilderIsEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='42',MarginLeft='4',MarginRight='6',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderEmptyLabel',ClipContents='true',**{'Brush.FontSize':'15'})
+
+def rule_cycle_row(label_binding, value_binding, command, widget_id):
+    row=E.SubElement(rule_right_items,'Widget',Id=widget_id,IsVisible='@CampaignRuleBuilderHasSelection',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='67',MarginBottom='3')
+    row_children=E.SubElement(row,'Children')
+    E.SubElement(row_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='20',MarginLeft='3',MarginRight='6',Brush='CalradiaForge.Muted',Text='@'+label_binding,**{'Brush.FontSize':'13'})
+    control=button(row_children,widget_id+'Cycle','@'+value_binding,460,height=38,margin_right=0)
+    control.set('WidthSizePolicy','StretchToParent')
+    control.set('MarginLeft','3')
+    control.set('MarginRight','6')
+    control.set('MarginTop','23')
+    control.set('Command.Click',command)
+
+rule_cycle_row('CampaignRuleBuilderEventLabel','CampaignRuleBuilderSelectedEventLabel','ExecuteCampaignRuleBuilderCycleEvent','CampaignRuleEvent')
+rule_cycle_row('CampaignRuleBuilderActionLabel','CampaignRuleBuilderSelectedActionLabel','ExecuteCampaignRuleBuilderCycleAction','CampaignRuleAction')
+rule_cycle_row('CampaignRuleBuilderTargetLabel','CampaignRuleBuilderSelectedTargetLabel','ExecuteCampaignRuleBuilderCycleTarget','CampaignRuleTarget')
+rule_amount=E.SubElement(rule_right_items,'Widget',Id='ForgeCampaignRuleAmountRow',IsVisible='@CampaignRuleBuilderHasSelection',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='67',MarginBottom='4')
+rule_amount_children=E.SubElement(rule_amount,'Children')
+E.SubElement(rule_amount_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='20',MarginLeft='3',MarginRight='6',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderAmountLabel',**{'Brush.FontSize':'13'})
+amount_frame=E.SubElement(rule_amount_children,'Widget',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='38',MarginLeft='3',MarginRight='6',MarginTop='23',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
+amount_inner=E.SubElement(E.SubElement(amount_frame,'Children'),'Widget',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginRight='1',MarginTop='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0D1511FF')
+E.SubElement(E.SubElement(amount_inner,'Children'),'EditableTextWidget',Id='ForgeCampaignRuleAmount',IsFocusable='true',UpdateTextOnTyping='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='8',MarginRight='8',Brush='GameTip.Text',Text='@CampaignRuleBuilderAmountText')
+
+for group in ('A','B'):
+    group_row=E.SubElement(rule_right_items,'Widget',Id='ForgeCampaignRuleGroup'+group,IsVisible='@CampaignRuleBuilderHasSelection',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',MarginTop='6',MarginBottom='6')
+    group_children=E.SubElement(group_row,'Children')
+    heading=E.SubElement(group_children,'ListPanel',Id='ForgeCampaignRuleGroup'+group+'Heading',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='34',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'})
+    heading_children=E.SubElement(heading,'Children')
+    E.SubElement(heading_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='3',Brush='CalradiaForge.HeaderGold',Text='@CampaignRuleBuilderGroup'+group+'Label',VerticalAlignment='Center',**{'Brush.FontSize':'16'})
+    add_condition=button(heading_children,'CampaignRuleAddCondition'+group,'@CampaignRuleBuilderAddConditionLabel',170,height=32,margin_right=5)
+    add_condition.set('Command.Click','ExecuteCampaignRuleBuilderAddCondition'+group)
+    list_panel=E.SubElement(group_children,'ListPanel',Id='ForgeCampaignRuleConditions'+group,DataSource='{CampaignRuleBuilderConditions'+group+'}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',MarginTop='38',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+    condition_template=E.SubElement(list_panel,'ItemTemplate')
+    condition_row=E.SubElement(condition_template,'Widget',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='106',MarginBottom='5',Sprite='BlankWhiteSquare_9',Color='#0D1511FF')
+    condition_children=E.SubElement(condition_row,'Children')
+    E.SubElement(condition_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='25',MarginLeft='6',MarginRight='6',MarginTop='2',Brush='CalradiaForge.Gold',Text='@Summary',ClipContents='true',**{'Brush.FontSize':'13'})
+    value_frame=E.SubElement(condition_children,'Widget',IsVisible='@IsNumeric',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='33',MarginLeft='6',MarginRight='6',MarginTop='28',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
+    value_inner=E.SubElement(E.SubElement(value_frame,'Children'),'Widget',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginRight='1',MarginTop='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0D1511FF')
+    E.SubElement(E.SubElement(value_inner,'Children'),'EditableTextWidget',Id='ForgeCampaignRuleConditionThreshold'+group,IsFocusable='true',UpdateTextOnTyping='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='6',MarginRight='6',Brush='GameTip.Text',Text='@Value')
+    condition_actions=E.SubElement(E.SubElement(condition_children,'ListPanel',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='32',MarginLeft='6',MarginRight='6',MarginTop='68',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
+    for action,label,width,handler in [('Kind','CycleKindLabel',170,'ExecuteCycleKind'),('Remove','RemoveLabel',150,'ExecuteRemove')]:
+        control=button(condition_actions,'CampaignRuleCondition'+group+action,'@'+label,width,height=30,margin_right=4)
+        control.set('Command.Click',handler)
+
+E.SubElement(rule_right_items,'TextWidget',Id='ForgeCampaignRulePreviewHeading',IsVisible='@CampaignRuleBuilderHasSelection',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='27',MarginLeft='3',MarginTop='4',Brush='CalradiaForge.HeaderGold',Text='@CampaignRuleBuilderPreviewHeadingLabel',**{'Brush.FontSize':'17'})
+E.SubElement(rule_right_items,'TextWidget',Id='ForgeCampaignRulePreview',IsVisible='@CampaignRuleBuilderHasSelection',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',MarginLeft='3',MarginRight='6',MarginTop='3',MarginBottom='10',Brush='GameTip.Text',Text='@CampaignRuleBuilderPreviewLabel',ClipContents='true',**{'Brush.FontSize':'15'})
+scrollbar(rule_right_children,'ForgeCampaignRuleRightScrollbar',32,10,12)
+
+rule_actions=horizontal_row('ForgeCampaignRuleActionDeck',visibility='IsCampaignRuleBuilderActive',bottom=99)
+for command,label,width,handler in [('CampaignRuleSave','CampaignRuleBuilderSaveLabel',150,'ExecuteCampaignRuleBuilderSave'),('CampaignRuleValidate','CampaignRuleBuilderValidateLabel',150,'ExecuteCampaignRuleBuilderValidate'),('CampaignRuleGenerate','CampaignRuleBuilderGenerateLabel',150,'ExecuteCampaignRuleBuilderGenerate'),('CampaignRuleCopy','CampaignRuleBuilderCopyLabel',166,'ExecuteCampaignRuleBuilderCopy')]:
+    control=button(rule_actions,command,'@'+label,width,height=42,brush='CalradiaForge.Primary' if command=='CampaignRuleGenerate' else 'CalradiaForge.TacticalButton',margin_right=8)
+    control.set('Command.Click',handler)
+    if command=='CampaignRuleCopy':
+        control.set('IsDisabled','@CampaignRuleBuilderCannotCopy')
+E.SubElement(rule_actions,'TextWidget',Id='ForgeCampaignRuleStatus',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='4',MarginRight='4',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderStatusLabel',VerticalAlignment='Center',ClipContents='true',**{'Brush.FontSize':'13'})
 E.SubElement(children,'TextWidget',Id='ForgeNavigationFooter',IsVisible='@IsNavigationFooterVisible',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='27',MarginLeft='280',MarginRight='24',MarginBottom='14',VerticalAlignment='Bottom',Brush='CalradiaForge.Muted',Text='@NavigationLabel',**{'Brush.FontSize':'16'})
 E.SubElement(children,'ImageWidget',Id='ForgeBottomBrassFrameRule',DoNotAcceptEvents='true',DoNotPassEventsToChildren='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='6',MarginLeft='24',MarginRight='24',MarginBottom='4',VerticalAlignment='Bottom',Sprite='forge_patina_brass',Color='#FFFFFFFF')
 
@@ -687,6 +982,9 @@ E.SubElement(palette_children,'TextWidget',Id='NavigationPaletteKeyboardHint',Do
 
 write_xml(ROOT/'modules/CalradiaForge/GUI/Prefabs/CalradiaForge.xml',root)
 
+if PREFAB_ONLY:
+    print('Generated the Calradia Forge Gauntlet prefab only.')
+    sys.exit(0)
 if GAUNTLET_ONLY:
     print('Generated Calradia Forge Gauntlet textures and prefab.')
 else:
@@ -718,12 +1016,11 @@ game_help=json.loads((ROOT/'localization/in-game-help.json').read_text(encoding=
 english_catalog.update({key:translations['en'] for key,translations in game_help.items()})
 for language,folder,display,catalog in catalogs:
     catalog.update({key:translations.get(language,translations['en']) for key,translations in game_help.items()})
-navigation_palette=json.loads((ROOT/'localization/navigation-palette.json').read_text(encoding='utf-8'))
 navigation_languages={language for language,folder,display,catalog in catalogs}
-for source,localized in navigation_palette.items():
-    if localized.get('en')!=source or set(localized)!=navigation_languages or any(not value.strip() for value in localized.values()):
-        raise ValueError('Incomplete navigation palette translation: '+source)
+if navigation_languages!=set(SUPPORTED_LOCALIZATION_LANGUAGES):
+    raise ValueError('Source catalogs do not match the supported localization languages.')
 english_catalog.update({source:localized['en'] for source,localized in navigation_palette.items()})
+english_catalog.update({source:localized['en'] for source,localized in gauntlet_composer.items()})
 output_filter_keys=(
     'Evidence',
     'Filter current output without changing the tool argument.',
@@ -769,6 +1066,7 @@ test_results_explorer_keys=(
 )
 for language,folder,display,catalog in catalogs:
     catalog.update({source:localized[language] for source,localized in navigation_palette.items()})
+    catalog.update({source:localized[language] for source,localized in gauntlet_composer.items()})
     source_catalog={entry.attrib['key']:entry.attrib['value'] for entry in E.parse(ROOT/'localization'/f'{language}.xml').getroot()}
     for key in output_filter_keys:
         translated=source_catalog.get(key)

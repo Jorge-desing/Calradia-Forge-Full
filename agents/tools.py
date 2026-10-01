@@ -523,7 +523,7 @@ def audit_section_playbooks(raw: bool = False) -> str:
     """
     repo_root = _get_repo_root()
     panel_vm_path = repo_root / "src" / "CalradiaForge.Mod" / "PanelViewModel.cs"
-    desktop_vm_path = repo_root / "src" / "CalradiaForge.Desktop" / "Presentation" / "DesktopSimulationViewModels.cs"
+    desktop_vm_dir = repo_root / "src" / "CalradiaForge.Desktop" / "Presentation"
     prefab_path = repo_root / "modules" / "CalradiaForge" / "GUI" / "Prefabs" / "CalradiaForge.xml"
 
     missing = []
@@ -547,8 +547,13 @@ def audit_section_playbooks(raw: bool = False) -> str:
         missing.append("PanelViewModel.cs not found")
 
     # 2. Check DesktopSimulationViewModels
-    if desktop_vm_path.exists():
-        dvm_text = desktop_vm_path.read_text(encoding="utf-8", errors="ignore")
+    desktop_vm_paths = sorted(desktop_vm_dir.glob("DesktopSimulationViewModels*.cs")) if desktop_vm_dir.exists() else []
+    if desktop_vm_paths:
+        # Dashboard view models are split into partial files to keep source files
+        # manageable. Audit the full family so valid playbooks are not missed.
+        dvm_text = "\n".join(
+            path.read_text(encoding="utf-8", errors="ignore") for path in desktop_vm_paths
+        )
         expected_studios = [
             "TroopTreeDashboardViewModel",
             "AudioStudioDashboardViewModel",
@@ -567,7 +572,7 @@ def audit_section_playbooks(raw: bool = False) -> str:
             if count < 8:
                 missing.append(f"Desktop studios have only {count}/8 '{token}' definitions")
     else:
-        missing.append("DesktopSimulationViewModels.cs not found")
+        missing.append("DesktopSimulationViewModels*.cs not found")
 
     # 3. Check Prefab
     if prefab_path.exists():
@@ -715,12 +720,20 @@ def audit_code_smells(raw: bool = False) -> str:
     else:
         issues.append("PanelViewModel.cs not found.")
 
-    # 13. Check ForgeCommands.cs for safe DeclaringType formatting in ListPatches & VerifyIntegrity
+    # 13. Check ForgeCommands.cs for snapshot-only formatting in ListPatches.
     fc_path = repo_root / "src" / "CalradiaForge.Mod" / "Commands" / "ForgeCommands.cs"
     if fc_path.exists():
         fc_text = fc_path.read_text(encoding="utf-8", errors="ignore")
-        if "p.Original.DeclaringType != null" not in fc_text:
-            issues.append("ForgeCommands.cs: ListPatches lacks null guard for p.Original.DeclaringType.")
+        list_patches = re.search(
+            r"public\s+static\s+string\s+ListPatches\s*\([^)]*\)\s*\{([\s\S]*?)\n\s{8}\}",
+            fc_text,
+        )
+        if (
+            list_patches is None
+            or "GetTrackedSnapshots()" not in list_patches.group(1)
+            or "p.Original" in list_patches.group(1)
+        ):
+            issues.append("ForgeCommands.cs: ListPatches must format immutable snapshots without dereferencing live patch metadata.")
     else:
         issues.append("ForgeCommands.cs not found.")
 
@@ -738,7 +751,7 @@ def audit_code_smells(raw: bool = False) -> str:
             "  - Assembly inspection: 100% null-safe assembly reference and version formatting.\n"
             "  - UI & Hotkeys: SubModule keyboard polling enforces 100% null propagation on vm.\n"
             "  - Runtime & Transport: IPC Handle, PipeServer, and SnapshotComparer enforce full null safety.\n"
-            "  - Gauntlet UI & Console Commands: Null-safe currentCategory resolution and DeclaringType formatting."
+            "  - Gauntlet UI & Patch Inventory: Null-safe currentCategory resolution and snapshot-only patch status formatting."
         )
 
     distilled, _ = ForgeTokenCompactor.distill("audit_code_smells", raw_res, force_raw=raw)

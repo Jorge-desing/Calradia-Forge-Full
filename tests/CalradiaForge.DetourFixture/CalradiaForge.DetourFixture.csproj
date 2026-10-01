@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>net472</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
@@ -10,5 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/CalradiaForge.Sdk/CalradiaForge.Sdk.csproj" />
+    <ProjectReference Include="../../src/CalradiaForge.Core/CalradiaForge.Core.csproj" />
   </ItemGroup>
 </Project>

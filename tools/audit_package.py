@@ -39,6 +39,8 @@ def validate_entry(name, desktop):
     parts = [part for part in normal.split("/") if part]
     if normal.startswith("/") or ".." in parts or ":" in normal:
         raise ValueError(f"Unsafe archive path: {name}")
+    if any(part.lower() in {".venv", "venv", "site-packages", "dist-packages"} for part in parts):
+        raise ValueError(f"Python environment or installed dependencies included: {name}")
     lower = normal.lower()
     if lower.endswith(".sav") or "save-backup" in lower:
         raise ValueError(f"Save data included: {name}")
@@ -251,8 +253,16 @@ def audit(root, version):
         "CalradiaForge/bin/Win64_Shipping_Client/AsmResolver.DotNet.dll",
         "CalradiaForge/bin/Win64_Shipping_Client/AsmResolver.PE.dll",
         "CalradiaForge/bin/Win64_Shipping_Client/AsmResolver.PE.File.dll",
+        "CalradiaForge/bin/Win64_Shipping_Client/Mono.Cecil.dll",
+        "CalradiaForge/bin/Win64_Shipping_Client/Mono.Cecil.Mdb.dll",
+        "CalradiaForge/bin/Win64_Shipping_Client/Mono.Cecil.Pdb.dll",
+        "CalradiaForge/bin/Win64_Shipping_Client/Mono.Cecil.Rocks.dll",
         "CalradiaForge/bin/Win64_Shipping_Client/MonoMod.Backports.dll",
+        "CalradiaForge/bin/Win64_Shipping_Client/MonoMod.Core.dll",
+        "CalradiaForge/bin/Win64_Shipping_Client/MonoMod.Iced.dll",
         "CalradiaForge/bin/Win64_Shipping_Client/MonoMod.ILHelpers.dll",
+        "CalradiaForge/bin/Win64_Shipping_Client/MonoMod.RuntimeDetour.dll",
+        "CalradiaForge/bin/Win64_Shipping_Client/MonoMod.Utils.dll",
         "CalradiaForge/bin/Win64_Shipping_Client/System.ValueTuple.dll",
     }, attribution_path="CalradiaForge/GUI/SpriteParts/ATTRIBUTION.json",
        notice_path="CalradiaForge/THIRD_PARTY_NOTICES.md")]

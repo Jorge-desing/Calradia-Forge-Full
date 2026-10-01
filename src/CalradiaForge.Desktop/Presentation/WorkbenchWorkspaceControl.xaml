@@ -7,7 +7,7 @@
  xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
  MinWidth="0" MinHeight="0">
 <Grid>
- <ScrollViewer AutomationProperties.AutomationId="ResponsiveWorkbenchScrollViewport" Background="Transparent" BorderThickness="0" CanContentScroll="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+ <ScrollViewer AutomationProperties.AutomationId="ResponsiveWorkbenchScrollViewport" Background="Transparent" BorderThickness="0" CanContentScroll="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsHookWorkbenchOpen, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
  <presentation:AdaptiveWorkbenchPanel x:Name="ResponsiveWorkbenchPanel" AutomationProperties.AutomationId="ResponsiveWorkbenchLayout"
   MinimumPrimaryWidth="{Binding CurrentPage.MinimumPresentationWidth, FallbackValue=360}"
   PreferredSecondaryWidth="280" MinimumSecondaryWidth="250" PreferredContextWidth="310" MinimumContextWidth="260" Gap="8">
@@ -81,5 +81,6 @@
  </Border>
  </presentation:AdaptiveWorkbenchPanel>
  </ScrollViewer>
+ <presentation:HookWorkbenchControl AutomationProperties.AutomationId="HookWorkbenchPage" DataContext="{Binding HookWorkbench}" Visibility="{Binding IsHookWorkbenchOpen, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 </Grid>
 </UserControl>

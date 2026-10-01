@@ -33,18 +33,10 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Audit Ledger Cryptographic Hash Chain
-        run: |
-          python -c "from agents.tools import audit_ledger_integrity; res = audit_ledger_integrity({}); print(res); assert 'PASSED' in res, 'Ledger integrity failed!'"
+      - name: Prepare Calradia Forge Python tooling
+        shell: cmd
+        run: call tools\Setup-CalradiaForge-Python.bat --no-pause
 
-      - name: Audit Tactical Section Playbooks
-        run: |
-          python -c "from agents.tools import audit_section_playbooks; res = audit_section_playbooks({}); print(res); assert 'PASSED' in res, 'Playbooks audit failed!'"
-
-      - name: Audit Code Smells & Anti-Shadowing
-        run: |
-          python -c "from agents.tools import audit_code_smells; res = audit_code_smells({}); print(res); assert 'PASSED' in res, 'Code smells audit failed!'"
-
-      - name: Audit Documentation Bilingual Parity
-        run: |
-          python -c "from agents.tools import audit_documentation_parity; print(audit_documentation_parity({}))"
+      - name: Audit Ledger, Playbooks, Code Smells & Documentation Parity
+        shell: cmd
+        run: call tools\Run-CalradiaForge-Python-Checks.bat --ledger --no-pause

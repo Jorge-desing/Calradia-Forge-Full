@@ -160,6 +160,12 @@ namespace CalradiaForge.Tests
         { var path = Path.Combine(root, name); Directory.CreateDirectory(path); return path; }
         static string Hash(string path)
         { using (var sha = SHA256.Create()) using (var stream = File.OpenRead(path)) return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", string.Empty); }
-        static bool SamePath(string left, string right) => string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
+        static bool SamePath(string left, string right)
+        {
+            if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right)) return false;
+            try { return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase); }
+            catch (ArgumentException) { return false; }
+            catch (NotSupportedException) { return false; }
+        }
     }
 }

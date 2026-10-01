@@ -1,0 +1,3 @@
+# Python utilities and linting for Calradia Forge development.
+-r requirements-tools.txt
+ruff==0.16.9

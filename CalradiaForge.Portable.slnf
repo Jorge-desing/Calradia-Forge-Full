@@ -1,0 +1,10 @@
+{
+  "solution": {
+    "path": "CalradiaForge.sln",
+    "projects": [
+      "tests\\CalradiaForge.ForgeWeave.Tests\\CalradiaForge.ForgeWeave.Tests.csproj",
+      "tests\\CalradiaForge.Desktop.Tests\\CalradiaForge.Desktop.Tests.csproj",
+      "tests\\CalradiaForge.Desktop.RenderTests\\CalradiaForge.Desktop.RenderTests.csproj"
+    ]
+  }
+}

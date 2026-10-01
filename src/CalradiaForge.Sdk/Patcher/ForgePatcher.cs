@@ -14,11 +14,13 @@ namespace CalradiaForge.Sdk.Patcher
         public MethodInfo Replacement { get; set; }
         public string SourceModule { get; set; }
         public byte[] OriginalBytes { get; set; }
+        // Opaque installation identity; kept internal so the legacy public receipt shape stays stable.
+        internal object GenerationToken { get; set; }
 
         /// <summary>Checks all installed jump bytes against Forge's tracked record.</summary>
         public bool IsIntact()
         {
-            if (Original == null) return false;
+            if (Original == null || !ForgeDetour.IsTrackedReceipt(Original, Id, GenerationToken, OriginalBytes)) return false;
             string status;
             return ForgeDetour.Verify(Original, out status);
         }
@@ -51,15 +53,23 @@ namespace CalradiaForge.Sdk.Patcher
             if (record == null) throw new ArgumentNullException(nameof(record));
             if (record.Original == null || record.Replacement == null || !ForgeDetour.IsTracked(record.Original))
                 throw new ArgumentException("Only an active Forge-owned detour can be registered.", nameof(record));
-            if (!ForgeDetour.OriginalBytesMatch(record.Original, record.OriginalBytes))
-                throw new ArgumentException("The receipt's original bytes do not match Forge's tracked record.", nameof(record));
+            if (string.IsNullOrWhiteSpace(record.Id))
+                record.Id = ForgeDetour.GetTrackedPatchId(record.Original) ?? MakeLegacyId(record.Original, record.Replacement);
+            if (record.GenerationToken == null)
+            {
+                object generationToken;
+                if (!ForgeDetour.TryGetTrackedReceipt(record.Original, record.Id, record.OriginalBytes, out generationToken))
+                    throw new ArgumentException("The receipt does not match an active Forge detour generation.", nameof(record));
+                record.GenerationToken = generationToken;
+            }
+            if (!ForgeDetour.IsTrackedReceipt(record.Original, record.Id, record.GenerationToken, record.OriginalBytes))
+                throw new ArgumentException("The receipt does not match the active Forge detour generation.", nameof(record));
             lock (syncLock)
             {
                 if (appliedPatches.Any(existing => existing.Original == record.Original))
                     throw new InvalidOperationException("A patch record already exists for this target method.");
-                if (string.IsNullOrWhiteSpace(record.Id)) record.Id = ForgeDetour.GetTrackedPatchId(record.Original) ?? MakeLegacyId(record.Original, record.Replacement);
-                if (!ForgeDetour.IsTrackedPatch(record.Original, record.Id))
-                    throw new ArgumentException("The receipt's patch ID does not match Forge's shared detour record.", nameof(record));
+                if (!ForgeDetour.IsTrackedReceipt(record.Original, record.Id, record.GenerationToken, record.OriginalBytes))
+                    throw new ArgumentException("The receipt no longer matches the active Forge detour generation.", nameof(record));
                 if (appliedPatches.Any(existing => string.Equals(existing.Id, record.Id, StringComparison.OrdinalIgnoreCase)))
                     throw new InvalidOperationException("Patch ID already exists: " + record.Id);
                 appliedPatches.Add(Copy(record));
@@ -71,13 +81,16 @@ namespace CalradiaForge.Sdk.Patcher
         {
             if (record == null || record.Original == null || record.OriginalBytes == null)
                 throw new ArgumentException("Invalid patch record.", nameof(record));
-            if (!ForgeDetour.OriginalBytesMatch(record.Original, record.OriginalBytes))
-                throw new InvalidOperationException("The record does not match the active Forge detour.");
-            if (!ForgeDetour.Unpatch(record.Original))
-                throw new InvalidOperationException("Target bytes changed outside Forge; the foreign modification was not overwritten.");
             lock (syncLock)
             {
-                appliedPatches.RemoveAll(existing => existing.Original == record.Original);
+                PatchRecord registered = appliedPatches.FirstOrDefault(existing => existing.Original == record.Original &&
+                    ReferenceEquals(existing.GenerationToken, record.GenerationToken) &&
+                    string.Equals(existing.Id, record.Id, StringComparison.OrdinalIgnoreCase));
+                if (record.GenerationToken == null || registered == null)
+                    throw new InvalidOperationException("The patch receipt is stale or is not registered for this installation generation.");
+                if (!ForgeDetour.UnpatchReceipt(record.Original, record.Id, record.GenerationToken, record.OriginalBytes))
+                    throw new InvalidOperationException("The patch receipt is stale or target bytes changed; the active Forge detour was not reverted.");
+                appliedPatches.RemoveAll(existing => ReferenceEquals(existing.GenerationToken, record.GenerationToken));
             }
         }
 
@@ -149,6 +162,7 @@ namespace CalradiaForge.Sdk.Patcher
                 var replacements = new MethodInfo[batch.Count];
                 var patchIds = new string[batch.Count];
                 var originalByteCopies = new byte[batch.Count][];
+                var generationTokens = new object[batch.Count];
                 for (int index = 0; index < batch.Count; index++)
                 {
                     ResolvedPatch patch = batch[index];
@@ -170,9 +184,12 @@ namespace CalradiaForge.Sdk.Patcher
                 try
                 {
                     appliedPatches.AddRange(records);
-                    ForgeDetour.PatchBatch(originals, replacements, patchIds, owner, originalByteCopies);
+                    ForgeDetour.PatchBatch(originals, replacements, patchIds, owner, originalByteCopies, generationTokens);
                     for (int index = 0; index < records.Length; index++)
+                    {
                         records[index].OriginalBytes = originalByteCopies[index];
+                        records[index].GenerationToken = generationTokens[index];
+                    }
                     return records.Length;
                 }
                 catch (Exception applyError)
@@ -182,6 +199,7 @@ namespace CalradiaForge.Sdk.Patcher
                     {
                         PatchRecord record = records[index];
                         if (originalByteCopies[index] != null) record.OriginalBytes = originalByteCopies[index];
+                        record.GenerationToken = generationTokens[index];
                         if (ForgeDetour.IsTrackedPatch(record.Original, record.Id)) retained.Add(record);
                         else appliedPatches.Remove(record);
                     }
@@ -295,7 +313,8 @@ namespace CalradiaForge.Sdk.Patcher
                 Original = source.Original,
                 Replacement = source.Replacement,
                 SourceModule = source.SourceModule,
-                OriginalBytes = source.OriginalBytes == null ? null : (byte[])source.OriginalBytes.Clone()
+                OriginalBytes = source.OriginalBytes == null ? null : (byte[])source.OriginalBytes.Clone(),
+                GenerationToken = source.GenerationToken
             };
         }
 

@@ -673,3 +673,15 @@
 - [ ] Ejecutar Release, verificación stateless, suite completa y auditorías Gauntlet/localización.
 - [ ] Probar en Steam persistencia, edición, vista previa, generación y copia integral en 1220×880 y 1280×720.
 - [ ] Desplegar tras la verificación en vivo, con respaldo y hashes; sin importar assets ni modificar TPAC.
+
+## Constructor visual de reglas de campaña — 2026-09-29
+- [ ] Implementar borrador versionado, catálogo tipado de eventos/condiciones/acciones, validación y generación C# sin estado.
+- [ ] Integrar la ruta Gauntlet, vista previa local, teclado, localización en 13 idiomas y guía EN/ES.
+- [ ] Verificar regresiones, compilación Release, gate stateless, suite completa y auditorías Gauntlet/localización.
+- [ ] Revisar la ruta en Steam y desplegar con simulación previa, respaldo y hashes, preservando el TPAC.
+
+## Entorno Python aislado para herramientas de desarrollo — 2026-09-30
+- [x] Crear el entorno local Python 3.12 y perfiles fijados de utilidades y Ruff; mantener Antigravity como perfil opcional fuera del runtime del mod.
+- [x] Enrutar launchers BAT/PowerShell y workflows por el intérprete local; añadir el launcher BAT para `quick_validate.py`.
+- [x] Documentar instalación y uso en inglés/español; verificar creación/idempotencia del entorno, validación de skills, Ruff, pruebas Python y exclusión de `.venv` del empaquetado.
+- Nota de validación: el perfil base pasó y las suites Asset Pipeline (11) e Image Pipeline (5) pasaron; `quick_validate.py` y Ruff pasaron. La instalación opcional Antigravity falló dos veces por respuesta de red truncada (`InvalidChunkLength`). Las auditorías generales informan discrepancias del estado concurrente del prefab y documentación, fuera del alcance del entorno Python.

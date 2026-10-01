@@ -9,6 +9,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path -Parent $PSScriptRoot
 $artifacts = Join-Path $workspace 'artifacts'
+$pythonPath = Join-Path $workspace '.venv\Scripts\python.exe'
+if (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf)) {
+    throw "The Calradia Forge Python environment is missing. Run tools\Setup-CalradiaForge-Python.bat first. Expected interpreter: $pythonPath"
+}
 
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 
@@ -23,7 +27,7 @@ using System.Threading.Tasks;
 
 public static class FastPackageEngine {
     private static readonly HashSet<string> ExcludedDirNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-        "bin", "obj", "__pycache__"
+        "bin", "obj", "__pycache__", ".venv"
     };
 
     private static readonly HashSet<string> ExcludedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
@@ -211,9 +215,9 @@ try {
 
     $needAssets = -not ($Quick -and (Test-Path (Join-Path $workspace 'modules/CalradiaForge/Assets/GauntletUI/ui_calradiaforge_1_tex.tpac')))
     if ($needAssets) {
-        & python tools/generate_game_icons.py
+        & $pythonPath tools/generate_game_icons.py
         if ($LASTEXITCODE -ne 0) { throw 'Native and Desktop icon generation failed.' }
-        & python tools/generate_assets.py
+        & $pythonPath tools/generate_assets.py
         if ($LASTEXITCODE -ne 0) { throw 'Native UI and manifest generation failed.' }
     }
 
@@ -224,11 +228,11 @@ try {
     if ($needDocs) {
         & tools/build_docs.ps1
         if ($LASTEXITCODE -ne 0) { throw 'DocFX documentation build failed.' }
-        & python tools/generate_in_game_help.py
+        & $pythonPath tools/generate_in_game_help.py
         if ($LASTEXITCODE -ne 0) { throw 'DocFX-backed in-game help generation failed.' }
     }
 
-    & python tools/validate_game_icon_assets.py --require-tpac
+    & $pythonPath tools/validate_game_icon_assets.py --require-tpac
     if ($LASTEXITCODE -ne 0) { throw 'Native Game-icons source or runtime texture validation failed.' }
     if ([string]::IsNullOrWhiteSpace($TpacToolDirectory)) {
         $TpacToolDirectory = Join-Path $workspace 'TpacTool\bin'
@@ -283,7 +287,7 @@ try {
     }
     $modBuild = Join-Path $workspace 'src/CalradiaForge.Mod/bin/Release/net472'
     Get-ChildItem -LiteralPath $modBuild -Filter '*.dll' -File |
-        Where-Object { $_.Name -match '^(AsmResolver(\.DotNet|\.PE(\.File)?)?|MonoMod\.(Backports|ILHelpers)|System\.ValueTuple)\.dll$' } |
+        Where-Object { $_.Name -match '^(AsmResolver(\.DotNet|\.PE(\.File)?)?|Mono\.Cecil(\.(Mdb|Pdb|Rocks))?|MonoMod\.(Backports|Core|Iced|ILHelpers|RuntimeDetour|Utils)|System\.ValueTuple)\.dll$' } |
         ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $forgeBin -Force }
     Copy-Item -LiteralPath 'THIRD_PARTY_NOTICES.md' -Destination (Join-Path $moduleStage 'CalradiaForge/THIRD_PARTY_NOTICES.md') -Force
     Copy-Item -LiteralPath 'src/CalradiaForge.Desktop/Resources/GameIcons/ATTRIBUTION.json' -Destination (Join-Path $moduleStage 'CalradiaForge/GUI/SpriteParts/ATTRIBUTION.json') -Force
@@ -333,7 +337,7 @@ try {
     )
 
     foreach ($zip in @($modulesZip, $sourceZip, $desktopZip)) { Test-ZipEntries $zip }
-    & python tools/audit_package.py --version $Version
+    & $pythonPath tools/audit_package.py --version $Version
     if ($LASTEXITCODE -ne 0) { throw 'Package audit failed.' }
     $hashLines = @(Get-FileHash -LiteralPath $modulesZip, $sourceZip, $desktopZip -Algorithm SHA256 |
         ForEach-Object { "$($_.Hash) *$([IO.Path]::GetFileName($_.Path))" })

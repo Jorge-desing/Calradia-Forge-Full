@@ -1,10 +1,10 @@
-# Referencia del SDK de Calradia Forge — 25.0.0
+# Referencia del SDK de Calradia Forge — 25.2.0
 
-Versión del contrato del SDK: **11**
-Versión del código fuente del producto: **25.0.0**  
+Versión del contrato del SDK: **12**
+Versión del código fuente del producto: **25.2.0**
 Destinos del SDK: `net472` y `net8.0`; el módulo del juego continúa en `net472`.
 
-> Esta referencia describe el árbol de código fuente v25.0.0. Los ZIP de distribución existentes no se regeneraron para esta actualización; su contenido no demuestra que incluyan el contrato 11 del SDK.
+> Esta referencia describe el árbol de código fuente v25.2.0. Los archivos de distribución son artefactos independientes; consulta sus manifiestos o registros de validación para determinar qué contrato del SDK contienen.
 
 ## 1. Registro automático
 
@@ -160,19 +160,55 @@ La reversión solo se permite si los bytes del destino aún coinciden con exacti
 
 Este escritor de bajo nivel sigue siendo experimental. Ni los cambios de protección de página ejecutable ni el vaciado de la caché de instrucciones coordinan los demás hilos que pudieran estar ejecutando el destino. El backend actual no garantiza hot patching concurrente seguro; úsalo en un fixture desechable y aislado, y asegúrate de que ningún hilo pueda ejecutar el método mientras se modifica su código. No lo uses como framework de parcheo de producción. El campo owner es solo descriptivo. Declaraciones de hook de preflight como `Transpiler` y `Finalizer` no están implementadas por el backend de reemplazo de métodos.
 
-`ForgeLivePatcher` y las utilidades de desvío anteriores permanecen como superficies de compatibilidad. `ApplyDetour(original, replacement)` usa la ruta de reemplazo de bajo nivel de Forge; `ApplyPatch`/`RevertPatch` solo emiten sus eventos de solicitud correspondientes para un consumidor registrado. Forge no incluye Harmony ni convierte automáticamente declaraciones `Prefix`, `Postfix`, `Transpiler` o `Finalizer` en hooks de ejecución. Prefiere `ForgeApi.Patches` cuando necesites propiedad explícita, verificación y reversión.
+`ForgeLivePatcher` y las utilidades de desvío anteriores permanecen como superficies de compatibilidad. `ApplyDetour(original, replacement)` usa la ruta de reemplazo de bajo nivel de Forge; `ApplyPatch`/`RevertPatch` solo emiten sus eventos de solicitud correspondientes para un consumidor registrado. Forge no incluye Harmony ni convierte automáticamente entradas declarativas de blueprints en hooks de ejecución. Usa la capacidad separada `ForgeApi.Hooks` para callbacks Prefix/Postfix registrados explícitamente; estos backends no admiten `Transpiler` ni `Finalizer`.
 
-## 7. Versión del contrato de ForgeApi
+## 7. Hooks de ejecución Prefix y Postfix explícitos
 
-El contrato 11 añade la superficie opcional del servicio de parches. Como la versión es una constante de compilación incrustada en el ensamblado consumidor, comprueba la capacidad opcional en ejecución en vez de usar una comparación de versión para esta función:
+La capacidad opcional `IForgeHookService` está disponible como `ForgeApi.Hooks`. Es independiente del registro declarativo de Patch Blueprints y del servicio de reemplazo uno a uno disponible en `ForgeApi.Patches`; agregarla no añade miembros a `IForgeRegistry`. Los anfitriones que deban reabrir la misma instancia del servicio tras reconectar pueden implementar la capacidad opcional e independiente `IForgeHookServiceLifecycle`. `ForgeApi.Version` es una constante de compilación, así que comprueba `ForgeApi.Hooks != null` en ejecución para determinar si el anfitrión conectado proporciona esta capacidad. Las definiciones y los delegados de hooks permanecen dentro del proceso y no se transportan por IPC.
+
+Registrar una definición solo guarda metadatos y callbacks. No instala un detour; aplicar, verificar y revertir son operaciones explícitas:
 
 ```csharp
-if (ForgeApi.Patches == null)
-    throw new InvalidOperationException("El anfitrión conectado no ofrece el servicio de parches.");
+var hooks = ForgeApi.Hooks;
+if (hooks == null)
+    throw new InvalidOperationException("El anfitrión Forge conectado no ofrece soporte de hooks de ejecución.");
+
+var targetMethod = ResolveExactTarget(); // El módulo debe devolver un MethodInfo admitido y sin ambigüedad.
+IForgeHookHandle handle = hooks.Register(new ForgeHookDefinition
+{
+    Id = "my_module.hero_name",
+    Owner = "MyModule",
+    Target = targetMethod,
+    Prefix = invocation => { /* inspecciona o actualiza argumentos compatibles */ },
+    Postfix = invocation => { /* inspecciona o actualiza el resultado */ }
+});
+
+ForgeHookOperationResult applied = handle.Apply();
+ForgeHookOperationResult verified = handle.Verify();
+ForgeHookOperationResult reverted = handle.Revert();
+// Dispose también solicita una reversión de mejor esfuerzo; conserva el handle para estado y diagnóstico.
+```
+
+`ForgeHookInvocation` expone la instancia de destino y un arreglo de argumentos. Un Prefix puede actualizar argumentos compatibles, asignar `RunOriginal = false` y proporcionar un `Result` compatible con el tipo; un Postfix puede inspeccionar o reemplazar un resultado compatible después de que regrese el método original. Los callbacks se ejecutan sincrónicamente en el hilo que invoca el destino. Si falla un callback Prefix, se continúa con la llamada original; si falla un callback Postfix, se conserva el resultado original. No bloquees estos callbacks ni supongas que se ejecutan en el hilo del juego.
+
+`GetSnapshots(owner)` devuelve snapshots puntuales; el servicio también expone `Apply`, `Verify`, `Revert`, `RevertOwner` y `RevertAll`. Los resultados identifican `Registered`, `Applied`, `Reverted`, `Conflict`, `Failed` o `Unsupported`. El propietario es una etiqueta de seguimiento, no un límite de autorización. `Before`, `After` y `Priority` se envían como metadatos de orden de MonoMod RuntimeDetour en el destino compatible del juego. El registro rechaza firmas no admitidas, incluidos genéricos abiertos, constructores, métodos abstractos, P/Invoke, llamadas internas y métodos varargs, parámetros o retornos by-ref o de puntero, tipos byref-like, destinos de instancia cuyo tipo sea un value type y destinos con más de 12 parámetros.
+
+El anfitrión integrado de Bannerlord solo permite Apply/Revert en la pantalla exacta del menú principal, desde el hilo del juego y sin campaña, misión ni sesión multijugador activos. El backend RuntimeDetour ejecutable está incluido para el destino `net472` del módulo; aplicar hooks en `net8.0` no está admitido. El registro sigue siendo inerte en todos los destinos. Al desconectarse, el servicio intenta revertir sus hooks aplicados en orden inverso y conserva los registros no resueltos; rechaza la reconexión mientras algún hook siga activo, en conflicto o incierto.
+
+Esta ruta de hooks de ejecución es experimental. Las pruebas de fixture son seriales y no demuestran seguridad si otro hilo ejecuta el destino durante Apply o Revert. Mantén los destinos inactivos durante los cambios, valida con fixtures aislados y no consideres esta capacidad una garantía de hot-patching de producción. Se admiten Prefix/Postfix; no se proporciona ejecución de Harmony, Transpiler ni Finalizer.
+
+## 8. Versión del contrato de ForgeApi
+
+El contrato 12 añade la superficie opcional de hooks de ejecución Prefix/Postfix. El contrato 11 añadió el servicio opcional e independiente de reemplazo de métodos. Como la versión es una constante de compilación incrustada en el ensamblado consumidor, comprueba la capacidad opcional en ejecución en vez de usar una comparación de versión:
+
+```csharp
+if (ForgeApi.Hooks == null)
+    throw new InvalidOperationException("El anfitrión conectado no ofrece soporte de hooks de ejecución.");
 ```
 
 | Contrato | Código fuente del producto | Incorporación relevante |
 |---|---|---|
+| 12 | 25.2.0 | `IForgeHookService` opcional para callbacks Prefix/Postfix registrados explícitamente; Apply, Verify y Revert son explícitos, con MonoMod RuntimeDetour en el destino Bannerlord `net472`. |
 | 11 | 25.0.0 | `IForgePatchService` opcional con handles explícitos para reemplazo de métodos, verificación y reversión con detección de conflictos. |
 | 10 | 25.0.0 | Resultados explícitos de guardado seguro, informes acotados de auto-registro, lecturas tipadas de memoria semántica/procedimental y notificaciones de disponibilidad seguras por generación. |
 | 9 | 24.0.0 | Registros de `ForgeModelRegistry` con propietario; las condiciones de modificadores se ejecutan sobre una instantánea fuera del bloqueo del registro. |
@@ -185,7 +221,7 @@ El endpoint `/agents` ofrece diagnósticos agregados. Calcula conteos de los niv
 
 `ForgeModelRegistry.GetModifiers(category)` devuelve una instantánea inmutable en caché con solo la categoría solicitada. Los registros, reemplazos y bajas invalidan la caché; las instantáneas ya entregadas permanecen estables. `Evaluate` reutiliza la instantánea de categoría e invoca las condiciones de los modificadores fuera del bloqueo del registro. Son mejoras internas de asignaciones y recorrido; no cambia el orden de registro ni el comportamiento del cálculo.
 
-## 8. ModSettings
+## 9. ModSettings
 
 ```csharp
 var settings = ModSettings.Register("MyMod", new MySettings { Volume = 1.0f });

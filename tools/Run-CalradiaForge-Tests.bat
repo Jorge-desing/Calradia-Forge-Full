@@ -7,6 +7,7 @@ set "RUN_CORE=1"
 set "RUN_FORGEWEAVE=1"
 set "RUN_DESKTOP=1"
 set "RUN_ASSETS=1"
+set "RUN_PORTABLE=0"
 set "RENDER_OUTPUT="
 set "FAILED=0"
 
@@ -27,6 +28,13 @@ if /I "%~1"=="--assets-only" (
     set "RUN_CORE=0"
     set "RUN_FORGEWEAVE=0"
     set "RUN_DESKTOP=0"
+)
+if /I "%~1"=="--portable-only" (
+    set "RUN_CORE=0"
+    set "RUN_FORGEWEAVE=1"
+    set "RUN_DESKTOP=1"
+    set "RUN_ASSETS=1"
+    set "RUN_PORTABLE=1"
 )
 if /I "%~1"=="--render-output" goto parse_render_output
 shift
@@ -51,6 +59,7 @@ pushd "%ROOT%"
 if errorlevel 1 goto setup_failed
 
 if "%SKIP_BUILD%"=="1" goto run_tests
+if "%RUN_PORTABLE%"=="1" goto build_portable
 
 rem A Core-only run still exercises the Core harness plus the standalone
 rem ForgeWeave suite. Build those test dependency graphs instead of the full
@@ -87,6 +96,12 @@ goto run_tests
 :build_solution
 echo [Build] Compiling Calradia Forge and test projects...
 dotnet build CalradiaForge.sln -c Release
+if errorlevel 1 goto failed
+goto run_tests
+
+:build_portable
+echo [Build] Compiling portable Desktop and ForgeWeave test graphs only...
+dotnet build CalradiaForge.Portable.slnf -c Release --nologo
 if errorlevel 1 goto failed
 
 :run_tests

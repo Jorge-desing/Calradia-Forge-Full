@@ -7,10 +7,11 @@ using CalradiaForge.Sdk;
 
 namespace CalradiaForge.Core
 {
-    public sealed class TestEngine : IForgeRegistry, IForgeUiRegistry, IPatchBlueprintRegistry, IForgePatchService, IForgePatchServiceLifecycle, IForgeEventRegistry, IForgeReplayRegistry, IForgeSettingsRegistry, IForgeLogger, IForgeInput, IForgeSaveManager, IForgeDebug, IForgeAgentManager, IForgeAnalysisRegistry, IForgeRuntimeCapabilities
+    public sealed class TestEngine : IForgeRegistry, IForgeUiRegistry, IPatchBlueprintRegistry, IForgePatchService, IForgePatchServiceLifecycle, IForgeHookService, IForgeHookServiceLifecycle, IForgeHookServiceDisconnectGuard, IForgeEventRegistry, IForgeReplayRegistry, IForgeSettingsRegistry, IForgeLogger, IForgeInput, IForgeSaveManager, IForgeDebug, IForgeAgentManager, IForgeAnalysisRegistry, IForgeRuntimeCapabilities
     {
         readonly object registryGate=new object();
         readonly ForgePatchService forgePatchService=new ForgePatchService();
+        readonly ForgeHookService forgeHookService;
         readonly Dictionary<string,ITestCase> tests=new Dictionary<string,ITestCase>();
         readonly Dictionary<string,ICommand> commands=new Dictionary<string,ICommand>();
         readonly Dictionary<string,IDiagnosticProvider> providers=new Dictionary<string,IDiagnosticProvider>();
@@ -23,6 +24,8 @@ namespace CalradiaForge.Core
         readonly Dictionary<string,Descriptor> descriptors=new Dictionary<string,Descriptor>(StringComparer.OrdinalIgnoreCase);
         ITestServices hostServices;
         bool testingEnabled,campaignCopyConfirmed;
+        public TestEngine() : this(null) { }
+        public TestEngine(Func<bool> canManageHooks) { forgeHookService = new ForgeHookService(canManageHooks); }
         public bool TestingEnabled { get {lock(registryGate)return testingEnabled;} set {lock(registryGate)testingEnabled=value;} }
         public bool CampaignCopyConfirmed { get {lock(registryGate)return campaignCopyConfirmed;} set {lock(registryGate)campaignCopyConfirmed=value;} }
         public IEnumerable<Descriptor> Tests
@@ -82,8 +85,31 @@ namespace CalradiaForge.Core
         public ForgePatchRevertResult Revert(string patchId) => forgePatchService.Revert(patchId);
         public IReadOnlyList<ForgePatchRevertResult> RevertOwner(string owner) => forgePatchService.RevertOwner(owner);
         public IReadOnlyList<ForgePatchRevertResult> RevertAll() => forgePatchService.RevertAll();
-        public void Reconnect() => forgePatchService.Reconnect();
-        public void Disconnect() => forgePatchService.Disconnect();
+        public IForgeHookHandle Register(ForgeHookDefinition definition)
+        {
+            if (definition == null) throw new ArgumentNullException(nameof(definition));
+            lock (registryGate)
+            {
+                if (string.IsNullOrWhiteSpace(definition.Id)) throw new ArgumentException("Hook ID is required.", nameof(definition));
+                if (!ids.Add(definition.Id)) throw new ArgumentException("Duplicate ID: " + definition.Id);
+                try { return forgeHookService.Register(definition); }
+                catch { ids.Remove(definition.Id); throw; }
+            }
+        }
+        IReadOnlyList<ForgeHookSnapshot> IForgeHookService.GetSnapshots(string owner) => forgeHookService.GetSnapshots(owner);
+        ForgeHookOperationResult IForgeHookService.Apply(string hookId) => forgeHookService.Apply(hookId);
+        ForgeHookOperationResult IForgeHookService.Verify(string hookId) => forgeHookService.Verify(hookId);
+        ForgeHookOperationResult IForgeHookService.Revert(string hookId) => forgeHookService.Revert(hookId);
+        IReadOnlyList<ForgeHookOperationResult> IForgeHookService.RevertOwner(string owner) => forgeHookService.RevertOwner(owner);
+        IReadOnlyList<ForgeHookOperationResult> IForgeHookService.RevertAll() => forgeHookService.RevertAll();
+        public bool CanDisconnect(out string reason) => forgeHookService.CanDisconnect(out reason);
+        internal void StopApplicationsForUnload()
+        {
+            forgeHookService.StopCallbacksForUnload();
+            forgePatchService.StopApplicationsForUnload();
+        }
+        public void Reconnect() { forgePatchService.Reconnect(); forgeHookService.Reconnect(); }
+        public void Disconnect() { forgeHookService.Disconnect(); forgePatchService.Disconnect(); }
         public IReadOnlyList<Descriptor> Analyzers { get {lock(registryGate)return analyzers.Keys.OrderBy(id=>id,StringComparer.Ordinal).Select(id=>Copy(descriptors[id])).ToArray();} }
         public IEnumerable<ForgeEventSubscription> ForgeWeaveSubscriptions => forgeWeave.Subscriptions;
         public int ForgeWeaveSubscriptionCount => forgeWeave.Count;

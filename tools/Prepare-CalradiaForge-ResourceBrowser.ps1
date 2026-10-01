@@ -10,6 +10,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
+$python = Join-Path $repositoryRoot '.venv\Scripts\python.exe'
 $workspaceModule = Join-Path $repositoryRoot 'modules\CalradiaForge'
 if ([string]::IsNullOrWhiteSpace($SourceModulePath)) { $SourceModulePath = $workspaceModule }
 $sourceModule = [IO.Path]::GetFullPath($SourceModulePath)
@@ -84,11 +85,10 @@ foreach ($relativePath in $files) {
     }
 }
 
-$python = Get-Command 'python.exe' -ErrorAction SilentlyContinue
-if ($usingWorkspaceSource -and $python) {
+if ($usingWorkspaceSource -and (Test-Path -LiteralPath $python -PathType Leaf)) {
     Push-Location $repositoryRoot
     try {
-        & $python.Source 'tools\validate_game_icon_assets.py'
+        & $python 'tools\validate_game_icon_assets.py'
         if ($LASTEXITCODE -ne 0) {
             throw 'Game-icon source validation failed; no files were staged.'
         }
@@ -98,7 +98,7 @@ if ($usingWorkspaceSource -and $python) {
     }
 }
 elseif ($usingWorkspaceSource) {
-    throw 'Python was not found. Run the asset validator before staging UI resources.'
+    throw 'The Calradia Forge Python environment is missing. Run tools\Setup-CalradiaForge-Python.bat first.'
 }
 else {
     Write-Host 'Using an isolated source-module fixture; repository asset validation is covered by the staging test runner.'

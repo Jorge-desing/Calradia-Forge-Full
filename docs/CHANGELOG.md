@@ -1,5 +1,17 @@
 # Changelog
 
+## Hosted CI recovery — 2026-09-30 (Registry Rev100)
+
+- Hosted CI builds portable targets through `CalradiaForge.Portable.slnf` and the BAT launcher; local Bannerlord integration retains `net472` and requires licensed TaleWorlds assemblies through `GameBin`. Core remains multi-targeted. Ledger audits recognize split Desktop ViewModels and immutable patch snapshots. Decorative overlap checks honor source-verified mutually exclusive workspace visibility and the current evidence-margin condition. Full local tests passed Core 401/401, ForgeWeave 73/73, Desktop 65/65 and WPF render 292/292; Python CI checks passed 12 asset fixtures, 5 image tests, Ruff and sprite/icon checks. The optional agent dependency installation encountered a truncated package-mirror response locally. New GitHub checks are pending at this revision; historical failed runs remain in Actions history.
+
+## 25.2.0 source follow-up — 2026-09-30 (Registry Rev076)
+
+- Makes hook-handle and patch-handle disposal report failed reverts instead of silently dropping the result. Hook dispatch rechecks the approved context after Prefix and before Postfix, preserving original arguments if the gate closes before the target and skipping later callbacks if the target leaves the context. Forge keeps `Patches` published while unresolved patch records need recovery, allows a Revert only after recorded installed/original bytes are verified, and restores the previous host lifecycle if an incoming host fails to reconnect after teardown. BAT validation passed Core 393/393, ForgeWeave 73/73, the serial x64 detour fixture, Desktop 65/65, and WPF render/resources 292/292 with 182 layout passes. No direct fixture EXE, live Bannerlord, campaign, battle, or ZIP regeneration.
+
+## 25.2.0 source follow-up — 2026-09-30 (Rev075)
+
+- Hook dispatch now checks the host's exact approved game-thread main-menu gate for every invocation. Outside that context it skips custom callbacks and invokes the original target, while the detour stays installed until explicitly reverted. WPF can plan recovery Reverts for `Conflict` and `Failed` snapshots, and its confirmation view warns that multi-hook Apply is sequential and may leave earlier hooks applied after a later failure. All 13 Desktop locales carry the lifetime and partial-Apply warnings. BAT validation passed: Core 390/390, ForgeWeave 73/73, serial x64 detour fixture, Desktop 65/65, and WPF render/resource 292/292 with 182 layout passes; builds had zero warnings/errors. No live Bannerlord check was made, serial fixtures do not prove concurrent-target safety, `ForgeApi.Version` remains 12, product version remains 25.2.0, and ZIPs were not regenerated.
+
 ## 23.0.0 source follow-up — 2026-09-25 (Rev033)
 
 - Strengthens shared-provider diagnostics while preserving the existing fail-fast `Require<T>` contract and exception types. Missing-provider, missing-service, CLR contract-identity, and version failures now carry provider/service context, the expected and published contract or versions where applicable, and a configuration correction path. Expands integration coverage for provider/consumer lifecycle, shared contract identity across assemblies, version rejection, invalidated handles, manifest dependencies, and single-provider packaging of the contracts DLL. `ForgeApi.Version` remains 6; public signatures, `net472`, load order, and game-thread rules are unchanged. `tools/Run-CalradiaForge-Tests.bat --core-only --no-pause` built with zero warnings/errors and passed Core 252/252 and ForgeWeave 37/37; the batch host ran the Core test library in-process. No test executable was started directly, no ZIPs were created, and Bannerlord was not launched.
@@ -892,3 +904,68 @@ Initial developer preview: Gauntlet panel, WPF client, local named pipes, diagno
 - A PowerShell timeout wrapper around the disposable native fixture did not return control reliably and was removed. The fixture BAT is restored to direct child-process launch; no timeout guarantee is claimed.
 - The current native smoke remains blocked/unverified. The latest managed Core regressions pass 363/363 and the x64 fixture compiles cleanly, but the Core BAT does not complete because its native child stalls. Earlier successful fixture evidence remains scoped to the earlier tree recorded in Rev088.
 - This entry corrects only the timeout statement in Rev089. No module/game session or ZIP change occurred; product version remains 25.2.0 and the patch backend remains experimental.
+
+## Calradia Forge patch-engine documentation and validation follow-up — 2026-09-29 (Rev091)
+
+- Clarifies the Gauntlet copy and architecture maps: Patch Blueprint Preflight is a read-only structural review of declared target and callback references against already-loaded assemblies. It neither applies patches nor invokes callback code, and its resolution does not prove a native replacement can be installed. The Harmony Atlas is a separate read-only inventory of Harmony patches already present in loaded assemblies.
+- Corrects the `ForgeDetour` reference to its actual `MethodInfo` replacement API and experimental scope. The module lifecycle and diagrams now show that startup does not scan or apply patches and that preflight is separate from explicit replacement requests.
+- Regenerates all 13 native language catalogs with 710 matching keys. Localization audit passed, including the Gauntlet Page Blueprint label, description, and Page title.
+- `tools/Run-CalradiaForge-Tests.bat --no-pause` passed: full solution build with 0 warnings and 0 errors; Core 369/369; isolated serial x64 detour fixture `15 → 32 → 15` with exact revert; ForgeWeave 73/73; Desktop 63/63; and 292 WPF render cases. No Bannerlord or Modding Kit session was started.
+- The fixture invokes the target serially and does not establish safety while another thread may execute a target during a memory write. The detour backend remains experimental. Product version remains 25.2.0, `ForgeApi.Version` remains 11, and no IPC write surface, ForgeWeave behavior, or distribution ZIP changed.
+
+## Detour fixture BAT-host correction and patch-copy localization — 2026-09-29 (Rev092)
+
+- The disposable detour fixture now builds as a `net472` x64 library and runs only through `tests/CalradiaForge.DetourFixture/Run-DetourFixture.bat`, loaded into a temporary x64 Windows PowerShell process. It no longer creates or starts `CalradiaForge.DetourFixture.exe`; the BAT checks that no fixture apphost was emitted. The test remains aligned with the Bannerlord runtime. A trial under the .NET 8 JIT failed to observe the replacement at stage 4 and was discarded rather than treated as a passing fixture.
+- Corrects in-game copy so Patch Blueprint Preflight is clearly structural and read-only, Harmony Atlas remains a separate read-only inventory, and ForgeWeave replay guidance does not imply that preflight applies detours. Seven copy keys now have translations across all 13 native catalogs.
+- `tools/Run-CalradiaForge-Tests.bat --no-pause` passed the full build with 0 warnings and 0 errors; ForgeWeave 73/73; Desktop 63/63; and 292 WPF render cases. The BAT-hosted serial x64 fixture returned `15 → 32 → 15` with exact restoration. The 13 native catalogs each contain 737 keys and the localization audit is valid.
+- The fixture remains serial and does not establish safety against concurrent execution during machine-code writes. No Bannerlord or Modding Kit session was started, and no package generation was invoked in this correction pass. Product version remains 25.2.0 and `ForgeApi.Version` remains 11.
+
+## Calradia Forge explicit Prefix/Postfix hook workbench — 2026-09-29 (Rev093)
+
+- Adds the optional `ForgeApi.Hooks` / `IForgeHookService` capability for explicitly registered Prefix and Postfix hooks through MonoMod.RuntimeDetour 25.3.6 in the Bannerlord `net472` host. Registration remains inert; callbacks execute synchronously on the thread that calls the target. The hook capability is distinct from declarative Patch Blueprint Preflight and from the separate method-replacement patch API.
+- Adds guarded Hook Workbench actions in WPF. The operator reviews snapshots, prepares an Apply/Revert plan, checks the confirmation box, and confirms with a single-use token. IPC accepts selected hook IDs and the token only; callbacks, delegates, and executable targets do not cross the pipe. Apply/Revert is restricted to the exact main-menu context on the game thread with no campaign, mission, or multiplayer session. Console commands are `cf.hook_status [owner]`, `cf.hook_apply <id>`, and `cf.hook_revert <id|owner|all>`.
+- `tools/Run-CalradiaForge-Tests.bat --core-only --no-pause` passed Core 372/372 and ForgeWeave 73/73. Core `net472`/`net8.0` and Mod `net472` builds completed cleanly. The isolated detour fixture passed through `tests/CalradiaForge.DetourFixture/Run-DetourFixture.bat`; `DetourFixture.exe` was not executed.
+- The fixture is serial and does not prove safety against a concurrent thread executing the target during hook installation or removal; the backend remains experimental. No live Bannerlord or Modding Kit session or asset import was performed. Product version remains 25.2.0; no distribution ZIP was generated or changed.
+
+## Calradia Forge hook lifecycle and host-session safeguards — 2026-09-30 (Rev094)
+
+- Adds an optional disconnect guard so SDK replacement or disconnection cannot silently orphan active or uncertain hooks when the approved game-thread/menu context is unavailable. Verification exceptions remain visible as conflicts, and handles for hooks removed externally are disposed before the service reports a clean reverted state.
+- Tightens the Bannerlord menu gate to exact CLR identity for the engine's `GauntletInitialScreen`, resolved from the game Gauntlet assembly at runtime. If the official type cannot be resolved, hook mutations fail closed; name-only lookalikes are rejected.
+- Adds `hook-plan-cancel`, which carries only the host session and preview token. Cancellation is bound to that exact pair; WPF retains the preview when cancellation is unconfirmed and stops snapshot refresh instead of discarding local state. English and Spanish SDK protocol documentation now describes the action.
+- `tools/Run-CalradiaForge-Tests.bat --core-only --no-pause`: Core 384/384 and ForgeWeave 73/73 passed; the relevant `net472`, `net8.0`, and Mod `net472` builds completed with 0 warnings and 0 errors. The isolated `tests/CalradiaForge.DetourFixture/Run-DetourFixture.bat` passed guarded disconnect, external removal, uncertain verification, and exact `15 → 32 → 15` restoration.
+- `tools/Run-CalradiaForge-Tests.bat --desktop-only --no-pause`: Desktop 65/65 and 292 WPF render cases passed. The render harness reported 13,895 ms total; this is harness timing, not observed application interaction latency.
+- No live Bannerlord or Modding Kit session was started. The fixture remains serial and does not establish safety while another thread executes a target during Apply or Revert. Product version remains 25.2.0 and no ZIP was regenerated or modified.
+
+## Typed hook dispatch invoker and measured benchmark — 2026-09-30 (Rev095)
+
+- Replaces normal Prefix/Postfix `Delegate.DynamicInvoke` calls with a strongly typed invoker compiled once per registration, caches parameter metadata, reuses callback arguments, and clones original arguments only when Prefix requires them. BAT validation passed Core 394/394, ForgeWeave 73/73, Desktop 65/65, and the disposable `net472` x64 detour fixture; the fixture BAT build reported zero warnings/errors and the fixture passed its typed-invoker, ordering, duplicate-ID, restoration, and exception checks. No fixture EXE was launched directly.
+- One pre-change benchmark BAT run with five internal samples recorded p50s of 773.1 ns for Prefix, 656.0 ns for Postfix, and 657.9 ns for both. The median across five post-change BAT runs was 218.5 ns, 159.5 ns, and 218.6 ns, respectively—approximately 71.7%, 75.7%, and 66.8% lower. This compares one baseline run against the median of five post-change runs; it is not a matched five-before/five-after study. These are isolated fixture measurements, not Bannerlord latency or frame-time measurements.
+- The hook backend remains experimental and the serial fixture gives no guarantee when another thread executes the target during modification. No Bannerlord/Modding Kit session or ZIP generation occurred. The source changelog and annex advance to Rev095, while protected DOCX/integrity remain at Rev076 pending reconciliation of missing Rev086–Rev092 annexes; the DOCX generator and registrar were not run.
+
+## Patch preflight hardening and protected-ledger reconciliation — 2026-09-30 (Rev096)
+
+- Hardens ForgeDetour preflight before executable-memory access: rejects P/Invoke, InternalCall, and varargs; validates implicit instance receivers and required/optional signature modifiers; and blocks targets reserved by the hook service. Core regressions verify rejected cases make no memory-adapter reads, protection changes, writes, or cache flushes, and leave no receipt.
+- Fixes the disposable fixture BAT build-failure exit code and validates the actual immutable snapshot path in the patch-status code-smell audit. The net472 x64 fixture remains BAT-hosted; no fixture EXE is launched directly.
+- tools/Run-CalradiaForge-Tests.bat --core-only --no-pause <nul passed with clean net472/net8.0 builds, Core 395/395, ForgeWeave 73/73, and the serial x64 fixture. These checks do not establish safety during concurrent target execution; the backend remains experimental.
+- The protected DOCX and integrity chain were reconciled through Rev095. Rev086–Rev094 source annexes were archival backfills from published bilingual changelog sections; protected revisions 001–076 remain preserved. This entry corrects Rev095's stale pending-reconciliation status without editing it.
+- Public-source review did not establish a published independent security audit of MonoMod RuntimeDetour; this does not rule out private or unindexed work. Hooks execute trusted extension code in-process. No Bannerlord/Modding Kit session or ZIP generation occurred; version 25.2.0 and ForgeApi.Version 12 remain unchanged.
+
+## Recoverable hook teardown and self-retiring callbacks — 2026-09-30 (Rev097)
+
+- The built-in `TestEngine` now forwards the optional hook disconnect guard and retains its public parameterless constructor. A direct `ForgeApi.Disconnect()` rejected while `Runtime` is still ticking preserves the published recovery route. Actual `Runtime.Dispose()` / `OnSubModuleUnloaded` closes the pipe in `finally`; pipe-based recovery after unload is not available and that path remains unverified in a live host.
+- The hook dispatch lifetime now covers callbacks that revert or dispose their own handle: a request during an active dispatch returns pending without attempting or claiming `Undo`; after dispatches drain, the service rechecks the host gate, then verifies `Undo`, disposes the hook, and releases the target reservation. The current call keeps its own MonoMod trampoline alive through the dispatch `finally`, while later calls use the original target. Any deferred cleanup failure remains visible as a conflict. This does not broaden the host's exact main-menu/game-thread gate or certify arbitrary hook concurrency.
+- `tools/Run-CalradiaForge-Tests.bat --core-only --no-pause <nul` built net472/net8.0 with zero warnings/errors, passed Core 395/395 and ForgeWeave 73/73, and ran the serial x64 detour fixture through its BAT/PowerShell host. No test EXE was started directly.
+- Documentation now states that the named-pipe SID ACL does not authenticate WPF as the client process; its checkbox/token is the normal confirmation flow, not a same-user process-identity boundary. No live module unload, Bannerlord session, campaign, battle, independent MonoMod audit, or ZIP generation is claimed. Product version 25.2.0 and `ForgeApi.Version` 12 remain unchanged.
+
+## Patch and hook cleanup BAT evidence — 2026-09-30 (Rev098)
+
+- `tools\Run-CalradiaForge-Tests.bat --core-only --no-pause` completed successfully. The Core and ForgeWeave builds and suites passed with zero build warnings and errors.
+- `tests\CalradiaForge.DetourFixture\Run-DetourFixture.bat --no-pause` completed successfully. The fixture build had zero warnings and errors, and the fixture passed via its BAT-hosted path; `DetourFixture.exe` was not launched directly.
+- This entry records BAT evidence only for the current patch and hook cleanup changes. It adds no claims beyond the reported commands. Product version remains 25.2.0.
+
+## Integrated patch, hook, and Desktop BAT evidence — 2026-09-30 (Rev099)
+
+- `tools\Run-CalradiaForge-Tests.bat --core-only --no-pause` exited 0: Core 397/397 and ForgeWeave 73/73 passed; selected `net472` and `net8.0` builds reported zero warnings and errors.
+- The nested serial x64 detour fixture BAT passed with unload-inert callbacks and exact `15 → 32 → 15` restoration. `DetourFixture.exe` was not launched directly.
+- `tools\Run-CalradiaForge-Tests.bat --desktop-only --no-pause` passed Desktop 65/65 and 292 render cases; the build reported zero warnings and errors.
+- This entry records only the integrated BAT evidence reported for this validation pass.

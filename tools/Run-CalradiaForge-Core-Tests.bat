@@ -27,8 +27,8 @@ set "RESULT=%ERRORLEVEL%"
 if not "%RESULT%"=="0" echo ERROR: Core suite failed with exit code %RESULT%.
 if not "%RESULT%"=="0" goto finish
 
-rem Native executable-memory writes run only in a disposable x64 child process,
-rem launched by its dedicated batch file after the managed Core regression suite.
+rem Native executable-memory writes run only in a disposable x64 .NET-hosted
+rem fixture process launched by its dedicated BAT, with no fixture EXE apphost.
 call "%ROOT%\tests\CalradiaForge.DetourFixture\Run-DetourFixture.bat" --no-pause
 set "RESULT=%ERRORLEVEL%"
 if not "%RESULT%"=="0" echo ERROR: Isolated native detour fixture failed with exit code %RESULT%.

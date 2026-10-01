@@ -1,0 +1,1279 @@
+{
+  "languages": [
+    "en",
+    "es",
+    "pt",
+    "de",
+    "fr",
+    "it",
+    "pl",
+    "ru",
+    "tr",
+    "zh-HANS",
+    "zh-HANT",
+    "ja",
+    "ko"
+  ],
+  "entries": [
+    {
+      "key": "Campaign Rule Builder",
+      "values": [
+        "Campaign Rule Builder",
+        "Constructor de Reglas de Campaña",
+        "Construtor de Regras de Campanha",
+        "Kampagnenregel-Ersteller",
+        "Créateur de règles de campagne",
+        "Generatore di regole campagna",
+        "Kreator reguł kampanii",
+        "Конструктор правил кампании",
+        "Kampanya Kural Oluşturucu",
+        "战役规则构建器",
+        "戰役規則建立器",
+        "キャンペーンルールビルダー",
+        "캠페인 규칙 빌더"
+      ]
+    },
+    {
+      "key": "Compose campaign rules with sample data, then generate a validated stateless behavior package.",
+      "values": [
+        "Compose campaign rules with sample data, then generate a validated stateless behavior package.",
+        "Compone reglas de campaña con datos de muestra y genera un paquete de comportamiento sin estado validado.",
+        "Compose regras de campanha com dados de amostra e gere um pacote de comportamento sem estado validado.",
+        "Erstelle Kampagnenregeln mit Beispieldaten und generiere ein geprüftes zustandsloses Verhaltenspaket.",
+        "Composez des règles de campagne avec des données exemples, puis générez un package de comportement sans état validé.",
+        "Crea regole campagna con dati di esempio, quindi genera un pacchetto comportamentale stateless validato.",
+        "Twórz reguły kampanii z przykładowymi danymi, a następnie generuj zweryfikowany pakiet bezstanowych zachowań.",
+        "Составьте правила кампании с образцовыми данными, затем создайте проверенный пакет безсостоянного поведения.",
+        "Örnek verilerle kampanya kuralları oluşturun ve doğrulanmış durumsuz davranış paketi oluşturun.",
+        "使用示例数据撰写战役规则，然后生成经验证的无状态行为包。",
+        "使用範例資料撰寫戰役規則，然後產生已驗證的無狀態行為套件。",
+        "サンプルデータでキャンペーンルールを作成し、検証済みのステートレス動作パッケージを生成します。",
+        "샘플 데이터로 캠페인 규칙을 구성하고 검증된 무상태 동작 패키지를 생성합니다."
+      ]
+    },
+    {
+      "key": "A boolean condition cannot have a value.",
+      "values": [
+        "A boolean condition cannot have a value.",
+        "Una condición booleana no puede tener un valor.",
+        "Uma condição booleana não pode ter um valor.",
+        "Eine boolesche Bedingung kann keinen Wert haben.",
+        "Une condition booléenne ne peut pas avoir de valeur.",
+        "Una condizione booleana non può avere un valore.",
+        "Warunek logiczny nie może mieć wartości.",
+        "Логическое условие не может иметь значения.",
+        "Boole koşulunun bir değeri olamaz.",
+        "布尔条件不能有值。",
+        "布林條件不能有值。",
+        "ブール条件には値を含めることはできません。",
+        "부울 조건은 값을 가질 수 없습니다."
+      ]
+    },
+    {
+      "key": "A condition is incompatible with its event.",
+      "values": [
+        "A condition is incompatible with its event.",
+        "Una condición es incompatible con su evento.",
+        "Uma condição é incompatível com seu evento.",
+        "Eine Bedingung ist mit ihrem Ereignis nicht kompatibel.",
+        "Une condition est incompatible avec son événement.",
+        "Una condizione è incompatibile con il suo evento.",
+        "Warunek jest niezgodny ze zdarzeniem.",
+        "Условие несовместимо со своим событием.",
+        "Bir durum, olayıyla bağdaşmaz.",
+        "条件与其事件不相容。",
+        "條件與其事件不相容。",
+        "条件はそのイベントと互換性がありません。",
+        "조건이 해당 이벤트와 호환되지 않습니다."
+      ]
+    },
+    {
+      "key": "A draft can contain at most eight rules.",
+      "values": [
+        "A draft can contain at most eight rules.",
+        "Un borrador puede contener como máximo ocho reglas.",
+        "Um rascunho pode conter no máximo oito regras.",
+        "Ein Entwurf kann maximal acht Regeln enthalten.",
+        "Un brouillon peut contenir au maximum huit règles.",
+        "Una bozza può contenere al massimo otto regole.",
+        "Wersja robocza może zawierać maksymalnie osiem zasad.",
+        "Проект может содержать не более восьми правил.",
+        "Bir taslak en fazla sekiz kural içerebilir.",
+        "一个草案最多可以包含八个规则。",
+        "一個草案最多可以包含八個規則。",
+        "ドラフトには最大 8 つのルールを含めることができます。",
+        "초안에는 최대 8개의 규칙이 포함될 수 있습니다."
+      ]
+    },
+    {
+      "key": "A numeric condition requires a value from 1 to 1000.",
+      "values": [
+        "A numeric condition requires a value from 1 to 1000.",
+        "Una condición numérica requiere un valor de 1 a 1000.",
+        "Uma condição numérica requer um valor de 1 a 1000.",
+        "Eine numerische Bedingung erfordert einen Wert zwischen 1 und 1000.",
+        "Une condition numérique nécessite une valeur comprise entre 1 et 1 000.",
+        "Una condizione numerica richiede un valore compreso tra 1 e 1000.",
+        "Warunek liczbowy wymaga wartości od 1 do 1000.",
+        "Числовое условие требует значения от 1 до 1000.",
+        "Sayısal bir koşul 1'den 1000'e kadar bir değer gerektirir.",
+        "数字条件需要 1 到 1000 之间的值。",
+        "數字條件需要 1 到 1000 之間的值。",
+        "数値条件には 1 ～ 1000 の値が必要です。",
+        "숫자 조건에는 1에서 1000 사이의 값이 필요합니다."
+      ]
+    },
+    {
+      "key": "A rule has an invalid ID, event, action, or target.",
+      "values": [
+        "A rule has an invalid ID, event, action, or target.",
+        "Una regla tiene un ID, evento, acción u objetivo no válido.",
+        "Uma regra tem um ID, evento, ação ou destino inválido.",
+        "Eine Regel hat eine ungültige ID, ein ungültiges Ereignis, eine ungültige Aktion oder ein ungültiges Ziel.",
+        "Une règle a un ID, un événement, une action ou une cible non valide.",
+        "Una regola ha un ID, evento, azione o target non valido.",
+        "Reguła ma nieprawidłowy identyfikator, zdarzenie, akcję lub cel.",
+        "Правило имеет недопустимый идентификатор, событие, действие или цель.",
+        "Bir kuralda geçersiz bir kimlik, etkinlik, işlem veya hedef var.",
+        "规则具有无效的 ID、事件、操作或目标。",
+        "規則具有無效的 ID、事件、操作或目標。",
+        "ルールに無効な ID、イベント、アクション、またはターゲットが含まれています。",
+        "규칙에 잘못된 ID, 이벤트, 작업 또는 대상이 있습니다."
+      ]
+    },
+    {
+      "key": "Add a condition to group A before group B.",
+      "values": [
+        "Add a condition to group A before group B.",
+        "Añade una condición al grupo A antes de usar el grupo B.",
+        "Adicione uma condição ao grupo A antes do grupo B.",
+        "Fügen Sie eine Bedingung zu Gruppe A vor Gruppe B hinzu.",
+        "Ajoutez une condition au groupe A avant le groupe B.",
+        "Aggiungi una condizione al gruppo A prima del gruppo B.",
+        "Dodaj warunek do grupy A przed grupą B.",
+        "Добавьте условие в группу А перед группой Б.",
+        "A grubuna B grubundan önce bir koşul ekleyin.",
+        "在 A 组之前添加条件到 B 组。",
+        "在 A 組之前新增條件到 B 組。",
+        "グループ B の前にグループ A に条件を追加します。",
+        "그룹 B보다 먼저 그룹 A에 조건을 추가합니다."
+      ]
+    },
+    {
+      "key": "Add a rule to begin. The preview uses sample data only.",
+      "values": [
+        "Add a rule to begin. The preview uses sample data only.",
+        "Añade una regla para comenzar. La vista previa solo usa datos de muestra.",
+        "Adicione uma regra para começar. A visualização usa apenas dados de amostra.",
+        "Fügen Sie zunächst eine Regel hinzu. Die Vorschau verwendet nur Beispieldaten.",
+        "Ajoutez une règle pour commencer. L'aperçu utilise uniquement des exemples de données.",
+        "Aggiungi una regola per iniziare. L'anteprima utilizza solo dati di esempio.",
+        "Aby rozpocząć, dodaj regułę. Podgląd wykorzystuje tylko przykładowe dane.",
+        "Для начала добавьте правило. Предварительный просмотр использует только образцы данных.",
+        "Başlamak için bir kural ekleyin. Önizleme yalnızca örnek verileri kullanır.",
+        "添加规则开始。预览仅使用示例数据。",
+        "新增規則開始。預覽僅使用範例資料。",
+        "まずルールを追加します。プレビューではサンプル データのみが使用されます。",
+        "시작하려면 규칙을 추가하세요. 미리보기에서는 샘플 데이터만 사용합니다."
+      ]
+    },
+    {
+      "key": "Add at least one rule before generating.",
+      "values": [
+        "Add at least one rule before generating.",
+        "Añade al menos una regla antes de generar.",
+        "Adicione pelo menos uma regra antes de gerar.",
+        "Fügen Sie vor dem Generieren mindestens eine Regel hinzu.",
+        "Ajoutez au moins une règle avant de générer.",
+        "Aggiungi almeno una regola prima di generare.",
+        "Przed wygenerowaniem dodaj co najmniej jedną regułę.",
+        "Прежде чем создавать, добавьте хотя бы одно правило.",
+        "Oluşturmadan önce en az bir kural ekleyin.",
+        "生成之前至少添加一条规则。",
+        "生成之前至少新增一條規則。",
+        "生成する前に少なくとも 1 つのルールを追加します。",
+        "생성하기 전에 규칙을 하나 이상 추가하세요."
+      ]
+    },
+    {
+      "key": "Add condition",
+      "values": [
+        "Add condition",
+        "Agregar condición",
+        "Adicionar condição",
+        "Bedingung hinzufügen",
+        "Ajouter une condition",
+        "Aggiungi condizione",
+        "Dodaj warunek",
+        "Добавить условие",
+        "Koşul ekle",
+        "添加条件",
+        "新增條件",
+        "条件の追加",
+        "조건 추가"
+      ]
+    },
+    {
+      "key": "Add rule",
+      "values": [
+        "Add rule",
+        "Agregar regla",
+        "Adicionar regra",
+        "Regel hinzufügen",
+        "Ajouter une règle",
+        "Aggiungi regola",
+        "Dodaj regułę",
+        "Добавить правило",
+        "Kural ekle",
+        "添加规则",
+        "新增規則",
+        "ルールの追加",
+        "규칙 추가"
+      ]
+    },
+    {
+      "key": "Always",
+      "values": [
+        "Always",
+        "Siempre",
+        "Sempre",
+        "Immer",
+        "Toujours",
+        "Sempre",
+        "Zawsze",
+        "Всегда",
+        "Her zaman",
+        "总是",
+        "總是",
+        "いつも",
+        "항상"
+      ]
+    },
+    {
+      "key": "Amount",
+      "values": [
+        "Amount",
+        "Cantidad",
+        "Quantidade",
+        "Betrag",
+        "Montant",
+        "Importo",
+        "Kwota",
+        "Сумма",
+        "Tutar",
+        "金额",
+        "金額",
+        "金額",
+        "금액"
+      ]
+    },
+    {
+      "key": "Change condition",
+      "values": [
+        "Change condition",
+        "Cambiar condición",
+        "Alterar condição",
+        "Zustand ändern",
+        "Changer l'état",
+        "Cambia condizione",
+        "Zmień stan",
+        "Изменить условие",
+        "Durumu değiştir",
+        "改变条件",
+        "改變條件",
+        "条件変更",
+        "조건 변경"
+      ]
+    },
+    {
+      "key": "Change influence",
+      "values": [
+        "Change influence",
+        "Cambiar influencia",
+        "Influência da mudança",
+        "Einfluss ändern",
+        "Changer l'influence",
+        "Cambia influenza",
+        "Zmień wpływ",
+        "Влияние изменений",
+        "Etkiyi değiştir",
+        "改变影响力",
+        "改變影響力",
+        "変化の影響",
+        "변화 영향력"
+      ]
+    },
+    {
+      "key": "Change player relation",
+      "values": [
+        "Change player relation",
+        "Cambiar relación con el jugador",
+        "Alterar a relação do jogador",
+        "Spielerbeziehung ändern",
+        "Changer la relation entre les joueurs",
+        "Cambia la relazione del giocatore",
+        "Zmień relację gracza",
+        "Изменить отношение игрока",
+        "Oyuncu ilişkisini değiştir",
+        "改变玩家关系",
+        "改變玩家關係",
+        "プレイヤー関係の変更",
+        "플레이어 관계 변경"
+      ]
+    },
+    {
+      "key": "Clan belongs to player",
+      "values": [
+        "Clan belongs to player",
+        "El clan pertenece al jugador",
+        "O clã pertence ao jogador",
+        "Clan gehört dem Spieler",
+        "Le clan appartient au joueur",
+        "Il clan appartiene al giocatore",
+        "Klan należy do gracza",
+        "Клан принадлежит игроку",
+        "Klan oyuncuya aittir",
+        "部落属于玩家",
+        "部落屬於玩家",
+        "プレイヤーが所属するクラン",
+        "클랜은 플레이어에게 속합니다"
+      ]
+    },
+    {
+      "key": "Each group accepts at most three conditions.",
+      "values": [
+        "Each group accepts at most three conditions.",
+        "Cada grupo acepta como máximo tres condiciones.",
+        "Cada grupo aceita no máximo três condições.",
+        "Jede Gruppe akzeptiert höchstens drei Bedingungen.",
+        "Chaque groupe accepte au maximum trois conditions.",
+        "Ogni gruppo accetta al massimo tre condizioni.",
+        "Każda grupa akceptuje co najwyżej trzy warunki.",
+        "Каждая группа принимает не более трех условий.",
+        "Her grup en fazla üç koşulu kabul eder.",
+        "每个组最多接受三个条件。",
+        "每个组最多接受三个条件。",
+        "各グループは最大 3 つの条件を受け入れます。",
+        "각 그룹은 최대 세 가지 조건을 허용합니다."
+      ]
+    },
+    {
+      "key": "Event entity",
+      "values": [
+        "Event entity",
+        "Entidad del evento",
+        "Entidade de evento",
+        "Ereignisentität",
+        "Entité événementielle",
+        "Entità dell'evento",
+        "Podmiot wydarzenia",
+        "Сущность события",
+        "Etkinlik varlığı",
+        "事件实体",
+        "事件實體",
+        "イベントエンティティ",
+        "이벤트 엔터티"
+      ]
+    },
+    {
+      "key": "Generated stateless and reentrancy contract failed.",
+      "values": [
+        "Generated stateless and reentrancy contract failed.",
+        "Falló la validación del contrato sin estado y contra reentrada del código generado.",
+        "Falha no contrato de apátrida e de reentrada gerado.",
+        "Der generierte Staatenlos- und Wiedereintrittsvertrag ist fehlgeschlagen.",
+        "Le contrat d’apatride et de réintégration généré a échoué.",
+        "Il contratto stateless e di rientro generato non è riuscito.",
+        "Wygenerowana umowa dotycząca bezpaństwowca i ponownego wjazdu nie powiodła się.",
+        "Не удалось создать контракт без сохранения состояния и реентерабельности.",
+        "Oluşturulan vatansız ve yeniden giriş sözleşmesi başarısız oldu.",
+        "生成的无状态和可重入合约失败。",
+        "生成的无状态和可重入合约失败。",
+        "生成されたステートレスおよび再入コントラクトが失敗しました。",
+        "무상태 생성 및 재진입 계약이 실패했습니다."
+      ]
+    },
+    {
+      "key": "Grant gold",
+      "values": [
+        "Grant gold",
+        "Conceder oro",
+        "Conceder ouro",
+        "Gold gewähren",
+        "Accorder de l'or",
+        "Concedi oro",
+        "Daj złoto",
+        "Грант золото",
+        "Altın ver",
+        "授予金",
+        "授予金",
+        "ゴールドを付与する",
+        "그랜트 골드"
+      ]
+    },
+    {
+      "key": "Grant renown",
+      "values": [
+        "Grant renown",
+        "Otorgar renombre",
+        "Conceder renome",
+        "Bekanntheit verleihen",
+        "Accorder de la renommée",
+        "Concedere fama",
+        "Daj sławę",
+        "Даровать известность",
+        "Şöhret ver",
+        "授予声誉",
+        "授予聲譽",
+        "名声を与える",
+        "명성 부여"
+      ]
+    },
+    {
+      "key": "Hero is alive",
+      "values": [
+        "Hero is alive",
+        "El héroe está vivo",
+        "O herói está vivo",
+        "Held lebt",
+        "Le héros est vivant",
+        "L'eroe è vivo",
+        "Bohater żyje",
+        "Герой жив",
+        "Kahraman yaşıyor",
+        "英雄还活着",
+        "英雄還活著",
+        "ヒーローは生きています",
+        "영웅은 살아있다"
+      ]
+    },
+    {
+      "key": "Hero is player",
+      "values": [
+        "Hero is player",
+        "El héroe es el jugador",
+        "Herói é jogador",
+        "Held ist Spieler",
+        "Le héros est joueur",
+        "L'eroe è il giocatore",
+        "Bohater jest graczem",
+        "Герой — игрок",
+        "Kahraman oyuncudur",
+        "英雄就是玩家",
+        "英雄就是玩家",
+        "主人公はプレイヤーです",
+        "영웅은 플레이어다"
+      ]
+    },
+    {
+      "key": "Hero level at least",
+      "values": [
+        "Hero level at least",
+        "Nivel mínimo del héroe",
+        "Nível de herói pelo menos",
+        "Zumindest Heldenlevel",
+        "Niveau de héros au moins",
+        "Almeno a livello di eroe",
+        "Przynajmniej poziom bohatera",
+        "Уровень героя минимум",
+        "En azından kahraman seviyesi",
+        "英雄等级至少",
+        "英雄等級至少",
+        "少なくともヒーローレベル",
+        "영웅 레벨 이상"
+      ]
+    },
+    {
+      "key": "If · group A (all)",
+      "values": [
+        "If · group A (all)",
+        "Si · grupo A (todos)",
+        "Se · grupo A (todos)",
+        "Wenn · Gruppe A (alle)",
+        "Si · groupe A (tous)",
+        "Se · gruppo A (tutti)",
+        "Jeśli · grupa A (wszyscy)",
+        "Если · группа А (все)",
+        "Eğer · A grubu (tümü)",
+        "如果·A组（全部）",
+        "如果·A組（全部）",
+        "もし・グループA（全員）",
+        "만약 · 그룹 A (모두)"
+      ]
+    },
+    {
+      "key": "Next rule",
+      "values": [
+        "Next rule",
+        "Siguiente regla",
+        "Próxima regra",
+        "Nächste Regel",
+        "Règle suivante",
+        "Prossima regola",
+        "Następna zasada",
+        "Следующее правило",
+        "Sonraki kural",
+        "下一条规则",
+        "下一條規則",
+        "次のルール",
+        "다음 규칙"
+      ]
+    },
+    {
+      "key": "No saved rule draft.",
+      "values": [
+        "No saved rule draft.",
+        "No hay ningún borrador de reglas guardado.",
+        "Nenhum rascunho de regra salvo.",
+        "Kein gespeicherter Regelentwurf.",
+        "Aucun projet de règle enregistré.",
+        "Nessuna bozza di regole salvata.",
+        "Brak zapisanej wersji roboczej reguły.",
+        "Нет сохраненного проекта правила.",
+        "Kaydedilmiş kural taslağı yok.",
+        "没有保存的规则草稿。",
+        "没有保存的规则草稿。",
+        "保存されたルールドラフトはありません。",
+        "저장된 규칙 초안이 없습니다."
+      ]
+    },
+    {
+      "key": "Operator",
+      "values": [
+        "Operator",
+        "Operador",
+        "Operador",
+        "Operator",
+        "Opérateur",
+        "Operatore",
+        "Operator",
+        "Оператор",
+        "Operatör",
+        "操作员",
+        "操作員",
+        "オペレーター",
+        "연산자"
+      ]
+    },
+    {
+      "key": "Or · group B (all)",
+      "values": [
+        "Or · group B (all)",
+        "O · grupo B (todos)",
+        "Ou · grupo B (todos)",
+        "Oder · Gruppe B (alle)",
+        "Ou · groupe B (tous)",
+        "Oppure · girone B (tutti)",
+        "Lub · grupa B (wszyscy)",
+        "Или · группа Б (все)",
+        "Veya · B grubu (tümü)",
+        "或·B组（全部）",
+        "或·B組（全部）",
+        "または・グループB（全員）",
+        "또는 · 그룹 B (모두)"
+      ]
+    },
+    {
+      "key": "Party is main party",
+      "values": [
+        "Party is main party",
+        "El grupo es el grupo principal",
+        "O grupo é o grupo principal",
+        "Trupp ist der Haupttrupp",
+        "Le groupe est le groupe principal",
+        "Il gruppo è il gruppo principale",
+        "Drużyna jest drużyną główną",
+        "Отряд является главным отрядом",
+        "Birlik ana birliktir",
+        "队伍是主队伍",
+        "隊伍是主隊伍",
+        "部隊は主人公の部隊",
+        "부대가 주 부대임"
+      ]
+    },
+    {
+      "key": "Player",
+      "values": [
+        "Player",
+        "Jugador",
+        "Jogador",
+        "Spieler",
+        "Joueur",
+        "Giocatore",
+        "Gracz",
+        "Игрок",
+        "Oyuncu",
+        "玩家",
+        "玩家",
+        "プレーヤー",
+        "플레이어"
+      ]
+    },
+    {
+      "key": "Preview only. No campaign action ran.",
+      "values": [
+        "Preview only. No campaign action ran.",
+        "Solo vista previa. No se realizó ninguna acción de campaña.",
+        "Apenas visualização. Nenhuma ação de campanha foi executada.",
+        "Nur Vorschau. Es wurde keine Kampagnenaktion ausgeführt.",
+        "Aperçu uniquement. Aucune action de campagne n'a été menée.",
+        "Solo anteprima. Nessuna azione della campagna è stata eseguita.",
+        "Tylko podgląd. Nie przeprowadzono żadnych działań w ramach kampanii.",
+        "Только предварительный просмотр. Ни одна кампания не проводилась.",
+        "Yalnızca önizleme. Hiçbir kampanya eylemi yürütülmedi.",
+        "仅预览。没有开展竞选活动。",
+        "僅預覽。没有开展竞选活动。",
+        "プレビューのみ。キャンペーンアクションは実行されませんでした。",
+        "미리보기만 가능합니다. 실행된 캠페인 작업이 없습니다."
+      ]
+    },
+    {
+      "key": "Previous rule",
+      "values": [
+        "Previous rule",
+        "Regla anterior",
+        "Regra anterior",
+        "Vorherige Regel",
+        "Règle précédente",
+        "Regola precedente",
+        "Poprzednia zasada",
+        "Предыдущее правило",
+        "Önceki kural",
+        "先前的规则",
+        "先前的規則",
+        "以前のルール",
+        "이전 규칙"
+      ]
+    },
+    {
+      "key": "Remove condition",
+      "values": [
+        "Remove condition",
+        "Eliminar condición",
+        "Remover condição",
+        "Bedingung entfernen",
+        "Supprimer la condition",
+        "Rimuovi condizione",
+        "Usuń warunek",
+        "Удалить условие",
+        "Koşulu kaldır",
+        "删除条件",
+        "刪除條件",
+        "条件の削除",
+        "조건 제거"
+      ]
+    },
+    {
+      "key": "Remove rule",
+      "values": [
+        "Remove rule",
+        "Eliminar regla",
+        "Remover regra",
+        "Regel entfernen",
+        "Supprimer la règle",
+        "Rimuovi regola",
+        "Usuń regułę",
+        "Удалить правило",
+        "Kuralı kaldır",
+        "删除规则",
+        "刪除規則",
+        "ルールの削除",
+        "규칙 삭제"
+      ]
+    },
+    {
+      "key": "Rule amount is outside the supported range.",
+      "values": [
+        "Rule amount is outside the supported range.",
+        "La cantidad de la regla está fuera del intervalo admitido.",
+        "O valor da regra está fora do intervalo suportado.",
+        "Der Regelbetrag liegt außerhalb des unterstützten Bereichs.",
+        "Le montant de la règle est en dehors de la plage prise en charge.",
+        "L'importo della regola non rientra nell'intervallo supportato.",
+        "Kwota reguły wykracza poza obsługiwany zakres.",
+        "Сумма правила выходит за пределы поддерживаемого диапазона.",
+        "Kural miktarı desteklenen aralığın dışında.",
+        "规则金额超出支持的范围。",
+        "規則金額超出支援的範圍。",
+        "ルールの量がサポートされている範囲外です。",
+        "규칙 금액이 지원 범위를 벗어났습니다."
+      ]
+    },
+    {
+      "key": "Rule draft loaded.",
+      "values": [
+        "Rule draft loaded.",
+        "Borrador de reglas cargado.",
+        "Rascunho de regra carregado.",
+        "Regelentwurf geladen.",
+        "Brouillon de règle chargé.",
+        "Bozza di regola caricata.",
+        "Wczytano wersję roboczą reguły.",
+        "Черновик правила загружен.",
+        "Kural taslağı yüklendi.",
+        "规则草案已加载。",
+        "規則草案已載入。",
+        "ルールのドラフトがロードされました。",
+        "규칙 초안이 로드되었습니다."
+      ]
+    },
+    {
+      "key": "Rule draft saved.",
+      "values": [
+        "Rule draft saved.",
+        "Borrador de reglas guardado.",
+        "Rascunho de regra salvo.",
+        "Regelentwurf gespeichert.",
+        "Brouillon de règle enregistré.",
+        "Bozza di regola salvata.",
+        "Wersja robocza reguły została zapisana.",
+        "Черновик правила сохранен.",
+        "Kural taslağı kaydedildi.",
+        "规则草稿已保存。",
+        "規則草稿已儲存。",
+        "ルールのドラフトが保存されました。",
+        "규칙 초안이 저장되었습니다."
+      ]
+    },
+    {
+      "key": "Rule order",
+      "values": [
+        "Rule order",
+        "Orden de reglas",
+        "Ordem das regras",
+        "Regelreihenfolge",
+        "Ordre des règles",
+        "Ordine delle regole",
+        "Kolejność reguł",
+        "Порядок правил",
+        "Kural sırası",
+        "规则顺序",
+        "規則順序",
+        "ルールの順序",
+        "규칙 순서"
+      ]
+    },
+    {
+      "key": "Rule package could not be generated.",
+      "values": [
+        "Rule package could not be generated.",
+        "No se pudo generar el paquete de reglas.",
+        "Não foi possível gerar o pacote de regras.",
+        "Regelpaket konnte nicht generiert werden.",
+        "Le package de règles n'a pas pu être généré.",
+        "Impossibile generare il pacchetto di regole.",
+        "Nie można wygenerować pakietu reguł.",
+        "Не удалось создать пакет правил.",
+        "Kural paketi oluşturulamadı.",
+        "无法生成规则包。",
+        "無法產生規則包。",
+        "ルール パッケージを生成できませんでした。",
+        "규칙 패키지를 생성할 수 없습니다."
+      ]
+    },
+    {
+      "key": "Rule package validated. No game action ran.",
+      "values": [
+        "Rule package validated. No game action ran.",
+        "Paquete de reglas validado. No se ejecutó ninguna acción del juego.",
+        "Pacote de regras validado. Nenhuma ação do jogo foi executada.",
+        "Regelpaket validiert. Es wurde keine Spielaktion ausgeführt.",
+        "Ensemble de règles validé. Aucune action de jeu ne s'est déroulée.",
+        "Pacchetto di regole convalidato. Nessuna azione di gioco è stata eseguita.",
+        "Pakiet reguł został zatwierdzony. Żadna akcja w grze nie została uruchomiona.",
+        "Пакет правил проверен. Никакие игровые действия не выполнялись.",
+        "Kural paketi doğrulandı. Hiçbir oyun eylemi yürütülmedi.",
+        "规则包已验证。没有游戏动作运行。",
+        "規則包已驗證。沒有遊戲動作運行。",
+        "ルールパッケージが検証されました。ゲームアクションは実行されませんでした。",
+        "규칙 패키지가 검증되었습니다. 게임 작업이 실행되지 않았습니다."
+      ]
+    },
+    {
+      "key": "Rules validated. No game action ran.",
+      "values": [
+        "Rules validated. No game action ran.",
+        "Reglas validadas. No se ejecutó ninguna acción del juego.",
+        "Regras validadas. Nenhuma ação do jogo foi executada.",
+        "Regeln validiert. Es wurde keine Spielaktion ausgeführt.",
+        "Règles validées. Aucune action de jeu ne s'est déroulée.",
+        "Regole convalidate. Nessuna azione di gioco è stata eseguita.",
+        "Zasady zatwierdzone. Żadna akcja w grze nie została uruchomiona.",
+        "Правила проверены. Никакие игровые действия не выполнялись.",
+        "Kurallar doğrulandı. Hiçbir oyun eylemi yürütülmedi.",
+        "规则已验证。没有游戏动作运行。",
+        "規則已驗證。沒有遊戲動作運行。",
+        "ルールが検証されました。ゲームアクションは実行されませんでした。",
+        "규칙이 검증되었습니다. 게임 작업이 실행되지 않았습니다."
+      ]
+    },
+    {
+      "key": "Sample facts: non-player hero, alive, level 20, non-player clan, town, skill gain 5, non-main party.",
+      "values": [
+        "Sample facts: non-player hero, alive, level 20, non-player clan, town, skill gain 5, non-main party.",
+        "Datos de muestra: héroe no jugador, vivo, nivel 20, clan no jugador, ciudad, 5 puntos de habilidad, grupo no principal.",
+        "Dados de amostra: herói não jogador, vivo, nível 20, clã não jogador, cidade, ganho de habilidade 5, grupo não principal.",
+        "Beispieldaten: Nicht-Spielerheld, lebendig, Stufe 20, Nicht-Spielerclan, Stadt, Fertigkeitszuwachs 5, keine Hauptgruppe.",
+        "Données d'exemple : héros non joueur, vivant, niveau 20, clan non joueur, ville, gain de compétence de 5, groupe non principal.",
+        "Dati di esempio: eroe non giocante, vivo, livello 20, clan non giocante, città, aumento abilità 5, gruppo non principale.",
+        "Przykładowe dane: bohater niebędący graczem, żywy, poziom 20, klan niebędący graczem, miasto, wzrost umiejętności o 5, drużyna niegłówna.",
+        "Пример данных: герой не является игроком, жив, уровень 20, клан не принадлежит игроку, город, прирост навыка 5, отряд не является основным.",
+        "Örnek veriler: oyuncu olmayan kahraman, hayatta, seviye 20, oyuncuya ait olmayan klan, şehir, beceri artışı 5, ana grup olmayan birlik.",
+        "示例数据：非玩家英雄，存活，20 级，非玩家家族，城镇，技能提升 5，非主队伍。",
+        "範例資料：非玩家英雄，存活，20 級，非玩家家族，城鎮，技能提升 5，非主隊伍。",
+        "サンプルデータ：プレイヤー以外の英雄、生存、レベル20、プレイヤー以外のクラン、町、スキル上昇5、メイン以外の部隊。",
+        "샘플 데이터: 플레이어가 아닌 영웅, 생존, 레벨 20, 플레이어가 아닌 클랜, 도시, 기술 상승 5, 주 부대가 아닌 부대."
+      ]
+    },
+    {
+      "key": "Sample outcome: action would be skipped.",
+      "values": [
+        "Sample outcome: action would be skipped.",
+        "Resultado de muestra: se omitiría la acción.",
+        "Exemplo de resultado: a ação seria ignorada.",
+        "Beispielergebnis: Aktion würde übersprungen.",
+        "Exemple de résultat : l’action serait ignorée.",
+        "Risultato del campione: l'azione verrebbe saltata.",
+        "Przykładowy wynik: działanie zostałoby pominięte.",
+        "Пример результата: действие будет пропущено.",
+        "Örnek sonuç: eylem atlanacak.",
+        "结果示例：将跳过操作。",
+        "结果示例：将跳过操作。",
+        "結果の例: アクションはスキップされます。",
+        "샘플 결과: 작업을 건너뜁니다."
+      ]
+    },
+    {
+      "key": "Sample outcome: action would run.",
+      "values": [
+        "Sample outcome: action would run.",
+        "Resultado de muestra: la acción se ejecutaría.",
+        "Exemplo de resultado: a ação seria executada.",
+        "Beispielergebnis: Aktion würde ausgeführt.",
+        "Exemple de résultat : l’action se déroulerait.",
+        "Risultato di esempio: l'azione verrebbe eseguita.",
+        "Przykładowy wynik: akcja zostanie uruchomiona.",
+        "Пример результата: действие будет запущено.",
+        "Örnek sonuç: eylem yürütülür.",
+        "结果示例：操作将运行。",
+        "結果範例：操作將運行。",
+        "結果の例: アクションが実行されます。",
+        "샘플 결과: 작업이 실행됩니다."
+      ]
+    },
+    {
+      "key": "Sample preview",
+      "values": [
+        "Sample preview",
+        "Vista previa de muestra",
+        "Visualização de amostra",
+        "Beispielvorschau",
+        "Exemple d'aperçu",
+        "Anteprima del campione",
+        "Przykładowy podgląd",
+        "Пример предварительного просмотра",
+        "Örnek önizleme",
+        "样品预览",
+        "樣品預覽",
+        "サンプルプレビュー",
+        "샘플 미리보기"
+      ]
+    },
+    {
+      "key": "Saved rule draft could not be read. It will stay until you save.",
+      "values": [
+        "Saved rule draft could not be read. It will stay until you save.",
+        "No se pudo leer el borrador de reglas. El archivo se conservará hasta que guardes.",
+        "Não foi possível ler o rascunho de regra salvo. Ele permanecerá até você salvar.",
+        "Der gespeicherte Regelentwurf konnte nicht gelesen werden. Es bleibt bestehen, bis Sie es speichern.",
+        "Le projet de règle enregistré n'a pas pu être lu. Il restera jusqu'à ce que vous sauvegardiez.",
+        "Impossibile leggere la bozza della regola salvata. Rimarrà finché non salvi.",
+        "Nie można odczytać zapisanej wersji roboczej reguły. Pozostanie, dopóki nie zapiszesz.",
+        "Не удалось прочитать сохраненный проект правила. Он останется до тех пор, пока вы не сохраните его.",
+        "Kaydedilen kural taslağı okunamadı. Siz kurtarana kadar kalacak.",
+        "无法读取保存的规则草稿。它将一直保留到您保存为止。",
+        "無法讀取已儲存的規則草稿。它將保留到您保存為止。",
+        "保存されたルールドラフトを読み取れませんでした。保存するまで残ります。",
+        "저장된 규칙 초안을 읽을 수 없습니다. 저장할 때까지 유지됩니다."
+      ]
+    },
+    {
+      "key": "Saved rule draft exceeds 64 KiB. It will stay until you save.",
+      "values": [
+        "Saved rule draft exceeds 64 KiB. It will stay until you save.",
+        "El borrador de reglas supera los 64 KiB. El archivo se conservará hasta que guardes.",
+        "O rascunho de regra salvo excede 64 KiB. Ele permanecerá até você salvar.",
+        "Der gespeicherte Regelentwurf überschreitet 64 KiB. Es bleibt bestehen, bis Sie es speichern.",
+        "Le brouillon de règle enregistré dépasse 64 Ko. Il restera jusqu'à ce que vous sauvegardiez.",
+        "La bozza della regola salvata supera i 64 KiB. Rimarrà finché non salvi.",
+        "Zapisana wersja robocza reguły przekracza 64 KiB. Pozostanie, dopóki nie zapiszesz.",
+        "Размер сохраненного проекта правила превышает 64 КиБ. Он останется до тех пор, пока вы не сохраните его.",
+        "Kaydedilen kural taslağı 64 KiB'yi aşıyor. Siz kurtarana kadar kalacak.",
+        "保存的规则草稿超过 64 KiB。它将一直保留到您保存为止。",
+        "保存的規則草稿超過 64 KiB。它將保留到您保存為止。",
+        "保存されたルールドラフトが 64 KiB を超えています。保存するまで残ります。",
+        "저장된 규칙 초안이 64KiB를 초과합니다. 저장할 때까지 유지됩니다."
+      ]
+    },
+    {
+      "key": "Saved rule draft is damaged. It will stay until you save.",
+      "values": [
+        "Saved rule draft is damaged. It will stay until you save.",
+        "El borrador de reglas está dañado. El archivo se conservará hasta que guardes.",
+        "O rascunho de regra salvo está danificado. Ele permanecerá até você salvar.",
+        "Der gespeicherte Regelentwurf ist beschädigt. Es bleibt bestehen, bis Sie es speichern.",
+        "Le brouillon de règle enregistré est endommagé. Il restera jusqu'à ce que vous sauvegardiez.",
+        "La bozza della regola salvata è danneggiata. Rimarrà finché non salvi.",
+        "Zapisana wersja robocza reguły jest uszkodzona. Pozostanie, dopóki nie zapiszesz.",
+        "Сохраненный проект правила поврежден. Он останется до тех пор, пока вы не сохраните его.",
+        "Kaydedilen kural taslağı hasarlı. Siz kaydedene kadar korunacak.",
+        "保存的规则草稿已损坏。它将一直保留到您保存为止。",
+        "已儲存的規則草稿已損壞。它將保留到您保存為止。",
+        "保存されたルールドラフトが破損しています。保存するまで残ります。",
+        "저장된 규칙 초안이 손상되었습니다. 저장할 때까지 유지됩니다."
+      ]
+    },
+    {
+      "key": "Saved rule draft uses an unsupported version. It will stay until you save.",
+      "values": [
+        "Saved rule draft uses an unsupported version. It will stay until you save.",
+        "El borrador de reglas usa una versión no compatible. El archivo se conservará hasta que guardes.",
+        "O rascunho de regra salvo usa uma versão não compatível. Ele permanecerá até você salvar.",
+        "Der gespeicherte Regelentwurf verwendet eine nicht unterstützte Version. Es bleibt bestehen, bis Sie es speichern.",
+        "Le brouillon de règle enregistré utilise une version non prise en charge. Il restera jusqu'à ce que vous sauvegardiez.",
+        "La bozza della regola salvata utilizza una versione non supportata. Rimarrà finché non salvi.",
+        "Zapisana wersja robocza reguły korzysta z nieobsługiwanej wersji. Pozostanie, dopóki nie zapiszesz.",
+        "В сохраненном проекте правила используется неподдерживаемая версия. Он останется до тех пор, пока вы не сохраните его.",
+        "Kaydedilen kural taslağı desteklenmeyen bir sürüm kullanıyor. Siz kurtarana kadar kalacak.",
+        "保存的规则草稿使用不受支持的版本。它将一直保留到您保存为止。",
+        "儲存的規則草稿使用不支援的版本。它將保留到您保存為止。",
+        "保存されたルール ドラフトはサポートされていないバージョンを使用しています。保存するまで残ります。",
+        "저장된 규칙 초안은 지원되지 않는 버전을 사용합니다. 저장할 때까지 유지됩니다."
+      ]
+    },
+    {
+      "key": "Select a rule to preview it.",
+      "values": [
+        "Select a rule to preview it.",
+        "Selecciona una regla para ver la vista previa.",
+        "Selecione uma regra para visualizá-la.",
+        "Wählen Sie eine Regel aus, um eine Vorschau anzuzeigen.",
+        "Sélectionnez une règle pour la prévisualiser.",
+        "Seleziona una regola per visualizzarne l'anteprima.",
+        "Wybierz regułę, aby wyświetlić jej podgląd.",
+        "Выберите правило, чтобы просмотреть его.",
+        "Önizlemek için bir kural seçin.",
+        "选择一个规则进行预览。",
+        "選擇一個規則進行預覽。",
+        "ルールを選択してプレビューします。",
+        "미리 보려면 규칙을 선택하세요."
+      ]
+    },
+    {
+      "key": "Selected rule",
+      "values": [
+        "Selected rule",
+        "Regla seleccionada",
+        "Regra selecionada",
+        "Ausgewählte Regel",
+        "Règle sélectionnée",
+        "Regola selezionata",
+        "Wybrana reguła",
+        "Выбранное правило",
+        "Seçilen kural",
+        "选定的规则",
+        "選定的規則",
+        "選択したルール",
+        "선택된 규칙"
+      ]
+    },
+    {
+      "key": "Settlement is a town",
+      "values": [
+        "Settlement is a town",
+        "El asentamiento es una ciudad",
+        "O assentamento é uma cidade",
+        "Siedlung ist eine Stadt",
+        "La colonie est une ville",
+        "L'insediamento è una città",
+        "Osada to miasto",
+        "Поселение – это город",
+        "Yerleşim bir kasabadır",
+        "定居点是一个城镇",
+        "定居點是一個城鎮",
+        "集落は街だ",
+        "정착지는 마을이다"
+      ]
+    },
+    {
+      "key": "Skill gain at least",
+      "values": [
+        "Skill gain at least",
+        "Aumento mínimo de habilidad",
+        "Ganho de habilidade pelo menos",
+        "Zumindest der Fähigkeitsgewinn",
+        "Gain de compétence au moins",
+        "Almeno un guadagno in abilità",
+        "Przynajmniej zdobycie umiejętności",
+        "Как минимум прибавка к навыкам",
+        "En azından beceri kazanımı",
+        "至少获得技能",
+        "至少獲得技能",
+        "少なくともスキル獲得は",
+        "스킬 습득 최소"
+      ]
+    },
+    {
+      "key": "Target",
+      "values": [
+        "Target",
+        "Objetivo",
+        "Alvo",
+        "Ziel",
+        "Cible",
+        "Obiettivo",
+        "Cel",
+        "Цель",
+        "Hedef",
+        "目标",
+        "目標",
+        "ターゲット",
+        "대상"
+      ]
+    },
+    {
+      "key": "The draft exceeds 64 KiB.",
+      "values": [
+        "The draft exceeds 64 KiB.",
+        "El borrador supera los 64 KiB.",
+        "O rascunho excede 64 KiB.",
+        "Der Entwurf überschreitet 64 KiB.",
+        "Le brouillon dépasse 64 KiB.",
+        "La bozza supera i 64 KiB.",
+        "Wersja robocza przekracza 64 KiB.",
+        "Черновик превышает 64 КиБ.",
+        "Taslak 64 KiB'yi aşıyor.",
+        "草稿超过 64 KiB。",
+        "草稿超過 64 KiB。",
+        "ドラフトが 64 KiB を超えています。",
+        "초안이 64KiB를 초과합니다."
+      ]
+    },
+    {
+      "key": "The rule draft could not be saved.",
+      "values": [
+        "The rule draft could not be saved.",
+        "No se pudo guardar el borrador de reglas.",
+        "O rascunho da regra não pôde ser salvo.",
+        "Der Regelentwurf konnte nicht gespeichert werden.",
+        "Le projet de règle n'a pas pu être enregistré.",
+        "Impossibile salvare la bozza della regola.",
+        "Nie udało się zapisać wersji roboczej reguły.",
+        "Не удалось сохранить черновик правила.",
+        "Kural taslağı kaydedilemedi.",
+        "无法保存规则草稿。",
+        "無法儲存規則草稿。",
+        "ルールドラフトを保存できませんでした。",
+        "규칙 초안을 저장할 수 없습니다."
+      ]
+    },
+    {
+      "key": "The second condition group requires a first group.",
+      "values": [
+        "The second condition group requires a first group.",
+        "El segundo grupo de condiciones requiere un primer grupo.",
+        "O segundo grupo de condições requer um primeiro grupo.",
+        "Die zweite Bedingungsgruppe erfordert eine erste Gruppe.",
+        "Le deuxième groupe de conditions nécessite un premier groupe.",
+        "Il secondo gruppo di condizioni richiede un primo gruppo.",
+        "Druga grupa warunków wymaga pierwszej grupy.",
+        "Вторая группа условий требует наличия первой группы.",
+        "İkinci koşul grubu bir birinci grubu gerektirir.",
+        "第二组条件需要第一组。",
+        "第二組條件需要第一組。",
+        "2 番目の条件グループには最初のグループが必要です。",
+        "두 번째 조건 그룹에는 첫 번째 그룹이 필요합니다."
+      ]
+    },
+    {
+      "key": "Then · action",
+      "values": [
+        "Then · action",
+        "Entonces · acción",
+        "Então · ação",
+        "Dann · Aktion",
+        "Puis · action",
+        "Poi · azione",
+        "Następnie · działanie",
+        "Тогда · действие",
+        "Sonra · eylem",
+        "然后·行动",
+        "然後·行動",
+        "その後・アクション",
+        "그 다음 · 행동"
+      ]
+    },
+    {
+      "key": "Threshold (1-1000)",
+      "values": [
+        "Threshold (1-1000)",
+        "Umbral (1-1000)",
+        "Limite (1-1000)",
+        "Schwellenwert (1-1000)",
+        "Seuil (1-1000)",
+        "Soglia (1-1000)",
+        "Próg (1-1000)",
+        "Порог (1-1000)",
+        "Eşik (1-1000)",
+        "阈值（1-1000）",
+        "閾值（1-1000）",
+        "しきい値 (1 ～ 1000)",
+        "임계값(1-1000)"
+      ]
+    },
+    {
+      "key": "Unsupported or empty rule draft.",
+      "values": [
+        "Unsupported or empty rule draft.",
+        "Borrador de regla vacío o no admitido.",
+        "Rascunho de regras incompatível ou vazio.",
+        "Nicht unterstützter oder leerer Regelentwurf.",
+        "Brouillon de règle non pris en charge ou vide.",
+        "Bozza di regola non supportata o vuota.",
+        "Nieobsługiwana lub pusta wersja robocza reguły.",
+        "Неподдерживаемый или пустой проект правила.",
+        "Desteklenmeyen veya boş kural taslağı.",
+        "规则草案不受支持或为空。",
+        "規則草案不受支持或為空。",
+        "サポートされていない、または空のルールドラフトです。",
+        "지원되지 않거나 비어 있는 규칙 초안입니다."
+      ]
+    },
+    {
+      "key": "Validate",
+      "values": [
+        "Validate",
+        "Validar",
+        "Validar",
+        "Validieren",
+        "Valider",
+        "Convalidare",
+        "Sprawdź",
+        "Подтвердить",
+        "Doğrula",
+        "验证",
+        "驗證",
+        "検証する",
+        "검증"
+      ]
+    },
+    {
+      "key": "When · event",
+      "values": [
+        "When · event",
+        "Cuando · evento",
+        "Quando · evento",
+        "Wann · Ereignis",
+        "Quand · événement",
+        "Quando · evento",
+        "Kiedy · wydarzenie",
+        "Когда · событие",
+        "Ne zaman · olay",
+        "何时 · 事件",
+        "何時 · 事件",
+        "いつ・イベント",
+        "언제 · 행사"
+      ]
+    },
+    {
+      "key": "When · event (click to change)",
+      "values": [
+        "When · event (click to change)",
+        "Cuando · evento (clic para cambiar)",
+        "Quando · evento (clique para alterar)",
+        "Wann · Ereignis (zum Ändern klicken)",
+        "Quand · événement (cliquer pour changer)",
+        "Quando · evento (clicca per cambiare)",
+        "Kiedy · wydarzenie (kliknij, aby zmienić)",
+        "Когда · событие (нажмите, чтобы изменить)",
+        "Ne zaman · olay (değiştirmek için tıklayın)",
+        "何时 · 事件（点击更改）",
+        "何時 · 事件（按一下即可變更）",
+        "いつ・イベント（クリックして変更）",
+        "언제 · 이벤트(클릭하여 변경)"
+      ]
+    },
+    {
+      "key": "Unsaved draft edits.",
+      "values": [
+        "Unsaved draft edits.",
+        "Cambios del borrador sin guardar.",
+        "Alterações do rascunho não salvas.",
+        "Ungespeicherte Änderungen am Entwurf.",
+        "Modifications du brouillon non enregistrées.",
+        "Modifiche non salvate alla bozza.",
+        "Niezapisane zmiany wersji roboczej.",
+        "Несохранённые изменения черновика.",
+        "Taslak değişiklikleri kaydedilmedi.",
+        "草稿更改尚未保存。",
+        "草稿變更尚未儲存。",
+        "ドラフトの変更が保存されていません。",
+        "초안 변경사항이 저장되지 않았습니다."
+      ]
+    },
+    {
+      "key": "Unsaved starter rule.",
+      "values": [
+        "Unsaved starter rule.",
+        "Regla inicial sin guardar.",
+        "Regra inicial não salva.",
+        "Ungespeicherte Startregel.",
+        "Règle de départ non enregistrée.",
+        "Regola iniziale non salvata.",
+        "Niezapisana reguła początkowa.",
+        "Начальное правило не сохранено.",
+        "Kaydedilmemiş başlangıç kuralı.",
+        "初始规则尚未保存。",
+        "初始規則尚未儲存。",
+        "初期ルールは未保存です。",
+        "초기 규칙이 저장되지 않았습니다."
+      ]
+    },
+    {
+      "key": "Daily per-hero event: this rule is evaluated for the event's hero. Actions run only when conditions match; player rewards may repeat for each matching hero.",
+      "values": [
+        "Daily per-hero event: this rule is evaluated for the event's hero. Actions run only when conditions match; player rewards may repeat for each matching hero.",
+        "Evento diario por héroe: esta regla se evalúa con el héroe del evento. Las acciones solo se ejecutan si coinciden las condiciones; las recompensas para el jugador pueden repetirse por cada héroe coincidente.",
+        "Evento diário por herói: esta regra é avaliada para o herói do evento. As ações só são executadas quando as condições coincidem; recompensas destinadas ao jogador podem se repetir para cada herói correspondente.",
+        "Tägliches Ereignis pro Held: Diese Regel wird für den Helden des Ereignisses ausgewertet. Aktionen laufen nur bei passenden Bedingungen; Spielerbelohnungen können sich für jeden passenden Helden wiederholen.",
+        "Événement quotidien par héros : cette règle est évaluée pour le héros de l’événement. Les actions ne s’exécutent que si les conditions correspondent ; les récompenses du joueur peuvent se répéter pour chaque héros correspondant.",
+        "Evento giornaliero per eroe: la regola viene valutata per l’eroe dell’evento. Le azioni vengono eseguite solo se le condizioni corrispondono; le ricompense per il giocatore possono ripetersi per ogni eroe corrispondente.",
+        "Codzienne zdarzenie dla bohatera: reguła jest oceniana dla bohatera z danego zdarzenia. Akcje wykonują się tylko przy spełnieniu warunków; nagrody dla gracza mogą powtarzać się dla każdego pasującego bohatera.",
+        "Ежедневное событие для героя: правило проверяется для героя из события. Действия выполняются только при совпадении условий; награды игроку могут повторяться для каждого подходящего героя.",
+        "Kahraman başına günlük olay: Bu kural olayın kahramanı için değerlendirilir. Eylemler yalnızca koşullar eşleştiğinde çalışır; oyuncu ödülleri eşleşen her kahraman için tekrarlanabilir.",
+        "每日英雄事件：此规则会针对事件中的英雄进行评估。只有条件匹配时才执行操作；给予玩家的奖励可能会对每位匹配的英雄重复。",
+        "每日英雄事件：此規則會針對事件中的英雄進行評估。只有條件相符時才執行動作；給予玩家的獎勵可能會對每位相符的英雄重複。",
+        "英雄ごとの日次イベント: このルールはイベントの英雄を対象に評価されます。条件が一致した場合のみ処理され、プレイヤー向け報酬は一致した英雄ごとに繰り返される場合があります。",
+        "영웅별 일일 이벤트: 이 규칙은 이벤트의 영웅을 대상으로 평가됩니다. 조건이 일치할 때만 동작하며, 플레이어 보상은 일치하는 영웅마다 반복될 수 있습니다."
+      ]
+    },
+    {
+      "key": "Daily per-settlement event: this rule is evaluated for the event's settlement. Actions run only when conditions match; player rewards may repeat for each matching settlement.",
+      "values": [
+        "Daily per-settlement event: this rule is evaluated for the event's settlement. Actions run only when conditions match; player rewards may repeat for each matching settlement.",
+        "Evento diario por asentamiento: esta regla se evalúa con el asentamiento del evento. Las acciones solo se ejecutan si coinciden las condiciones; las recompensas para el jugador pueden repetirse por cada asentamiento coincidente.",
+        "Evento diário por povoado: esta regra é avaliada para o povoado do evento. As ações só são executadas quando as condições coincidem; recompensas destinadas ao jogador podem se repetir para cada povoado correspondente.",
+        "Tägliches Ereignis pro Siedlung: Diese Regel wird für die Siedlung des Ereignisses ausgewertet. Aktionen laufen nur bei passenden Bedingungen; Spielerbelohnungen können sich für jede passende Siedlung wiederholen.",
+        "Événement quotidien par colonie : cette règle est évaluée pour la colonie de l’événement. Les actions ne s’exécutent que si les conditions correspondent ; les récompenses du joueur peuvent se répéter pour chaque colonie correspondante.",
+        "Evento giornaliero per insediamento: la regola viene valutata per l’insediamento dell’evento. Le azioni vengono eseguite solo se le condizioni corrispondono; le ricompense per il giocatore possono ripetersi per ogni insediamento corrispondente.",
+        "Codzienne zdarzenie dla osady: reguła jest oceniana dla osady z danego zdarzenia. Akcje wykonują się tylko przy spełnieniu warunków; nagrody dla gracza mogą powtarzać się dla każdej pasującej osady.",
+        "Ежедневное событие для поселения: правило проверяется для поселения из события. Действия выполняются только при совпадении условий; награды игроку могут повторяться для каждого подходящего поселения.",
+        "Yerleşim başına günlük olay: Bu kural olayın yerleşimi için değerlendirilir. Eylemler yalnızca koşullar eşleştiğinde çalışır; oyuncu ödülleri eşleşen her yerleşim için tekrarlanabilir.",
+        "每日定居点事件：此规则会针对事件中的定居点进行评估。只有条件匹配时才执行操作；给予玩家的奖励可能会对每个匹配的定居点重复。",
+        "每日定居點事件：此規則會針對事件中的定居點進行評估。只有條件相符時才執行動作；給予玩家的獎勵可能會對每個相符的定居點重複。",
+        "集落ごとの日次イベント: このルールはイベントの集落を対象に評価されます。条件が一致した場合のみ処理され、プレイヤー向け報酬は一致した集落ごとに繰り返される場合があります。",
+        "정착지별 일일 이벤트: 이 규칙은 이벤트의 정착지를 대상으로 평가됩니다. 조건이 일치할 때만 동작하며, 플레이어 보상은 일치하는 정착지마다 반복될 수 있습니다."
+      ]
+    }
+  ]
+}

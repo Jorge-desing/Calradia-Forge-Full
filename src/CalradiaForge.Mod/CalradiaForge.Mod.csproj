@@ -2,5 +2,5 @@
  <PropertyGroup><TargetFramework>net472</TargetFramework></PropertyGroup>
  <ItemGroup><ProjectReference Include="../CalradiaForge.Core/CalradiaForge.Core.csproj"/></ItemGroup>
  <ItemGroup><PackageReference Include="AsmResolver.DotNet" Version="6.0.1" /></ItemGroup>
- <ItemGroup><Reference Include="$(GameBin)\TaleWorlds*.dll" Exclude="$(GameBin)\TaleWorlds.Native.dll"><Private>false</Private></Reference><Reference Include="$(GameBin)\Newtonsoft.Json.dll"><Private>false</Private></Reference><Reference Include="System.Numerics"/><Reference Include="System.Runtime.Serialization"/></ItemGroup>
+ <ItemGroup><Reference Include="$(GameBin)\TaleWorlds*.dll" Exclude="$(GameBin)\TaleWorlds.Native.dll"><Private>false</Private></Reference><Reference Include="$(GamePath)\Modules\Native\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.GauntletUI.dll"><Private>false</Private></Reference><Reference Include="$(GameBin)\Newtonsoft.Json.dll"><Private>false</Private></Reference><Reference Include="System.Numerics"/><Reference Include="System.Runtime.Serialization"/></ItemGroup>
 </Project>

@@ -1,0 +1,32 @@
+[tool.ruff]
+target-version = "py312"
+
+# Keep the first lint gate on maintained, low-noise entry points used by the
+# Python checks. Several older generators and Antigravity files have existing
+# lint debt and are intentionally excluded until they can be cleaned separately.
+include = [
+    "tests/CalradiaForge.AssetPipeline.Tests.py",
+    "tools/Run-CalradiaForge-Ledger-Audits.py",
+    "tools/audit_localization.py",
+    "tools/audit_package.py",
+    "tools/validate_game_icon_assets.py",
+]
+
+# These paths are intentionally outside the initial gate: generated/temporary
+# agent material, research outputs, and one-off maintenance or patch scripts.
+exclude = [
+    ".agents/**",
+    "output/**",
+    "tools/_*.py",
+    "tools/add_*.py",
+    "tools/fix_*.py",
+    "tools/inject_*.py",
+    "tools/patch_*.py",
+]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# This fixture adds the repository root to sys.path before importing tools.
+"tests/CalradiaForge.AssetPipeline.Tests.py" = ["E402"]

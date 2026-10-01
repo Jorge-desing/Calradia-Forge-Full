@@ -20,9 +20,13 @@ namespace CalradiaForge.Sdk
     {
         private const uint PageExecuteReadWrite = 0x40;
         private const int JumpInstructionLength = 13;
-        private static readonly object Gate = new object();
+        // Shared by the Core service backends as their cross-backend mutation coordinator.
+        // A caller must hold this gate across target ownership checks and its apply/revert
+        // operation so a raw detour and a RuntimeDetour hook cannot both claim one method.
+        internal static readonly object Gate = new object();
         private static Dictionary<IntPtr, DetourState> Active = new Dictionary<IntPtr, DetourState>();
         private static readonly List<IntPtr> ApplyOrder = new List<IntPtr>();
+        private static readonly Dictionary<IntPtr, int> HookTargetReservations = new Dictionary<IntPtr, int>();
         private static IExecutableMemoryAdapter memory = new NativeExecutableMemoryAdapter();
         private static bool applicationsEnabled = true;
         private static ulong? systemPageSizeOverrideForTests;
@@ -45,9 +49,15 @@ namespace CalradiaForge.Sdk
                 throw new InvalidOperationException("Forge patch applications are disabled while the SDK host is disconnected or resolving a patch conflict.");
         }
 
+        private static void EnsureX64Architecture()
+        {
+            if (memory.ProcessArchitecture != Architecture.X64)
+                throw new PlatformNotSupportedException("Forge detours emit x64 jump instructions and require an x64 (AMD64) process.");
+        }
+
         internal interface IExecutableMemoryAdapter
         {
-            bool Is64BitProcess { get; }
+            Architecture ProcessArchitecture { get; }
             byte[] Read(IntPtr address, int count);
             void Write(IntPtr address, byte[] bytes);
             bool TryProtect(IntPtr address, int count, uint newProtect, out uint oldProtect, out int error);
@@ -65,7 +75,7 @@ namespace CalradiaForge.Sdk
             [DllImport("kernel32.dll")]
             private static extern IntPtr GetCurrentProcess();
 
-            public bool Is64BitProcess { get { return Environment.Is64BitProcess; } }
+            public Architecture ProcessArchitecture { get { return RuntimeInformation.ProcessArchitecture; } }
             public byte[] Read(IntPtr address, int count)
             {
                 var bytes = new byte[count];
@@ -87,10 +97,11 @@ namespace CalradiaForge.Sdk
             }
         }
 
-        private sealed class DetourState
+        internal sealed class DetourState
         {
             internal string Id;
             internal string Owner;
+            internal object GenerationToken;
             internal MethodInfo OriginalMethod;
             internal MethodInfo ReplacementMethod;
             internal byte[] OriginalBytes;
@@ -98,6 +109,21 @@ namespace CalradiaForge.Sdk
             internal bool Conflict;
             internal bool RevertAttemptFailed;
             internal string Failure;
+        }
+
+        /// <summary>Internal identity captured by compatibility receipts at installation time.</summary>
+        internal sealed class InstallationReceipt
+        {
+            internal readonly string PatchId;
+            internal readonly object GenerationToken;
+            internal readonly byte[] OriginalBytes;
+
+            internal InstallationReceipt(DetourState state)
+            {
+                PatchId = state.Id;
+                GenerationToken = state.GenerationToken;
+                OriginalBytes = (byte[])state.OriginalBytes.Clone();
+            }
         }
 
         private sealed class WriteRecoveryException : InvalidOperationException
@@ -120,15 +146,14 @@ namespace CalradiaForge.Sdk
         /// IDs are unique across the Forge detour registry; owner is a descriptive label only.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal static void Patch(MethodInfo original, MethodInfo replacement, string patchId, string owner)
+        internal static InstallationReceipt Patch(MethodInfo original, MethodInfo replacement, string patchId, string owner)
         {
             ValidateMethodPair(original, replacement);
             if (string.IsNullOrWhiteSpace(patchId) || patchId.Length > 128 || !string.Equals(patchId, patchId.Trim(), StringComparison.Ordinal))
                 throw new ArgumentException("A patch ID between 1 and 128 non-padded characters is required.", nameof(patchId));
             if (string.IsNullOrWhiteSpace(owner) || owner.Length > 128 || !string.Equals(owner, owner.Trim(), StringComparison.Ordinal))
                 throw new ArgumentException("An owner label between 1 and 128 non-padded characters is required.", nameof(owner));
-            if (!memory.Is64BitProcess)
-                throw new PlatformNotSupportedException("Forge detours require a 64-bit process.");
+            EnsureX64Architecture();
 
             RuntimeHelpers.PrepareMethod(original.MethodHandle);
             RuntimeHelpers.PrepareMethod(replacement.MethodHandle);
@@ -143,6 +168,8 @@ namespace CalradiaForge.Sdk
                 EnsureApplicationsEnabled();
                 if (Active.ContainsKey(address))
                     throw new InvalidOperationException("A Forge detour is already tracked for this method.");
+                if (HookTargetReservations.ContainsKey(address))
+                    throw new InvalidOperationException("A RuntimeDetour hook already reserves this target method.");
                 foreach (var existing in Active.Values)
                     if (string.Equals(existing.Id, patchId, StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("Patch ID already exists in the Forge detour registry: " + patchId);
@@ -152,6 +179,7 @@ namespace CalradiaForge.Sdk
                 {
                     Id = patchId,
                     Owner = owner,
+                    GenerationToken = new object(),
                     OriginalMethod = original,
                     ReplacementMethod = replacement,
                     OriginalBytes = ReadBytes(address),
@@ -185,6 +213,7 @@ namespace CalradiaForge.Sdk
                     else state.Failure = error.Message;
                     throw;
                 }
+                return new InstallationReceipt(state);
             }
         }
 
@@ -282,15 +311,23 @@ namespace CalradiaForge.Sdk
         internal static void PatchBatch(MethodInfo[] originals, MethodInfo[] replacements, string[] patchIds,
             string owner, byte[][] originalByteCopies)
         {
+            PatchBatch(originals, replacements, patchIds, owner, originalByteCopies, null);
+        }
+
+        internal static void PatchBatch(MethodInfo[] originals, MethodInfo[] replacements, string[] patchIds,
+            string owner, byte[][] originalByteCopies, object[] generationTokens)
+        {
             if (originals == null) throw new ArgumentNullException(nameof(originals));
             if (replacements == null) throw new ArgumentNullException(nameof(replacements));
             if (patchIds == null) throw new ArgumentNullException(nameof(patchIds));
             if (originalByteCopies == null) throw new ArgumentNullException(nameof(originalByteCopies));
             if (originals.Length == 0 || originals.Length != replacements.Length || originals.Length != patchIds.Length || originals.Length != originalByteCopies.Length)
                 throw new ArgumentException("A non-empty patch batch requires equally sized target, replacement, ID, and receipt arrays.");
+            if (generationTokens != null && generationTokens.Length != originals.Length)
+                throw new ArgumentException("A generation-token array must match the patch batch length.", nameof(generationTokens));
             if (string.IsNullOrWhiteSpace(owner) || owner.Length > 128 || !string.Equals(owner, owner.Trim(), StringComparison.Ordinal))
                 throw new ArgumentException("An owner label between 1 and 128 non-padded characters is required.", nameof(owner));
-            if (!memory.Is64BitProcess) throw new PlatformNotSupportedException("Forge detours require a 64-bit process.");
+            EnsureX64Architecture();
 
             var addresses = new IntPtr[originals.Length];
             var replacementAddresses = new IntPtr[originals.Length];
@@ -302,6 +339,8 @@ namespace CalradiaForge.Sdk
                     throw new ArgumentException("Every patch ID must contain 1 to 128 non-padded characters.", nameof(patchIds));
                 if (originalByteCopies[index] != null)
                     throw new ArgumentException("Batch receipt slots must be empty before application.", nameof(originalByteCopies));
+                if (generationTokens != null && generationTokens[index] != null)
+                    throw new ArgumentException("Batch generation-token slots must be empty before application.", nameof(generationTokens));
                 RuntimeHelpers.PrepareMethod(originals[index].MethodHandle);
                 RuntimeHelpers.PrepareMethod(replacements[index].MethodHandle);
                 addresses[index] = originals[index].MethodHandle.GetFunctionPointer();
@@ -313,7 +352,7 @@ namespace CalradiaForge.Sdk
             lock (Gate)
             {
                 EnsureApplicationsEnabled();
-                if (!memory.Is64BitProcess) throw new PlatformNotSupportedException("Forge detours require a 64-bit process.");
+                EnsureX64Architecture();
                 var batchIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var batchTargets = new HashSet<IntPtr>();
                 var states = new DetourState[originals.Length];
@@ -325,6 +364,8 @@ namespace CalradiaForge.Sdk
                     if (!batchIds.Add(id)) throw new InvalidOperationException("Patch ID is duplicated within the batch: " + id);
                     if (!batchTargets.Add(address)) throw new InvalidOperationException("Multiple batch declarations target the same method: " + Identity(originals[index]));
                     if (Active.ContainsKey(address)) throw new InvalidOperationException("A Forge detour is already tracked for this method.");
+                    if (HookTargetReservations.ContainsKey(address))
+                        throw new InvalidOperationException("A RuntimeDetour hook already reserves a batch target method.");
                     foreach (var active in Active.Values)
                         if (string.Equals(active.Id, id, StringComparison.OrdinalIgnoreCase))
                             throw new InvalidOperationException("Patch ID already exists in the Forge detour registry: " + id);
@@ -344,6 +385,7 @@ namespace CalradiaForge.Sdk
                     {
                         Id = patchIds[index],
                         Owner = owner,
+                        GenerationToken = new object(),
                         OriginalMethod = originals[index],
                         ReplacementMethod = replacements[index],
                         OriginalBytes = originalBytes,
@@ -351,6 +393,7 @@ namespace CalradiaForge.Sdk
                     };
                     installedImages[index] = installedBytes;
                     originalByteCopies[index] = (byte[])originalBytes.Clone();
+                    if (generationTokens != null) generationTokens[index] = states[index].GenerationToken;
                 }
 
                 // Replace the private dictionary with a pre-sized copy and reserve the
@@ -558,6 +601,45 @@ namespace CalradiaForge.Sdk
             catch { return false; }
         }
 
+        /// <summary>Reserves a target while a Core RuntimeDetour hook is being applied or remains active.</summary>
+        internal static void RegisterHookTarget(MethodInfo method)
+        {
+            if (method == null) throw new ArgumentNullException(nameof(method));
+            IntPtr address = method.MethodHandle.GetFunctionPointer();
+            if (address == IntPtr.Zero) throw new InvalidOperationException("The JIT returned a null hook target address.");
+            lock (Gate)
+            {
+                int count;
+                HookTargetReservations.TryGetValue(address, out count);
+                HookTargetReservations[address] = checked(count + 1);
+            }
+        }
+
+        /// <summary>Releases one Core RuntimeDetour target reservation after verified removal.</summary>
+        internal static void UnregisterHookTarget(MethodInfo method)
+        {
+            if (method == null) return;
+            IntPtr address = method.MethodHandle.GetFunctionPointer();
+            lock (Gate)
+            {
+                int count;
+                if (!HookTargetReservations.TryGetValue(address, out count)) return;
+                if (count <= 1) HookTargetReservations.Remove(address);
+                else HookTargetReservations[address] = count - 1;
+            }
+        }
+
+        /// <summary>Reports whether a RuntimeDetour hook is applying or active for this target.</summary>
+        internal static bool IsHookTargetReserved(MethodInfo method)
+        {
+            if (method == null) return false;
+            try
+            {
+                lock (Gate) return HookTargetReservations.ContainsKey(method.MethodHandle.GetFunctionPointer());
+            }
+            catch { return false; }
+        }
+
         internal static string GetTrackedPatchId(MethodInfo method)
         {
             if (method == null) return null;
@@ -582,6 +664,67 @@ namespace CalradiaForge.Sdk
                     DetourState state;
                     return Active.TryGetValue(method.MethodHandle.GetFunctionPointer(), out state) &&
                         string.Equals(state.Id, patchId, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch { return false; }
+        }
+
+        /// <summary>Checks a receipt against the exact active installation generation.</summary>
+        internal static bool IsTrackedReceipt(MethodInfo method, string patchId, object generationToken, byte[] originalBytes)
+        {
+            if (method == null || string.IsNullOrWhiteSpace(patchId) || generationToken == null ||
+                originalBytes == null || originalBytes.Length != JumpInstructionLength) return false;
+            try
+            {
+                lock (Gate)
+                {
+                    DetourState state;
+                    return Active.TryGetValue(method.MethodHandle.GetFunctionPointer(), out state) &&
+                        string.Equals(state.Id, patchId, StringComparison.OrdinalIgnoreCase) &&
+                        ReferenceEquals(state.GenerationToken, generationToken) && BytesEqual(state.OriginalBytes, originalBytes);
+                }
+            }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// Reverts only the exact installation generation represented by a compatibility
+        /// receipt. The check and byte restoration share the registry lock.
+        /// </summary>
+        internal static bool UnpatchReceipt(MethodInfo method, string patchId, object generationToken, byte[] originalBytes)
+        {
+            if (method == null || string.IsNullOrWhiteSpace(patchId) || generationToken == null ||
+                originalBytes == null || originalBytes.Length != JumpInstructionLength) return false;
+            IntPtr address;
+            try { address = method.MethodHandle.GetFunctionPointer(); }
+            catch { return false; }
+            lock (Gate)
+            {
+                DetourState state;
+                if (!Active.TryGetValue(address, out state) ||
+                    !string.Equals(state.Id, patchId, StringComparison.OrdinalIgnoreCase) ||
+                    !ReferenceEquals(state.GenerationToken, generationToken) || !BytesEqual(state.OriginalBytes, originalBytes))
+                    return false;
+                return UnpatchMemory(address);
+            }
+        }
+
+        /// <summary>Captures the active generation when adapting a caller-created legacy record.</summary>
+        internal static bool TryGetTrackedReceipt(MethodInfo method, string patchId, byte[] originalBytes, out object generationToken)
+        {
+            generationToken = null;
+            if (method == null || string.IsNullOrWhiteSpace(patchId) || originalBytes == null || originalBytes.Length != JumpInstructionLength)
+                return false;
+            try
+            {
+                lock (Gate)
+                {
+                    DetourState state;
+                    if (!Active.TryGetValue(method.MethodHandle.GetFunctionPointer(), out state) ||
+                        !string.Equals(state.Id, patchId, StringComparison.OrdinalIgnoreCase) ||
+                        !BytesEqual(state.OriginalBytes, originalBytes)) return false;
+                    generationToken = state.GenerationToken;
+                    return true;
                 }
             }
             catch { return false; }
@@ -884,9 +1027,28 @@ namespace CalradiaForge.Sdk
                 original.DeclaringType == null || replacement.DeclaringType == null ||
                 original.DeclaringType.ContainsGenericParameters || replacement.DeclaringType.ContainsGenericParameters)
                 throw new NotSupportedException("Generic or open methods are not supported by the experimental detour backend.");
+            if ((original.Attributes & MethodAttributes.PinvokeImpl) != 0 ||
+                (replacement.Attributes & MethodAttributes.PinvokeImpl) != 0 ||
+                (original.GetMethodImplementationFlags() & MethodImplAttributes.InternalCall) != 0 ||
+                (replacement.GetMethodImplementationFlags() & MethodImplAttributes.InternalCall) != 0 ||
+                original.CallingConvention.HasFlag(CallingConventions.VarArgs) ||
+                replacement.CallingConvention.HasFlag(CallingConventions.VarArgs))
+                throw new NotSupportedException("P/Invoke, internal-call, and varargs methods are not supported by the experimental detour backend.");
             if (original.IsStatic != replacement.IsStatic || original.CallingConvention != replacement.CallingConvention ||
                 original.ReturnType != replacement.ReturnType)
                 throw new ArgumentException("Target and replacement must have identical staticness, calling convention, and return type.");
+            if (!original.IsStatic)
+            {
+                Type targetReceiver = original.DeclaringType;
+                Type replacementReceiver = replacement.DeclaringType;
+                bool receiverMatches = targetReceiver.IsValueType || replacementReceiver.IsValueType
+                    ? targetReceiver == replacementReceiver
+                    : replacementReceiver.IsAssignableFrom(targetReceiver);
+                if (!receiverMatches)
+                    throw new ArgumentException("An instance replacement must accept every receiver valid for the target method.");
+            }
+            if (!SameCustomModifiers(original.ReturnParameter, replacement.ReturnParameter))
+                throw new ArgumentException("Target and replacement return custom modifiers must match exactly.");
             ParameterInfo[] originalParameters = original.GetParameters();
             ParameterInfo[] replacementParameters = replacement.GetParameters();
             if (originalParameters.Length != replacementParameters.Length)
@@ -895,9 +1057,29 @@ namespace CalradiaForge.Sdk
             {
                 if (originalParameters[i].ParameterType != replacementParameters[i].ParameterType ||
                     originalParameters[i].IsOut != replacementParameters[i].IsOut ||
-                    originalParameters[i].IsIn != replacementParameters[i].IsIn)
+                    originalParameters[i].IsIn != replacementParameters[i].IsIn ||
+                    !SameCustomModifiers(originalParameters[i], replacementParameters[i]))
                     throw new ArgumentException("Target and replacement parameter signatures must match exactly.");
             }
+        }
+
+        private static bool SameCustomModifiers(ParameterInfo target, ParameterInfo replacement)
+        {
+            Type[] targetRequired = target.GetRequiredCustomModifiers();
+            Type[] replacementRequired = replacement.GetRequiredCustomModifiers();
+            if (!SameTypes(targetRequired, replacementRequired)) return false;
+
+            Type[] targetOptional = target.GetOptionalCustomModifiers();
+            Type[] replacementOptional = replacement.GetOptionalCustomModifiers();
+            return SameTypes(targetOptional, replacementOptional);
+        }
+
+        private static bool SameTypes(Type[] left, Type[] right)
+        {
+            if (left.Length != right.Length) return false;
+            for (int index = 0; index < left.Length; index++)
+                if (left[index] != right[index]) return false;
+            return true;
         }
     }
 }

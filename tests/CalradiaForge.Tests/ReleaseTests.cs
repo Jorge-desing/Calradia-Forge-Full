@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading;
 using CalradiaForge.Core;
 using CalradiaForge.Sdk;
@@ -17,7 +19,266 @@ internal static class ReleaseTests
         test("English text is independent of selected OS culture",()=>{var previous=Thread.CurrentThread.CurrentUICulture;try{Thread.CurrentThread.CurrentUICulture=new System.Globalization.CultureInfo("es-MX");Assert(Localization.Text("Modules",Localization.DefaultLanguage)=="Modules");}finally{Thread.CurrentThread.CurrentUICulture=previous;}});
         test("Spanish is an explicit secondary translation",()=>Assert(Localization.Text("Modules","es")=="Módulos" && Localization.Text("Modules","en")=="Modules"));
         test("Unsupported languages fall back to English",()=>Assert(Localization.Text("Modules","fr")=="Modules" && Localization.Text("Unregistered extension message","es")=="Unregistered extension message"));
-        test("Protocol advertises the complete standalone developer surface",()=>{var expected=new[]{"hello","summary","scan","modules","dependencies","diagnostics","logs","inspect","pin","compare","snapshots","unpin","tests","commands","command","test-mode","confirm-copy","run","run-batch","metrics","framework","event-journal","replay","harmony","patch-blueprints","patch-preflight","report","export","panel-open","panel-close","language","agent-memory"};var capabilities=ForgeProtocol.Hello(SuiteInfo.Version,"1.4.8");Assert(capabilities.Contains("protocol:1")&&expected.All(capabilities.Contains)&&ForgeProtocol.Actions.SequenceEqual(expected)&&capabilities.Length==expected.Length+3);});
+        test("Protocol advertises the complete standalone developer surface",()=>{var expected=new[]{"hello","summary","scan","modules","dependencies","diagnostics","logs","inspect","pin","compare","snapshots","unpin","tests","commands","command","test-mode","confirm-copy","run","run-batch","metrics","framework","event-journal","replay","harmony","patch-blueprints","patch-preflight","hook-snapshots","hook-apply-plan","hook-apply-confirm","hook-revert-plan","hook-revert-confirm","hook-plan-cancel","report","export","panel-open","panel-close","language","agent-memory"};var capabilities=ForgeProtocol.Hello(SuiteInfo.Version,"1.4.8");Assert(capabilities.Contains("protocol:1")&&expected.All(capabilities.Contains)&&ForgeProtocol.Actions.SequenceEqual(expected)&&capabilities.Length==expected.Length+3);});
+        test("Hook IPC DTOs preserve only IDs and single-use confirmation metadata",()=>{
+            var selection=Json.Deserialize<HookIpcSelection>(Json.Serialize(new HookIpcSelection {HookIds=new List<string>{"fixture.prefix","fixture.postfix"}}));
+            var confirmation=Json.Deserialize<HookIpcConfirmation>(Json.Serialize(new HookIpcConfirmation {Token=new string('a',64)}));
+            var cancel=Json.Deserialize<HookIpcCancelPlanRequest>(Json.Serialize(new HookIpcCancelPlanRequest {Session="session",Token=new string('b',64)}));
+            var cancelResult=Json.Deserialize<HookIpcCancelPlanResult>(Json.Serialize(new HookIpcCancelPlanResult {Session="session",Cancelled=true}));
+            var plan=Json.Deserialize<HookIpcPlan>(Json.Serialize(new HookIpcPlan {Operation="apply",Session="session",Token=confirmation.Token,ExpiresAtUtc="2026-09-29T00:00:00.0000000Z",RequiresConfirmation=true,Hooks=new List<HookIpcSnapshot>{new HookIpcSnapshot {Id="fixture.prefix",Owner="fixture",TargetMethod="Fixture.Target",State="Registered",HasPrefix=true}}}));
+            var commit=Json.Deserialize<HookIpcCommit>(Json.Serialize(new HookIpcCommit {Operation="apply",Session="session",TokenConsumed=true,Succeeded=false,Partial=true,Cancelled=true,NotAttemptedIds=new List<string>{"fixture.postfix"},StopReason="fixture stop",Results=new List<HookIpcResult>{new HookIpcResult {Id="fixture.prefix",State="Applied",Succeeded=true,Verified=true}}}));
+            Assert(selection.HookIds.Count==2&&selection.HookIds[0]=="fixture.prefix"&&confirmation.Token.Length==64&&plan.RequiresConfirmation&&plan.Hooks.Single().TargetMethod=="Fixture.Target"&&
+                cancel.Session=="session"&&cancel.Token.Length==64&&cancelResult.Session=="session"&&cancelResult.Cancelled&&
+                commit.TokenConsumed&&commit.Partial&&commit.Cancelled&&commit.NotAttemptedIds.Single()=="fixture.postfix"&&commit.StopReason=="fixture stop"&&commit.Results.Single().Verified);
+        });
+        test("Hook IPC plans bind to the exact menu epoch and report cancellation boundaries",()=>{
+            var source=ReadRuntimeSource();
+            var createStart=source.IndexOf("string CreateHookPlan(",StringComparison.Ordinal);
+            var commitStart=source.IndexOf("string CommitHookPlan(",StringComparison.Ordinal);
+            var stopStart=source.IndexOf("static void StopHookCommit(",StringComparison.Ordinal);
+            Assert(createStart>=0&&commitStart>createStart&&stopStart>commitStart);
+            var create=source.Substring(createStart,commitStart-createStart);
+            var commit=source.Substring(commitStart,stopStart-commitStart);
+            Assert(create.IndexOf("pendingHookPlan = null;",StringComparison.Ordinal)<create.IndexOf("RequireHookManagementContext();",StringComparison.Ordinal)&&
+                create.Contains("planningEpoch = hookContextEpoch")&&create.Contains("cancellationToken.ThrowIfCancellationRequested()"));
+            Assert(commit.Contains("plan.ContextEpoch != hookContextEpoch")&&commit.Contains("cancellationToken.IsCancellationRequested")&&
+                commit.Contains("StopHookCommit")&&commit.Contains("commit.NotAttemptedIds.Count > 0"));
+            Assert(create.Contains("snapshot.State == ForgeHookState.Conflict")&&create.Contains("snapshot.State == ForgeHookState.Failed")&&
+                commit.Contains("snapshot.State == ForgeHookState.Conflict")&&commit.Contains("snapshot.State == ForgeHookState.Failed"));
+        });
+        test("Hook dispatch skips callbacks outside the host-approved context",()=>{
+            var source=ReadCoreHookSource();
+            var start=source.IndexOf("static object Dispatch(",StringComparison.Ordinal);
+            var end=source.IndexOf("static object InvokeOriginal(",start,StringComparison.Ordinal);
+            Assert(start>=0&&end>start);
+            var dispatch=source.Substring(start,end-start);
+            Assert(dispatch.Contains("if (!activation.Service.CallbackAllowed(entry)) return InvokeOriginal(originalInvoker, original, instance, callbackArgs)")&&
+                dispatch.Contains("if (entry.Prefix != null && !activation.Service.TryInvokeCallback(entry, entry.Prefix, invocation))")&&
+                dispatch.Contains("if (!activation.Service.CallbackAllowed(entry)) return InvokeOriginal(originalInvoker, original, instance, originalArgs)")&&
+                dispatch.Contains("if (entry.Postfix != null && !activation.Service.TryInvokeCallback(entry, entry.Postfix, invocation))")&&
+                dispatch.Contains("if (!activation.Service.CallbackAllowed(entry)) return result;")&&
+                dispatch.Contains("if (!entered)")&&dispatch.Contains("InvokeOriginalFallback(original, instance, args, isStatic)")&&
+                dispatch.Contains("finally")&&dispatch.Contains("activation.Exit();"));
+            var callbackGateStart=source.IndexOf("bool CallbackAllowed(",StringComparison.Ordinal);
+            var callbackInvokeStart=source.IndexOf("bool TryInvokeCallback(",callbackGateStart,StringComparison.Ordinal);
+            var originalInvokerStart=source.IndexOf("static object InvokeOriginal(",callbackInvokeStart,StringComparison.Ordinal);
+            Assert(callbackGateStart>=0&&callbackInvokeStart>callbackGateStart&&originalInvokerStart>callbackInvokeStart&&
+                source.Substring(callbackGateStart,callbackInvokeStart-callbackGateStart).Contains("Volatile.Read(ref callbacksEnabled)")&&
+                source.Substring(callbackGateStart,callbackInvokeStart-callbackGateStart).Contains("entry.CanInvoke != null && entry.CanInvoke()"));
+            var callbackInvoker=source.Substring(callbackInvokeStart,originalInvokerStart-callbackInvokeStart);
+            Assert(callbackInvoker.Contains("lock (callbackInvocationGate)")&&callbackInvoker.Contains("if (!CallbackAllowed(entry)) return false;")&&
+                callbackInvoker.IndexOf("CallbackAllowed(entry)",StringComparison.Ordinal)<callbackInvoker.IndexOf("callback(invocation)",StringComparison.Ordinal));
+        });
+        test("Hook plan cancellation is exact-session and exact-token only",()=>{
+            var source=ReadRuntimeSource();
+            var start=source.IndexOf("string CancelHookPlan(",StringComparison.Ordinal);
+            var end=source.IndexOf("static void StopHookCommit(",start,StringComparison.Ordinal);
+            Assert(start>=0&&end>start);
+            var cancel=source.Substring(start,end-start);
+            Assert(cancel.Contains("request.Session, Log.Id, StringComparison.Ordinal")&&
+                cancel.Contains("plan.Session, Log.Id, StringComparison.Ordinal")&&
+                cancel.Contains("plan.Token, request.Token, StringComparison.Ordinal")&&
+                cancel.Contains("if (cancelled) pendingHookPlan = null"));
+        });
+        test("Hook mutation rejects lookalike main-menu screens",()=>{
+            var forged=typeof(ReleaseTests).Assembly.GetType("TaleWorlds.MountAndBlade.GauntletUI.GauntletInitialScreen",false);
+            Assert(!Runtime.IsOfficialMainMenuScreenType(null) &&
+                !Runtime.IsOfficialMainMenuScreenType(typeof(MainMenuScreen)) &&
+                forged!=null&&!Runtime.IsOfficialMainMenuScreenType(forged) &&
+                ReadRuntimeSource().Contains("TaleWorlds.MountAndBlade.GauntletUI.GauntletInitialScreen, TaleWorlds.MountAndBlade.GauntletUI") &&
+                ReadRuntimeSource().Contains("screenType == officialType"));
+        });
+        test("Forge hook capability is optional and registration is inert by default",()=>{
+            Assert(ForgeApi.Version==12);
+            var engine=new TestEngine();
+            var callbackCount=0;
+            ForgeApi.Connect(engine);
+            try
+            {
+                var capability=ForgeApi.Hooks;
+                var handle=capability.Register(new ForgeHookDefinition {Id="fixture.hook.inert",Owner="fixture",Target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)}),Prefix=_=>callbackCount++});
+                var registered=handle.Snapshot;
+                var applied=handle.Apply();
+                Assert(capability!=null&&ReferenceEquals(capability,(IForgeHookService)engine)&&registered.State==ForgeHookState.Registered&&registered.HasPrefix&&callbackCount==0&&!applied.Succeeded&&applied.State==ForgeHookState.Registered&&callbackCount==0);
+            }
+            finally { ForgeApi.Disconnect(); }
+        });
+        test("Hook collective cleanup resolves clean apply failures and retains uncertain conflicts",()=>{
+            var ownerService=HookServiceWithState("fixture.clean-failed.owner",ForgeHookState.Failed,false);
+            var ownerResults=ownerService.RevertOwner("fixture");
+            Assert(ownerResults.Count==1&&ownerResults[0].Succeeded&&ownerResults[0].State==ForgeHookState.Reverted&&
+                ownerService.GetSnapshots().Single().State==ForgeHookState.Reverted);
+
+            var allService=HookServiceWithState("fixture.clean-failed.all",ForgeHookState.Failed,false);
+            var allResults=allService.RevertAll();
+            Assert(allResults.Count==1&&allResults[0].Succeeded&&allResults[0].State==ForgeHookState.Reverted&&
+                allService.GetSnapshots().Single().State==ForgeHookState.Reverted);
+
+            var disconnectService=HookServiceWithState("fixture.clean-failed.disconnect",ForgeHookState.Failed,false,false);
+            string disconnectReason;
+            Assert(disconnectService.CanDisconnect(out disconnectReason)&&string.IsNullOrEmpty(disconnectReason));
+            disconnectService.Disconnect();
+            Assert(disconnectService.GetSnapshots().Single().State==ForgeHookState.Reverted&&
+                !disconnectService.Apply("fixture.clean-failed.disconnect").Succeeded);
+            disconnectService.Reconnect();
+            Assert(disconnectService.GetSnapshots().Single().State==ForgeHookState.Reverted);
+
+            var conflictService=HookServiceWithState("fixture.uncertain.conflict",ForgeHookState.Conflict,true);
+            var conflictResults=conflictService.RevertAll();
+            Assert(conflictResults.Count==1&&!conflictResults[0].Succeeded&&conflictResults[0].State==ForgeHookState.Conflict&&
+                conflictService.GetSnapshots().Single().State==ForgeHookState.Conflict);
+            Throws(conflictService.Disconnect);
+            Assert(conflictService.GetSnapshots().Single().State==ForgeHookState.Conflict);
+        });
+        test("Hook bulk reverts report unresolved records when the main-menu mutation gate is closed",()=>{
+            var appliedOwner=HookServiceWithState("fixture.gated.applied.owner",ForgeHookState.Applied,true,false);
+            var ownerResults=appliedOwner.RevertOwner("fixture");
+            Assert(ownerResults.Count==1&&!ownerResults[0].Succeeded&&ownerResults[0].State==ForgeHookState.Applied&&
+                ownerResults[0].Detail.Contains("approved main-menu context")&&appliedOwner.GetSnapshots().Single().State==ForgeHookState.Applied);
+
+            var conflictAll=HookServiceWithState("fixture.gated.conflict.all",ForgeHookState.Conflict,true,false);
+            var allResults=conflictAll.RevertAll();
+            Assert(allResults.Count==1&&!allResults[0].Succeeded&&allResults[0].State==ForgeHookState.Conflict&&
+                allResults[0].Detail.Contains("approved main-menu context")&&allResults[0].Detail.Contains("Seeded post-cleanup lifecycle state")&&
+                conflictAll.GetSnapshots().Single().State==ForgeHookState.Conflict);
+
+            var cleanFailedOwner=HookServiceWithState("fixture.gated.clean-failed.owner",ForgeHookState.Failed,false,false);
+            var cleanFailedOwnerResults=cleanFailedOwner.RevertOwner("fixture");
+            Assert(cleanFailedOwnerResults.Count==1&&cleanFailedOwnerResults[0].Succeeded&&
+                cleanFailedOwnerResults[0].State==ForgeHookState.Reverted&&cleanFailedOwner.GetSnapshots().Single().State==ForgeHookState.Reverted);
+
+            var cleanFailedAll=HookServiceWithState("fixture.gated.clean-failed.all",ForgeHookState.Failed,false,false);
+            var cleanFailedAllResults=cleanFailedAll.RevertAll();
+            Assert(cleanFailedAllResults.Count==1&&cleanFailedAllResults[0].Succeeded&&
+                cleanFailedAllResults[0].State==ForgeHookState.Reverted&&cleanFailedAll.GetSnapshots().Single().State==ForgeHookState.Reverted);
+        });
+        test("ForgeApi retains the published hook service when disconnect throws",()=>{
+            var host=new HookLifecycleFixtureHost {ThrowOnDisconnect=true};
+            ForgeApi.Connect(host);
+            try
+            {
+                Throws(ForgeApi.Disconnect);
+                Assert(ReferenceEquals(ForgeApi.Registry,host)&&ReferenceEquals(ForgeApi.Hooks,host)&&host.GetSnapshots().Single().State==ForgeHookState.Applied);
+                host.ThrowOnDisconnect=false;host.ResolveOnDisconnect=true;
+                ForgeApi.Disconnect();
+                Assert(ForgeApi.Registry==null&&ForgeApi.Hooks==null&&host.DisconnectCount==2);
+            }
+            finally
+            {
+                if(ReferenceEquals(ForgeApi.Registry,host))
+                {
+                    host.ThrowOnDisconnect=false;host.ResolveOnDisconnect=true;
+                    ForgeApi.Disconnect();
+                }
+            }
+        });
+        test("ForgeApi refuses to unpublish hooks when Disconnect leaves an unresolved record",()=>{
+            var host=new HookLifecycleFixtureHost();
+            ForgeApi.Connect(host);
+            try
+            {
+                Throws(ForgeApi.Disconnect);
+                Assert(ReferenceEquals(ForgeApi.Registry,host)&&ReferenceEquals(ForgeApi.Hooks,host)&&host.GetSnapshots().Single().State==ForgeHookState.Applied);
+                host.SetState(ForgeHookState.Reverted);
+                ForgeApi.Disconnect();
+                Assert(ForgeApi.Registry==null&&ForgeApi.Hooks==null);
+            }
+            finally
+            {
+                if(ReferenceEquals(ForgeApi.Registry,host))
+                {
+                    host.SetState(ForgeHookState.Reverted);
+                    ForgeApi.Disconnect();
+                }
+            }
+        });
+        test("ForgeApi retains the previous host when replacement hook cleanup fails",()=>{
+            var previous=new HookLifecycleFixtureHost {ThrowOnDisconnect=true};
+            var incoming=new HookLifecycleFixtureHost();
+            incoming.SetState(ForgeHookState.Reverted);
+            ForgeApi.Connect(previous);
+            try
+            {
+                Throws(()=>ForgeApi.Connect(incoming));
+                Assert(ReferenceEquals(ForgeApi.Registry,previous)&&ReferenceEquals(ForgeApi.Hooks,previous)&&previous.GetSnapshots().Single().State==ForgeHookState.Applied);
+                previous.ThrowOnDisconnect=false;previous.ResolveOnDisconnect=true;
+                ForgeApi.Connect(incoming);
+                Assert(ReferenceEquals(ForgeApi.Registry,incoming)&&ReferenceEquals(ForgeApi.Hooks,incoming));
+            }
+            finally
+            {
+                if(ReferenceEquals(ForgeApi.Registry,incoming))ForgeApi.Disconnect();
+                else if(ReferenceEquals(ForgeApi.Registry,previous))
+                {
+                    previous.ThrowOnDisconnect=false;previous.ResolveOnDisconnect=true;
+                    ForgeApi.Disconnect();
+                }
+            }
+        });
+        test("ForgeApi reopens the previous host when the incoming lifecycle reconnect fails",()=>{
+            var previous=new HookLifecycleFixtureHost {ResolveOnDisconnect=true};
+            var incoming=new HookLifecycleFixtureHost {ThrowOnReconnect=true};
+            incoming.SetState(ForgeHookState.Reverted);
+            ForgeApi.Connect(previous);
+            try
+            {
+                Throws(()=>ForgeApi.Connect(incoming));
+                Assert(ReferenceEquals(ForgeApi.Registry,previous)&&ReferenceEquals(ForgeApi.Hooks,previous)&&
+                    previous.GetSnapshots().Single().State==ForgeHookState.Reverted&&previous.Accepting&&previous.ReconnectCount==2);
+                incoming.ThrowOnReconnect=false;
+                ForgeApi.Connect(incoming);
+                Assert(ReferenceEquals(ForgeApi.Registry,incoming)&&ReferenceEquals(ForgeApi.Hooks,incoming));
+            }
+            finally
+            {
+                if(ReferenceEquals(ForgeApi.Registry,incoming))ForgeApi.Disconnect();
+                else if(ReferenceEquals(ForgeApi.Registry,previous))
+                {
+                    previous.ResolveOnDisconnect=true;
+                    ForgeApi.Disconnect();
+                }
+            }
+        });
+        test("ForgeApi keeps the patch capability published when disconnect retains unresolved patches",()=>{
+            var host=new PatchLifecycleFixtureHost();
+            ForgeApi.Connect(host);
+            try
+            {
+                Throws(ForgeApi.Disconnect);
+                Assert(ReferenceEquals(ForgeApi.Registry,host)&&ReferenceEquals(ForgeApi.Patches,host)&&
+                    host.GetSnapshots().Single().State==ForgePatchState.Applied&&host.DisconnectCount==1);
+                host.SetState(ForgePatchState.Reverted);
+                ForgeApi.Disconnect();
+                Assert(ForgeApi.Registry==null&&ForgeApi.Patches==null&&host.DisconnectCount==2);
+            }
+            finally
+            {
+                if(ReferenceEquals(ForgeApi.Registry,host))
+                {
+                    host.SetState(ForgePatchState.Reverted);
+                    ForgeApi.Disconnect();
+                }
+            }
+        });
+        test("Forge hook registration rejects shared duplicate IDs and open generic targets",()=>{
+            var engine=new TestEngine();
+            engine.Register(new MutableTest());
+            Throws(()=>engine.Register(new ForgeHookDefinition {Id="mutable",Owner="fixture",Target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)}),Prefix=_=>{}}));
+            var service=new ForgeHookService(()=>true);
+            Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.generic",Owner="fixture",Target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Generic)),Prefix=_=>{}}));
+            var byRef=typeof(int).GetMethod("TryParse",new[]{typeof(string),typeof(int).MakeByRefType()});
+            Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.byref",Owner="fixture",Target=byRef,Prefix=_=>{}}));
+        });
+        test("Forge hook ordering rejects prefixed self references, normalized duplicates, and contradictions",()=>{
+            var service=new ForgeHookService(()=>true);
+            var target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)});
+            Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.short-self",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"fixture.short-self"}}));
+            Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.self",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"CalradiaForge.Hook.fixture.self"}}));
+            Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.self-case",Owner="fixture",Target=target,Prefix=_=>{},After=new List<string>{"calradiaforge.hook.fixture.self-case"}}));
+            Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.padded-self ",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"fixture.padded-self"}}));
+            Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.duplicate",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"fixture.other","CalradiaForge.Hook.fixture.other"}}));
+            Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.contradiction",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"fixture.other"},After=new List<string>{"CalradiaForge.Hook.fixture.other"}}));
+        });
         test("Patch console controls are explicit and absent from the read-only IPC action list",()=>{
             var help=ForgeCommands.Help(new List<string>());
             Assert(help.Contains("cf.patch_status [owner]")&&help.Contains("cf.patch_revert <id|owner|all>")&&
@@ -85,18 +346,70 @@ internal static class ReleaseTests
             if (!(result.ResolvedCount==1&&resolved.Resolved&&resolved.CallbackResolved&&resolved.ResolvedCallbackSignature.Contains("T")&&!rejected.Resolved&&rejected.Status=="Callback Member not found"))
                 throw new Exception("Generic preflight mismatch: count="+result.ResolvedCount+", valid="+resolved.Status+"/"+resolved.ResolvedCallbackSignature+", invalid="+rejected.Status+"/"+rejected.ResolvedCallbackSignature);
         });
+        test("MethodReference.From normalizes closed generic methods and constructed generic declaring types",()=>{
+            var closedMethod=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Generic)).MakeGenericMethod(typeof(string));
+            var closedTypeMethod=typeof(GenericParameterScopeFixture<int>).GetMethod(nameof(GenericParameterScopeFixture<int>.Target)).MakeGenericMethod(typeof(string));
+            var genericReference=MethodReference.From(closedMethod);
+            var closedTypeReference=MethodReference.From(closedTypeMethod);
+            var result=PatchPreflightEngine.Inspect(Capture(
+                Blueprint("blueprint.closed-generic-method",genericReference),
+                Blueprint("blueprint.closed-generic-type",closedTypeReference)),
+                new[]{typeof(ReleaseTests).Assembly},"Any");
+            Assert(genericReference.ParameterTypes.Single().FullName=="!!0"&&genericReference.ReturnType.FullName=="!!0"&&
+                genericReference.GenericArity==1&&genericReference.DeclaringType==typeof(PatchTargetFixture).FullName&&
+                closedTypeReference.DeclaringType==typeof(GenericParameterScopeFixture<>).FullName&&
+                closedTypeReference.ParameterTypes[0].FullName=="!0"&&closedTypeReference.ParameterTypes[1].FullName=="!!0"&&
+                result.ResolvedCount==2&&result.Outcomes.All(outcome=>outcome.Resolved));
+        });
+        test("Patch preflight requires concrete parameter and return assembly identity despite duplicate full names",()=>{
+            var suffix=Guid.NewGuid().ToString("N");
+            var payloadA=DefineDuplicateTypeAssembly("PatchPreflight.PayloadA."+suffix,"PatchCollision.Payload");
+            var payloadB=DefineDuplicateTypeAssembly("PatchPreflight.PayloadB."+suffix,"PatchCollision.Payload");
+            var targetAssembly=AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("PatchPreflight.Target."+suffix),AssemblyBuilderAccess.Run);
+            var targetModule=targetAssembly.DefineDynamicModule("PatchPreflight.Target."+suffix);
+            var targetBuilder=targetModule.DefineType("PatchCollision.Target",TypeAttributes.Public|TypeAttributes.Abstract|TypeAttributes.Sealed);
+            var parameterBuilder=targetBuilder.DefineMethod("Accept",MethodAttributes.Public|MethodAttributes.Static,typeof(void),new[]{payloadA});
+            parameterBuilder.GetILGenerator().Emit(OpCodes.Ret);
+            var returnBuilder=targetBuilder.DefineMethod("Create",MethodAttributes.Public|MethodAttributes.Static,payloadA,Type.EmptyTypes);
+            returnBuilder.GetILGenerator().Emit(OpCodes.Ldnull);
+            returnBuilder.GetILGenerator().Emit(OpCodes.Ret);
+            var targetType=targetBuilder.CreateType();
+            var exactParameter=MethodReference.From(targetType.GetMethod("Accept"));
+            var exactReturn=MethodReference.From(targetType.GetMethod("Create"));
+            var missingParameterAssembly=MethodReference.From(targetType.GetMethod("Accept"));
+            missingParameterAssembly.ParameterTypes[0].AssemblyName=null;
+            var missingReturnAssembly=MethodReference.From(targetType.GetMethod("Create"));
+            missingReturnAssembly.ReturnType.AssemblyName=" ";
+            var result=PatchPreflightEngine.Inspect(Capture(
+                Blueprint("blueprint.exact-type-assembly",exactParameter),
+                Blueprint("blueprint.omitted-parameter-assembly",missingParameterAssembly),
+                Blueprint("blueprint.omitted-return-assembly",missingReturnAssembly),
+                Blueprint("blueprint.exact-return-assembly",exactReturn)),
+                new[]{targetAssembly,payloadA.Assembly,payloadB.Assembly,typeof(ReleaseTests).Assembly},"Any");
+            var parameterRejected=result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.omitted-parameter-assembly");
+            var returnRejected=result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.omitted-return-assembly");
+            Assert(payloadA.FullName==payloadB.FullName&&payloadA.Assembly!=payloadB.Assembly&&
+                result.ResolvedCount==2&&result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.exact-type-assembly").Resolved&&
+                result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.exact-return-assembly").Resolved&&
+                !parameterRejected.Resolved&&parameterRejected.Status=="Invalid target"&&
+                !returnRejected.Resolved&&returnRejected.Status=="Invalid target");
+        });
         test("Patch preflight distinguishes type and method generic parameter positions",()=>{
             var method=typeof(GenericParameterScopeFixture<>).GetMethod(nameof(GenericParameterScopeFixture<object>.Target));
             var exact=MethodReference.From(method);
             var mismatched=MethodReference.From(method);
             mismatched.ParameterTypes[0]=TypeReference.From(method.GetGenericArguments()[0]);
+            var wrongAssembly=MethodReference.From(method);
+            wrongAssembly.ParameterTypes[0].AssemblyName="Unrelated.Assembly";
             var result=PatchPreflightEngine.Inspect(Capture(
-                Blueprint("blueprint.generic-scope",exact),Blueprint("blueprint.generic-scope-mismatch",mismatched)),
+                Blueprint("blueprint.generic-scope",exact),Blueprint("blueprint.generic-scope-mismatch",mismatched),Blueprint("blueprint.generic-scope-assembly-mismatch",wrongAssembly)),
                 new[]{typeof(ReleaseTests).Assembly},"Any");
             var resolved=result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.generic-scope");
             var rejected=result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.generic-scope-mismatch");
+            var assemblyRejected=result.Outcomes.Single(outcome=>outcome.Declaration.Blueprint.Id=="blueprint.generic-scope-assembly-mismatch");
             Assert(exact.ParameterTypes[0].FullName=="!0"&&exact.ParameterTypes[1].FullName=="!!0"&&
-                resolved.Resolved&&!rejected.Resolved&&rejected.Status=="Member not found");
+                resolved.Resolved&&!rejected.Resolved&&rejected.Status=="Member not found"&&
+                !assemblyRejected.Resolved&&assemblyRejected.Status=="Member not found");
         });
         test("Patch preflight never chooses an undeclared overload",()=>{
             var target=new MethodReference {AssemblyName=typeof(PatchTargetFixture).Assembly.GetName().Name,DeclaringType=typeof(PatchTargetFixture).FullName,MemberName=nameof(PatchTargetFixture.Overload),ParameterTypes=new List<TypeReference>()};
@@ -232,8 +545,32 @@ internal static class ReleaseTests
     }
     static CoreModule M(string id,params string[] dependencies)=>new CoreModule{Id=id,Dependencies=dependencies.ToList()};
     static TestEngine Enabled()=>new TestEngine{TestingEnabled=true,CampaignCopyConfirmed=true};
+    static ForgeHookService HookServiceWithState(string id,ForgeHookState state,bool inApplyOrder,bool mayMutate=true)
+    {
+        var service=new ForgeHookService(()=>mayMutate);
+        service.Register(new ForgeHookDefinition {
+            Id=id,Owner="fixture",Target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)}),Prefix=_=>{}
+        });
+        var entriesField=typeof(ForgeHookService).GetField("entries",BindingFlags.Instance|BindingFlags.NonPublic);
+        var entries=(System.Collections.IDictionary)entriesField.GetValue(service);
+        var entry=entries[id];
+        entry.GetType().GetProperty("State",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(entry,state,null);
+        entry.GetType().GetProperty("Detail",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(entry,"Seeded post-cleanup lifecycle state",null);
+        if(inApplyOrder)
+        {
+            var orderField=typeof(ForgeHookService).GetField("applyOrder",BindingFlags.Instance|BindingFlags.NonPublic);
+            ((List<string>)orderField.GetValue(service)).Add(id);
+        }
+        return service;
+    }
     static PatchBlueprintCapture Capture(params PatchBlueprint[] blueprints)=>new PatchBlueprintCapture {ProviderCount=1,Declarations=blueprints.Select(blueprint=>new PatchBlueprintDeclaration {ProviderId="fixture.provider",Module="fixture",ProviderName="Fixture provider",Context=Context.Any,Blueprint=blueprint}).ToList()};
     static PatchBlueprint Blueprint(string id,MethodReference target)=>new PatchBlueprint {Id=id,Name="Fixture blueprint",Hook=PatchHookKind.Prefix,Target=target,PatchMethod=MethodReference.From(typeof(PatchCallbackFixture).GetMethod(nameof(PatchCallbackFixture.Callback))),Before=new List<string>(),After=new List<string>()};
+    static Type DefineDuplicateTypeAssembly(string assemblyName,string fullTypeName)
+    {
+        var assembly=AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(assemblyName),AssemblyBuilderAccess.Run);
+        var module=assembly.DefineDynamicModule(assemblyName);
+        return module.DefineType(fullTypeName,TypeAttributes.Public|TypeAttributes.Class).CreateType();
+    }
     static void Assert(bool value){if(!value)throw new Exception("Release regression failed");}
     static void Throws(Action action){try{action();}catch{return;}throw new Exception("Expected rejection");}
     sealed class Services:ITestServices
@@ -271,6 +608,28 @@ internal static class ReleaseTests
         public static void Overload(int value) { }
         public static void Overload(string value) { }
         public static T Generic<T>(T value) => value;
+    }
+    static string ReadRuntimeSource()
+    {
+        var starts=new[]{new DirectoryInfo(Environment.CurrentDirectory),new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory)};
+        foreach(var start in starts)
+            for(var directory=start;directory!=null;directory=directory.Parent)
+            {
+                var path=Path.Combine(directory.FullName,"src","CalradiaForge.Mod","Runtime.cs");
+                if(File.Exists(path))return File.ReadAllText(path);
+            }
+        throw new FileNotFoundException("Could not locate the CalradiaForge.Mod Runtime.cs source for hook IPC contract checks.");
+    }
+    static string ReadCoreHookSource()
+    {
+        var starts=new[]{new DirectoryInfo(Environment.CurrentDirectory),new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory)};
+        foreach(var start in starts)
+            for(var directory=start;directory!=null;directory=directory.Parent)
+            {
+                var path=Path.Combine(directory.FullName,"src","CalradiaForge.Core","ForgeHookService.cs");
+                if(File.Exists(path))return File.ReadAllText(path);
+            }
+        throw new FileNotFoundException("Could not locate the CalradiaForge.Core ForgeHookService source for dispatch contract checks.");
     }
     public sealed class GenericParameterScopeFixture<TClass>
     {
@@ -339,4 +698,73 @@ internal static class ReleaseTests
         public static IEnumerable<MethodBase> GetAllPatchedMethods()=>new MethodBase[]{typeof(FakeOriginals).GetMethod("Target",new[]{typeof(int)})};
         public static FakePatchInfo GetPatchInfo(MethodBase target)=>null;
     }
+    sealed class HookLifecycleFixtureHost:IForgeRegistry,IForgeHookService,IForgeHookServiceLifecycle
+    {
+        ForgeHookState state=ForgeHookState.Applied;
+        public bool ThrowOnDisconnect;
+        public bool ThrowOnReconnect;
+        public bool ResolveOnDisconnect;
+        public bool Accepting;
+        public int DisconnectCount;
+        public int ReconnectCount;
+        public void Register(ITestCase test) { }
+        public void Register(ICommand command) { }
+        public void Register(IDiagnosticProvider provider) { }
+        public IForgeHookHandle Register(ForgeHookDefinition definition)=>throw new NotSupportedException();
+        public IReadOnlyList<ForgeHookSnapshot> GetSnapshots(string owner=null)
+        {
+            if(!string.IsNullOrEmpty(owner)&&!string.Equals(owner,"fixture",StringComparison.OrdinalIgnoreCase))return Array.Empty<ForgeHookSnapshot>();
+            return new[]{new ForgeHookSnapshot("fixture.lifecycle","fixture","Fixture.Target",true,false,null,null,null,state,"fixture state")};
+        }
+        public ForgeHookOperationResult Apply(string hookId)=>throw new NotSupportedException();
+        public ForgeHookOperationResult Verify(string hookId)=>throw new NotSupportedException();
+        public ForgeHookOperationResult Revert(string hookId)=>throw new NotSupportedException();
+        public IReadOnlyList<ForgeHookOperationResult> RevertOwner(string owner)=>throw new NotSupportedException();
+        public IReadOnlyList<ForgeHookOperationResult> RevertAll()=>throw new NotSupportedException();
+        public void Disconnect()
+        {
+            DisconnectCount++;
+            if(ThrowOnDisconnect)throw new InvalidOperationException("Fixture disconnect failed before cleanup.");
+            if(ResolveOnDisconnect)state=ForgeHookState.Reverted;
+            Accepting=false;
+        }
+        public void Reconnect()
+        {
+            ReconnectCount++;
+            if(ThrowOnReconnect)throw new InvalidOperationException("Fixture reconnect failed before reopening.");
+            Accepting=true;
+        }
+        public void SetState(ForgeHookState value)=>state=value;
+    }
+    sealed class PatchLifecycleFixtureHost:IForgeRegistry,IForgePatchService
+    {
+        ForgePatchState state=ForgePatchState.Applied;
+        public int DisconnectCount;
+        public void Register(ITestCase test) { }
+        public void Register(ICommand command) { }
+        public void Register(IDiagnosticProvider provider) { }
+        public IForgePatchHandle ApplyMethodReplacement(string patchId,string owner,MethodInfo target,MethodInfo replacement)=>throw new NotSupportedException();
+        public IReadOnlyList<ForgePatchSnapshot> GetSnapshots(string owner=null)
+        {
+            if(!string.IsNullOrEmpty(owner)&&!string.Equals(owner,"fixture",StringComparison.OrdinalIgnoreCase))return Array.Empty<ForgePatchSnapshot>();
+            return new[]{new ForgePatchSnapshot("fixture.patch.lifecycle","fixture","Fixture.Target","Fixture.Replacement",state,state==ForgePatchState.Reverted)};
+        }
+        public ForgePatchVerification Verify(string patchId)=>new ForgePatchVerification(patchId,state,state==ForgePatchState.Reverted,"fixture state");
+        public ForgePatchRevertResult Revert(string patchId)
+        {
+            if(state==ForgePatchState.Reverted)return new ForgePatchRevertResult(patchId,state,true,"Already reverted.");
+            return new ForgePatchRevertResult(patchId,state,false,"Fixture patch remains unresolved.");
+        }
+        public IReadOnlyList<ForgePatchRevertResult> RevertOwner(string owner)=>Array.Empty<ForgePatchRevertResult>();
+        public IReadOnlyList<ForgePatchRevertResult> RevertAll()=>Array.Empty<ForgePatchRevertResult>();
+        public void Disconnect() { DisconnectCount++; }
+        public void SetState(ForgePatchState value)=>state=value;
+    }
+    sealed class MainMenuScreen { }
+}
+
+namespace TaleWorlds.MountAndBlade.GauntletUI
+{
+    // Exact-full-name test double. Runtime must compare the CLR Type object, not names or prefixes.
+    internal sealed class GauntletInitialScreen { }
 }

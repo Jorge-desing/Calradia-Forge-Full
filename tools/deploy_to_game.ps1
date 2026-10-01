@@ -187,7 +187,12 @@ try {
     }
 
     $modBuild = Join-Path $workspace 'src\CalradiaForge.Mod\bin\Release\net472'
-    foreach ($dependency in @('AsmResolver.dll', 'AsmResolver.DotNet.dll', 'AsmResolver.PE.dll', 'AsmResolver.PE.File.dll', 'MonoMod.Backports.dll', 'MonoMod.ILHelpers.dll', 'System.ValueTuple.dll')) {
+    foreach ($dependency in @(
+        'AsmResolver.dll', 'AsmResolver.DotNet.dll', 'AsmResolver.PE.dll', 'AsmResolver.PE.File.dll',
+        'Mono.Cecil.dll', 'Mono.Cecil.Mdb.dll', 'Mono.Cecil.Pdb.dll', 'Mono.Cecil.Rocks.dll',
+        'MonoMod.Backports.dll', 'MonoMod.Core.dll', 'MonoMod.Iced.dll', 'MonoMod.ILHelpers.dll',
+        'MonoMod.RuntimeDetour.dll', 'MonoMod.Utils.dll', 'System.ValueTuple.dll'
+    )) {
         $source = Join-Path $modBuild $dependency
         if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw "Runtime dependency build output is missing: $source" }
         $relative = "CalradiaForge\bin\Win64_Shipping_Client\$dependency"

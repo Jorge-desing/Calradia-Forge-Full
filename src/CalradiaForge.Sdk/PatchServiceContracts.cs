@@ -160,7 +160,7 @@ namespace CalradiaForge.Sdk
     }
 
     /// <summary>A stable handle for inspecting and idempotently reverting one explicitly applied patch.</summary>
-    /// <remarks>Disposing the handle performs a best-effort idempotent revert.</remarks>
+    /// <remarks><see cref="IDisposable.Dispose"/> requests a revert and throws if the service cannot confirm it. Call <see cref="Revert"/> directly when the caller needs the structured failure result.</remarks>
     public interface IForgePatchHandle : IDisposable
     {
         /// <summary>Gets a fresh immutable point-in-time snapshot of this patch.</summary>

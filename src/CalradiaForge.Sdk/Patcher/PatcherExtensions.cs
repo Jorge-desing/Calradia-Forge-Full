@@ -29,7 +29,8 @@ namespace CalradiaForge.Sdk.Patcher
                 Replacement = replacementMethod,
                 Owner = sourceModule,
                 SourceModule = sourceModule,
-                OriginalBytes = originalBytes
+                OriginalBytes = originalBytes,
+                GenerationToken = MethodSwapper.GetGenerationToken(originalMethod, originalBytes, patchId)
             };
 
             try { ForgePatcher.Register(record); }

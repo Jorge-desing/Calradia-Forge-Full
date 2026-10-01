@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build-and-test:
-    name: Build, Gate & Full Test Suite (Windows)
+    name: Build, Gate & Portable Test Suite (Windows)
     runs-on: windows-latest
     timeout-minutes: 25
 
@@ -36,21 +36,22 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Solution Build (Release)
-        run: dotnet build CalradiaForge.sln -c Release -v:minimal
+      - name: Prepare Calradia Forge Python tools and agent test profile
+        shell: cmd
+        run: call tools\Setup-CalradiaForge-Python.bat --agents --no-pause
+
+      - name: Build and run portable suites through BAT
+        shell: cmd
+        run: call tools\Run-CalradiaForge-Tests.bat --portable-only --no-pause
 
       - name: Verify Stateless Campaign Behavior Gate (Mandatory)
-        shell: powershell
-        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify_stateless_behavior.ps1
-
-      - name: Run Full Test Suite (Core, ForgeWeave, Desktop MVVM & RenderTests)
         shell: cmd
-        run: cmd.exe /c "tools\Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul"
+        run: call tools\Verify-CalradiaForge-StatelessBehavior.bat --portable
 
-      - name: Validate Gauntlet Icon Assets & Sprites
-        run: |
-          python tools/Validate-CalradiaForge-DecorativeSprites.py
-          python tools/validate_game_icon_assets.py --require-tpac
+      - name: Bannerlord integration build scope
+        shell: cmd
+        run: echo Bannerlord net472 module and Core tests require licensed TaleWorlds assemblies through GameBin; this hosted runner validates portable net8.0 targets only.
 
-      - name: Run Python Multi-Agent Tests & Compaction Benchmarks
-        run: python -m unittest tests/test_forge_agents.py
+      - name: Run Python Quality, Asset & Agent Checks
+        shell: cmd
+        run: call tools\Run-CalradiaForge-Python-Checks.bat --ci --agents --no-pause

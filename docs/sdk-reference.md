@@ -1,10 +1,10 @@
-# Calradia Forge SDK Reference — 25.0.0
+# Calradia Forge SDK Reference — 25.2.0
 
-SDK Contract Version: **11**
-Product source version: **25.0.0**  
+SDK Contract Version: **12**
+Product source version: **25.2.0**
 SDK targets: `net472` and `net8.0`; the in-game module remains `net472`.
 
-> This reference describes the v25.0.0 source tree. Existing distribution ZIPs were not regenerated for this source update; their contents do not establish SDK contract 11 availability.
+> This reference describes the v25.2.0 source tree. Distribution archives are separate artifacts; use their manifests or validation records to establish which SDK contract they contain.
 
 ## 1. Auto registration
 
@@ -160,19 +160,55 @@ Reversion is allowed only when the target bytes still match the exact jump bytes
 
 This low-level writer remains experimental. Neither executable-page protection changes nor instruction-cache flushing coordinate other threads that may be executing the target. The current backend does not claim safe concurrent hot patching; use a disposable, isolated fixture and ensure no thread can execute the method while code is changed. Do not use this as a production patch framework. The owner field is descriptive only. Preflight hook declarations such as `Transpiler` and `Finalizer` are not implemented by the method-replacement backend.
 
-`ForgeLivePatcher` and the older detour utilities remain compatibility surfaces. `ApplyDetour(original, replacement)` uses Forge's low-level replacement path; `ApplyPatch`/`RevertPatch` only raise their corresponding request events for a registered consumer. Forge does not provide Harmony or automatically turn `Prefix`, `Postfix`, `Transpiler` or `Finalizer` declarations into runtime hooks. Prefer `ForgeApi.Patches` when explicit ownership, verification and reversion are required.
+`ForgeLivePatcher` and the older detour utilities remain compatibility surfaces. `ApplyDetour(original, replacement)` uses Forge's low-level replacement path; `ApplyPatch`/`RevertPatch` only raise their corresponding request events for a registered consumer. Forge does not provide Harmony or automatically turn declarative blueprint entries into runtime hooks. Use the separate `ForgeApi.Hooks` capability for explicitly registered Prefix/Postfix callbacks; `Transpiler` and `Finalizer` remain unsupported by these backends.
 
-## 7. ForgeApi contract version
+## 7. Explicit Prefix and Postfix runtime hooks
 
-Contract 11 adds the optional patch-service surface. Because the version is a compile-time constant embedded in the consuming assembly, check the optional capability at runtime instead of using a version comparison for this feature:
+The optional `IForgeHookService` capability is available as `ForgeApi.Hooks`. It is independent of the declarative Patch Blueprint registry and the one-for-one replacement service at `ForgeApi.Patches`; adding it does not add members to `IForgeRegistry`. Hosts that need to reopen the same service after reconnect can implement the separate optional `IForgeHookServiceLifecycle`. `ForgeApi.Version` is a compile-time constant, so test `ForgeApi.Hooks != null` at runtime to determine whether the connected host supplies this capability. Hook definitions and delegates stay in-process and are not transported over IPC.
+
+Registering a definition records metadata and callbacks only. It does not install a detour; application, verification and reversion are explicit operations:
 
 ```csharp
-if (ForgeApi.Patches == null)
-    throw new InvalidOperationException("The connected host does not provide the patch service.");
+var hooks = ForgeApi.Hooks;
+if (hooks == null)
+    throw new InvalidOperationException("The connected Forge host does not provide runtime hook support.");
+
+var targetMethod = ResolveExactTarget(); // Module-specific code returns one exact supported MethodInfo.
+IForgeHookHandle handle = hooks.Register(new ForgeHookDefinition
+{
+    Id = "my_module.hero_name",
+    Owner = "MyModule",
+    Target = targetMethod,
+    Prefix = invocation => { /* inspect or update supported arguments */ },
+    Postfix = invocation => { /* inspect or update the result */ }
+});
+
+ForgeHookOperationResult applied = handle.Apply();
+ForgeHookOperationResult verified = handle.Verify();
+ForgeHookOperationResult reverted = handle.Revert();
+// Dispose also requests a best-effort revert; retain the handle for status and diagnostics.
+```
+
+`ForgeHookInvocation` exposes the target instance and an argument array. A Prefix can update supported arguments, set `RunOriginal = false`, and supply a type-compatible `Result`; a Postfix can inspect or replace a type-compatible result after the original returns. Callbacks execute synchronously on the thread invoking the target. Prefix callback failures fall back to the original call, and Postfix callback failures preserve the original result. Do not block these callbacks or assume they run on the game thread.
+
+`GetSnapshots(owner)` returns point-in-time snapshots; the service also exposes `Apply`, `Verify`, `Revert`, `RevertOwner` and `RevertAll`. Results identify `Registered`, `Applied`, `Reverted`, `Conflict`, `Failed` or `Unsupported`. Owner is a tracking label, not an authorization boundary. `Before`, `After` and `Priority` are forwarded as MonoMod RuntimeDetour ordering metadata on the supported game target. Registration rejects unsupported signatures, including open generics, constructors, abstract methods, P/Invoke/internal-call and varargs methods, by-ref or pointer parameters/returns, byref-like types, value-type instance targets, and targets with more than 12 parameters.
+
+The built-in Bannerlord host permits Apply/Revert only on the exact main-menu screen, on the game thread, with no campaign, mission or multiplayer session active. The executable RuntimeDetour backend is included for the module's `net472` target; applying hooks on `net8.0` is unsupported. Registration remains inert on every target. On disconnect, the service attempts to revert its applied hooks in reverse order and retains unresolved records; reconnect is rejected while a hook is active, conflicted or uncertain.
+
+This runtime-hook path is experimental. Its fixture tests are serial and do not prove safety while another thread executes the target during Apply or Revert. Keep targets quiescent during changes, use isolated fixtures for validation, and do not treat this capability as a production hot-patching guarantee. Prefix/Postfix are supported; Harmony, Transpiler and Finalizer execution is not provided.
+
+## 8. ForgeApi contract version
+
+Contract 12 adds the optional Prefix/Postfix runtime-hook surface. Contract 11 added the separate optional method-replacement service. Because the version is a compile-time constant embedded in the consuming assembly, check the optional capability at runtime instead of using a version comparison:
+
+```csharp
+if (ForgeApi.Hooks == null)
+    throw new InvalidOperationException("The connected host does not provide runtime hook support.");
 ```
 
 | Contract | Product source | Relevant addition |
 |---|---|---|
+| 12 | 25.2.0 | Optional `IForgeHookService` for explicitly registered Prefix/Postfix callbacks; Apply, Verify and Revert are explicit, with MonoMod RuntimeDetour on the Bannerlord `net472` target. |
 | 11 | 25.0.0 | Optional `IForgePatchService` with explicit method-replacement handles, verification and conflict-aware reversion. |
 | 10 | 25.0.0 | Explicit safe-save outcomes, bounded auto-registration reports, typed Semantic/Procedural memory reads, and generation-safe availability delivery. |
 | 9 | 24.0.0 | Owner-scoped `ForgeModelRegistry` registrations; modifier conditions execute on a registry snapshot outside its lock. |
@@ -185,7 +221,7 @@ The `/agents` endpoint is an aggregate-only diagnostic. Counts are computed from
 
 `ForgeModelRegistry.GetModifiers(category)` returns a cached, immutable snapshot containing only the requested category. Registrations, replacements, and removals invalidate the cache; snapshots already returned to callers remain stable. `Evaluate` reuses the category snapshot and invokes modifier conditions outside the registry lock. These are internal allocation and traversal improvements; registration order and calculation behavior are unchanged.
 
-## 8. ModSettings
+## 9. ModSettings
 
 ```csharp
 var settings = ModSettings.Register("MyMod", new MySettings { Volume = 1.0f });

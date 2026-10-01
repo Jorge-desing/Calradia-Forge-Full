@@ -17,7 +17,11 @@ namespace CalradiaForge.Mod
         private string _campaignRuleBuilderDraftPath;
         private string _selectedCampaignRuleBuilderRuleId = string.Empty;
         private string _campaignRuleBuilderStatusKey = "No saved rule draft.";
+        private string _campaignRuleBuilderDraftLoadStatusKey = "No saved rule draft.";
+        private bool _campaignRuleBuilderDraftLoaded;
         private bool _isCampaignRuleBuilderPackageVisible;
+
+        public void ExecuteNoviceCampaignRuleBuilder() => SelectSection("novice-campaign-rule-builder");
 
         [DataSourceProperty] public bool IsCampaignRuleBuilderActive => current == "novice-campaign-rule-builder";
         [DataSourceProperty] public bool IsCampaignRuleBuilderWorkspaceVisible => IsCampaignRuleBuilderActive && !_isCampaignRuleBuilderPackageVisible;
@@ -34,12 +38,12 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string CampaignRuleBuilderOutputText => CampaignRuleBuilderCanCopy ? full : string.Empty;
         [DataSourceProperty] public string CampaignRuleBuilderCountLabel => _campaignRuleBuilderRules.Count.ToString(CultureInfo.InvariantCulture) + " / " + CampaignRuleBuilderKinds.MaximumRules.ToString(CultureInfo.InvariantCulture);
         [DataSourceProperty] public string CampaignRuleBuilderStatusLabel => T(_campaignRuleBuilderStatusKey);
+        [DataSourceProperty] public string CampaignRuleBuilderDraftLoadStatusLabel => T(_campaignRuleBuilderDraftLoadStatusKey);
         [DataSourceProperty] public string CampaignRuleBuilderTitleLabel => T("Campaign Rule Builder");
-        [DataSourceProperty] public string CampaignRuleBuilderCatalogLabel => T("Rule catalog");
         [DataSourceProperty] public string CampaignRuleBuilderEmptyLabel => T("Add a rule to begin. The preview uses sample data only.");
         [DataSourceProperty] public string CampaignRuleBuilderRulesLabel => T("Rule order");
         [DataSourceProperty] public string CampaignRuleBuilderPropertiesLabel => T("Selected rule");
-        [DataSourceProperty] public string CampaignRuleBuilderEventLabel => T("When · event");
+        [DataSourceProperty] public string CampaignRuleBuilderEventLabel => T("When · event (click to change)");
         [DataSourceProperty] public string CampaignRuleBuilderActionLabel => T("Then · action");
         [DataSourceProperty] public string CampaignRuleBuilderTargetLabel => T("Target");
         [DataSourceProperty] public string CampaignRuleBuilderAmountLabel => T("Amount");
@@ -92,26 +96,44 @@ namespace CalradiaForge.Mod
 
         private CampaignRuleBuilderRule SelectedCampaignRule => _campaignRuleBuilderDraft.Rules.FirstOrDefault(rule => string.Equals(rule.Id, _selectedCampaignRuleBuilderRuleId, StringComparison.Ordinal));
 
-        private void InitializeCampaignRuleBuilder()
+        private void InitializeCampaignRuleBuilder(string pathOverride)
         {
+            if (!string.IsNullOrWhiteSpace(pathOverride))
+            {
+                _campaignRuleBuilderDraftPath = pathOverride;
+                return;
+            }
+
             try
             {
                 string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                 _campaignRuleBuilderDraftPath = string.IsNullOrWhiteSpace(local) ? null : Path.Combine(local, "CalradiaForge", "campaign-rule-builder.json");
             }
             catch { _campaignRuleBuilderDraftPath = null; }
+        }
+
+        private void EnsureCampaignRuleBuilderDraftLoaded()
+        {
+            if (_campaignRuleBuilderDraftLoaded) return;
+            _campaignRuleBuilderDraftLoaded = true;
             var loaded = CampaignRuleBuilderPersistence.Load(_campaignRuleBuilderDraftPath);
             _campaignRuleBuilderDraft = loaded.Draft ?? new CampaignRuleBuilderDraft();
+            bool createdStarterRule = loaded.Status == CampaignRuleBuilderLoadStatus.Missing;
+            if (createdStarterRule)
+                _campaignRuleBuilderDraft.Rules.Add(CampaignRuleBuilderKinds.CreateRule());
             switch (loaded.Status)
             {
-                case CampaignRuleBuilderLoadStatus.Loaded: _campaignRuleBuilderStatusKey = "Rule draft loaded."; break;
-                case CampaignRuleBuilderLoadStatus.Invalid: _campaignRuleBuilderStatusKey = "Saved rule draft is damaged. It will stay until you save."; break;
-                case CampaignRuleBuilderLoadStatus.TooLarge: _campaignRuleBuilderStatusKey = "Saved rule draft exceeds 64 KiB. It will stay until you save."; break;
-                case CampaignRuleBuilderLoadStatus.UnknownVersion: _campaignRuleBuilderStatusKey = "Saved rule draft uses an unsupported version. It will stay until you save."; break;
-                case CampaignRuleBuilderLoadStatus.Unavailable: _campaignRuleBuilderStatusKey = "Saved rule draft could not be read. It will stay until you save."; break;
-                default: _campaignRuleBuilderStatusKey = "No saved rule draft."; break;
+                case CampaignRuleBuilderLoadStatus.Loaded: _campaignRuleBuilderDraftLoadStatusKey = "Rule draft loaded."; break;
+                case CampaignRuleBuilderLoadStatus.Invalid: _campaignRuleBuilderDraftLoadStatusKey = "Saved rule draft is damaged. It will stay until you save."; break;
+                case CampaignRuleBuilderLoadStatus.TooLarge: _campaignRuleBuilderDraftLoadStatusKey = "Saved rule draft exceeds 64 KiB. It will stay until you save."; break;
+                case CampaignRuleBuilderLoadStatus.UnknownVersion: _campaignRuleBuilderDraftLoadStatusKey = "Saved rule draft uses an unsupported version. It will stay until you save."; break;
+                case CampaignRuleBuilderLoadStatus.Unavailable: _campaignRuleBuilderDraftLoadStatusKey = "Saved rule draft could not be read. It will stay until you save."; break;
+                case CampaignRuleBuilderLoadStatus.Missing: _campaignRuleBuilderDraftLoadStatusKey = "Unsaved starter rule."; break;
+                default: _campaignRuleBuilderDraftLoadStatusKey = "No saved rule draft."; break;
             }
+            _campaignRuleBuilderStatusKey = createdStarterRule ? "Unsaved starter rule." : _campaignRuleBuilderDraftLoadStatusKey;
             RebuildCampaignRuleBuilderRules();
+            foreach (var name in new[] { nameof(CampaignRuleBuilderRules), nameof(CampaignRuleBuilderIsEmpty), nameof(CampaignRuleBuilderCanAdd), nameof(CampaignRuleBuilderAtCapacity), nameof(CampaignRuleBuilderCountLabel), nameof(CampaignRuleBuilderStatusLabel), nameof(CampaignRuleBuilderDraftLoadStatusLabel) }) OnPropertyChanged(name);
         }
 
         private void RebuildCampaignRuleBuilderRules()
@@ -158,6 +180,11 @@ namespace CalradiaForge.Mod
 
         public void ExecuteCampaignRuleBuilderSelectPrevious() => SelectAdjacentCampaignRule(-1);
         public void ExecuteCampaignRuleBuilderSelectNext() => SelectAdjacentCampaignRule(1);
+        internal void ExecuteCampaignRuleBuilderSelectIndex(int index)
+        {
+            if (!IsCampaignRuleBuilderActive || index < 0 || index >= _campaignRuleBuilderDraft.Rules.Count) return;
+            SelectCampaignRule(_campaignRuleBuilderDraft.Rules[index].Id);
+        }
         private void SelectAdjacentCampaignRule(int offset)
         {
             int index = _campaignRuleBuilderDraft.Rules.FindIndex(rule => rule.Id == _selectedCampaignRuleBuilderRuleId);
@@ -242,11 +269,15 @@ namespace CalradiaForge.Mod
             return options[(index + 1) % options.Length];
         }
 
-        private static void NormalizeCampaignRuleActionTarget(CampaignRuleBuilderRule rule)
+        private void NormalizeCampaignRuleActionTarget(CampaignRuleBuilderRule rule)
         {
             var targets = CampaignRuleBuilderKinds.GetCompatibleTargets(rule.EventId, rule.ActionId);
             if (targets.Length > 0 && !targets.Contains(rule.TargetId, StringComparer.Ordinal)) rule.TargetId = targets[0];
-            if (rule.ActionId == "gold" && rule.Amount < 0) rule.Amount = 100;
+            if (rule.ActionId == "gold" && rule.Amount < 0)
+            {
+                rule.Amount = 100;
+                _campaignRuleBuilderAmountEdits.Remove(rule.Id);
+            }
         }
 
         public void ExecuteCampaignRuleBuilderAddConditionA() => AddCampaignRuleCondition(false);
@@ -292,6 +323,17 @@ namespace CalradiaForge.Mod
             MarkCampaignRuleBuilderEdited();
         }
 
+        internal void ExecuteCampaignRuleBuilderConditionKeyboard(bool secondGroup, bool remove, int index)
+        {
+            var rule = SelectedCampaignRule;
+            if (rule == null) return;
+            var group = secondGroup ? rule.GroupB : rule.GroupA;
+            if (index < 0 || index >= group.Count) return;
+            var condition = group[index];
+            if (remove) RemoveCampaignRuleCondition(rule.Id, secondGroup, condition);
+            else CycleCampaignRuleCondition(rule.Id, secondGroup, condition);
+        }
+
         internal void CampaignRuleConditionChanged() => MarkCampaignRuleBuilderEdited();
 
         public void ExecuteCampaignRuleBuilderSave()
@@ -302,6 +344,8 @@ namespace CalradiaForge.Mod
                 SetCampaignRuleBuilderStatus(error ?? "The rule draft could not be saved.");
                 return;
             }
+            _campaignRuleBuilderDraftLoadStatusKey = "Rule draft saved.";
+            OnPropertyChanged(nameof(CampaignRuleBuilderDraftLoadStatusLabel));
             SetCampaignRuleBuilderStatus("Rule draft saved.");
         }
 
@@ -359,7 +403,7 @@ namespace CalradiaForge.Mod
                 page = 0;
                 Render();
             }
-            SetCampaignRuleBuilderStatus("Unsaved rule changes.");
+            SetCampaignRuleBuilderStatus("Unsaved draft edits.");
             OnPropertyChanged(nameof(CampaignRuleBuilderIsEmpty));
             OnPropertyChanged(nameof(CampaignRuleBuilderCanAdd));
             OnPropertyChanged(nameof(CampaignRuleBuilderAtCapacity));
@@ -386,7 +430,7 @@ namespace CalradiaForge.Mod
 
         private void NotifyCampaignRuleBuilderLabels()
         {
-            foreach (var name in new[] { nameof(NoviceCampaignRuleBuilderLabel), nameof(NoviceCampaignRuleBuilderHint), nameof(CampaignRuleBuilderTitleLabel), nameof(CampaignRuleBuilderCatalogLabel), nameof(CampaignRuleBuilderEmptyLabel), nameof(CampaignRuleBuilderRulesLabel), nameof(CampaignRuleBuilderPropertiesLabel), nameof(CampaignRuleBuilderEventLabel), nameof(CampaignRuleBuilderActionLabel), nameof(CampaignRuleBuilderTargetLabel), nameof(CampaignRuleBuilderAmountLabel), nameof(CampaignRuleBuilderGroupALabel), nameof(CampaignRuleBuilderGroupBLabel), nameof(CampaignRuleBuilderAddConditionLabel), nameof(CampaignRuleBuilderCycleKindLabel), nameof(CampaignRuleBuilderCycleOperatorLabel), nameof(CampaignRuleBuilderRemoveConditionLabel), nameof(CampaignRuleBuilderAddRuleLabel), nameof(CampaignRuleBuilderPreviousLabel), nameof(CampaignRuleBuilderNextLabel), nameof(CampaignRuleBuilderMoveUpLabel), nameof(CampaignRuleBuilderMoveDownLabel), nameof(CampaignRuleBuilderRemoveRuleLabel), nameof(CampaignRuleBuilderSaveLabel), nameof(CampaignRuleBuilderValidateLabel), nameof(CampaignRuleBuilderGenerateLabel), nameof(CampaignRuleBuilderCopyLabel), nameof(CampaignRuleBuilderPreviewHeadingLabel), nameof(CampaignRuleBuilderConditionValueLabel), nameof(CampaignRuleBuilderPackageHeadingLabel), nameof(CampaignRuleBuilderStatusLabel), nameof(CampaignRuleBuilderSelectedActionLabel), nameof(CampaignRuleBuilderSelectedTargetLabel), nameof(CampaignRuleBuilderPreviewLabel) }) OnPropertyChanged(name);
+            foreach (var name in new[] { nameof(NoviceCampaignRuleBuilderLabel), nameof(NoviceCampaignRuleBuilderHint), nameof(CampaignRuleBuilderTitleLabel), nameof(CampaignRuleBuilderEmptyLabel), nameof(CampaignRuleBuilderRulesLabel), nameof(CampaignRuleBuilderPropertiesLabel), nameof(CampaignRuleBuilderEventLabel), nameof(CampaignRuleBuilderActionLabel), nameof(CampaignRuleBuilderTargetLabel), nameof(CampaignRuleBuilderAmountLabel), nameof(CampaignRuleBuilderGroupALabel), nameof(CampaignRuleBuilderGroupBLabel), nameof(CampaignRuleBuilderAddConditionLabel), nameof(CampaignRuleBuilderCycleKindLabel), nameof(CampaignRuleBuilderCycleOperatorLabel), nameof(CampaignRuleBuilderRemoveConditionLabel), nameof(CampaignRuleBuilderAddRuleLabel), nameof(CampaignRuleBuilderPreviousLabel), nameof(CampaignRuleBuilderNextLabel), nameof(CampaignRuleBuilderMoveUpLabel), nameof(CampaignRuleBuilderMoveDownLabel), nameof(CampaignRuleBuilderRemoveRuleLabel), nameof(CampaignRuleBuilderSaveLabel), nameof(CampaignRuleBuilderValidateLabel), nameof(CampaignRuleBuilderGenerateLabel), nameof(CampaignRuleBuilderCopyLabel), nameof(CampaignRuleBuilderPreviewHeadingLabel), nameof(CampaignRuleBuilderConditionValueLabel), nameof(CampaignRuleBuilderPackageHeadingLabel), nameof(CampaignRuleBuilderStatusLabel), nameof(CampaignRuleBuilderDraftLoadStatusLabel), nameof(CampaignRuleBuilderSelectedActionLabel), nameof(CampaignRuleBuilderSelectedTargetLabel), nameof(CampaignRuleBuilderPreviewLabel) }) OnPropertyChanged(name);
             RefreshCampaignRuleBuilderRows();
             RefreshCampaignRuleBuilderSelection();
         }
@@ -429,17 +473,37 @@ namespace CalradiaForge.Mod
             bool groupB = rule.GroupB.Count > 0 && SampleCampaignRuleGroup(rule.GroupB);
             bool runs = rule.GroupA.Count == 0 || groupA || groupB;
             string outcome = runs ? T("Sample outcome: action would run.") : T("Sample outcome: action would be skipped.");
-            return T("Sample facts: player hero, alive, level 20, town, skill gain 5, main party.") + "\n"
+            string occurrenceNotice = string.Empty;
+            if (rule.EventId == "DailyTickHeroEvent") occurrenceNotice = "\n" + T("Daily per-hero event: this rule is evaluated for the event's hero. Actions run only when conditions match; player rewards may repeat for each matching hero.");
+            else if (rule.EventId == "DailyTickSettlementEvent") occurrenceNotice = "\n" + T("Daily per-settlement event: this rule is evaluated for the event's settlement. Actions run only when conditions match; player rewards may repeat for each matching settlement.");
+            return T("Sample facts: non-player hero, alive, level 20, non-player clan, town, skill gain 5, non-main party.") + "\n"
                 + outcome + "\n" + LocalizeCampaignRuleAction(rule.ActionId) + " · " + LocalizeCampaignRuleTarget(rule.TargetId) + " · " + rule.Amount.ToString(CultureInfo.InvariantCulture)
-                + "\n" + T("Preview only. No campaign action ran.");
+                + occurrenceNotice + "\n" + T("Preview only. No campaign action ran.");
         }
 
         private static bool SampleCampaignRuleGroup(List<CampaignRuleBuilderCondition> group)
         {
             foreach (var condition in group)
             {
-                if (condition.Kind == "hero_level_at_least" && (!int.TryParse(condition.Value, out var threshold) || 20 < threshold)) return false;
-                if (condition.Kind == "skill_gain_at_least" && (!int.TryParse(condition.Value, out var skillThreshold) || 5 < skillThreshold)) return false;
+                switch (condition.Kind)
+                {
+                    case "always":
+                    case "hero_is_alive":
+                    case "settlement_is_town":
+                        break;
+                    case "hero_is_player":
+                    case "clan_is_player":
+                    case "party_is_main":
+                        return false;
+                    case "hero_level_at_least":
+                        if (!int.TryParse(condition.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var threshold) || 20 < threshold) return false;
+                        break;
+                    case "skill_gain_at_least":
+                        if (!int.TryParse(condition.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var skillThreshold) || 5 < skillThreshold) return false;
+                        break;
+                    default:
+                        return false;
+                }
             }
             return true;
         }
@@ -468,6 +532,8 @@ namespace CalradiaForge.Mod
         internal CampaignRuleConditionItemVM(PanelViewModel parent, string ruleId, bool secondGroup, CampaignRuleBuilderCondition model)
         { _parent = parent; _ruleId = ruleId; _secondGroup = secondGroup; _model = model; }
         [DataSourceProperty] public string Summary => _parent.LocalizeCampaignRuleCondition(_model.Kind) + (IsNumeric ? " ≥ " + _model.Value : string.Empty);
+        [DataSourceProperty] public string CycleKindLabel => _parent.CampaignRuleBuilderCycleKindLabel;
+        [DataSourceProperty] public string RemoveLabel => _parent.CampaignRuleBuilderRemoveConditionLabel;
         [DataSourceProperty] public bool IsNumeric => _model.Kind == "hero_level_at_least" || _model.Kind == "skill_gain_at_least";
         [DataSourceProperty] public string Operator => _model.Operator;
         [DataSourceProperty]

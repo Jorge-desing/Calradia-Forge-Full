@@ -1,4 +1,4 @@
-# SDK & GameModels Architecture Codemap — source 25.0.0, SDK contract 10
+# SDK & GameModels Architecture Codemap — product 25.2.0, ForgeApi.Version 12
 
 ## SDK Builder Pattern Architecture
 
@@ -66,6 +66,8 @@ ForgeHintBuilder (UI Hint System)
 
 ## SDK Service Architecture
 
+The current product source is 25.2.0 and `ForgeApi.Version` is 12. The current contract includes the optional `ForgeApi.Patches` patch service and optional `ForgeApi.Hooks` runtime-hook service; method replacement was introduced in version 11 and runtime hooks in version 12. These additions did not change the shared-library contract introduced in version 7.
+
 ### SDK contract v10 — explicit outcomes and connection generations (product source 25.0.0)
 
 `ModSettings.TrySave<T>` returns a typed result and commits a same-directory temporary file before updating the settings cache; serializer or storage failures preserve the last committed file/cache state. `ForgeApi.AutoRegisterWithReport` returns bounded counts and per-type diagnostics while retaining successful registrations when another candidate fails. Semantic and Procedural memory `GetResult<T>` methods distinguish `Found`, `Missing`, and `TypeMismatch`; Semantic additionally distinguishes and cleans up `Expired` entries. Managed `RegisterWhenAvailable` deliveries are checked against the active registry generation and subscriber lifetime, so a callback that reconnects or unregisters during dispatch cannot pass the stale registry to the remainder of that availability snapshot.
@@ -81,7 +83,7 @@ ForgeHintBuilder (UI Hint System)
 `ForgeApi.Libraries` owns the thread-affine `SharedLibraryRegistry`. A module opens one `ModuleLibrary` and owns its registrations and monitors for that module lifetime:
 
 ```
-ForgeApi.Libraries (ForgeApi.Version = 10)
+ForgeApi.Libraries (ForgeApi.Version = 12)
 └── OpenModule(moduleId) → ModuleLibrary
     ├── Provide<T> / Require<T> → one service / fail-fast lookup
     ├── Resolve<T> → immutable SharedServiceResolution<T>
@@ -138,12 +140,16 @@ ForgeUI (UI Management)
 ├── Clear()
 └─ Scope: Gauntlet UI coordination
 
-ForgeDetour (Harmony Management)
-├── Patch(MethodBase original, HarmonyMethod prefix)
-├── Patch(MethodBase original, HarmonyMethod postfix)
+ForgeDetour (Experimental native method replacement)
+├── Patch(MethodInfo original, MethodInfo replacement)
+├── Unpatch(MethodInfo original)
 ├── UnpatchAll()
-├─ Scope: Harmony patch lifecycle
+├── GetTrackedSnapshots(string owner = null)
+├── Verify(MethodInfo method, out string status)
+└─ Scope: one-for-one executable method replacement; no Harmony hook integration
 ```
+
+`ForgeApi.Patches.ApplyMethodReplacement(string patchId, string owner, MethodInfo target, MethodInfo replacement)` and `ForgePatcher.ApplyAll(Assembly assembly)` are separate explicit application routes. The low-level writer is experimental and does not coordinate other threads executing the target. Blueprint hook kinds such as `Prefix`, `Postfix`, `Transpiler`, and `Finalizer` remain declarations unless another backend implements them; ForgeDetour does not expose HarmonyMethod overloads.
 
 ## GameModel Decorator Pattern
 

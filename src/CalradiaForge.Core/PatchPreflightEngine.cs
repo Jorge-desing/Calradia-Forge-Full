@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using CalradiaForge.Sdk;
@@ -306,8 +307,8 @@ namespace CalradiaForge.Core
             if(!Enum.IsDefined(typeof(PatchMemberKind),reference.MemberKind))return Resolution.Fail("Invalid "+label,"The "+label+" member kind is not supported.","Use Method or Constructor.");
             if(reference.GenericArity<0)return Resolution.Fail("Invalid "+label,"Generic arity cannot be negative.","Use zero for a non-generic method.");
             if(reference.MemberKind==PatchMemberKind.Method && string.IsNullOrWhiteSpace(reference.MemberName))return Resolution.Fail("Invalid "+label,"A "+label+" method name is required.","Provide the exact member name.");
-            if(!ValidTypes(reference.ParameterTypes))return Resolution.Fail("Invalid "+label,"Each parameter needs an exact type full name.","Use TypeReference.From for every parameter.");
-            if(reference.ReturnType!=null && !ValidType(reference.ReturnType))return Resolution.Fail("Invalid "+label,"The return-type assertion is incomplete.","Use TypeReference.From or omit the optional return type.");
+            if(!ValidTypes(reference.ParameterTypes))return Resolution.Fail("Invalid "+label,"Each parameter needs an exact type full name and assembly name.","Use TypeReference.From for every parameter, or provide both FullName and the exact simple AssemblyName.");
+            if(reference.ReturnType!=null && !ValidType(reference.ReturnType))return Resolution.Fail("Invalid "+label,"The return-type assertion needs an exact type full name and assembly name.","Use TypeReference.From or provide both FullName and the exact simple AssemblyName.");
             var matching=assemblies.Where(assembly=>AssemblyName(assembly).Equals(reference.AssemblyName,StringComparison.OrdinalIgnoreCase)).ToList();
             if(matching.Count==0)return Resolution.Fail("Assembly not loaded",Cap(label)+" assembly '"+reference.AssemblyName+"' is not loaded in this session.","Load the owning module before running this preflight.");
             if(matching.Count>1)return Resolution.Fail("Ambiguous assembly","More than one loaded assembly uses the simple name '"+reference.AssemblyName+"'.","Use a session without duplicate assembly identities.");
@@ -361,22 +362,42 @@ namespace CalradiaForge.Core
         static bool Matches(Type actual,TypeReference declared)
         {
             if(actual==null || declared==null)return false;
-            // Reflection reports the runtime implementation assembly for a generic
-            // parameter on some CLR versions. Its declaring module is the stable source
-            // identity captured by MethodReference.From.
             if(actual.IsGenericParameter)
             {
-                // Names can collide between type-scoped and method-scoped parameters
-                // (for example, both may be named T). Compare CLR owner-kind and
-                // position tokens instead of accepting a potentially ambiguous name.
-                string positionalName=(actual.DeclaringMethod==null?"!":"!!")+actual.GenericParameterPosition;
-                return string.Equals(positionalName,declared.FullName,StringComparison.Ordinal);
+                bool methodParameter;
+                int position;
+                if(!TryParseGenericParameter(declared.FullName,out methodParameter,out position))return false;
+                var actualMethodParameter=actual.DeclaringMethod!=null;
+                if(methodParameter!=actualMethodParameter || position!=actual.GenericParameterPosition)return false;
+                var ownerType=actual.DeclaringMethod?.DeclaringType??actual.DeclaringType;
+                return ownerType!=null && string.Equals(TypeAssemblyName(ownerType),declared.AssemblyName,StringComparison.OrdinalIgnoreCase);
             }
+            if(TryParseGenericParameter(declared.FullName,out _,out _))return false;
             if(!string.Equals(actual.FullName??actual.Name,declared.FullName,StringComparison.Ordinal))return false;
-            return string.IsNullOrWhiteSpace(declared.AssemblyName) || string.Equals(actual.Assembly.GetName().Name,declared.AssemblyName,StringComparison.OrdinalIgnoreCase);
+            return string.Equals(TypeAssemblyName(actual),declared.AssemblyName,StringComparison.OrdinalIgnoreCase);
         }
         static bool ValidTypes(IEnumerable<TypeReference> values)=>values!=null && values.All(ValidType);
-        static bool ValidType(TypeReference value)=>value!=null && !string.IsNullOrWhiteSpace(value.FullName);
+        static bool ValidType(TypeReference value)=>value!=null && !string.IsNullOrWhiteSpace(value.FullName) && !string.IsNullOrWhiteSpace(value.AssemblyName);
+        static string TypeAssemblyName(Type type)
+        {
+            if(type==null)return "";
+            var ownerType=type.IsGenericParameter?(type.DeclaringMethod?.DeclaringType??type.DeclaringType):type;
+            try{return ownerType?.Assembly?.GetName().Name??"";}
+            catch{return "";}
+        }
+        static bool TryParseGenericParameter(string fullName,out bool methodParameter,out int position)
+        {
+            methodParameter=false;
+            position=-1;
+            if(string.IsNullOrEmpty(fullName) || fullName[0]!='!')return false;
+            var prefix=fullName.StartsWith("!!",StringComparison.Ordinal)?2:1;
+            if(fullName.Length<=prefix)return false;
+            int parsed;
+            if(!int.TryParse(fullName.Substring(prefix),NumberStyles.None,CultureInfo.InvariantCulture,out parsed) || parsed<0)return false;
+            methodParameter=prefix==2;
+            position=parsed;
+            return string.Equals(fullName,(methodParameter?"!!":"!")+parsed.ToString(CultureInfo.InvariantCulture),StringComparison.Ordinal);
+        }
         static string AssemblyName(Assembly assembly)
         {
             try{return assembly?.GetName().Name??"";}

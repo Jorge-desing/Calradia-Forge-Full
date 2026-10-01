@@ -3,7 +3,7 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 set "ROOT=%~dp0.."
 set "PAUSE_ON_EXIT=1"
-set "PYTHON_COMMAND="
+set "PYTHON_EXE=%ROOT%\.venv\Scripts\python.exe"
 set "RESULT=0"
 set "PUSHED=0"
 
@@ -45,26 +45,19 @@ if not exist "!CORE_TESTS!" (
     goto finish
 )
 
-where py.exe >nul 2>nul
-if not errorlevel 1 (
-    set "PYTHON_COMMAND=py -3"
-) else (
-    where python.exe >nul 2>nul
-    if errorlevel 1 (
-        echo ERROR: Python 3 was not found. Install Python or add py.exe/python.exe to PATH.
-        set "RESULT=9009"
-        goto finish
-    )
-    set "PYTHON_COMMAND=python"
+if not exist "!PYTHON_EXE!" (
+    echo ERROR: Calradia Forge Python environment is missing. Run tools\Setup-CalradiaForge-Python.bat first.
+    set "RESULT=2"
+    goto finish
 )
 
 echo [Visual] Validating decorative sprite resources...
-!PYTHON_COMMAND! "!DECORATIVE_VALIDATOR!"
+"!PYTHON_EXE!" "!DECORATIVE_VALIDATOR!"
 set "RESULT=!ERRORLEVEL!"
 if not "!RESULT!"=="0" goto failed
 
 echo [Visual] Auditing Gauntlet prefab, bindings, and layout...
-!PYTHON_COMMAND! "!GAUNTLET_AUDITOR!"
+"!PYTHON_EXE!" "!GAUNTLET_AUDITOR!"
 set "RESULT=!ERRORLEVEL!"
 if not "!RESULT!"=="0" goto failed
 

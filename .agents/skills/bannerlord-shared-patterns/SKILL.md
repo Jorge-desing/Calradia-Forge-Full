@@ -10,9 +10,9 @@ description: Foundational boilerplate patterns shared across all Bannerlord modd
 
 ---
 
-## Pattern 1 — Decorator Pattern for GameModels (Zero Harmony)
+## Pattern 1 — Decorator Pattern for GameModels (Preferred for simulation)
 
-The Decorator wraps any native or third-party `GameModel` instance, delegating to it safely and layering custom logic on top. This is the only supported way to modify simulation numbers without Harmony.
+The Decorator wraps any native or third-party `GameModel` instance, delegating to it safely and layering custom logic on top. Use this pattern to modify campaign simulation numbers. Calradia Forge also has a separate experimental Prefix/Postfix RuntimeDetour capability; it is not Harmony and is not the supported simulation extension path. Its callbacks run synchronously only while the exact host game-thread main-menu gate is true; dispatch checks again between Prefix, the original target, and Postfix. If the gate closes before the target call, Forge discards Prefix argument edits and calls the original target unchanged; if it closes during the target, Postfix is skipped. The detour stays installed until explicitly reverted. See [calradia-forge-modding](../calradia-forge-modding/SKILL.md) for explicit-apply, disposal, and lifecycle recovery limits.
 
 ### Template
 
@@ -323,7 +323,7 @@ namespace CalradiaForge.Core.CampaignBehaviors
 ## Universal Safety Rules
 
 1. **Never name a namespace, folder, or class `Campaign`** — it shadows `TaleWorlds.CampaignSystem.Campaign` and breaks compilation for `Campaign.Current.*` (`GEMINI.md`).
-2. **Never use Harmony** for this mod — all game model adjustments use the Decorator Pattern above.
+2. **Do not add or use Harmony.** Use the Decorator Pattern above for simulation changes. The separate experimental Prefix/Postfix hook capability is not Harmony, is explicitly applied, and must not be treated as an alternative `GameModel` extension path.
 3. **Never serialize transient engine handles** (`GameEntity`, `Agent`, `PartyVisual`) in `SyncData`.
 4. **Never store raw Hero/Settlement instances** in persistent state — use `StringId`.
 5. **All `AddNonSerializedListener` calls go in `RegisterEvents()`** — never in constructors or `OnSessionLaunched`.

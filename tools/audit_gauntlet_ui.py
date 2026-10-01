@@ -540,11 +540,12 @@ def contained(parent: Rect, child: Rect) -> bool:
 
 
 def within_composer_surface(node: ET.Element, parents: dict[ET.Element, ET.Element]) -> bool:
-    """Identify new route nodes for the dedicated compositor layout audit."""
+    """Identify controls measured in dedicated route workspaces, not shared profiles."""
     current: ET.Element | None = node
     while current is not None:
         element_id = current.attrib.get("Id", "")
-        if element_id == "ForgeComposerWorkspace" or element_id.startswith("ForgeComposer"):
+        if (element_id == "ForgeComposerWorkspace" or element_id.startswith("ForgeComposer")
+                or element_id == "ForgeCampaignRuleWorkspace" or element_id.startswith("ForgeCampaignRule")):
             return True
         current = parents.get(current)
     return False
@@ -616,6 +617,62 @@ def validate_composer_geometry(audit: Audit, prefab: ET.Element, shell: ET.Eleme
             audit.error(f"Generated package evidence overlaps the composer edit action in {suffix}")
         if package_action is not None and package_pagination is not None and intersects(package_action, package_pagination):
             audit.error(f"Generated package edit and paging actions overlap in {suffix}")
+
+
+def validate_campaign_rule_geometry(audit: Audit, prefab: ET.Element, shell: ET.Element, vm_source: str) -> None:
+    """Measure the rule workspace independently of the generic War Table routes."""
+    workspace = find_by_id(prefab, "ForgeCampaignRuleWorkspace")
+    action = find_by_id(prefab, "ForgeCampaignRuleActionDeck")
+    if workspace is None or workspace.attrib.get("IsVisible") != "@IsCampaignRuleBuilderWorkspaceVisible":
+        audit.error("Campaign Rule Builder workspace must follow its route visibility binding")
+        return
+    if action is None or action.attrib.get("IsVisible") != "@IsCampaignRuleBuilderActive":
+        audit.error("Campaign Rule Builder action deck must follow its route visibility binding")
+        return
+    for viewport in VIEWPORT_PROFILES:
+        suffix = f"{viewport[0]}x{viewport[1]}"
+        layout = shell_layout(shell, vm_source, False, viewport)
+        shell_rect = layout.get(shell)
+        workspace_rect = layout.get(workspace)
+        action_rect = layout.get(action)
+        if shell_rect is None or workspace_rect is None or action_rect is None:
+            audit.error(f"Cannot resolve Campaign Rule Builder workspace and actions in {suffix}")
+            continue
+        if (workspace_rect.width <= 0 or workspace_rect.height < 240
+                or not contained(shell_rect, workspace_rect)):
+            audit.error(f"Campaign Rule Builder workspace is clipped or too short in {suffix}")
+        if not contained(shell_rect, action_rect) or intersects(workspace_rect, action_rect):
+            audit.error(f"Campaign Rule Builder actions overlap or leave the workspace in {suffix}")
+        columns: dict[str, Rect] = {}
+        for column_id in ("ForgeCampaignRuleLeftColumn", "ForgeCampaignRuleRightColumn"):
+            node = find_by_id(prefab, column_id)
+            rect = layout.get(node) if node is not None else None
+            if rect is None or rect.width <= 0 or rect.height <= 0 or not contained(workspace_rect, rect):
+                audit.error(f"Cannot resolve {column_id} inside the rule workspace in {suffix}")
+            else:
+                columns[column_id] = rect
+        left = columns.get("ForgeCampaignRuleLeftColumn")
+        right = columns.get("ForgeCampaignRuleRightColumn")
+        if left is not None and right is not None:
+            if intersects(left, right):
+                audit.error(f"Campaign Rule Builder columns overlap in {suffix}")
+            if left.width < 220 or right.width < 320:
+                audit.error(f"Campaign Rule Builder columns are too narrow in {suffix}")
+        for panel_id, column_id in (("ForgeCampaignRuleLeftScroll", "ForgeCampaignRuleLeftColumn"),
+                                    ("ForgeCampaignRuleRightScroll", "ForgeCampaignRuleRightColumn")):
+            panel = find_by_id(prefab, panel_id)
+            panel_rect = layout.get(panel) if panel is not None else None
+            column_rect = columns.get(column_id)
+            if panel_rect is None or column_rect is None or not contained(column_rect, panel_rect):
+                audit.error(f"{panel_id} must remain inside its column in {suffix}")
+            elif panel_rect.width <= 0 or panel_rect.height < 120:
+                audit.error(f"{panel_id} has insufficient scrollable area in {suffix}")
+        for button_id in ("ForgeCampaignRuleSave", "ForgeCampaignRuleValidate",
+                          "ForgeCampaignRuleGenerate", "ForgeCampaignRuleCopy"):
+            button = find_by_id(prefab, button_id)
+            rect = layout.get(button) if button is not None else None
+            if rect is None or rect.width <= 0 or rect.height <= 0 or not contained(action_rect, rect):
+                audit.error(f"{button_id} must stay reachable inside the rule action deck in {suffix}")
 
 
 def validate_output_comparison_geometry(
@@ -773,6 +830,8 @@ def visible_in_evidence_state(
         if visibility in {
             "@IsGauntletComposerActive", "@IsGauntletComposerWorkspaceVisible",
             "@IsGauntletComposerPackageVisible", "@IsComposerPaginationVisible",
+            "@IsCampaignRuleBuilderActive", "@IsCampaignRuleBuilderWorkspaceVisible",
+            "@IsCampaignRuleBuilderPackageVisible",
         }:
             return False
         if visibility == "@ShowCommandDeck" and state:
@@ -826,6 +885,8 @@ EXPECTED_SCROLL_PANELS = {
     "NavigationPaletteScroll": "NavigationPaletteScrollBar",
     "ForgeComposerLeftScroll": "ForgeComposerLeftScrollBar",
     "ForgeComposerRightScroll": "ForgeComposerRightScrollBar",
+    "ForgeCampaignRuleLeftScroll": "ForgeCampaignRuleLeftScrollbar",
+    "ForgeCampaignRuleRightScroll": "ForgeCampaignRuleRightScrollbar",
 }
 
 PLAYBOOK_TEXT_LAYOUT = {
@@ -936,6 +997,61 @@ def _method_localized_literals(source: str, method_name: str) -> list[str]:
     return re.findall(r'return\s+(?:T\()?"([^"\\]*(?:\\.[^"\\]*)*)"\)?\s*;', body)
 
 
+PLAYBOOK_TABLE_FIELDS = {
+    "GetCategoryPlaybookTitle": "PlaybookTitle",
+    "GetCategoryPlaybookStep1": "Step1",
+    "GetCategoryPlaybookStep2": "Step2",
+    "GetCategoryPlaybookStep3": "Step3",
+    "GetCategoryTroubleshootingTitle": "TroubleshootingTitle",
+    "GetCategoryTroubleshootingAdvice": "TroubleshootingAdvice",
+    "GetCategoryRecommendedMacro": "RecommendedMacro",
+}
+PLAYBOOK_TABLE_CATEGORIES = {
+    "overview", "inspector", "toolkit", "weave", "simulate", "audit", "novice", "sdk",
+}
+
+
+def _table_playbook_literals(audit: Audit, source: str) -> dict[str, list[str]]:
+    """Resolve each selector's real fixed strings from the consolidated table."""
+    declaration = re.search(r"\bs_catData\s*=\s*new\s+Dictionary<", source)
+    if declaration is None:
+        return {}
+    table_start = source.find("{", declaration.end())
+    table_end = source.find("};", table_start)
+    if table_start < 0 or table_end < 0:
+        audit.error("s_catData Playbook source table has no bounded initializer")
+        return {}
+    table_source = source[table_start:table_end]
+    quoted = r'"(?:\\.|[^"\\])*"'
+    fields = rf"(?:\s*{quoted}\s*,){{6}}\s*{quoted}\s*"
+    entry_pattern = re.compile(rf'\["(?P<category>[^"]+)"\]\s*=\s*\((?P<fields>{fields})\)\s*,?', re.DOTALL)
+    entries = {}
+    for match in entry_pattern.finditer(table_source):
+        category = match.group("category")
+        literals = [token[1:-1] for token in re.findall(quoted, match.group("fields"))]
+        if category in entries or len(literals) != 7:
+            audit.error(f"s_catData has duplicate or incomplete Playbook category {category}")
+            continue
+        entries[category] = literals
+    missing = PLAYBOOK_TABLE_CATEGORIES - set(entries)
+    if missing:
+        audit.error(f"s_catData is missing required Playbook categories: {sorted(missing)}")
+    if not entries:
+        return {}
+    samples: dict[str, list[str]] = {}
+    for index, (method_name, field) in enumerate(PLAYBOOK_TABLE_FIELDS.items()):
+        method = re.search(rf"^\s*string\s+{re.escape(method_name)}\s*\(\s*string\s+cat\s*\)\s*=>\s*(.+);", source, re.MULTILINE)
+        if method is None or "s_catData.TryGetValue(cat, out var d)" not in method.group(1) or f"d.{field}" not in method.group(1):
+            audit.error(f"{method_name} must select {field} from s_catData")
+            continue
+        fallback = re.findall(quoted, method.group(1))
+        if len(fallback) != 1:
+            audit.error(f"{method_name} must retain one fallback Playbook string")
+            continue
+        samples[method_name] = [entry[index] for entry in entries.values()] + [fallback[0][1:-1]]
+    return samples
+
+
 def _wrap_playbook_sample(text: str, max_line_length: int) -> list[str]:
     """Mirror WrapPlaybookText's word-boundary wrapping for source regressions."""
     text = text.replace(r"\n", " ").replace(r"\r", " ").replace(r"\t", " ").replace(r"\\", "\\")
@@ -1031,6 +1147,7 @@ def validate_playbook_text_contracts(audit: Audit, prefab: ET.Element, vm_source
     # CoverChildren alone only measures vertical growth; require actual newline
     # generation at word boundaries and keep every source token within the
     # measured viewport's readable line budget (about 266 DIP at 320-DIP width).
+    table_samples = _table_playbook_literals(audit, vm_source)
     for property_name, (method_name, max_chars) in PLAYBOOK_TEXT_LAYOUT.items():
         getter = re.search(
             rf"\bpublic\s+string\s+{re.escape(property_name)}\s*=>\s*"
@@ -1040,7 +1157,7 @@ def validate_playbook_text_contracts(audit: Audit, prefab: ET.Element, vm_source
         if getter is None:
             audit.error(f"{property_name} must wrap {method_name} at the audited {max_chars}-character line budget")
             continue
-        samples = _method_localized_literals(vm_source, method_name)
+        samples = table_samples.get(method_name) if table_samples else _method_localized_literals(vm_source, method_name)
         if not samples:
             audit.error(f"{method_name} must keep source strings for Playbook wrapping regressions")
             continue
@@ -1120,8 +1237,8 @@ def validate_contracts(
                 public_command_methods(scoped_source),
             )
 
-    # Gauntlet resolves IDs globally within a prefab; duplicate IDs can silently
-    # bind events or focus to the wrong widget, so compare case-insensitively.
+    # Static IDs are global. Separate ItemTemplates instantiate independent row
+    # scopes, so their inner IDs may match only across distinct list contexts.
     ids: dict[str, list[ET.Element]] = {}
     for node in prefab.iter():
         element_id = node.attrib.get("Id")
@@ -1129,6 +1246,9 @@ def validate_contracts(
             ids.setdefault(element_id.casefold(), []).append(node)
     for folded, nodes in ids.items():
         if len(nodes) > 1:
+            templates = [item_template_for(node, parents) for node in nodes]
+            if all(template is not None for template in templates) and len(set(templates)) == len(templates):
+                continue
             names = ", ".join(node.attrib.get("Id", "") for node in nodes)
             audit.error(f"Duplicate prefab Id (case-insensitive): {names}")
 
@@ -2680,6 +2800,7 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
 
     validate_decorative_layers(audit, prefab, shell, vm_source)
     validate_composer_geometry(audit, prefab, shell, vm_source)
+    validate_campaign_rule_geometry(audit, prefab, shell, vm_source)
 
 
 def audit_prefab(
@@ -2702,6 +2823,9 @@ def audit_prefab(
         brushes_root = ET.parse(brushes_path).getroot()
         sprite_root = ET.parse(sprites_path).getroot()
         vm_source = viewmodel_path.read_text(encoding="utf-8-sig")
+        rule_partial_path = viewmodel_path.with_name(viewmodel_path.stem + ".CampaignRules.cs")
+        if rule_partial_path.is_file():
+            vm_source += "\n" + rule_partial_path.read_text(encoding="utf-8-sig")
         tool_item_source = tool_item_viewmodel_path.read_text(encoding="utf-8-sig")
     except (ET.ParseError, OSError, UnicodeError) as exc:
         audit.error(f"Unable to read audit input: {exc}")

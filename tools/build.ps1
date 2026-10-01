@@ -1,10 +1,16 @@
 param(
     [string]$GamePath = 'C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord',
-    [string]$PythonPath = 'python',
+    [string]$PythonPath = '',
     [switch]$SkipInstalledScan
 )
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path $PSScriptRoot -Parent
+if ([string]::IsNullOrWhiteSpace($PythonPath)) {
+    $PythonPath = Join-Path $workspace '.venv\Scripts\python.exe'
+}
+if (-not (Test-Path -LiteralPath $PythonPath -PathType Leaf)) {
+    throw "The Calradia Forge Python environment is missing. Run tools\Setup-CalradiaForge-Python.bat first. Expected interpreter: $PythonPath"
+}
 Push-Location $workspace
 try {
     & $PythonPath tools/generate_game_icons.py

@@ -266,4 +266,11 @@
   <string key="Test ID" value="测试 ID" />
   <string key="Status" value="状态" />
   <string key="Duration" value="耗时" />
+  <string key="Read-only inventory of active Harmony patches in already-loaded assemblies." value="已加载程序集中的活动 Harmony 补丁只读清单。" />
+  <string key="Patch Preflight: Read-only structural check of declared targets and callback references; it never applies patches or invokes callbacks." value="Patch Preflight：以只读方式检查已声明目标的结构和回调引用；绝不应用补丁或调用回调。" />
+  <string key="ForgeWeave: Event recording and sequence replay. Harmony Atlas is a separate read-only inventory; Patch Preflight checks blueprint declarations without applying patches." value="ForgeWeave：事件记录与序列回放。Harmony Atlas 是独立的只读清单；Patch Preflight 会检查蓝图声明，但不会应用补丁。" />
+  <string key="Event Replay &amp; Patch Diagnostics" value="事件回放与补丁诊断" />
+  <string key="2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in." value="2. 补丁蓝图审查：运行 cf.patch_preflight 以审查待处理的声明。该命令不会应用补丁；替换 Forge 方法需要单独明确选择加入。" />
+  <string key="ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools." value="ForgeWeave 事件管线：确定性事件记录与序列回放。Harmony 诊断和 Patch Blueprint Preflight 是独立工具。" />
+  <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. 替换 Forge 方法需要单独明确请求；后端不支持的已声明 Hook 类型仅保留为元数据。Patch Preflight 为只读操作，不会调用回调代码。请使用 AddNonSerializedListener，让 ForgeWeave 事件监听器不参与序列化。" />
 </strings>

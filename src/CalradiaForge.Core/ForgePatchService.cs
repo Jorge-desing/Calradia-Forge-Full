@@ -28,6 +28,7 @@ namespace CalradiaForge.Core
         private readonly Dictionary<string, PatchEntry> entries = new Dictionary<string, PatchEntry>(StringComparer.OrdinalIgnoreCase);
         private readonly List<string> applyOrder = new List<string>();
         private bool accepting = true;
+        private bool acceptsNewApplications = true;
 
         public IForgePatchHandle ApplyMethodReplacement(string patchId, string owner, MethodInfo target, MethodInfo replacement)
         {
@@ -40,53 +41,62 @@ namespace CalradiaForge.Core
 
             lock (gate)
             {
-                if (!accepting) throw new InvalidOperationException("The Forge patch service is disconnected and rejects new patches.");
-                if (entries.ContainsKey(patchId)) throw new InvalidOperationException("Patch ID already exists: " + patchId);
-                if (entries.Values.Any(entry => entry.State == ForgePatchState.Applied && entry.Target == target))
-                    throw new InvalidOperationException("A Forge patch is already active for the target method.");
-                if (ForgeDetour.IsTracked(target))
-                    throw new InvalidOperationException("A Forge detour is already active for the target method.");
+                // Share ForgeDetour's registry monitor with the RuntimeDetour service. The
+                // ownership checks are meaningful only while no competing backend can apply
+                // or revert this target between the check and the native mutation.
+                lock (ForgeDetour.Gate)
+                {
+                    if (!accepting || !acceptsNewApplications)
+                        throw new InvalidOperationException("The Forge patch service is disconnected or shutting down and rejects new patches.");
+                    if (entries.ContainsKey(patchId)) throw new InvalidOperationException("Patch ID already exists: " + patchId);
+                    if (entries.Values.Any(entry => entry.State == ForgePatchState.Applied && entry.Target == target))
+                        throw new InvalidOperationException("A Forge patch is already active for the target method.");
+                    if (ForgeDetour.IsTracked(target))
+                        throw new InvalidOperationException("A Forge detour is already active for the target method.");
+                    if (ForgeHookService.HasAppliedTarget(target))
+                        throw new InvalidOperationException("A MonoMod hook chain is already active for the target method.");
 
-                var entry = new PatchEntry
-                {
-                    Id = patchId,
-                    Owner = owner,
-                    Target = target,
-                    Replacement = replacement,
-                    State = ForgePatchState.Failed,
-                    Detail = "Patch application has not completed."
-                };
-                // Reserve both service receipts before executable bytes can be written.
-                entries.Add(patchId, entry);
-                try
-                {
-                    applyOrder.Add(patchId);
-                    ForgeDetour.Patch(target, replacement, patchId, owner);
-                    entry.OriginalBytes = ForgeDetour.GetOriginalBytes(target);
-                    entry.State = ForgePatchState.Applied;
-                    entry.Detail = "Exact replacement signature validated; detour bytes and instruction cache were installed.";
-                    return new Handle(this, patchId);
-                }
-                catch (Exception error)
-                {
-                    // ForgeDetour retains a record when it cannot prove rollback. Preserve
-                    // that uncertain result so operators can inspect and retry deliberately.
-                    if (ForgeDetour.IsTrackedPatch(target, patchId))
+                    var entry = new PatchEntry
                     {
-                        try
+                        Id = patchId,
+                        Owner = owner,
+                        Target = target,
+                        Replacement = replacement,
+                        State = ForgePatchState.Failed,
+                        Detail = "Patch application has not completed."
+                    };
+                    // Reserve both service receipts before executable bytes can be written.
+                    entries.Add(patchId, entry);
+                    try
+                    {
+                        applyOrder.Add(patchId);
+                        ForgeDetour.Patch(target, replacement, patchId, owner);
+                        entry.OriginalBytes = ForgeDetour.GetOriginalBytes(target);
+                        entry.State = ForgePatchState.Applied;
+                        entry.Detail = "Exact replacement signature validated; detour bytes and instruction cache were installed.";
+                        return new Handle(this, patchId);
+                    }
+                    catch (Exception error)
+                    {
+                        // ForgeDetour retains a record when it cannot prove rollback. Preserve
+                        // that uncertain result so operators can inspect and retry deliberately.
+                        if (ForgeDetour.IsTrackedPatch(target, patchId))
                         {
-                            entry.OriginalBytes = ForgeDetour.GetOriginalBytes(target);
-                            entry.State = ForgePatchState.Failed;
-                            entry.Detail = Bound("Apply failed; target memory may need manual review: " + error.Message, 240);
+                            try
+                            {
+                                entry.OriginalBytes = ForgeDetour.GetOriginalBytes(target);
+                                entry.State = ForgePatchState.Failed;
+                                entry.Detail = Bound("Apply failed; target memory may need manual review: " + error.Message, 240);
+                            }
+                            catch { entry.Detail = Bound("Apply failed and the retained detour record could not be read: " + error.Message, 240); }
                         }
-                        catch { entry.Detail = Bound("Apply failed and the retained detour record could not be read: " + error.Message, 240); }
+                        else
+                        {
+                            entries.Remove(patchId);
+                            applyOrder.Remove(patchId);
+                        }
+                        throw;
                     }
-                    else
-                    {
-                        entries.Remove(patchId);
-                        applyOrder.Remove(patchId);
-                    }
-                    throw;
                 }
             }
         }
@@ -126,38 +136,55 @@ namespace CalradiaForge.Core
             if (string.IsNullOrWhiteSpace(patchId)) throw new ArgumentException("A patch ID is required.", nameof(patchId));
             lock (gate)
             {
-                PatchEntry entry;
-                if (!entries.TryGetValue(patchId, out entry))
-                    return new ForgePatchRevertResult(patchId, ForgePatchState.Failed, false, "No patch record exists for this ID.");
-                Refresh(entry);
-                if (entry.State == ForgePatchState.Reverted)
-                    return new ForgePatchRevertResult(entry.Id, entry.State, true, "Already reverted; no write was made.");
-                if (entry.State == ForgePatchState.Conflict)
-                    return new ForgePatchRevertResult(entry.Id, entry.State, false, entry.Detail);
-
-                try
+                lock (ForgeDetour.Gate)
                 {
-                    if (ForgeDetour.Unpatch(entry.Target))
+                    PatchEntry entry;
+                    if (!entries.TryGetValue(patchId, out entry))
+                        return new ForgePatchRevertResult(patchId, ForgePatchState.Failed, false, "No patch record exists for this ID.");
+                    Refresh(entry);
+                    if (entry.State == ForgePatchState.Reverted)
+                        return new ForgePatchRevertResult(entry.Id, entry.State, true, "Already reverted; no write was made.");
+                    if (entry.State == ForgePatchState.Conflict)
                     {
-                        entry.State = ForgePatchState.Reverted;
-                        entry.Detail = "Original bytes restored and verified.";
-                    }
-                    else
-                    {
+                        // Permit recovery only after a human/owner restored bytes to one of
+                        // the two exact states Forge recorded. Never overwrite foreign bytes.
+                        if (!ForgeDetour.IsTracked(entry.Target) && ForgeDetour.VerifyRestored(entry.Target, entry.OriginalBytes))
+                        {
+                            entry.State = ForgePatchState.Reverted;
+                            entry.Detail = "Original bytes were restored externally and verified; no write was made.";
+                            return RevertResult(entry);
+                        }
                         string status;
-                        ForgeDetour.Verify(entry.Target, out status);
-                        entry.State = status == "foreign-bytes" ? ForgePatchState.Conflict : ForgePatchState.Failed;
-                        entry.Detail = status == "foreign-bytes"
-                            ? "Target bytes changed outside Forge; the foreign bytes were left untouched."
-                            : "Forge could not confirm the target state; no success is reported.";
+                        if (!ForgeDetour.Verify(entry.Target, out status))
+                            return new ForgePatchRevertResult(entry.Id, ForgePatchState.Conflict, false, entry.Detail);
+                        entry.State = ForgePatchState.Applied;
+                        entry.Detail = "Recorded Forge-installed bytes were restored and verified; explicit reversion may proceed.";
                     }
+
+                    try
+                    {
+                        if (ForgeDetour.Unpatch(entry.Target))
+                        {
+                            entry.State = ForgePatchState.Reverted;
+                            entry.Detail = "Original bytes restored and verified.";
+                        }
+                        else
+                        {
+                            string status;
+                            ForgeDetour.Verify(entry.Target, out status);
+                            entry.State = status == "foreign-bytes" ? ForgePatchState.Conflict : ForgePatchState.Failed;
+                            entry.Detail = status == "foreign-bytes"
+                                ? "Target bytes changed outside Forge; the foreign bytes were left untouched."
+                                : "Forge could not confirm the target state; no success is reported.";
+                        }
+                    }
+                    catch (Exception error)
+                    {
+                        entry.State = ForgePatchState.Failed;
+                        entry.Detail = Bound("Revert failed: " + error.Message, 240);
+                    }
+                    return RevertResult(entry);
                 }
-                catch (Exception error)
-                {
-                    entry.State = ForgePatchState.Failed;
-                    entry.Detail = Bound("Revert failed: " + error.Message, 240);
-                }
-                return RevertResult(entry);
             }
         }
 
@@ -197,13 +224,16 @@ namespace CalradiaForge.Core
                     if (entries.TryGetValue(id, out entry)) Refresh(entry);
                 }
 
-                bool unresolved = entries.Values.Any(entry => entry.State != ForgePatchState.Reverted ||
-                    entry.OriginalBytes == null || ForgeDetour.IsTracked(entry.Target) ||
-                    !ForgeDetour.VerifyRestored(entry.Target, entry.OriginalBytes));
-                if (unresolved)
-                    throw new InvalidOperationException("The Forge patch service retains an applied, conflicted, uncertain, or unverified patch; resolve it before reconnecting.");
+                lock (ForgeDetour.Gate)
+                {
+                    bool unresolved = entries.Values.Any(entry => entry.State != ForgePatchState.Reverted ||
+                        entry.OriginalBytes == null || ForgeDetour.IsTracked(entry.Target) ||
+                        !ForgeDetour.VerifyRestored(entry.Target, entry.OriginalBytes));
+                    if (unresolved)
+                        throw new InvalidOperationException("The Forge patch service retains an applied, conflicted, uncertain, or unverified patch; resolve it before reconnecting.");
 
-                accepting = true;
+                    accepting = true;
+                }
             }
         }
 
@@ -233,6 +263,12 @@ namespace CalradiaForge.Core
                             entry.Detail = Bound("Disconnect retained this patch for manual review: " + failure.Message, 240);
                     }
                 }
+        }
+
+        /// <summary>Prevents new method replacements after the owning runtime begins unloading.</summary>
+        internal void StopApplicationsForUnload()
+        {
+            lock (gate) acceptsNewApplications = false;
         }
 
         private ForgePatchSnapshot Snapshot(PatchEntry entry)
@@ -332,7 +368,12 @@ namespace CalradiaForge.Core
             }
             public ForgePatchVerification Verify() { return service.Verify(patchId); }
             public ForgePatchRevertResult Revert() { return service.Revert(patchId); }
-            public void Dispose() { service.Revert(patchId); }
+            public void Dispose()
+            {
+                ForgePatchRevertResult result = service.Revert(patchId);
+                if (!result.IsReverted)
+                    throw new InvalidOperationException("Patch handle disposal could not verify reversion for '" + patchId + "': " + result.Detail);
+            }
         }
     }
 }

@@ -3,8 +3,10 @@ import struct
 import sys
 import tempfile
 import unittest
+import importlib.util
 from pathlib import Path
 from unittest.mock import patch
+from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -12,6 +14,16 @@ sys.path.insert(0, str(ROOT))
 from tools.audit_package import validate_entry
 from tools import validate_game_icon_assets
 from tools.validate_game_icon_assets import read_png_header, validate_resource_workflow_readme
+
+_decorative_validator_spec = importlib.util.spec_from_file_location(
+    "calradia_forge_decorative_validator",
+    ROOT / "tools" / "Validate-CalradiaForge-DecorativeSprites.py",
+)
+if _decorative_validator_spec is None or _decorative_validator_spec.loader is None:
+    raise RuntimeError("Could not load the decorative sprite validator helpers.")
+decorative_validator = importlib.util.module_from_spec(_decorative_validator_spec)
+sys.modules[_decorative_validator_spec.name] = decorative_validator
+_decorative_validator_spec.loader.exec_module(decorative_validator)
 
 
 class AssetPipelineTests(unittest.TestCase):
@@ -56,6 +68,23 @@ class AssetPipelineTests(unittest.TestCase):
         validate_entry("CalradiaForge/GUI/CalradiaForgeSpriteData.xml", desktop=False)
         validate_entry("CalradiaForge/GUI/SpriteParts/ui_calradiaforge/icon.png", desktop=False)
 
+    def test_archive_audit_rejects_python_environments_and_installed_dependencies(self):
+        for path in (
+            ".venv/Scripts/python.exe",
+            "source/tools/venv/Lib/site-packages/PIL/__init__.py",
+            "CalradiaForge/tools/dist-packages/yaml/__init__.py",
+        ):
+            with self.subTest(path=path), self.assertRaisesRegex(ValueError, "Python environment or installed dependencies"):
+                validate_entry(path, desktop=False)
+
+    def test_archive_audit_accepts_python_source_and_requirement_manifests(self):
+        validate_entry("tools/validate_game_icon_assets.py", desktop=False)
+        validate_entry("requirements-tools.txt", desktop=False)
+
+    def test_package_source_excludes_repository_python_environment(self):
+        package_script = (ROOT / "tools" / "package.ps1").read_text(encoding="utf-8")
+        self.assertIn('".venv"', package_script)
+
     def test_sprite_workflow_readme_distinguishes_atlas_from_compiled_tpac(self):
         validate_resource_workflow_readme(ROOT / "modules" / "CalradiaForge")
 
@@ -83,6 +112,22 @@ class AssetPipelineTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "Resource Browser compilation and the limits"):
                 validate_resource_workflow_readme(module)
+
+    def test_decorative_overlap_audit_respects_verified_mutually_exclusive_views(self):
+        root = ElementTree.fromstring(
+            '<Shell><Widget IsVisible="@ShowCommandDeck"><ImageWidget Id="Decoration" />'
+            '</Widget><Widget IsVisible="@IsCampaignRuleBuilderWorkspaceVisible">'
+            '<ButtonWidget Id="CampaignRuleAction" /></Widget></Shell>'
+        )
+        parents = {child: parent for parent in root.iter() for child in parent}
+        decoration = next(node for node in root.iter() if node.get("Id") == "Decoration")
+        campaign_action = next(node for node in root.iter() if node.get("Id") == "CampaignRuleAction")
+        left = decorative_validator.effective_visibility_bindings(decoration, parents)
+        right = decorative_validator.effective_visibility_bindings(campaign_action, parents)
+        exclusive_pairs = {("ShowCommandDeck", "IsCampaignRuleBuilderWorkspaceVisible")}
+
+        self.assertTrue(decorative_validator.visibility_bindings_are_exclusive(left, right, exclusive_pairs))
+        self.assertFalse(decorative_validator.visibility_bindings_are_exclusive(left, left, exclusive_pairs))
 
 
 if __name__ == "__main__":

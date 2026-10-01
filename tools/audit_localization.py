@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
@@ -51,12 +52,76 @@ def main() -> None:
     navigation_palette = json.loads((CORE / "navigation-palette.json").read_text(encoding="utf-8"))
     if set(navigation_palette) != REQUIRED_NAVIGATION_PALETTE_TEXTS:
         raise ValueError("Navigation palette translation source does not contain the required English strings")
-    required_isos = set(LANGUAGES.values())
+    required_locale_order = list(LANGUAGES.values())
+    required_isos = set(required_locale_order)
     for source, translations in navigation_palette.items():
         if translations.get("en") != source or set(translations) != required_isos:
             raise ValueError(f"Navigation palette translation locales differ from supported languages: {source!r}")
         if any(not value.strip() for value in translations.values()):
             raise ValueError(f"Navigation palette contains an empty translation: {source!r}")
+    composer_source = json.loads((CORE / "gauntlet-composer.json").read_text(encoding="utf-8"))
+    composer_languages = composer_source.get("languages", [])
+    composer_entries = composer_source.get("entries", [])
+    if composer_languages != required_locale_order:
+        raise ValueError("Gauntlet Composer translation locales differ from supported languages")
+    gauntlet_composer = {}
+    for entry in composer_entries:
+        source = entry.get("key", "")
+        values = entry.get("values", [])
+        if not source.strip() or source in gauntlet_composer or len(values) != len(composer_languages):
+            raise ValueError(f"Invalid or duplicate Gauntlet Composer translation entry: {source!r}")
+        translations = dict(zip(composer_languages, values))
+        if translations.get("en") != source or set(translations) != required_isos:
+            raise ValueError(f"Gauntlet Composer locale or English key mismatch: {source!r}")
+        if any(not value.strip() for value in translations.values()):
+            raise ValueError(f"Gauntlet Composer contains an empty translation: {source!r}")
+        if source in navigation_palette:
+            raise ValueError(f"Gauntlet Composer key duplicates a navigation palette key: {source!r}")
+        gauntlet_composer[source] = translations
+    if not gauntlet_composer:
+        raise ValueError("Gauntlet Composer translation source is empty")
+    panel_source = (ROOT / "src" / "CalradiaForge.Mod" / "PanelViewModel.cs").read_text(encoding="utf-8")
+    rule_ui_source = (ROOT / "src" / "CalradiaForge.Mod" / "PanelViewModel.CampaignRules.cs").read_text(encoding="utf-8")
+    composer_required_texts = set()
+    for line in panel_source.splitlines():
+        if "GauntletComposer" in line or "OutputHeading" in line:
+            composer_required_texts.update(re.findall(r'T\("([^"\n]+)"\)', line))
+        if "_gauntletComposerStatusKey =" in line or "SetGauntletComposerStatus(" in line:
+            composer_required_texts.update(re.findall(r'"([^"\n]+)"', line))
+    composer_required_texts.discard("Search / argument")
+    missing_composer_texts = composer_required_texts.difference(gauntlet_composer)
+    if missing_composer_texts:
+        raise ValueError("Gauntlet Composer UI text lacks source translations: " + ", ".join(sorted(missing_composer_texts)))
+    rule_source = json.loads((CORE / "campaign-rule-builder.json").read_text(encoding="utf-8"))
+    if rule_source.get("languages") != required_locale_order:
+        raise ValueError("Campaign Rule Builder translation locales differ from supported languages")
+    campaign_rules = {}
+    for entry in rule_source.get("entries", []):
+        source = entry.get("key", "")
+        values = entry.get("values", [])
+        if not source.strip() or source in campaign_rules or len(values) != len(required_locale_order):
+            raise ValueError(f"Invalid or duplicate Campaign Rule Builder translation entry: {source!r}")
+        translations = dict(zip(required_locale_order, values))
+        if translations["en"] != source or any(not value.strip() for value in translations.values()):
+            raise ValueError(f"Incomplete Campaign Rule Builder translation: {source!r}")
+        if source in navigation_palette or source in gauntlet_composer:
+            raise ValueError(f"Campaign Rule Builder duplicates a prior translation key: {source!r}")
+        campaign_rules[source] = translations
+    if not campaign_rules:
+        raise ValueError("Campaign Rule Builder translation source is empty")
+    rule_required_texts = set()
+    for line in (panel_source + "\n" + rule_ui_source).splitlines():
+        if "CampaignRuleBuilder" in line or "NoviceCampaignRuleBuilder" in line:
+            rule_required_texts.update(re.findall(r'T\("([^"\n]+)"\)', line))
+        if "_campaignRuleBuilderStatusKey =" in line or "SetCampaignRuleBuilderStatus(" in line:
+            rule_required_texts.update(re.findall(r'"([^"\n]+)"', line))
+    rule_required_texts.update(re.findall(r'T\("([^"\n]+)"\)', rule_ui_source))
+    rule_core_source = (ROOT / "src" / "CalradiaForge.Mod" / "CampaignRuleBuilder.cs").read_text(encoding="utf-8")
+    rule_required_texts.update(re.findall(r'\berror\s*=\s*"([^"\n]+)"', rule_core_source))
+    rule_required_texts.update(re.findall(r'\berrors\.Add\("([^"\n]+)"\)', rule_core_source))
+    missing_rule_texts = rule_required_texts.difference(campaign_rules).difference(gauntlet_composer).difference(navigation_palette)
+    if missing_rule_texts:
+        raise ValueError("Campaign Rule Builder UI text lacks source translations: " + ", ".join(sorted(missing_rule_texts)))
     native_results = {}
     for folder, iso in LANGUAGES.items():
         entries = load_native(folder)
@@ -76,6 +141,14 @@ def main() -> None:
             identifier = "forge_" + hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
             if entries.get(identifier) != translations[iso]:
                 raise ValueError(f"{folder} is missing the navigation palette translation for {source!r}")
+        for source, translations in gauntlet_composer.items():
+            identifier = "forge_" + hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
+            if entries.get(identifier) != translations[iso]:
+                raise ValueError(f"{folder} is missing the Gauntlet Composer translation for {source!r}")
+        for source, translations in campaign_rules.items():
+            identifier = "forge_" + hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
+            if entries.get(identifier) != translations[iso]:
+                raise ValueError(f"{folder} is missing the Campaign Rule Builder translation for {source!r}")
         metadata = NATIVE / folder / "language_data.xml"
         if metadata.read_bytes()[:3] != b"\xef\xbb\xbf":
             raise ValueError(f"{metadata} is not UTF-8 with BOM")
@@ -108,7 +181,7 @@ def main() -> None:
         if not keys:
             raise ValueError(f"Desktop resource dictionary {iso} is empty")
 
-    evidence = {"nativeLanguages": native_results, "navigationPaletteKeys": len(navigation_palette), "desktopLanguages": len(required_core), "desktopKeys": len(english_keys), "desktopResourceKeys": len(desktop_resource_keys), "valid": True}
+    evidence = {"nativeLanguages": native_results, "navigationPaletteKeys": len(navigation_palette), "gauntletComposerKeys": len(gauntlet_composer), "campaignRuleBuilderKeys": len(campaign_rules), "desktopLanguages": len(required_core), "desktopKeys": len(english_keys), "desktopResourceKeys": len(desktop_resource_keys), "valid": True}
     output = ROOT / "artifacts" / f"localization-audit-{VERSION.replace('.', '')}.json"
     output.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(evidence, indent=2))

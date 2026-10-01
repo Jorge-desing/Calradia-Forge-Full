@@ -26,6 +26,9 @@ namespace CalradiaForge.Mod.Commands
                    "cf.patches - Lists Forge-tracked patch status\n" +
                    "cf.patch_status [owner] - Shows explicit experimental patch records\n" +
                    "cf.patch_revert <id|owner|all> - Explicitly reverts tracked patches\n" +
+                   "cf.hook_status [owner] - Shows registered Prefix/Postfix hook status\n" +
+                   "cf.hook_apply <id> - Explicitly applies one registered hook in the main menu\n" +
+                   "cf.hook_revert <id|owner|all> - Explicitly reverts Forge-owned hooks in the main menu\n" +
                    "cf.revert_all - Reverts all safely tracked Forge patches\n" +
                    "cf.verify_integrity - Verifies exact Forge-installed patch bytes\n" +
                    "cf.test_log - Tests the ForgeLogger subsystem\n" +
@@ -70,6 +73,8 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("patch_status", "cf")]
         public static string PatchStatus(List<string> args)
         {
+            if (args != null && (args.Count > 1 || (args.Count == 1 && string.IsNullOrWhiteSpace(args[0]))))
+                return "Usage: cf.patch_status [owner]";
             string owner = args != null && args.Count > 0 ? args[0].Trim() : null;
             var snapshots = ForgeDetour.GetTrackedSnapshots(owner);
             if (snapshots.Count == 0) return owner == null ? "No explicit patch records found." : "No explicit patch records found for owner '" + owner + "'.";
@@ -111,6 +116,60 @@ namespace CalradiaForge.Mod.Commands
             int failed = results.Count - reverted - conflicts;
             return "Patch revert: " + reverted + " reverted, " + conflicts + " conflict(s), " + failed + " failed." +
                 (results.Count == 0 ? " No matching patch records." : "\n" + string.Join("\n", results.Select(item => "- " + item.PatchId + ": " + item.State + " — " + item.Detail)));
+        }
+
+        [CommandLineFunctionality.CommandLineArgumentFunction("hook_status", "cf")]
+        public static string HookStatus(List<string> args)
+        {
+            if (args != null && (args.Count > 1 || (args.Count == 1 && string.IsNullOrWhiteSpace(args[0]))))
+                return "Usage: cf.hook_status [owner]";
+            IForgeHookService service = ForgeApi.Hooks;
+            if (service == null) return "Prefix/Postfix hook service is unavailable.";
+            string owner = args != null && args.Count > 0 ? args[0].Trim() : null;
+            var snapshots = service.GetSnapshots(owner);
+            if (snapshots.Count == 0) return owner == null ? "No registered hook records found." : "No hook records found for owner '" + owner + "'.";
+            return "Forge hook status (" + snapshots.Count + "):\n" + string.Join("\n", snapshots.Select(hook =>
+                "- [" + hook.State + "] " + hook.Id + " owner=" + hook.Owner + " target=" + hook.TargetMethod +
+                " prefix=" + hook.HasPrefix + " postfix=" + hook.HasPostfix + " — " + hook.Detail));
+        }
+
+        [CommandLineFunctionality.CommandLineArgumentFunction("hook_apply", "cf")]
+        public static string HookApply(List<string> args)
+        {
+            if (args == null || args.Count != 1 || string.IsNullOrWhiteSpace(args[0])) return "Usage: cf.hook_apply <registered-id>";
+            IForgeHookService service = ForgeApi.Hooks;
+            if (service == null) return "Prefix/Postfix hook service is unavailable.";
+            var result = service.Apply(args[0].Trim());
+            return "Hook apply: " + result.Id + " -> " + result.State + (result.Succeeded ? " (verified)." : " (blocked/failed).") + " " + result.Detail;
+        }
+
+        [CommandLineFunctionality.CommandLineArgumentFunction("hook_revert", "cf")]
+        public static string HookRevert(List<string> args)
+        {
+            if (args == null || args.Count != 1 || string.IsNullOrWhiteSpace(args[0])) return "Usage: cf.hook_revert <registered-id|owner|all>";
+            IForgeHookService service = ForgeApi.Hooks;
+            if (service == null) return "Prefix/Postfix hook service is unavailable.";
+            string target = args[0].Trim();
+            var snapshots = service.GetSnapshots();
+            bool matchesId = snapshots.Any(item => string.Equals(item.Id, target, StringComparison.OrdinalIgnoreCase));
+            bool matchesOwner = snapshots.Any(item => string.Equals(item.Owner, target, StringComparison.OrdinalIgnoreCase));
+            if (matchesId && matchesOwner) return "Hook revert stopped: argument matches both a hook ID and owner; no change was made.";
+            if (string.Equals(target, "all", StringComparison.OrdinalIgnoreCase) && (matchesId || matchesOwner))
+                return "Hook revert stopped: 'all' collides with a registered hook ID or owner; no change was made.";
+            IReadOnlyList<ForgeHookOperationResult> results;
+            if (string.Equals(target, "all", StringComparison.OrdinalIgnoreCase)) results = service.RevertAll();
+            else if (matchesId)
+            {
+                var matches = snapshots.Where(item => string.Equals(item.Id, target, StringComparison.OrdinalIgnoreCase)).ToArray();
+                if (matches.Length != 1) return "Hook revert stopped: registered hook ID is ambiguous.";
+                results = new[] { service.Revert(matches[0].Id) };
+            }
+            else if (matchesOwner) results = service.RevertOwner(target);
+            else return "No registered hook matches '" + target + "'.";
+            int reverted = results.Count(item => item.Succeeded && item.State == ForgeHookState.Reverted);
+            int blocked = results.Count - reverted;
+            return "Hook revert: " + reverted + " reverted, " + blocked + " blocked or failed." +
+                (results.Count == 0 ? " No matching applied hooks." : "\n" + string.Join("\n", results.Select(item => "- " + item.Id + ": " + item.State + " — " + item.Detail)));
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("revert_all", "cf")]

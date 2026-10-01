@@ -8,6 +8,7 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $sourceModule = Join-Path $repositoryRoot 'modules\CalradiaForge'
 $generatorName = 'TaleWorlds.TwoDimension.SpriteSheetGenerator.exe'
+$python = Join-Path $repositoryRoot '.venv\Scripts\python.exe'
 
 if ([string]::IsNullOrWhiteSpace($EditorDirectory)) {
     if (-not [string]::IsNullOrWhiteSpace($env:BANNERLORD_EDITOR_DIR)) {
@@ -21,7 +22,6 @@ if ([string]::IsNullOrWhiteSpace($EditorDirectory)) {
 $EditorDirectory = [IO.Path]::GetFullPath($EditorDirectory)
 $generatorPath = Join-Path $EditorDirectory $generatorName
 $generatorLibrary = Join-Path $EditorDirectory 'TaleWorlds.TwoDimension.SpriteSheetGenerator.Library.dll'
-$python = Get-Command 'python.exe' -ErrorAction SilentlyContinue
 
 if (-not (Test-Path -LiteralPath (Join-Path $sourceModule 'SubModule.xml') -PathType Leaf)) {
     throw "Calradia Forge source module was not found: $sourceModule"
@@ -29,13 +29,13 @@ if (-not (Test-Path -LiteralPath (Join-Path $sourceModule 'SubModule.xml') -Path
 if (-not (Test-Path -LiteralPath $generatorPath -PathType Leaf) -or -not (Test-Path -LiteralPath $generatorLibrary -PathType Leaf)) {
     throw "Bannerlord SpriteSheetGenerator was not found in '$EditorDirectory'. Set BANNERLORD_EDITOR_DIR to the Win64_Shipping_wEditor folder."
 }
-if (-not $python) {
-    throw 'Python was not found on PATH. It is required to validate source assets before and after generation.'
+if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+    throw 'The Calradia Forge Python environment is missing. Run tools\Setup-CalradiaForge-Python.bat first.'
 }
 
 Push-Location $repositoryRoot
 try {
-    & $python.Source 'tools\validate_game_icon_assets.py' '--source-prebuild'
+    & $python 'tools\validate_game_icon_assets.py' '--source-prebuild'
     if ($LASTEXITCODE -ne 0) {
         throw 'Source Game-icons and authoring-input validation failed before generation.'
     }
@@ -134,7 +134,7 @@ try {
 
     Push-Location $repositoryRoot
     try {
-        & $python.Source 'tools\validate_game_icon_assets.py' '--module-path' $stagedModule
+        & $python 'tools\validate_game_icon_assets.py' '--module-path' $stagedModule
         if ($LASTEXITCODE -ne 0) {
             throw "Generated sprite assets failed validation. Staging files are retained at '$stageRoot'."
         }
@@ -195,7 +195,7 @@ try {
 
     Push-Location $repositoryRoot
     try {
-        & $python.Source 'tools\validate_game_icon_assets.py'
+        & $python 'tools\validate_game_icon_assets.py'
         if ($LASTEXITCODE -ne 0) {
             throw 'The published source assets failed their final validation.'
         }

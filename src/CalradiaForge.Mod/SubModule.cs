@@ -230,7 +230,7 @@ namespace CalradiaForge.Mod
                     var id = keyboardControl.Id;
                     layer.UIContext.EventManager.ClearFocus();
                     ClearKeyboardFocus();
-                    vm?.ExecuteKeyboardControl(id);
+                    if (!TryExecuteCampaignRuleConditionKeyboard(id)) vm?.ExecuteKeyboardControl(id);
                 }
 
                 var focusedId = layer.UIContext.EventManager.FocusedWidget?.Id;
@@ -330,11 +330,25 @@ namespace CalradiaForge.Mod
         {
             keyboardControl = widget is ButtonWidget || widget is EditableTextWidget ? widget : null;
             vm?.SetKeyboardFocus(GetKeyboardFocusLabel(widget));
+            for (var ancestor = widget?.ParentWidget; ancestor != null; ancestor = ancestor.ParentWidget)
+                if (ancestor is ScrollablePanel scroll) scroll.ScrollToChild(widget);
         }
         string GetKeyboardFocusLabel(Widget widget)
         {
             if (widget is ButtonWidget button)
             {
+                if ((button.Id ?? "").StartsWith("ForgeCampaignRuleRow", StringComparison.Ordinal)
+                    && int.TryParse(button.Id.Substring("ForgeCampaignRuleRow".Length), out int rowIndex)
+                    && vm != null && rowIndex >= 0 && rowIndex < vm.CampaignRuleBuilderRules.Count)
+                    return vm.CampaignRuleBuilderRules[rowIndex].Summary;
+                switch (button.Id)
+                {
+                    case "ForgeCampaignRulePrevious": return vm?.CampaignRuleBuilderPreviousLabel ?? "";
+                    case "ForgeCampaignRuleNext": return vm?.CampaignRuleBuilderNextLabel ?? "";
+                    case "ForgeCampaignRuleUp": return vm?.CampaignRuleBuilderMoveUpLabel ?? "";
+                    case "ForgeCampaignRuleDown": return vm?.CampaignRuleBuilderMoveDownLabel ?? "";
+                    case "ForgeCampaignRuleRemove": return vm?.CampaignRuleBuilderRemoveRuleLabel ?? "";
+                }
                 var label = FindFirstTextWidget(button);
                 return label?.Text ?? button.Id ?? "";
             }
@@ -351,6 +365,9 @@ namespace CalradiaForge.Mod
                     case "ForgeComposerProgress": return vm?.GauntletComposerProgressFieldLabel ?? "";
                     case "ForgeSdkCatalogSearch": return vm?.SdkCatalogSearchPlaceholder ?? "";
                     case "ForgeNavigationPaletteSearch": return vm?.NavigationPaletteSearchPlaceholder ?? "";
+                    case "ForgeCampaignRuleAmount": return vm?.CampaignRuleBuilderAmountLabel ?? "";
+                    case "ForgeCampaignRuleConditionThresholdA":
+                    case "ForgeCampaignRuleConditionThresholdB": return vm?.CampaignRuleBuilderConditionValueLabel ?? "";
                     default: return vm?.InputLabel ?? "";
                 }
             }
@@ -387,12 +404,47 @@ namespace CalradiaForge.Mod
             var ui=layer.UIContext;
             var controls=new List<Widget>();
             CollectFocusableControls(ui.Root,controls);
+            NumberCampaignRuleConditionControls(controls);
             if(controls.Count==0)return;
             var index=controls.IndexOf(ui.EventManager.FocusedWidget);
             index=index<0?(backwards?controls.Count-1:0):(index+(backwards?-1:1)+controls.Count)%controls.Count;
             ClearKeyboardFocus();
             keyboardControl=controls[index];ui.EventManager.FocusedWidget=keyboardControl;
             SetKeyboardControl(keyboardControl);
+        }
+        static void NumberCampaignRuleConditionControls(List<Widget> controls)
+        {
+            int row = 0, aKind = 0, aRemove = 0, bKind = 0, bRemove = 0;
+            for (int i = 0; i < controls.Count; i++)
+            {
+                var button = controls[i] as ButtonWidget;
+                if (button == null) continue;
+                string id = button.Id ?? "";
+                if (id.StartsWith("ForgeCampaignRuleRow", StringComparison.Ordinal)) button.Id = "ForgeCampaignRuleRow" + row++;
+                else if (id.StartsWith("ForgeCampaignRuleConditionAKind", StringComparison.Ordinal)) button.Id = "ForgeCampaignRuleConditionAKind" + aKind++;
+                else if (id.StartsWith("ForgeCampaignRuleConditionARemove", StringComparison.Ordinal)) button.Id = "ForgeCampaignRuleConditionARemove" + aRemove++;
+                else if (id.StartsWith("ForgeCampaignRuleConditionBKind", StringComparison.Ordinal)) button.Id = "ForgeCampaignRuleConditionBKind" + bKind++;
+                else if (id.StartsWith("ForgeCampaignRuleConditionBRemove", StringComparison.Ordinal)) button.Id = "ForgeCampaignRuleConditionBRemove" + bRemove++;
+            }
+        }
+        bool TryExecuteCampaignRuleConditionKeyboard(string id)
+        {
+            if (vm == null || string.IsNullOrEmpty(id)) return false;
+            if (id.StartsWith("ForgeCampaignRuleRow", StringComparison.Ordinal))
+            {
+                if (!int.TryParse(id.Substring("ForgeCampaignRuleRow".Length), out int rowIndex)) return false;
+                vm.ExecuteCampaignRuleBuilderSelectIndex(rowIndex);
+                return true;
+            }
+            string[] prefixes = { "ForgeCampaignRuleConditionAKind", "ForgeCampaignRuleConditionARemove", "ForgeCampaignRuleConditionBKind", "ForgeCampaignRuleConditionBRemove" };
+            for (int i = 0; i < prefixes.Length; i++)
+            {
+                if (!id.StartsWith(prefixes[i], StringComparison.Ordinal)) continue;
+                if (!int.TryParse(id.Substring(prefixes[i].Length), out int index)) return false;
+                vm.ExecuteCampaignRuleBuilderConditionKeyboard(i >= 2, (i & 1) != 0, index);
+                return true;
+            }
+            return false;
         }
         void Open()
         {
@@ -541,9 +593,10 @@ namespace CalradiaForge.Mod
             }
             finally
             {
-                runtime?.Dispose();
+                Runtime unloadingRuntime = runtime;
                 runtime = null;
                 CurrentRuntime = null;
+                unloadingRuntime?.Dispose();
             }
         }
         public override void OnMissionBehaviorInitialize(Mission mission)

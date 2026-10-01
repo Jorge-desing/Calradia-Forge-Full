@@ -6,8 +6,10 @@ using System.IO;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Reflection.Emit;
 using CalradiaForge.Sdk;
 using CalradiaForge.Core;
 using CalradiaForge.Examples;
@@ -29,12 +31,16 @@ namespace CalradiaForge.Tests
             test("ForgeDetour public Patch clears its reservation after a page-boundary rejection", TestForgeDetourPatchPageBoundaryCleanup);
             test("ForgePatcher batch clears IDs and targets after a page-boundary rejection", TestPatchBatchPageBoundaryCleanup);
             test("ForgeDetour verifies bytes and refuses foreign-byte rollback with a simulated memory adapter", TestForgeDetourFakeMemory);
+            test("ForgeDetour rejects non-x64 architectures before executable memory access", TestForgeDetourRejectsNonX64Architecture);
+            test("ForgeDetour rejects unsafe implicit receivers, native entry points, varargs, and custom modifiers before memory access", TestForgeDetourSignatureValidation);
+            test("ForgeDetour and patch batches honor shared RuntimeDetour target reservations", TestHookTargetReservationBlocksRawDetours);
             test("Optional Forge patch service reverts on disconnect and rejects stale apply", TestPatchServiceLifecycle);
             test("Forge patch service disconnect preserves unrelated direct detours", TestPatchServiceScope);
             test("Optional Forge patch service retains foreign bytes on disconnect", TestPatchServiceConflictRetention);
             test("ForgeApi connection replacement retires prior patches before publishing the next host", TestPatchServiceConnectionReplacement);
             test("ForgeApi connection replacement preserves conflicted host for manual resolution", TestPatchServiceConnectionReplacementConflict);
             test("ForgeApi disconnect reverts direct and legacy detours through the shared registry", TestPatchServiceLegacyCleanup);
+            test("Legacy patch and MethodSwapper receipts cannot revert a later installation generation", TestStaleLegacyReceiptCannotRevertNewGeneration);
             test("ForgePatcher ApplyAll rolls back the complete batch when a later write fails", TestPatchBatchRollback);
             test("Patch console routes use shared IDs, owners, and reverse-all inventory", TestPatchConsoleRoutes);
             
@@ -64,7 +70,7 @@ namespace CalradiaForge.Tests
             test("ForgeAgentMemory expired semantic entry releases a global slot", TestForgeAgentMemoryExpiredGlobalSlot);
             test("ForgeLocalApi exposes info and agents endpoints", TestForgeLocalApiEndpoints);
             test("ForgeCampaignEvents logs dispatch errors", TestForgeCampaignEventsErrorLogging);
-            test("ForgeApi Version is 11", TestForgeApiVersion);
+            test("ForgeApi Version is 12", TestForgeApiVersion);
             test("Forge UI registry rejects duplicate IDs and removes an unloaded owner", TestForgeUiRegistry);
             test("Forge UI discovery validates Gauntlet ViewModel and command binding", TestForgeUiDiscovery);
             test("Forge UI policy enforces context and writer gates", TestForgeUiPolicy);
@@ -385,6 +391,251 @@ namespace CalradiaForge.Tests
             }
         }
 
+        private static void TestForgeDetourRejectsNonX64Architecture()
+        {
+            EnsureNoTrackedDetours("TestForgeDetourRejectsNonX64Architecture");
+            var original = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var replacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var adapter = new FakeExecutableMemoryAdapter { ProcessArchitecture = Architecture.Arm64 };
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            Exception testFailure = null;
+            try
+            {
+                ForgeApi.Connect(new TestEngine());
+                bool directRejected = false;
+                try { ForgeDetour.Patch(original, replacement); }
+                catch (PlatformNotSupportedException error)
+                {
+                    directRejected = error.Message.IndexOf("x64", StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+
+                bool batchRejected = false;
+                try
+                {
+                    ForgeDetour.PatchBatch(new[] { original }, new[] { replacement }, new[] { "fixture.arm64.batch" },
+                        "fixture.arm64", new byte[1][]);
+                }
+                catch (PlatformNotSupportedException error)
+                {
+                    batchRejected = error.Message.IndexOf("x64", StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+
+                if (!directRejected || !batchRejected || adapter.ReadCalls != 0 || adapter.WriteCalls != 0 ||
+                    adapter.ProtectCalls != 0 || adapter.FlushCalls != 0 || ForgeDetour.GetTrackedSnapshots().Count != 0)
+                    throw new Exception("ARM64 must be rejected before any executable-memory read/write/protection/flush or receipt publication; " +
+                        "directRejected=" + directRejected + ", batchRejected=" + batchRejected + ", reads=" + adapter.ReadCalls +
+                        ", writes=" + adapter.WriteCalls + ", protects=" + adapter.ProtectCalls + ", flushes=" + adapter.FlushCalls +
+                        ", tracked=" + ForgeDetour.GetTrackedSnapshots().Count + ".");
+            }
+            catch (Exception error)
+            {
+                testFailure = error;
+                throw;
+            }
+            finally
+            {
+                var cleanupFailures = new List<string>();
+                try { if (ForgeApi.Registry != null) ForgeApi.Disconnect(); }
+                catch (Exception error) { cleanupFailures.Add("SDK disconnect failed after ARM64 guard fixture: " + error.Message); }
+                ResetFakeMemoryAdapter(cleanupFailures);
+                ThrowIfFakeCleanupFailed("TestForgeDetourRejectsNonX64Architecture", testFailure, cleanupFailures);
+            }
+        }
+
+        private static void TestForgeDetourSignatureValidation()
+        {
+            EnsureNoTrackedDetours("TestForgeDetourSignatureValidation");
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            Exception testFailure = null;
+            try
+            {
+                MethodInfo receiverTarget = typeof(ReceiverBaseFixture).GetMethod(nameof(ReceiverBaseFixture.Target),
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
+                MethodInfo narrowerReceiver = typeof(ReceiverDerivedFixture).GetMethod(nameof(ReceiverDerivedFixture.Replacement),
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
+                AssertDetourPairRejected(receiverTarget, narrowerReceiver, typeof(ArgumentException),
+                    "derived-only replacement receiver", adapter);
+
+                MethodInfo pinvoke = typeof(SdkFeaturesTests).GetMethod(nameof(PInvokeSignatureFixture), BindingFlags.Static | BindingFlags.NonPublic);
+                MethodInfo managedUInt = typeof(SdkFeaturesTests).GetMethod(nameof(ManagedUIntSignatureFixture), BindingFlags.Static | BindingFlags.NonPublic);
+                if (pinvoke == null || (pinvoke.Attributes & MethodAttributes.PinvokeImpl) == 0)
+                    throw new Exception("The P/Invoke fixture did not emit the metadata flag required to exercise P/Invoke rejection.");
+                AssertDetourPairRejected(pinvoke, managedUInt, typeof(NotSupportedException), "P/Invoke target", adapter);
+                AssertDetourPairRejected(managedUInt, pinvoke, typeof(NotSupportedException), "P/Invoke replacement", adapter);
+
+                MethodInfo varArgs = typeof(SdkFeaturesTests).GetMethod(nameof(VarArgsSignatureFixture), BindingFlags.Static | BindingFlags.NonPublic);
+                MethodInfo varArgsReplacement = typeof(SdkFeaturesTests).GetMethod(nameof(VarArgsReplacementSignatureFixture), BindingFlags.Static | BindingFlags.NonPublic);
+                MethodInfo fixedArguments = typeof(SdkFeaturesTests).GetMethod(nameof(FixedArgumentsSignatureFixture), BindingFlags.Static | BindingFlags.NonPublic);
+                if (varArgs == null || (varArgs.CallingConvention & CallingConventions.VarArgs) == 0)
+                    throw new Exception("The varargs fixture did not expose CallingConventions.VarArgs on this runtime.");
+                AssertDetourPairRejected(varArgs, varArgsReplacement, typeof(NotSupportedException), "varargs target", adapter);
+                AssertDetourPairRejected(varArgs, fixedArguments, typeof(NotSupportedException), "varargs target with fixed replacement", adapter);
+                AssertDetourPairRejected(fixedArguments, varArgsReplacement, typeof(NotSupportedException), "varargs replacement", adapter);
+
+                Type modifierFixture = CreateCustomModifierSignatureFixture();
+                AssertDetourPairRejected(
+                    GetFixtureMethod(modifierFixture, "RequiredParameterTarget"),
+                    GetFixtureMethod(modifierFixture, "RequiredParameterReplacement"),
+                    typeof(ArgumentException), "parameter modreq mismatch", adapter);
+                AssertDetourPairRejected(
+                    GetFixtureMethod(modifierFixture, "OptionalParameterTarget"),
+                    GetFixtureMethod(modifierFixture, "OptionalParameterReplacement"),
+                    typeof(ArgumentException), "parameter modopt mismatch", adapter);
+                AssertDetourPairRejected(
+                    GetFixtureMethod(modifierFixture, "RequiredReturnTarget"),
+                    GetFixtureMethod(modifierFixture, "RequiredReturnReplacement"),
+                    typeof(ArgumentException), "return modreq mismatch", adapter);
+                AssertDetourPairRejected(
+                    GetFixtureMethod(modifierFixture, "OptionalReturnTarget"),
+                    GetFixtureMethod(modifierFixture, "OptionalReturnReplacement"),
+                    typeof(ArgumentException), "return modopt mismatch", adapter);
+
+                MethodInfo internalCall = GetFixtureMethod(modifierFixture, "InternalCallMethod");
+                if ((internalCall.GetMethodImplementationFlags() & MethodImplAttributes.InternalCall) == 0)
+                    throw new Exception("The emitted internal-call fixture did not retain MethodImplAttributes.InternalCall.");
+                AssertDetourPairRejected(internalCall, GetFixtureMethod(modifierFixture, "InternalCallCompatibleReplacement"),
+                    typeof(NotSupportedException), "internal-call target", adapter);
+                AssertDetourPairRejected(GetFixtureMethod(modifierFixture, "InternalCallCompatibleReplacement"), internalCall,
+                    typeof(NotSupportedException), "internal-call replacement", adapter);
+
+                if (adapter.ReadCalls != 0 || adapter.WriteCalls != 0 || adapter.ProtectCalls != 0 || adapter.FlushCalls != 0 ||
+                    ForgeDetour.GetTrackedSnapshots().Count != 0)
+                    throw new Exception("Signature validation must reject every unsupported pair before reading or writing executable memory.");
+            }
+            catch (Exception error)
+            {
+                testFailure = error;
+                throw;
+            }
+            finally
+            {
+                var cleanupFailures = new List<string>();
+                try { if (ForgeApi.Registry != null) ForgeApi.Disconnect(); }
+                catch (Exception error) { cleanupFailures.Add("SDK disconnect failed after signature validation: " + error.Message); }
+                ResetFakeMemoryAdapter(cleanupFailures);
+                ThrowIfFakeCleanupFailed("TestForgeDetourSignatureValidation", testFailure, cleanupFailures);
+            }
+        }
+
+        private static void AssertDetourPairRejected(MethodInfo target, MethodInfo replacement, Type expectedException,
+            string fixtureName, FakeExecutableMemoryAdapter adapter)
+        {
+            if (target == null || replacement == null)
+                throw new Exception("The " + fixtureName + " signature fixture did not resolve both methods.");
+
+            int reads = adapter.ReadCalls;
+            int writes = adapter.WriteCalls;
+            int protections = adapter.ProtectCalls;
+            int flushes = adapter.FlushCalls;
+            Exception observed = null;
+            try { ForgeDetour.Patch(target, replacement); }
+            catch (Exception error) { observed = error; }
+
+            if (observed == null || !expectedException.IsInstanceOfType(observed))
+                throw new Exception("The " + fixtureName + " pair should reject with " + expectedException.Name + "; observed " +
+                    (observed == null ? "no exception" : observed.GetType().Name + ": " + observed.Message) + ".");
+            if (adapter.ReadCalls != reads || adapter.WriteCalls != writes || adapter.ProtectCalls != protections || adapter.FlushCalls != flushes ||
+                ForgeDetour.GetTrackedSnapshots().Count != 0)
+                throw new Exception("The " + fixtureName + " pair reached executable-memory access or left a patch receipt before rejection.");
+        }
+
+        private static Type CreateCustomModifierSignatureFixture()
+        {
+            var assemblyName = new AssemblyName("CalradiaForge.DetourSignatureFixture");
+            AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule(assemblyName.Name);
+            TypeBuilder type = module.DefineType("CalradiaForge.DetourSignatureFixture.Methods",
+                TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
+            MethodAttributes attributes = MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig;
+            Type[] none = Type.EmptyTypes;
+            Type[] noParameterModifier = Type.EmptyTypes;
+            Type[][] noParameterModifiers = new[] { noParameterModifier };
+            Type[] requiredParameterModifier = new[] { typeof(CustomModifierFixtureTag) };
+            Type[] optionalParameterModifier = new[] { typeof(CustomModifierFixtureTag) };
+            Type[] requiredReturnModifier = new[] { typeof(CustomModifierFixtureTag) };
+            Type[] optionalReturnModifier = new[] { typeof(CustomModifierFixtureTag) };
+
+            DefineIdentityIntMethod(type, "RequiredParameterTarget", attributes, none, none, noParameterModifier, noParameterModifier);
+            DefineIdentityIntMethod(type, "RequiredParameterReplacement", attributes, none, none, requiredParameterModifier, noParameterModifier);
+            DefineIdentityIntMethod(type, "OptionalParameterTarget", attributes, none, none, noParameterModifier, noParameterModifier);
+            DefineIdentityIntMethod(type, "OptionalParameterReplacement", attributes, none, none, noParameterModifier, optionalParameterModifier);
+            DefineIdentityIntMethod(type, "RequiredReturnTarget", attributes, none, none, noParameterModifier, noParameterModifier);
+            DefineIdentityIntMethod(type, "RequiredReturnReplacement", attributes, requiredReturnModifier, none, noParameterModifier, noParameterModifier);
+            DefineIdentityIntMethod(type, "OptionalReturnTarget", attributes, none, none, noParameterModifier, noParameterModifier);
+            DefineIdentityIntMethod(type, "OptionalReturnReplacement", attributes, none, optionalReturnModifier, noParameterModifier, noParameterModifier);
+
+            MethodBuilder internalCall = type.DefineMethod("InternalCallMethod", attributes, CallingConventions.Standard, typeof(int),
+                Type.EmptyTypes, Type.EmptyTypes, new[] { typeof(int) }, noParameterModifiers, noParameterModifiers);
+            internalCall.SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.InternalCall);
+            DefineIdentityIntMethod(type, "InternalCallCompatibleReplacement", attributes, none, none, noParameterModifier, noParameterModifier);
+            return type.CreateType();
+        }
+
+        private static void DefineIdentityIntMethod(TypeBuilder type, string name, MethodAttributes attributes,
+            Type[] returnRequiredModifiers, Type[] returnOptionalModifiers,
+            Type[] parameterRequiredModifiers, Type[] parameterOptionalModifiers)
+        {
+            MethodBuilder method = type.DefineMethod(name, attributes, CallingConventions.Standard, typeof(int),
+                returnRequiredModifiers, returnOptionalModifiers, new[] { typeof(int) },
+                new[] { parameterRequiredModifiers }, new[] { parameterOptionalModifiers });
+            ILGenerator il = method.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ret);
+        }
+
+        private static MethodInfo GetFixtureMethod(Type fixture, string name)
+        {
+            MethodInfo method = fixture.GetMethod(name, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+            if (method == null) throw new Exception("The emitted signature fixture method was not found: " + name + ".");
+            return method;
+        }
+
+        private static void TestHookTargetReservationBlocksRawDetours()
+        {
+            var target = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var replacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            EnsureNoTrackedDetours("TestHookTargetReservationBlocksRawDetours");
+            PrepareStableMethodAddresses("TestHookTargetReservationBlocksRawDetours", target, replacement);
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            bool registered = false;
+            var engine = new TestEngine();
+            try
+            {
+                // Earlier suites may intentionally leave the SDK disconnected. Reconnect
+                // so this test reaches the target-reservation guard instead of the global
+                // fail-closed application guard.
+                ForgeApi.Connect(engine);
+                ForgeDetour.RegisterHookTarget(target);
+                registered = true;
+                bool directRejected = false;
+                bool batchRejected = false;
+                try { ForgeDetour.Patch(target, replacement, "fixture.raw-vs-hook.direct", "fixture.raw"); }
+                catch (InvalidOperationException error) { directRejected = error.Message.Contains("RuntimeDetour"); }
+                try
+                {
+                    ForgeDetour.PatchBatch(new[] { target }, new[] { replacement }, new[] { "fixture.raw-vs-hook.batch" },
+                        "fixture.raw", new byte[1][]);
+                }
+                catch (InvalidOperationException error) { batchRejected = error.Message.Contains("RuntimeDetour"); }
+
+                if (!directRejected || !batchRejected || adapter.ReadCalls != 0 || adapter.WriteCalls != 0 ||
+                    adapter.ProtectCalls != 0 || adapter.FlushCalls != 0 || ForgeDetour.IsTracked(target))
+                    throw new Exception("Raw detour paths must reject a shared hook reservation before reading or changing executable memory. " +
+                        "directRejected=" + directRejected + ", batchRejected=" + batchRejected + ", reads=" + adapter.ReadCalls +
+                        ", writes=" + adapter.WriteCalls + ", protects=" + adapter.ProtectCalls + ", flushes=" + adapter.FlushCalls +
+                        ", tracked=" + ForgeDetour.IsTracked(target) + ".");
+            }
+            finally
+            {
+                if (registered) ForgeDetour.UnregisterHookTarget(target);
+                if (ForgeDetour.IsTracked(target)) ForgeDetour.Unpatch(target);
+                if (ForgeApi.Registry != null) ForgeApi.Disconnect();
+                ForgeDetour.SetMemoryAdapterForTests(null);
+            }
+        }
+
         private static void TestForgeDetourPageBoundary()
         {
             EnsureNoTrackedDetours("TestForgeDetourPageBoundary");
@@ -657,26 +908,39 @@ namespace CalradiaForge.Tests
                 installed = adapter.Read(targetAddress, 13);
                 adapter.Tamper(targetAddress, 0, 0x90);
                 byte[] foreign = adapter.Read(targetAddress, 13);
-                ForgeApi.Disconnect();
-                handle.Dispose();
-                if (handle.Snapshot.State != ForgePatchState.Conflict || handle.Revert().State != ForgePatchState.Conflict || !adapter.Read(targetAddress, 13).SequenceEqual(foreign))
-                    throw new Exception("Disconnect or repeated handle release must preserve foreign target bytes and report Conflict.");
+                bool disconnectBlocked = false;
+                try { ForgeApi.Disconnect(); }
+                catch (InvalidOperationException) { disconnectBlocked = true; }
+                bool disposeBlocked = false;
+                try { handle.Dispose(); }
+                catch (InvalidOperationException) { disposeBlocked = true; }
+                if (!disconnectBlocked || !disposeBlocked || !ReferenceEquals(ForgeApi.Registry, engine) ||
+                    !ReferenceEquals(ForgeApi.Patches, ForgeApi.Registry) || handle.Snapshot.State != ForgePatchState.Conflict ||
+                    handle.Revert().State != ForgePatchState.Conflict || !adapter.Read(targetAddress, 13).SequenceEqual(foreign))
+                    throw new Exception("Disconnect or handle disposal must preserve the published recovery route and foreign target bytes while reporting Conflict.");
                 bool reconnectBlocked = false;
                 try { engine.Reconnect(); }
                 catch (InvalidOperationException) { reconnectBlocked = true; }
                 if (!reconnectBlocked || handle.Snapshot.State != ForgePatchState.Conflict || !adapter.Read(targetAddress, 13).SequenceEqual(foreign))
                     throw new Exception("A disconnected patch service must refuse reconnection while foreign target bytes remain.");
+                adapter.Replace(targetAddress, installed);
+                if (!handle.Revert().IsReverted || handle.Snapshot.State != ForgePatchState.Reverted)
+                    throw new Exception("The retained capability must permit explicit recovery after the recorded patch bytes are restored.");
+                ForgeApi.Disconnect();
             }
             finally
             {
-                if (ForgeApi.Registry != null) ForgeApi.Disconnect();
                 // Remove only this test's synthetic conflict so the process-wide test adapter
                 // can be safely returned to native mode after the assertion has observed it.
                 if (installed != null && targetAddress != IntPtr.Zero)
                 {
-                    adapter.Replace(targetAddress, installed);
-                    if (!ForgeDetour.Unpatch(original)) throw new Exception("Test fixture could not clean up its restored synthetic detour.");
+                    if (ForgeDetour.IsTracked(original))
+                    {
+                        adapter.Replace(targetAddress, installed);
+                        if (!ForgeDetour.Unpatch(original)) throw new Exception("Test fixture could not clean up its restored synthetic detour.");
+                    }
                 }
+                if (ForgeApi.Registry != null) ForgeApi.Disconnect();
                 ForgeDetour.SetMemoryAdapterForTests(null);
             }
         }
@@ -819,6 +1083,128 @@ namespace CalradiaForge.Tests
             }
         }
 
+        private static void TestStaleLegacyReceiptCannotRevertNewGeneration()
+        {
+            var target = typeof(SdkFeaturesTests).GetMethod(nameof(TargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            var replacement = typeof(SdkFeaturesTests).GetMethod(nameof(ReplacementMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            EnsureNoTrackedDetours("TestStaleLegacyReceiptCannotRevertNewGeneration");
+            if (ForgePatcher.GetAppliedPatches().Any(record => record.Original == target))
+                throw new InvalidOperationException("TestStaleLegacyReceiptCannotRevertNewGeneration requires an empty legacy receipt registry.");
+
+            IntPtr address = PrepareStableMethodAddresses("TestStaleLegacyReceiptCannotRevertNewGeneration", target, replacement)[0];
+            var adapter = new FakeExecutableMemoryAdapter();
+            ForgeDetour.SetMemoryAdapterForTests(adapter);
+            byte[] originalBytes = null;
+            PatchRecord generationA = null;
+            PatchRecord generationB = null;
+            Exception testFailure = null;
+            try
+            {
+                ForgeApi.Connect(new TestEngine());
+                originalBytes = adapter.Read(address, 13);
+                try { generationA = target.DetourWith(replacement); }
+                catch (Exception error) { throw new InvalidOperationException("Could not apply receipt generation A.", error); }
+                byte[] installedA = ForgeDetour.GetInstalledBytes(target);
+                string patchIdA = generationA.Id;
+                if (!generationA.IsIntact()) throw new Exception("Generation A receipt did not verify immediately after apply.");
+
+                generationA.RevertDetour();
+                if (ForgeDetour.IsTracked(target) || !adapter.Read(address, 13).SequenceEqual(originalBytes))
+                    throw new Exception("Generation A did not restore the synthetic target before generation B was applied.");
+
+                ForgeApi.Connect(new TestEngine());
+                try { generationB = target.DetourWith(replacement); }
+                catch (Exception error) { throw new InvalidOperationException("Could not apply receipt generation B.", error); }
+                byte[] installedB = ForgeDetour.GetInstalledBytes(target);
+                if (!string.Equals(generationB.Id, patchIdA, StringComparison.OrdinalIgnoreCase) ||
+                    !generationA.OriginalBytes.SequenceEqual(generationB.OriginalBytes) ||
+                    !installedA.SequenceEqual(installedB) || generationA.IsIntact() || !generationB.IsIntact())
+                    throw new Exception("Fixture did not reproduce the same-ID, same-original-bytes second installation generation.");
+
+                bool staleRecordRejected = false;
+                try { ForgePatcher.Revert(generationA); }
+                catch (InvalidOperationException error)
+                {
+                    staleRecordRejected = error.Message.IndexOf("stale", StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+                if (!staleRecordRejected || !ForgeDetour.IsTracked(target) || !generationB.IsIntact() ||
+                    !adapter.Read(address, installedB.Length).SequenceEqual(installedB))
+                    throw new Exception("A stale PatchRecord reverted or altered generation B.");
+
+                bool staleByteReceiptRejected = false;
+                try { MethodSwapper.RestoreMethod(target, generationA.OriginalBytes); }
+                catch (InvalidOperationException error)
+                {
+                    staleByteReceiptRejected = error.Message.IndexOf("stale", StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+                if (!staleByteReceiptRejected || !ForgeDetour.IsTracked(target) || !generationB.IsIntact() ||
+                    !adapter.Read(address, installedB.Length).SequenceEqual(installedB))
+                    throw new Exception("A stale MethodSwapper byte receipt reverted or altered generation B.");
+
+                generationB.RevertDetour();
+                if (ForgeDetour.IsTracked(target) || ForgePatcher.GetAppliedPatches().Any(record => record.Original == target) ||
+                    !adapter.Read(address, 13).SequenceEqual(originalBytes))
+                    throw new Exception("Generation B did not remain independently revertible after stale-receipt rejection.");
+
+                // A returned MethodSwapper array is an opaque identity token, not the
+                // authoritative byte snapshot. Mutating it must not strand its own patch.
+                byte[] mutableReceipt = MethodSwapper.DetourMethod(target, replacement);
+                byte[] installedC = ForgeDetour.GetInstalledBytes(target);
+                string patchIdC = ForgeDetour.GetTrackedPatchId(target);
+                object generationTokenC = MethodSwapper.GetGenerationToken(target, mutableReceipt, patchIdC);
+                mutableReceipt[0] ^= 0xFF;
+                if (!ReferenceEquals(generationTokenC, MethodSwapper.GetGenerationToken(target, mutableReceipt, patchIdC)))
+                    throw new Exception("Mutating the public receipt array changed its registered installation generation.");
+
+                bool staleGenerationARejectedAgainstC = false;
+                try { MethodSwapper.RestoreMethod(target, generationA.OriginalBytes); }
+                catch (InvalidOperationException error)
+                {
+                    staleGenerationARejectedAgainstC = error.Message.IndexOf("stale", StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+                if (!staleGenerationARejectedAgainstC || !ForgeDetour.IsTracked(target) ||
+                    !adapter.Read(address, installedC.Length).SequenceEqual(installedC))
+                    throw new Exception("A stale generation-A receipt reverted or altered the current MethodSwapper generation.");
+
+                MethodSwapper.RestoreMethod(target, mutableReceipt);
+                if (ForgeDetour.IsTracked(target) || !adapter.Read(address, originalBytes.Length).SequenceEqual(originalBytes))
+                    throw new Exception("A mutated public receipt could not safely restore its own installation generation.");
+            }
+            catch (Exception error)
+            {
+                testFailure = error;
+                throw;
+            }
+            finally
+            {
+                var cleanupFailures = new List<string>();
+                if (ForgeDetour.IsTracked(target))
+                {
+                    try
+                    {
+                        adapter.Replace(address, ForgeDetour.GetInstalledBytes(target));
+                        var receipts = ForgePatcher.GetAppliedPatches().Where(record => record.Original == target).Reverse().ToArray();
+                        if (receipts.Length > 0)
+                            foreach (PatchRecord receipt in receipts) ForgePatcher.Revert(receipt);
+                        else if (!ForgeDetour.Unpatch(target))
+                            cleanupFailures.Add("Synthetic detour could not be removed from the target.");
+                    }
+                    catch (Exception error) { cleanupFailures.Add("Detour cleanup failed: " + error.Message); }
+                }
+                if (ForgeDetour.IsTracked(target)) cleanupFailures.Add("A detour remained tracked after cleanup.");
+                if (originalBytes != null && !adapter.Read(address, originalBytes.Length).SequenceEqual(originalBytes))
+                    cleanupFailures.Add("Synthetic target bytes were not restored after cleanup.");
+                try { if (ForgeApi.Registry != null) ForgeApi.Disconnect(); }
+                catch (Exception error) { cleanupFailures.Add("SDK disconnect failed after stale receipt regression: " + error.Message); }
+                try { ForgeDetour.SetMemoryAdapterForTests(null); }
+                catch (Exception error) { cleanupFailures.Add("Fake memory adapter reset failed: " + error.Message); }
+                if (testFailure != null && cleanupFailures.Count > 0)
+                    throw new AggregateException("Stale receipt regression failed and cleanup was incomplete.", cleanupFailures.Select(message => new InvalidOperationException(message)));
+                if (cleanupFailures.Count > 0)
+                    throw new AggregateException("Stale receipt regression cleanup failed.", cleanupFailures.Select(message => new InvalidOperationException(message)));
+            }
+        }
+
         private static void TestPatchBatchRollback()
         {
             var targetOne = typeof(PatchBatchMethods).GetMethod(nameof(PatchBatchMethods.TargetOne));
@@ -887,6 +1273,11 @@ namespace CalradiaForge.Tests
             try
             {
                 ForgeApi.Connect(new TestEngine());
+                if (!ForgeCommands.PatchStatus(new List<string> { "console.owner", "ignored" }).StartsWith("Usage: cf.patch_status", StringComparison.Ordinal) ||
+                    !ForgeCommands.PatchStatus(new List<string> { " " }).StartsWith("Usage: cf.patch_status", StringComparison.Ordinal) ||
+                    !ForgeCommands.HookStatus(new List<string> { "console.owner", "ignored" }).StartsWith("Usage: cf.hook_status", StringComparison.Ordinal) ||
+                    !ForgeCommands.HookStatus(new List<string> { " " }).StartsWith("Usage: cf.hook_status", StringComparison.Ordinal))
+                    throw new Exception("Optional status commands must reject missing/extra owner arguments instead of silently widening the query.");
                 ForgeDetour.Patch(original, replacement, "console.patch.id", "console.owner");
                 string status = ForgeCommands.PatchStatus(new List<string> { "console.owner" });
                 if (!status.Contains("console.patch.id") || !status.Contains("Applied"))
@@ -944,7 +1335,7 @@ namespace CalradiaForge.Tests
         private sealed class FakeExecutableMemoryAdapter : ForgeDetour.IExecutableMemoryAdapter
         {
             private readonly Dictionary<IntPtr, byte[]> memory = new Dictionary<IntPtr, byte[]>();
-            public bool Is64BitProcess { get { return true; } }
+            public Architecture ProcessArchitecture { get; set; } = Architecture.X64;
             internal bool FailNextProtect;
             internal bool FailNextFlush;
             internal bool FailNextProtectionRestore;
@@ -1124,6 +1515,29 @@ namespace CalradiaForge.Tests
         private static string Address(IntPtr address)
         {
             return address == IntPtr.Zero ? "<zero>" : "0x" + address.ToInt64().ToString("X");
+        }
+
+        [DllImport("kernel32.dll", EntryPoint = "GetCurrentThreadId", ExactSpelling = true)]
+        private static extern uint PInvokeSignatureFixture();
+
+        private static uint ManagedUIntSignatureFixture() => 0;
+
+        private static int VarArgsSignatureFixture(int value, __arglist) => value;
+
+        private static int VarArgsReplacementSignatureFixture(int value, __arglist) => value + 1;
+
+        private static int FixedArgumentsSignatureFixture(int value) => value;
+
+        public sealed class CustomModifierFixtureTag { }
+
+        private class ReceiverBaseFixture
+        {
+            public int Target(int value) => value;
+        }
+
+        private sealed class ReceiverDerivedFixture : ReceiverBaseFixture
+        {
+            public int Replacement(int value) => value + 1;
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
@@ -2102,8 +2516,17 @@ namespace CalradiaForge.Tests
 
         private static void TestForgeLocalApiEndpoints()
         {
-            // Use a random high port to avoid conflicts with the main API instance
-            string url = "http://localhost:59997/";
+            // Pick a high ephemeral port rather than sharing a fixed test port with
+            // developer tools or concurrent CI jobs.
+            int port;
+            var reservation = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+            try
+            {
+                reservation.Start();
+                port = ((System.Net.IPEndPoint)reservation.LocalEndpoint).Port;
+            }
+            finally { reservation.Stop(); }
+            string url = "http://localhost:" + port.ToString(CultureInfo.InvariantCulture) + "/";
             ForgeAgentMemory.ClearAll();
             const string privateAgentId = "private-agent-id-must-not-leak";
             const string privateKey = "private-key-must-not-leak";
@@ -2239,8 +2662,8 @@ namespace CalradiaForge.Tests
 
         private static void TestForgeApiVersion()
         {
-            if (ForgeApi.Version != 11)
-                throw new Exception($"ForgeApi.Version should be 11. Got: {ForgeApi.Version}");
+            if (ForgeApi.Version != 12)
+                throw new Exception($"ForgeApi.Version should be 12. Got: {ForgeApi.Version}");
         }
 
         private static void TestForgeUiRegistry()

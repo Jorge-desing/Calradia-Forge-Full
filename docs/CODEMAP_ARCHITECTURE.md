@@ -38,13 +38,13 @@ CalradiaForge.Desktop (Companion)
 | **Diagnostics** | Logging & error reporting | `ForgeLogger` |
 | **Configuration** | Mod configuration management | `ForgeConfig` |
 | **UI Framework** | Gauntlet UI extensions | `UI` namespace components |
-| **Patch Engine** | Harmony patch management | `ForgeBootstrapper`, `ForgeWeaveEngine` |
+| **Patch workflows** | Read-only patch blueprint preflight and separately requested experimental Forge method replacement | `PatchPreflightEngine`, `ForgePatchService`, `ForgePatcher`, `ForgeDetour` |
 
 ### Critical Patterns in Core
 
 1. **Auto-Registration Pattern**: `[AutoRegisterBehavior]` attribute enables automatic behavior discovery across assemblies
 2. **Rule-Based Validation**: `ModRuleAuditor` enforces architectural constraints via regex/AST analysis
-3. **Patch Preflight**: `PatchPreflightEngine` validates Harmony patches before application
+3. **Patch Preflight**: `PatchPreflightEngine` resolves the exact target and callback references declared by blueprints against assemblies already loaded in the session. It does not load assemblies, invoke callbacks, apply patches, or prove that a detour can be installed.
 
 ## CalradiaForge.Mod Architecture
 
@@ -55,7 +55,7 @@ OnSubModuleLoad()
     ├─ UnhandledException handler (.cfcrash JSON dump)
     ├─ Runtime.Initialize()
     ├─ UIExtender.Initialize()
-    └─ ForgeBootstrapper.InitializeGlobalPatches()
+    └─ No patch discovery or application
 
 OnBeforeInitialModuleScreenSetAsRoot()
     └─ runtime.NotifyInitialScreenReady()
@@ -175,9 +175,11 @@ ForgeUI (UI Management)
     ├─ Clear()
     └─ UI state coordination
 
-ForgeDetour (Harmony Management)
+ForgeDetour (Experimental native method replacement)
+    ├─ Patch(MethodInfo original, MethodInfo replacement)
+    ├─ Unpatch(MethodInfo original)
     ├─ UnpatchAll()
-    └─ Patch lifecycle
+    └─ Verify(MethodInfo method, out string status)
 ```
 
 ## Anti-Shadowing Architecture (GEMINI.md)
@@ -322,15 +324,22 @@ ForgeData / ForgeAgentMemory / ForgeUI
 External tools read/write game state
 ```
 
-### Harmony Patch Integration
+### Explicit Forge Patch Capabilities
 
 ```
-ForgeBootstrapper.InitializeGlobalPatches()
+Read-only review:
+PatchPreflightEngine.Inspect(...)
+    └─ Resolves declared target/callback references; no patch backend call
+
+Explicit, experimental application (separate capability):
+ForgeApi.Patches.ApplyMethodReplacement(...)
+    or ForgePatcher.ApplyAll(assembly)
     ↓
-ForgeWeaveEngine (Patch management)
-    ↓
-Harmony patches applied with preflight validation
+ForgeDetour.Patch(MethodInfo original, MethodInfo replacement)
+    └─ One-for-one native method replacement; verify/revert explicitly
 ```
+
+Patch preflight and patch application are independent capabilities; preflight does not gate or trigger application. There is no automatic startup assembly scan. The legacy `ForgeBootstrapper.InitializeGlobalPatches()` entry point is obsolete and does nothing. Forge's optional historical Harmony Atlas is a separate read-only inventory of an already-loaded Harmony API; it is not used by ForgeDetour or ForgeWeave.
 
 ### ForgeWeave Cooperative Event Mesh Architecture
 
@@ -376,7 +385,7 @@ In-Game Gauntlet UI (PanelViewModel)
 │   ├── Overview: Project Setup, Manifests, Load Order, Logs
 │   ├── Inspector: Live Entities (Hero/Settlement), Memory & Metrics
 │   ├── Toolkit: Non-destructive Tests, ModSettings, Commands
-│   ├── Weave: ForgeWeave Event Pipeline, Replay Lab, Harmony Auditing
+│   ├── Weave: ForgeWeave Event Pipeline and Replay Lab
 │   ├── Simulate: Balance Models (Diplomacy, Loyalty, Economy, Tactics)
 │   ├── Audit: Rule Compliance (36 Bannerlord Rules, Statelessness, Save Safety)
 │   ├── Novice: Interactive Scaffolding Wizards (Behaviors, XMLs, Quests)
@@ -419,6 +428,8 @@ Desktop Workbench (.NET 8 WPF)
     ├── ModderRolePreset: Dynamic filtering of operational rail routes by specialization
     └── CycleModderRoleCommand: Quick keyboard and UI switching between roles
 ```
+
+The UI also places Patch Blueprint Preflight and the historical Harmony Atlas in the Weave navigation category. They are separate tools: preflight reviews inert declarations, and the Atlas only inventories Harmony hooks that another module has already loaded. Neither is a ForgeWeave feature.
 
 ## Module Distribution Structure
 

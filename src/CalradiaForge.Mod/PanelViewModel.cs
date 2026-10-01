@@ -12,7 +12,7 @@ using CalradiaForge.Sdk;
 using TaleWorlds.Library;
 namespace CalradiaForge.Mod
 {
-    internal sealed class PanelViewModel : ViewModel
+    internal sealed partial class PanelViewModel : ViewModel
     {
         const int LinesPerPage = 16;
         const int OutputWrapWidth = 112;
@@ -71,7 +71,21 @@ namespace CalradiaForge.Mod
         ModderRole _activeModderRole = ModderRole.All;
         readonly MBBindingList<CategoryCommandItemVM> _categorySuggestedCommands = new MBBindingList<CategoryCommandItemVM>();
         readonly MBBindingList<CategoryCommandItemVM> _pinnedCommands = new MBBindingList<CategoryCommandItemVM>();
-        public PanelViewModel(Runtime r, Action c) { runtime = r; close = c; _navigationPaletteStatePath = GetNavigationPaletteStatePath(); _gauntletComposerDraftPath = GetGauntletComposerDraftPath(); Labels(); InitializeGauntletComposer(); InitializeTools(); InitializeNavigationPalette(); RebuildCategoryCommands(); ExecuteSummary(); }
+        public PanelViewModel(Runtime r, Action c) : this(r, c, null) { }
+        internal PanelViewModel(Runtime r, Action c, string campaignRuleBuilderDraftPath)
+        {
+            runtime = r;
+            close = c;
+            _navigationPaletteStatePath = GetNavigationPaletteStatePath();
+            _gauntletComposerDraftPath = GetGauntletComposerDraftPath();
+            InitializeCampaignRuleBuilder(campaignRuleBuilderDraftPath);
+            Labels();
+            InitializeGauntletComposer();
+            InitializeTools();
+            InitializeNavigationPalette();
+            RebuildCategoryCommands();
+            ExecuteSummary();
+        }
         private MBBindingList<ToolItemVM> _sdkTools = new MBBindingList<ToolItemVM>();
         [DataSourceProperty] public MBBindingList<ToolItemVM> SdkTools => _sdkTools;
         [DataSourceProperty] public string CategoryMissionDescription => GetCategoryMissionDescription(currentCategory);
@@ -182,8 +196,8 @@ namespace CalradiaForge.Mod
         }
         [DataSourceProperty] public string DetailModeLabel => _isDetailedMode ? T("Detail: [EXTENDED]") : T("Detail: [COMPACT]");
         [DataSourceProperty] public string DetailModeHint => T("Toggle between compact quick-slot bar and extended engineering playbook with troubleshooting rules.");
-        [DataSourceProperty] public bool IsPlaybookVisible => _isDetailedMode && !evidenceFocused && !_isKeyHelpOpen;
-        [DataSourceProperty] public float WorkspaceRightMargin => _isDetailedMode && !evidenceFocused ? 344f : 24f;
+        [DataSourceProperty] public bool IsPlaybookVisible => _isDetailedMode && !evidenceFocused && !_isKeyHelpOpen && !IsCampaignRuleBuilderActive;
+        [DataSourceProperty] public float WorkspaceRightMargin => _isDetailedMode && !evidenceFocused && !IsCampaignRuleBuilderActive ? 344f : 24f;
         [DataSourceProperty] public float PrimaryActionButtonWidth => _isDetailedMode && !evidenceFocused ? 100f : 164f;
 
         private bool _isCategoryCommandsOpen;
@@ -436,6 +450,7 @@ namespace CalradiaForge.Mod
             AddNavigationPaletteRoute("novice-hint", NoviceHintLabel, noviceGroup, NoviceHintHint);
             AddNavigationPaletteRoute("novice-gauntlet", NoviceGauntletLabel, noviceGroup, NoviceGauntletHint);
             AddNavigationPaletteRoute("novice-gauntlet-composer", NoviceGauntletComposerLabel, noviceGroup, NoviceGauntletComposerHint);
+            AddNavigationPaletteRoute("novice-campaign-rule-builder", NoviceCampaignRuleBuilderLabel, noviceGroup, NoviceCampaignRuleBuilderHint);
             AddNavigationPaletteRoute("novice-workshop", NoviceWorkshopLabel, noviceGroup, NoviceWorkshopHint);
             AddNavigationPaletteRoute("novice-party", NovicePartyLabel, noviceGroup, NovicePartyHint);
             AddNavigationPaletteRoute("novice-building", NoviceBuildingLabel, noviceGroup, NoviceBuildingHint);
@@ -479,7 +494,7 @@ namespace CalradiaForge.Mod
                 case "siege-tactics": case "casus-belli": case "rule-auditor": case "model-audit": case "dump-diagnostics":
                 case "audit-localization": case "audit-save": case "audit-audio": case "novice-behavior": case "novice-troop":
                 case "novice-quest": case "novice-item": case "novice-submodule": case "novice-checklist": case "novice-events":
-                case "novice-hint": case "novice-gauntlet": case "novice-gauntlet-composer": case "novice-workshop": case "novice-party": case "novice-building": case "novice-combat":
+                case "novice-hint": case "novice-gauntlet": case "novice-gauntlet-composer": case "novice-campaign-rule-builder": case "novice-workshop": case "novice-party": case "novice-building": case "novice-combat":
                     return true;
                 default:
                     return false;
@@ -791,7 +806,7 @@ namespace CalradiaForge.Mod
         }
         [DataSourceProperty] public string ContextValue => FormatContext(runtime.CurrentContext.ToString());
         bool evidenceFocused;
-        [DataSourceProperty] public bool ShowCommandDeck => !evidenceFocused && !IsGauntletComposerActive;
+        [DataSourceProperty] public bool ShowCommandDeck => !evidenceFocused && !IsGauntletComposerActive && !IsCampaignRuleBuilderActive;
         // A 672-DIP shell at the 1280x720 audit viewport, minus the 178-DIP
         // bottom reserve and two 1-DIP frame insets, leaves a 160-DIP ledger body.
         [DataSourceProperty] public float EvidenceTop => evidenceFocused ? 220f : 332f;
@@ -799,7 +814,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public int EvidenceFontSize => evidenceFocused ? 24 : 18;
         [DataSourceProperty] public string FocusEvidenceLabel => evidenceFocused ? T("Show tools") : T("Focus evidence");
         [DataSourceProperty] public string EvidenceHeading => T("Evidence");
-        [DataSourceProperty] public string OutputHeading => IsGauntletComposerPackageVisible ? T("Generated package") : EvidenceHeading;
+        [DataSourceProperty] public string OutputHeading => IsGauntletComposerPackageVisible || IsCampaignRuleBuilderPackageVisible ? T("Generated package") : EvidenceHeading;
         public void ExecuteToggleEvidenceFocus()
         {
             if (_isOutputComparisonActive)
@@ -868,7 +883,7 @@ namespace CalradiaForge.Mod
                     case "snapshots": return s + "Hero_1, Town_1, Clan_1, MobileParty_1";
                     case "metrics": return s + "memory, cpu, serialization";
                     case "extensions": return s + "CalradiaForge, Native, SandBox";
-                    case "patch-preflight": return s + "Harmony, Prefix, Postfix, Transpiler";
+                    case "patch-preflight": return s + "patch ID, owner, target type, callback reference";
                     case "harmony": return s + "CalradiaForge, Native, SandBox";
                     case "sim-diplomacy": return s + "Empire, Sturgia, Aserai, Vlandia, Battania, Khuzait, all";
                     case "sim-settlements": return s + "town_ES1, town_S1, town_A1, town_V1, town_B1, all";
@@ -894,6 +909,7 @@ namespace CalradiaForge.Mod
                     case "novice-hint": return s + "RecruitVolunteers, CloseButton, QuickSave, AttackOrder";
                     case "novice-gauntlet": return s + "InventoryPanel, PartyOverview, KingdomDashboard, DialoguePage";
                     case "novice-gauntlet-composer": return s + "data binding, MBBindingList, ItemTemplate, XML, ViewModel";
+                    case "novice-campaign-rule-builder": return s + "WeeklyTickEvent, DailyTickHeroEvent, HeroGainedSkill";
                     case "novice-workshop": return s + "apothecary, brewery, smithy, silversmith, linen_weaver";
                     case "novice-party": return s + "mountain_raiders, desert_nomads, sea_plunderers, forest_outlaws";
                     case "novice-building": return s + "granary_vault, fortified_bastion, aqueduct_extension, training_grounds";
@@ -929,8 +945,8 @@ namespace CalradiaForge.Mod
                     case "framework": return T("ForgeWeave Replay Lab: Inspect extension handlers. Enter a sequence ID and click [Replay] to safely re-simulate a past event.");
                     case "extensions": return T("Extensions: View all registered ForgeWeave handlers, SDK commands, and active diagnostics from loaded extensions.");
                     case "commands": return T("Commands: Browse available SDK commands registered by loaded extensions.");
-                    case "harmony": return T("Harmony: Inspect active Harmony patches from all loaded assemblies. Use the search bar to filter by owner or method.");
-                    case "patch-preflight": return T("Patch Preflight: Dry-run and validate Harmony patch blueprints before applying them. Useful for catching conflicts early.");
+                    case "harmony": return T("Read-only inventory of active Harmony patches in already-loaded assemblies.");
+                    case "patch-preflight": return T("Patch Preflight: Read-only structural check of declared targets and callback references; it never applies patches or invokes callbacks.");
                     case "sim-diplomacy": return T("Diplomacy Lab: Evaluate kingdom power ratios, war viability scores, and tribute settlements using ForgeApi.Diplomacy.");
                     case "sim-settlements": return T("Settlement Audit: Calculate loyalty drift, militia equilibrium, food stocks, and rebellion hazards using ForgeApi.Settlements.");
                     case "sim-economy": return T("Trade & Economy: Model dynamic supply/demand pricing, workshop profitability, and underworld alley rackets using ForgeApi.Trade.");
@@ -955,6 +971,7 @@ namespace CalradiaForge.Mod
                     case "novice-hint": return T("Gauntlet Hint Forge: Generates C# [DataSourceProperty] ViewModel hints, Gauntlet Hint.HintText XML attributes, and localization XML. Enter a button title above.");
                     case "novice-gauntlet": return NoviceGauntletHint;
                     case "novice-gauntlet-composer": return NoviceGauntletComposerHint;
+                    case "novice-campaign-rule-builder": return NoviceCampaignRuleBuilderHint;
                     case "novice-workshop": return T("Workshop Scaffold: Generate valid workshops.xml + CampaignBehaviorBase with production cycle and underflow safety.");
                     case "novice-party": return T("Bandit Party Spawner: Generate partyTemplates.xml + MobileParty save-safe spawner logic. Enter a clan name above.");
                     case "novice-building": return T("Settlement Building: Generate buildings.xml (3 tiers) + SettlementFoodModel/BuildingDevelopmentModel Decorator.");
@@ -1018,6 +1035,7 @@ namespace CalradiaForge.Mod
                     case "novice-hint": return "Gauntlet Hint Forge";
                     case "novice-gauntlet": return "Gauntlet Page Blueprint";
                     case "novice-gauntlet-composer": return "Gauntlet Page Composer";
+                    case "novice-campaign-rule-builder": return "Campaign Rule Builder";
                     case "novice-workshop": return "Workshop Scaffold";
                     case "novice-party": return "Bandit Spawner";
                     case "novice-building": return "Building Architect";
@@ -1153,7 +1171,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string CategoryOverviewHint => T("Overview: Project Wizard, Summary, Modules, Dependencies, Logs.");
         [DataSourceProperty] public string CategoryInspectorHint => T("Inspector: Live Object Inspector, Snapshots, Metrics, Console.");
         [DataSourceProperty] public string CategoryToolkitHint => T("Toolkit: Integration Tests, Extension Commands, Mod Settings.");
-        [DataSourceProperty] public string CategoryWeaveHint => T("ForgeWeave: Framework Replay Lab, Extensions, Harmony Patches, Preflight.");
+        [DataSourceProperty] public string CategoryWeaveHint => T("ForgeWeave: Event recording and sequence replay. Harmony Atlas is a separate read-only inventory; Patch Preflight checks blueprint declarations without applying patches.");
         [DataSourceProperty] public string CategorySimulateHint => T("Simulate: Diplomacy, Settlements, Trade Economy, Combat Tactics, Progression.");
         [DataSourceProperty] public string CategoryAuditHint => T("Audit: Rule Compliance Auditor, GameModel Audit, System Diagnostics.");
         [DataSourceProperty] public string CategoryNoviceHint => T("Novice Hub: Behavior Scaffold, Troop XML, Quest Scaffold, Item XML, SubModule.xml, Mod Checklist, Event Explainer, Hint Forge.");
@@ -1210,6 +1228,8 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string NoviceGauntletHint => T("Generate a complete, self-contained Gauntlet page with a bound ViewModel, XML prefab, commands, and registration notes.");
         [DataSourceProperty] public string NoviceGauntletComposerLabel => T("Gauntlet Page Composer");
         [DataSourceProperty] public string NoviceGauntletComposerHint => T("Arrange a Gauntlet page visually, preview data-bound components, and generate an XML, ViewModel, localization, and integration package.");
+        [DataSourceProperty] public string NoviceCampaignRuleBuilderLabel => T("Campaign Rule Builder");
+        [DataSourceProperty] public string NoviceCampaignRuleBuilderHint => T("Compose campaign rules with sample data, then generate a validated stateless behavior package.");
         [DataSourceProperty] public string NoviceWorkshopLabel => T("⚒️ Workshop Scaffold");
         [DataSourceProperty] public string NoviceWorkshopHint => T("Generate valid workshops.xml + CampaignBehaviorBase with production cycle and underflow safety.");
         [DataSourceProperty] public string NovicePartyLabel => T("🏕️ Bandit Spawner");
@@ -1295,15 +1315,15 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string NextLabel => T("Next");
         [DataSourceProperty] public string InputLabel => current == "novice-gauntlet" || IsGauntletComposerActive ? T("Page title") : T("Search / argument");
         [DataSourceProperty] public bool IsAssemblyWorkbench => _isAssemblyWorkbench;
-        [DataSourceProperty] public bool IsNormalInputVisible => !_isAssemblyWorkbench && !IsGauntletComposerActive;
-        [DataSourceProperty] public bool IsRegularActionDeckVisible => !_isAssemblyWorkbench && current != "extensions" && !IsGauntletComposerActive;
+        [DataSourceProperty] public bool IsNormalInputVisible => !_isAssemblyWorkbench && !IsGauntletComposerActive && !IsCampaignRuleBuilderActive;
+        [DataSourceProperty] public bool IsRegularActionDeckVisible => !_isAssemblyWorkbench && current != "extensions" && !IsGauntletComposerActive && !IsCampaignRuleBuilderActive;
         [DataSourceProperty] public bool IsExtensionsActionDeckVisible => !_isAssemblyWorkbench && current == "extensions";
         [DataSourceProperty] public bool IsGauntletComposerActive => current == "novice-gauntlet-composer";
         [DataSourceProperty] public bool IsGauntletComposerWorkspaceVisible => IsGauntletComposerActive && !_isGauntletComposerPackageVisible;
         [DataSourceProperty] public bool IsGauntletComposerPackageVisible => IsGauntletComposerActive && _isGauntletComposerPackageVisible;
-        [DataSourceProperty] public bool IsEvidenceFrameVisible => !IsGauntletComposerActive || _isGauntletComposerPackageVisible;
-        [DataSourceProperty] public bool IsComposerPaginationVisible => !IsGauntletComposerActive || _isGauntletComposerPackageVisible;
-        [DataSourceProperty] public bool IsEvidenceToggleVisible => !IsGauntletComposerActive;
+        [DataSourceProperty] public bool IsEvidenceFrameVisible => (!IsGauntletComposerActive || _isGauntletComposerPackageVisible) && (!IsCampaignRuleBuilderActive || _isCampaignRuleBuilderPackageVisible);
+        [DataSourceProperty] public bool IsComposerPaginationVisible => (!IsGauntletComposerActive || _isGauntletComposerPackageVisible) && (!IsCampaignRuleBuilderActive || _isCampaignRuleBuilderPackageVisible);
+        [DataSourceProperty] public bool IsEvidenceToggleVisible => !IsGauntletComposerActive && !IsCampaignRuleBuilderActive;
         [DataSourceProperty] public MBBindingList<GauntletComposerBlockVM> GauntletComposerBlocks => _gauntletComposerBlocks;
         [DataSourceProperty] public bool GauntletComposerHasBlocks => _gauntletComposerBlocks.Count > 0;
         [DataSourceProperty] public bool GauntletComposerIsEmpty => _gauntletComposerBlocks.Count == 0;
@@ -1479,8 +1499,8 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string ExportHint => T("Save the current session report to file.");
         [DataSourceProperty] public string RefreshHint => T("Refresh current section view.");
         [DataSourceProperty] public string ScanHint => T("Scan and validate XML and module settings.");
-        [DataSourceProperty] public string HarmonyHint => T("Inspect active Harmony patches.");
-        [DataSourceProperty] public string PreflightHint => T("Preflight and validate patch blueprints.");
+        [DataSourceProperty] public string HarmonyHint => T("Read-only inventory of active Harmony patches in already-loaded assemblies.");
+        [DataSourceProperty] public string PreflightHint => T("Patch Preflight: Read-only structural check of declared targets and callback references; it never applies patches or invokes callbacks.");
         [DataSourceProperty] public string ReplayHint => T("Replay past event in isolated lab sandbox.");
         [DataSourceProperty] public string PinHint => T("Pin object to snapshots.");
         [DataSourceProperty] public string CompareHint => T("Compare object state with last pinned snapshot.");
@@ -1632,6 +1652,7 @@ namespace CalradiaForge.Mod
             OnPropertyChanged(nameof(SelectedTestResultDetail));
             for (int i = 0; i < _testResults.Count; i++)
                 _testResults[i].RefreshLocalizedDetail();
+            NotifyCampaignRuleBuilderLabels();
         }
 
         void NotifyLayout()
@@ -1644,10 +1665,12 @@ namespace CalradiaForge.Mod
         void Send(string action, string arg = null)
         {
             if (string.Equals(action, "novice-gauntlet-composer", StringComparison.Ordinal)
-                || (IsGauntletComposerActive && !string.Equals(action, "clipboard", StringComparison.Ordinal)))
+                || string.Equals(action, "novice-campaign-rule-builder", StringComparison.Ordinal)
+                || ((IsGauntletComposerActive || IsCampaignRuleBuilderActive) && !string.Equals(action, "clipboard", StringComparison.Ordinal)))
                 return;
             var effectiveArg = arg ?? Argument;
-            if (!string.IsNullOrWhiteSpace(effectiveArg))
+            if (!string.Equals(action, "clipboard", StringComparison.Ordinal)
+                && !string.IsNullOrWhiteSpace(effectiveArg))
             {
                 RecordCommand(effectiveArg);
             }
@@ -2010,11 +2033,18 @@ namespace CalradiaForge.Mod
             if (string.Equals(previousSection, "novice-gauntlet-composer", StringComparison.Ordinal)
                 && !string.Equals(section, "novice-gauntlet-composer", StringComparison.Ordinal))
                 SetEvidenceFocus(false);
+            if (string.Equals(previousSection, "novice-campaign-rule-builder", StringComparison.Ordinal)
+                && !string.Equals(section, "novice-campaign-rule-builder", StringComparison.Ordinal))
+                SetEvidenceFocus(false);
             if (!section.StartsWith("sdk-", StringComparison.Ordinal)) CloseSdkCatalog();
             _isAssemblyWorkbench = false;
             if (!string.Equals(section, "novice-gauntlet-composer", StringComparison.Ordinal))
                 _isGauntletComposerPackageVisible = false;
+            if (!string.Equals(section, "novice-campaign-rule-builder", StringComparison.Ordinal))
+                _isCampaignRuleBuilderPackageVisible = false;
             current = section;
+            if (string.Equals(section, "novice-campaign-rule-builder", StringComparison.Ordinal))
+                EnsureCampaignRuleBuilderDraftLoaded();
             OnPropertyChanged(nameof(OutputComparisonCurrentHeading));
             if (section.StartsWith("sdk-", StringComparison.Ordinal))
                 currentCategory = "sdk";
@@ -2023,6 +2053,7 @@ namespace CalradiaForge.Mod
             OnPropertyChanged(nameof(IsRegularActionDeckVisible));
             OnPropertyChanged(nameof(IsExtensionsActionDeckVisible));
             NotifyGauntletComposerVisibility();
+            NotifyCampaignRuleBuilderVisibility();
             OnPropertyChanged(nameof(ShowTestActions));
             switch (section)
             {
@@ -2082,6 +2113,7 @@ namespace CalradiaForge.Mod
                 case "novice-hint":
                 case "novice-gauntlet":
                 case "novice-gauntlet-composer":
+                case "novice-campaign-rule-builder":
                 case "novice-workshop":
                 case "novice-party":
                 case "novice-building":
@@ -2100,6 +2132,16 @@ namespace CalradiaForge.Mod
                 }
                 Render();
                 NotifyGauntletComposerVisibility();
+            }
+            else if (string.Equals(section, "novice-campaign-rule-builder", StringComparison.Ordinal))
+            {
+                if (!string.Equals(previousSection, section, StringComparison.Ordinal))
+                {
+                    full = string.Empty;
+                    page = 0;
+                }
+                Render();
+                NotifyCampaignRuleBuilderVisibility();
             }
             else if (executeOnSelect)
             {
@@ -4507,6 +4549,22 @@ namespace CalradiaForge.Mod
                 case "ForgeNoviceHint": ExecuteNoviceHint(); break;
                 case "ForgeNoviceGauntlet": ExecuteNoviceGauntlet(); break;
                 case "ForgeNoviceGauntletComposer": ExecuteNoviceGauntletComposer(); break;
+                case "ForgeNoviceCampaignRuleBuilder": ExecuteNoviceCampaignRuleBuilder(); break;
+                case "ForgeCampaignRuleAdd": ExecuteCampaignRuleBuilderAdd(); break;
+                case "ForgeCampaignRulePrevious": ExecuteCampaignRuleBuilderSelectPrevious(); break;
+                case "ForgeCampaignRuleNext": ExecuteCampaignRuleBuilderSelectNext(); break;
+                case "ForgeCampaignRuleUp": ExecuteCampaignRuleBuilderMoveUp(); break;
+                case "ForgeCampaignRuleDown": ExecuteCampaignRuleBuilderMoveDown(); break;
+                case "ForgeCampaignRuleRemove": ExecuteCampaignRuleBuilderRemove(); break;
+                case "ForgeCampaignRuleEventCycle": ExecuteCampaignRuleBuilderCycleEvent(); break;
+                case "ForgeCampaignRuleActionCycle": ExecuteCampaignRuleBuilderCycleAction(); break;
+                case "ForgeCampaignRuleTargetCycle": ExecuteCampaignRuleBuilderCycleTarget(); break;
+                case "ForgeCampaignRuleAddConditionA": ExecuteCampaignRuleBuilderAddConditionA(); break;
+                case "ForgeCampaignRuleAddConditionB": ExecuteCampaignRuleBuilderAddConditionB(); break;
+                case "ForgeCampaignRuleSave": ExecuteCampaignRuleBuilderSave(); break;
+                case "ForgeCampaignRuleValidate": ExecuteCampaignRuleBuilderValidate(); break;
+                case "ForgeCampaignRuleGenerate": ExecuteCampaignRuleBuilderGenerate(); break;
+                case "ForgeCampaignRuleCopy": ExecuteCampaignRuleBuilderCopy(); break;
                 case "ForgeComposerAddHeading": ExecuteComposerAddHeading(); break;
                 case "ForgeComposerAddText": ExecuteComposerAddText(); break;
                 case "ForgeComposerAddField": ExecuteComposerAddField(); break;
@@ -4838,7 +4896,7 @@ namespace CalradiaForge.Mod
                         Send("metrics", "");
                         break;
                     case "weave":
-                        sb.AppendLine("Step 1: Harmony patch preflight verification...");
+                        sb.AppendLine(T("Patch blueprint declarations are read-only. This check does not apply a patch."));
                         Send("patch-preflight", "");
                         break;
                     case "simulate":
@@ -4938,7 +4996,7 @@ namespace CalradiaForge.Mod
                 case "toolkit":
                     return T("Integration Testing & Extensibility: Non-destructive test harness, SDK extension commands, and configuration persistence without leaving the game session.");
                 case "weave":
-                    return T("ForgeWeave Event Pipeline: Deterministic event recording, sequence replay lab, live Harmony patch auditing, and preflight conflict prevention.");
+                    return T("ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools.");
                 case "simulate":
                     return T("Mathematical Balance Simulators: Offline mathematical models for kingdom war viability, settlement loyalty drift, supply/demand trade, and combat casualty math.");
                 case "audit":
@@ -4963,7 +5021,7 @@ namespace CalradiaForge.Mod
                 case "toolkit":
                     return T("1. State-changing integration tests require explicit testing mode and confirmed campaign copy.\n2. Maintain deterministic test seeds for reproducibility.\n3. ModSettings must serialize safely without corrupting global game configurations.\n4. Cognitive memory export dumps bounded JSON payloads without blocking render ticks.");
                 case "weave":
-                    return T("1. Harmony patches must never leak exceptions across engine boundaries.\n2. Prefer postfixes and transpilers over aggressive state-changing prefixes.\n3. Run dry-run preflight verification before applying patch blueprints.\n4. Keep event listeners non-serialized with AddNonSerializedListener.");
+                    return T("1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener.");
                 case "simulate":
                     return T("1. GameModel decorators must wrap _previousModel and apply ExplainedNumber deltas.\n2. Modulo-24 hero time-slicing (hero.Id.GetHashCode() % 24 == currentHour) is mandatory for periodic simulation.\n3. Simulation routines must be pure, thread-safe, and free of side effects.\n4. Tactical combat formulas must respect engine casualty pipelines.");
                 case "audit":
@@ -5009,172 +5067,122 @@ namespace CalradiaForge.Mod
             return wrapped.ToString();
         }
 
-        string GetCategoryPlaybookTitle(string cat)
+        // Rev097: Consolidated from 7 identical switch(cat) methods — ~175 lines saved
+        static readonly Dictionary<string, (string PlaybookTitle, string Step1, string Step2, string Step3, string TroubleshootingTitle, string TroubleshootingAdvice, string RecommendedMacro)> s_catData
+            = new Dictionary<string, (string, string, string, string, string, string, string)>(StringComparer.Ordinal)
         {
-            switch (cat)
-            {
-                case "overview": return T("Playbook: Mod Environment & Distribution Readiness");
-                case "inspector": return T("Playbook: Safe Runtime Entity & Cognitive Memory Inspection");
-                case "toolkit": return T("Playbook: Non-Destructive Test Execution & Config Persistence");
-                case "weave": return T("Playbook: ForgeWeave Event Pipeline & Harmony Diagnostics");
-                case "simulate": return T("Playbook: Tactical Combat, Settlement Equilibrium & Trade Balance");
-                case "audit": return T("Playbook: Comprehensive Architectural & Persistence Compliance");
-                case "novice": return T("Playbook: Safe Scaffolding & Rapid Component Synthesis");
-                case "sdk": return T("Playbook: Advanced SDK Contracts & Cognitive Agent Architecture");
-                default: return T("Playbook: Calradia Forge Development Lifecycle");
-            }
-        }
+            ["overview"] = (
+                "Playbook: Mod Environment & Distribution Readiness",
+                "1. Verify SubModule.xml: <Id> matches folder name exactly, <DLLName> points to bin/Win64_Shipping_Client.",
+                "2. Dependency Hierarchy: Ensure Native, SandBoxCore, SandBox, StoryMode load before mod in launcher.",
+                "3. Preflight Readiness: Run cf.novice_checklist to verify zero proprietary DLLs, no raw scripts, and valid XML syntax.",
+                "Troubleshooting: Game Crash on Startup / Module Discovery Failure",
+                "Remedy: Check %ProgramData%\\Mount and Blade II Bannerlord\\logs\\rgl_log.txt. Common causes: Unmatched SubModule <Id>, missing .NET 4.7.2 assemblies, or NTFS Zone.Identifier stream on downloaded ZIP files.",
+                "Preflight Environment Audit"),
+            ["inspector"] = (
+                "Playbook: Safe Runtime Entity & Cognitive Memory Inspection",
+                "1. Select Entity: Type Hero string ID (e.g. Hero_1) or settlement name in the search/argument field.",
+                "2. Query CoALA Memory: Execute cf.agent_memory_query to evaluate semantic beliefs and episodic experience streams.",
+                "3. Evaluate Salience: Execute cf.agent_memory_salience to inspect exponential decay and retrieval scores.",
+                "Troubleshooting: Memory Leak or Persistent Ghost References",
+                "Remedy: Never store Hero or Settlement pointers in static/class fields. Resolve transiently via StringId (MBObjectManager.GetObject<Hero>(id)) and purge expired semantic entries with cf.force_gc.",
+                "Hero Cognitive Diagnostic"),
+            ["toolkit"] = (
+                "Playbook: Non-Destructive Test Execution & Config Persistence",
+                "1. Enable Test Mode: Toggle Enable Testing ensuring campaign copy confirmation flag is active.",
+                "2. Run Targeted Tests: Execute cf.test serialization to test 31KB chunking and save-safety without dirtying player state.",
+                "3. Export Telemetry: Use cf.agent_memory_export to output full JSON snapshot of cognitive belief networks.",
+                "Troubleshooting: Test Engine Save Corruption Warning",
+                "Remedy: Always test on disposable sandbox save files. Verify that testing mode does not invoke dataStore.SyncData on actual game saves; use isolated memory buffers.",
+                "Safety & Save Benchmark"),
+            ["weave"] = (
+                "Event Replay & Patch Diagnostics",
+                "1. Enumerate Handlers: Run cf.extensions to verify active event listeners and circuit breaker health.",
+                "2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in.",
+                "3. Deterministic Replay: Replay captured execution sequences in the isolated lab to reproduce anomalies.",
+                "Troubleshooting: Harmony Method Patch Collision / NullReferenceException",
+                "Remedy: Run cf.harmony_summary to inspect all mods hooking the same method. Prefer Postfixes/Transpilers over state-changing Prefixes, and never throw uncaught exceptions across engine boundaries.",
+                "Event Replay & Patch Diagnostics"),
+            ["simulate"] = (
+                "Playbook: Tactical Combat, Settlement Equilibrium & Trade Balance",
+                "1. Combat Shock Modeling: Execute cf.sim_tactics cavalry/infantry/archery to calculate momentum thresholds.",
+                "2. Settlement Stability: Run cf.sim_settlements all to audit loyalty drift, food deficit, and rebellion risk index.",
+                "3. Trade Pricing & Workshops: Run cf.sim_economy workshops to verify supply/demand curves and daily net gold yield.",
+                "Troubleshooting: Settlement Rebellion Avalanche or Infinite Gold Exploit",
+                "Remedy: Check loyalty equilibrium deltas; ensure culture mismatch penalty (-3) is balanced by governor/food. For workshops, verify production volume caps and wage floors to prevent runaway compounding.",
+                "Full Realm Equilibrium Audit"),
+            ["audit"] = (
+                "Playbook: Comprehensive Architectural & Persistence Compliance",
+                "1. Full Compliance Audit: Execute cf.audit to verify all 36 Bannerlord modding rules across installed assemblies.",
+                "2. Decorator Chain Check: Run cf.model_audit to verify that custom GameModels wrap _previousModel with ExplainedNumber.",
+                "3. Save Safety & Base IDs: Execute cf.audit_save to certify SaveableTypeDefiner base IDs >= 2,500,000 and 31KB chunking.",
+                "Troubleshooting: Save Game Desync / Assembly Load Exception 0x80131515",
+                "Remedy: Rule B prohibits SaveableTypeDefiner in mod behaviors. If custom structs must be saved, assign IDs >= 2.5M. For 0x80131515, unblock assemblies with Unblock-File or package script.",
+                "Master Security & Health Audit"),
+            ["novice"] = (
+                "Playbook: Safe Scaffolding & Rapid Component Synthesis",
+                "1. Select Component: Choose Behavior, Troop XML, QuestBase, Item XML, or SubModule manifest.",
+                "2. Provide Identifier: Enter valid PascalCase name in the argument field (e.g. EscortMerchantQuest).",
+                "3. Generate & Copy: Click Generate or Run Novice to synthesize compliant, crash-guarded C# or XML code.",
+                "Troubleshooting: Silent Quest NPC or Unresponsive Dialogue",
+                "Remedy: In Bannerlord quests, you MUST call SetDialogs() in BOTH the constructor AND inside InitializeQuestOnGameLoad(). Omitting the second call mutes NPCs after reloading a saved game.",
+                "New Mod Boilerplate Scaffold"),
+            ["sdk"] = (
+                "Playbook: Advanced SDK Contracts & Cognitive Agent Architecture",
+                "1. Query Agent Memory: Run cf.agent_memory_stats to inspect semantic TTL and episodic event capacity.",
+                "2. Execute Decay Cycle: Run cf.agent_memory_decay to apply exponential utility decay U = 0.4*R + 0.3*F + 0.3*I.",
+                "3. Browse SDK Surfaces: Run cf.sdk_catalog to explore 110+ decoupled interfaces and zero-allocation helpers.",
+                "Troubleshooting: Thread Affinity Violation / Cross-Thread Exception",
+                "Remedy: All TaleWorlds campaign systems require single-thread game affinity. In Core/Sdk net8.0 mode, keep all data structures thread-safe (ConcurrentDictionary) and never call Campaign.Current directly.",
+                "Cognitive Memory Cycle & Export"),
+        };
+
+        string GetCategoryPlaybookTitle(string cat)
+            => s_catData.TryGetValue(cat, out var d) ? T(d.PlaybookTitle) : T("Playbook: Calradia Forge Development Lifecycle");
 
         string GetCategoryPlaybookStep1(string cat)
-        {
-            switch (cat)
-            {
-                case "overview": return T("1. Verify SubModule.xml: <Id> matches folder name exactly, <DLLName> points to bin/Win64_Shipping_Client.");
-                case "inspector": return T("1. Select Entity: Type Hero string ID (e.g. Hero_1) or settlement name in the search/argument field.");
-                case "toolkit": return T("1. Enable Test Mode: Toggle Enable Testing ensuring campaign copy confirmation flag is active.");
-                case "weave": return T("1. Enumerate Handlers: Run cf.extensions to verify active event listeners and circuit breaker health.");
-                case "simulate": return T("1. Combat Shock Modeling: Execute cf.sim_tactics cavalry/infantry/archery to calculate momentum thresholds.");
-                case "audit": return T("1. Full Compliance Audit: Execute cf.audit to verify all 36 Bannerlord modding rules across installed assemblies.");
-                case "novice": return T("1. Select Component: Choose Behavior, Troop XML, QuestBase, Item XML, or SubModule manifest.");
-                case "sdk": return T("1. Query Agent Memory: Run cf.agent_memory_stats to inspect semantic TTL and episodic event capacity.");
-                default: return T("1. Initialize development context and verify runtime telemetry.");
-            }
-        }
+            => s_catData.TryGetValue(cat, out var d) ? T(d.Step1) : T("1. Initialize development context and verify runtime telemetry.");
 
         string GetCategoryPlaybookStep2(string cat)
-        {
-            switch (cat)
-            {
-                case "overview": return T("2. Dependency Hierarchy: Ensure Native, SandBoxCore, SandBox, StoryMode load before mod in launcher.");
-                case "inspector": return T("2. Query CoALA Memory: Execute cf.agent_memory_query to evaluate semantic beliefs and episodic experience streams.");
-                case "toolkit": return T("2. Run Targeted Tests: Execute cf.test serialization to test 31KB chunking and save-safety without dirtying player state.");
-                case "weave": return T("2. Preflight Conflict Check: Run cf.patch_preflight on pending blueprints before injecting Harmony detours.");
-                case "simulate": return T("2. Settlement Stability: Run cf.sim_settlements all to audit loyalty drift, food deficit, and rebellion risk index.");
-                case "audit": return T("2. Decorator Chain Check: Run cf.model_audit to verify that custom GameModels wrap _previousModel with ExplainedNumber.");
-                case "novice": return T("2. Provide Identifier: Enter valid PascalCase name in the argument field (e.g. EscortMerchantQuest).");
-                case "sdk": return T("2. Execute Decay Cycle: Run cf.agent_memory_decay to apply exponential utility decay U = 0.4*R + 0.3*F + 0.3*I.");
-                default: return T("2. Execute verified domain commands and check live output.");
-            }
-        }
+            => s_catData.TryGetValue(cat, out var d) ? T(d.Step2) : T("2. Execute verified domain commands and check live output.");
 
         string GetCategoryPlaybookStep3(string cat)
-        {
-            switch (cat)
-            {
-                case "overview": return T("3. Preflight Readiness: Run cf.novice_checklist to verify zero proprietary DLLs, no raw scripts, and valid XML syntax.");
-                case "inspector": return T("3. Evaluate Salience: Execute cf.agent_memory_salience to inspect exponential decay and retrieval scores.");
-                case "toolkit": return T("3. Export Telemetry: Use cf.agent_memory_export to output full JSON snapshot of cognitive belief networks.");
-                case "weave": return T("3. Deterministic Replay: Replay captured execution sequences in the isolated lab to reproduce anomalies.");
-                case "simulate": return T("3. Trade Pricing & Workshops: Run cf.sim_economy workshops to verify supply/demand curves and daily net gold yield.");
-                case "audit": return T("3. Save Safety & Base IDs: Execute cf.audit_save to certify SaveableTypeDefiner base IDs >= 2,500,000 and 31KB chunking.");
-                case "novice": return T("3. Generate & Copy: Click Generate or Run Novice to synthesize compliant, crash-guarded C# or XML code.");
-                case "sdk": return T("3. Browse SDK Surfaces: Run cf.sdk_catalog to explore 110+ decoupled interfaces and zero-allocation helpers.");
-                default: return T("3. Confirm clean execution and export diagnostic report if needed.");
-            }
-        }
+            => s_catData.TryGetValue(cat, out var d) ? T(d.Step3) : T("3. Confirm clean execution and export diagnostic report if needed.");
 
         string GetCategoryTroubleshootingTitle(string cat)
-        {
-            switch (cat)
-            {
-                case "overview": return T("Troubleshooting: Game Crash on Startup / Module Discovery Failure");
-                case "inspector": return T("Troubleshooting: Memory Leak or Persistent Ghost References");
-                case "toolkit": return T("Troubleshooting: Test Engine Save Corruption Warning");
-                case "weave": return T("Troubleshooting: Harmony Method Patch Collision / NullReferenceException");
-                case "simulate": return T("Troubleshooting: Settlement Rebellion Avalanche or Infinite Gold Exploit");
-                case "audit": return T("Troubleshooting: Save Game Desync / Assembly Load Exception 0x80131515");
-                case "novice": return T("Troubleshooting: Silent Quest NPC or Unresponsive Dialogue");
-                case "sdk": return T("Troubleshooting: Thread Affinity Violation / Cross-Thread Exception");
-                default: return T("Troubleshooting: General System Diagnostics");
-            }
-        }
+            => s_catData.TryGetValue(cat, out var d) ? T(d.TroubleshootingTitle) : T("Troubleshooting: General System Diagnostics");
 
         string GetCategoryTroubleshootingAdvice(string cat)
-        {
-            switch (cat)
-            {
-                case "overview": return T("Remedy: Check %ProgramData%\\Mount and Blade II Bannerlord\\logs\\rgl_log.txt. Common causes: Unmatched SubModule <Id>, missing .NET 4.7.2 assemblies, or NTFS Zone.Identifier stream on downloaded ZIP files.");
-                case "inspector": return T("Remedy: Never store Hero or Settlement pointers in static/class fields. Resolve transiently via StringId (MBObjectManager.GetObject<Hero>(id)) and purge expired semantic entries with cf.force_gc.");
-                case "toolkit": return T("Remedy: Always test on disposable sandbox save files. Verify that testing mode does not invoke dataStore.SyncData on actual game saves; use isolated memory buffers.");
-                case "weave": return T("Remedy: Run cf.harmony_summary to inspect all mods hooking the same method. Prefer Postfixes/Transpilers over state-changing Prefixes, and never throw uncaught exceptions across engine boundaries.");
-                case "simulate": return T("Remedy: Check loyalty equilibrium deltas; ensure culture mismatch penalty (-3) is balanced by governor/food. For workshops, verify production volume caps and wage floors to prevent runaway compounding.");
-                case "audit": return T("Remedy: Rule B prohibits SaveableTypeDefiner in mod behaviors. If custom structs must be saved, assign IDs >= 2.5M. For 0x80131515, unblock assemblies with Unblock-File or package script.");
-                case "novice": return T("Remedy: In Bannerlord quests, you MUST call SetDialogs() in BOTH the constructor AND inside InitializeQuestOnGameLoad(). Omitting the second call mutes NPCs after reloading a saved game.");
-                case "sdk": return T("Remedy: All TaleWorlds campaign systems require single-thread game affinity. In Core/Sdk net8.0 mode, keep all data structures thread-safe (ConcurrentDictionary) and never call Campaign.Current directly.");
-                default: return T("Remedy: Inspect runtime diagnostic logs with cf.logs and run cf.audit to identify architectural rule violations.");
-            }
-        }
+            => s_catData.TryGetValue(cat, out var d) ? T(d.TroubleshootingAdvice) : T("Remedy: Inspect runtime diagnostic logs with cf.logs and run cf.audit to identify architectural rule violations.");
 
         string GetCategoryRecommendedMacro(string cat)
+            => s_catData.TryGetValue(cat, out var d) ? d.RecommendedMacro : "System Diagnostic Sweep";
+
+                // Rev097: Consolidated from 4 identical switch(role) methods — ~30 lines saved
+        static readonly Dictionary<ModderRole, (string Label, string Hint, string Color, string Badge)> s_roleData
+            = new Dictionary<ModderRole, (string, string, string, string)>
         {
-            switch (cat)
-            {
-                case "overview": return "Preflight Environment Audit";
-                case "inspector": return "Hero Cognitive Diagnostic";
-                case "toolkit": return "Safety & Save Benchmark";
-                case "weave": return "Harmony Preflight & Telemetry";
-                case "simulate": return "Full Realm Equilibrium Audit";
-                case "audit": return "Master Security & Health Audit";
-                case "novice": return "New Mod Boilerplate Scaffold";
-                case "sdk": return "Cognitive Memory Cycle & Export";
-                default: return "System Diagnostic Sweep";
-            }
-        }
+            [ModderRole.NarrativeDialogues]        = ("Role: Narrative & Dialogues",    "Focus: Quests, hero dialogues, cognitive memory, localization, and narrative progression.",                                            "#48B0D5FF", "NARRATIVE"),
+            [ModderRole.TroopCombatArtisan]        = ("Role: Troop & Combat Artisan",   "Focus: Troop XML trees, combat tactics, AI formations, weapons, armor, and audio SFX.",                                              "#C7A45AFF", "COMBAT"),
+            [ModderRole.EconomyWorldArchitect]     = ("Role: Economy & World Architect","Focus: Settlement economics, trade pricing, workshops, crime alleys, parties, and diplomacy.",                                         "#56B885FF", "ECONOMY"),
+            [ModderRole.CoreDevPerformanceAuditor] = ("Role: Core Dev & Performance",   "Focus: Rule compliance, SaveableTypeDefiners, memory GC, ForgeWeave replays, and diagnostics.",                                       "#E06C75FF", "CORE DEV"),
+        };
+        static readonly (string Label, string Hint, string Color, string Badge) s_roleDefault
+            = ("Role: All Specializations", "Click to cycle modder role preset (highlights and customizes section commands).", "#E1C177FF", "ALL ROLES");
 
         string GetModderRoleLabel(ModderRole role)
-        {
-            switch (role)
-            {
-                case ModderRole.NarrativeDialogues: return T("Role: Narrative & Dialogues");
-                case ModderRole.TroopCombatArtisan: return T("Role: Troop & Combat Artisan");
-                case ModderRole.EconomyWorldArchitect: return T("Role: Economy & World Architect");
-                case ModderRole.CoreDevPerformanceAuditor: return T("Role: Core Dev & Performance");
-                default: return T("Role: All Specializations");
-            }
-        }
+            => (s_roleData.TryGetValue(role, out var d) ? d : s_roleDefault).Label is var lbl ? T(lbl) : T(s_roleDefault.Label);
 
         string GetModderRoleHint(ModderRole role)
-        {
-            switch (role)
-            {
-                case ModderRole.NarrativeDialogues:
-                    return T("Focus: Quests, hero dialogues, cognitive memory, localization, and narrative progression.");
-                case ModderRole.TroopCombatArtisan:
-                    return T("Focus: Troop XML trees, combat tactics, AI formations, weapons, armor, and audio SFX.");
-                case ModderRole.EconomyWorldArchitect:
-                    return T("Focus: Settlement economics, trade pricing, workshops, crime alleys, parties, and diplomacy.");
-                case ModderRole.CoreDevPerformanceAuditor:
-                    return T("Focus: Rule compliance, SaveableTypeDefiners, memory GC, ForgeWeave replays, and diagnostics.");
-                default:
-                    return T("Click to cycle modder role preset (highlights and customizes section commands).");
-            }
-        }
+            => T((s_roleData.TryGetValue(role, out var d) ? d : s_roleDefault).Hint);
 
         string GetModderRoleColor(ModderRole role)
-        {
-            switch (role)
-            {
-                case ModderRole.NarrativeDialogues: return "#48B0D5FF";
-                case ModderRole.TroopCombatArtisan: return "#C7A45AFF";
-                case ModderRole.EconomyWorldArchitect: return "#56B885FF";
-                case ModderRole.CoreDevPerformanceAuditor: return "#E06C75FF";
-                default: return "#E1C177FF";
-            }
-        }
+            => (s_roleData.TryGetValue(role, out var d) ? d : s_roleDefault).Color;
 
         string GetModderRoleBadgeText(ModderRole role)
-        {
-            switch (role)
-            {
-                case ModderRole.NarrativeDialogues: return T("NARRATIVE");
-                case ModderRole.TroopCombatArtisan: return T("COMBAT");
-                case ModderRole.EconomyWorldArchitect: return T("ECONOMY");
-                case ModderRole.CoreDevPerformanceAuditor: return T("CORE DEV");
-                default: return T("ALL ROLES");
-            }
-        }
+            => T((s_roleData.TryGetValue(role, out var d) ? d : s_roleDefault).Badge);
 
-        void RebuildCategoryCommands()
+                void RebuildCategoryCommands()
         {
             if (_categorySuggestedCommands == null) return;
             _categorySuggestedCommands.Clear();

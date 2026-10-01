@@ -266,4 +266,11 @@
   <string key="Test ID" value="テスト ID" />
   <string key="Status" value="状態" />
   <string key="Duration" value="所要時間" />
+  <string key="Read-only inventory of active Harmony patches in already-loaded assemblies." value="読み込み済みアセンブリ内のアクティブな Harmony パッチの読み取り専用一覧。" />
+  <string key="Patch Preflight: Read-only structural check of declared targets and callback references; it never applies patches or invokes callbacks." value="Patch Preflight：宣言された対象とコールバック参照を読み取り専用で構造チェックします。パッチの適用やコールバックの呼び出しは行いません。" />
+  <string key="ForgeWeave: Event recording and sequence replay. Harmony Atlas is a separate read-only inventory; Patch Preflight checks blueprint declarations without applying patches." value="ForgeWeave：イベント記録とシーケンス再生。Harmony Atlas は独立した読み取り専用の一覧です。Patch Preflight はパッチを適用せずにブループリントの宣言を確認します。" />
+  <string key="Event Replay &amp; Patch Diagnostics" value="イベント再生とパッチ診断" />
+  <string key="2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in." value="2. パッチブループリントの確認：cf.patch_preflight を実行して保留中の宣言を確認します。パッチは適用されません。Forge メソッドの置換には、別途明示的にオプトインする必要があります。" />
+  <string key="ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools." value="ForgeWeave イベントパイプライン：決定的なイベント記録とシーケンス再生。Harmony 診断と Patch Blueprint Preflight は別々のツールです。" />
+  <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. Forge メソッドの置換には別途明示的な要求が必要です。バックエンドがサポートしない宣言済みフック種別はメタデータのまま残ります。Patch Preflight は読み取り専用で、コールバックコードを呼び出しません。AddNonSerializedListener を使い、ForgeWeave のイベントリスナーをシリアライズ対象外にしてください。" />
 </strings>

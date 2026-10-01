@@ -181,6 +181,10 @@ namespace CalradiaForge.Tests
             True(copyMethod.Contains("full"));
             True(source.Contains("Send(\"clipboard\", full)"));
             True(!copyMethod.Contains("ForgeCopy"));
+            int clipboardGuard = source.IndexOf("if (!string.Equals(action, \"clipboard\", StringComparison.Ordinal)", StringComparison.Ordinal);
+            True(clipboardGuard >= 0);
+            int commandRecord = source.IndexOf("RecordCommand(effectiveArg);", clipboardGuard, StringComparison.Ordinal);
+            True(commandRecord > clipboardGuard);
         }
 
         private static void True(bool value, [CallerLineNumber] int line = 0)

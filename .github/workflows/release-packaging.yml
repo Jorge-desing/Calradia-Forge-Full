@@ -36,6 +36,10 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Prepare Calradia Forge Python tooling
+        shell: cmd
+        run: call tools\Setup-CalradiaForge-Python.bat --no-pause
+
       - name: Execute FastPackageEngine Packaging
         shell: powershell
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1

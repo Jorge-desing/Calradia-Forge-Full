@@ -1,5 +1,7 @@
 param(
-    [string]$Workspace = (Get-Item (Join-Path $PSScriptRoot "..")).FullName
+    [string]$Workspace = (Get-Item (Join-Path $PSScriptRoot "..")).FullName,
+    [ValidateSet('CalradiaForge.sln', 'CalradiaForge.Portable.slnf')]
+    [string]$BuildTarget = 'CalradiaForge.sln'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -7,15 +9,15 @@ Write-Host "=== Stateless CampaignBehavior Acceptance Verification ===" -Foregro
 Write-Host "Target Workspace: $Workspace" -ForegroundColor Gray
 
 # 1. Compilation Verification
-Write-Host "`n[1/4] Checking Release build of CalradiaForge.sln..." -ForegroundColor Yellow
+Write-Host "`n[1/4] Checking Release build of $BuildTarget..." -ForegroundColor Yellow
 Push-Location $Workspace
 try {
-    dotnet build CalradiaForge.sln -c Release -v:minimal
+    dotnet build $BuildTarget -c Release -v:minimal
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Release build failed with exit code $LASTEXITCODE."
         exit 1
     }
-    Write-Host "  [OK] CalradiaForge.sln compiled successfully with 0 errors." -ForegroundColor Green
+    Write-Host "  [OK] $BuildTarget compiled successfully with 0 errors." -ForegroundColor Green
 }
 finally {
     Pop-Location

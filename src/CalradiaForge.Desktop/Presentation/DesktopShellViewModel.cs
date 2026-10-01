@@ -58,6 +58,7 @@ namespace CalradiaForge.Desktop.Presentation
         WorkbenchPageViewModel currentWorkbenchPage;
         bool isCommandPaletteOpen;
         bool isContextDossierOpen;
+        bool isHookWorkbenchOpen;
         bool decorativeAccentsEnabled = true;
         bool isSplitDeckActive;
         ToolDefinition pinnedTool;
@@ -79,6 +80,7 @@ namespace CalradiaForge.Desktop.Presentation
             this.pickInput = pickInput;
             this.reportExport = reportExport ?? new DesktopReportExportService();
             this.clipboardWriter = clipboardWriter ?? (_ => false);
+            HookWorkbench = new HookWorkbenchViewModel(workspace.Session, (key, fallback) => localization.GetText(key, fallback));
             using var startupMeasurement = this.metrics.Start(
                 "desktop-shell-initialize",
                 "Synchronous WPF shell construction only; does not include first paint or system startup.");
@@ -116,6 +118,8 @@ namespace CalradiaForge.Desktop.Presentation
             ExportEvidenceCommand = new(ExportRetainedEvidenceAsync, () => !disposed && retainedEvidence.Count > 0);
             ApplyThemeCommand = new(ApplyTheme, value => value != null);
             ConnectCommand = new(ConnectAsync);
+            OpenHookWorkbenchCommand = new(() => IsHookWorkbenchOpen = true);
+            CloseHookWorkbenchCommand = new(() => IsHookWorkbenchOpen = false);
             ToggleSplitDeckCommand = new(ToggleSplitDeck);
             PinCurrentToolToSplitDeckCommand = new(PinCurrentToolToSplitDeck, () => CurrentPage != null);
             CloseSplitDeckCommand = new(() => IsSplitDeckActive = false);
@@ -151,6 +155,8 @@ namespace CalradiaForge.Desktop.Presentation
         public AsyncRelayCommand ExportEvidenceCommand { get; }
         public RelayCommand ApplyThemeCommand { get; }
         public AsyncRelayCommand ConnectCommand { get; }
+        public RelayCommand OpenHookWorkbenchCommand { get; }
+        public RelayCommand CloseHookWorkbenchCommand { get; }
         public AsyncRelayCommand PingConnectionCommand { get; }
         public RelayCommand ToggleSplitDeckCommand { get; }
         public RelayCommand PinCurrentToolToSplitDeckCommand { get; }
@@ -185,6 +191,20 @@ namespace CalradiaForge.Desktop.Presentation
         public ToolPageViewModel CurrentPage { get => currentPage; private set { if (Set(ref currentPage, value)) ExportMarkdownReportCommand?.NotifyCanExecuteChanged(); } }
         public WorkbenchPageViewModel CurrentWorkbenchPage { get => currentWorkbenchPage; private set => Set(ref currentWorkbenchPage, value); }
         public SessionStatusViewModel Session { get; } = new();
+        public HookWorkbenchViewModel HookWorkbench { get; }
+        public bool IsHookWorkbenchOpen
+        {
+            get => isHookWorkbenchOpen;
+            set
+            {
+                if (!Set(ref isHookWorkbenchOpen, value)) return;
+                if (value)
+                {
+                    HookWorkbench.NotifyConnectionChanged();
+                    if (HookWorkbench.RefreshSnapshotsCommand.CanExecute(null)) HookWorkbench.RefreshSnapshotsCommand.Execute(null);
+                }
+            }
+        }
         public ToolDefinition SelectedTool
         {
             get => selectedTool;
@@ -201,6 +221,7 @@ namespace CalradiaForge.Desktop.Presentation
                     ReleaseCurrentPage();
                     return;
                 }
+                IsHookWorkbenchOpen = false;
                 IsCommandPaletteOpen = false;
                 Select(value);
             }
@@ -581,6 +602,7 @@ namespace CalradiaForge.Desktop.Presentation
             Raise(nameof(ConnectionState));
             Raise(nameof(IsIpcConnected));
             Raise(nameof(ConnectionLatencyText));
+            HookWorkbench.NotifyConnectionChanged();
         }
 
         async Task PingConnectionAsync(CancellationToken cancellation)
@@ -838,6 +860,7 @@ namespace CalradiaForge.Desktop.Presentation
             if (disposed) return;
             disposed = true;
             ExportEvidenceCommand.Cancel();
+            HookWorkbench.Dispose();
             (CurrentPage as IWorkspacePage)?.Dispose();
             workspace.Dispose(); retainedEvidence.Clear(); pinned.Clear(); recent.Clear(); pinnedEvidence.Clear();
         }

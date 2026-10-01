@@ -1526,7 +1526,7 @@ internal static class Program
         }
 
         Check(themeSelector != null && themeLabel != null && themeLabel.IsVisible && themeSelector.ActualWidth >= 150,
-            "At normal width, the Parchment Light selector must be realized in the widened theme group.");
+            $"At normal width, the Parchment Light selector must be realized in the widened theme group; selector={themeSelector?.ActualWidth:0.#}, label={themeLabel?.Text ?? "<missing>"}, visible={themeLabel?.IsVisible}.");
         Check(themeLabel.ActualWidth + 1 >= RequiredTextWidth(themeLabel),
             $"The Parchment Light selector label is clipped at normal width: actual {themeLabel.ActualWidth:0.#} DIP, required {RequiredTextWidth(themeLabel):0.#} DIP.");
         Check(sessionStatus != null && sessionStatus.IsVisible && sessionStatus.Text == "Disconnected" &&
@@ -1724,9 +1724,9 @@ internal static class Program
             string.Equals(block.Text, subtitleValue, StringComparison.Ordinal));
         var brandGroup = Descendants(window).OfType<FrameworkElement>().SingleOrDefault(element =>
             string.Equals(AutomationProperties.GetAutomationId(element), "HeaderBrandGroup", StringComparison.Ordinal));
-        Check(subtitle != null && brandGroup != null && subtitle.TextWrapping == TextWrapping.Wrap && subtitle.TextTrimming == TextTrimming.None &&
+        Check(subtitle != null && brandGroup != null && subtitle.TextWrapping == TextWrapping.NoWrap && subtitle.TextTrimming == TextTrimming.CharacterEllipsis &&
               string.Equals(subtitle.ToolTip as string, subtitleValue, StringComparison.Ordinal),
-            $"The localized subtitle must wrap without trimming and expose its full text as a tooltip at {languageCode}.");
+            $"The localized subtitle must stay on one line with ellipsis and expose its full text as a tooltip at {languageCode}.");
         var subtitleBounds = Bounds(subtitle, brandGroup);
         Check(subtitleBounds.Left >= -1 && subtitleBounds.Top >= -1 &&
               subtitleBounds.Right <= brandGroup.ActualWidth + 1 && subtitleBounds.Bottom <= brandGroup.ActualHeight + 1,

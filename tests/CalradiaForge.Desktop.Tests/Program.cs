@@ -67,6 +67,8 @@ internal static class Program
             ("Desktop FBX route preserves structural provenance in its report", FbxAnalyzerRoute),
             ("Desktop generators state their template limit", TemplateSurface),
             ("Desktop live tools require an advertised session capability", LiveCapabilitySurface),
+            ("Desktop hook workbench uses a confirmed one-use plan over registered IDs only", HookWorkbenchSurface),
+            ("Desktop hook confirmation reconciles snapshots without clearing its busy state", HookWorkbenchReconciliationRefresh),
             ("Desktop keeps guarded state-changing work unavailable", WriterGateSurface),
             ("Desktop command seal is mathematically centered", MarkGeometry),
             ("Desktop tactical layout has no arbitrary diagonal divider", TacticalLayoutSurface),
@@ -869,7 +871,7 @@ internal static class Program
         {
             "Ui.CopyCommandAccessibleName", "Ui.CopyCommandAccessibleNameFormat", "Ui.CopyCliAccessibleName",
             "Ui.ClipboardCopyFailed", "Ui.ClipboardCopySucceeded", "Ui.ReportExported",
-            "Ui.ReportExportFailed", "Ui.ReportExportCancelled", "Ui.ReportExportedShort", "Viz.Audio.Title",
+            "Ui.ReportExportFailed", "Ui.ReportExportCancelled", "Ui.ReportExportedShort", "Ui.HooksCancelUnconfirmed", "Viz.Audio.Title",
             "Viz.Audio.Equalizer", "Viz.Audio.Waveform", "Viz.Operation.Title", "Viz.Operation.ExecutionGuard",
             "Viz.Troop.CountBadge", "Viz.Troop.TierI", "Viz.Troop.TierTwoThree", "Viz.Troop.TierFour",
             "Viz.Troop.NobleLine", "Viz.Troop.CommonLevies", "Viz.Troop.LevelShort", "Viz.Troop.HpLabel",
@@ -900,6 +902,112 @@ internal static class Program
         }
         string service = ReadSourceText(FindDesktopFile("Services/DesktopLocalizationService.cs"));
         Check(service.Contains("MergedDictionaries") && service.Contains("activeDictionary"), "Language changes must swap only the active Forge dictionary");
+        return Task.CompletedTask;
+    }
+
+    static Task HookWorkbenchSurface()
+    {
+        var viewModel = ReadSourceText(Desktop("Presentation/HookWorkbenchViewModel.cs"));
+        var xaml = ReadSourceText(Desktop("Presentation/HookWorkbenchControl.xaml"));
+        var confirmationStart = viewModel.IndexOf("async Task ConfirmPlanAsync", StringComparison.Ordinal);
+        var confirmationEnd = viewModel.IndexOf("void ApplySnapshotFailure", confirmationStart, StringComparison.Ordinal);
+        var confirmation = viewModel.Substring(confirmationStart, confirmationEnd - confirmationStart);
+        var refresh = viewModel.Substring(viewModel.IndexOf("async Task RefreshSnapshotsAsync", StringComparison.Ordinal));
+        refresh = refresh.Substring(0, refresh.IndexOf("async Task CreatePlanAsync", StringComparison.Ordinal));
+        var clearToken = confirmation.IndexOf("ClearPendingPlan();", StringComparison.Ordinal);
+        var send = confirmation.IndexOf("session.SendAsync", StringComparison.Ordinal);
+        Check(xaml.Contains("AutomationProperties.AutomationId=\"HookExplicitConfirmationCheckbox\"") &&
+              xaml.Contains("IsChecked=\"{Binding IsConfirmationChecked, Mode=TwoWay}\""),
+            "Apply/Revert must require an explicit checkbox in the reviewed plan.");
+        Check(viewModel.Contains("pendingPlan.ExpiresAtUtc > DateTimeOffset.UtcNow && IsConfirmationChecked") &&
+              viewModel.Contains("pendingPlan.RequiresConfirmation"),
+            "The confirmation command must be disabled without a checked box, live plan, and host confirmation requirement.");
+        Check(clearToken >= 0 && send > clearToken &&
+              Regex.Matches(confirmation, @"session\.SendAsync").Count == 1 &&
+              confirmation.Contains("Ui.HooksUnknownOutcome"),
+            "The one-use confirmation token must be discarded before exactly one send, and uncertain outcomes must be reported without retry.");
+        Check(viewModel.Contains("new HookIpcSelection { HookIds = selectedIds.ToList() }") &&
+              !xaml.Contains("<TextBox") && !xaml.Contains("TargetMethod=\"{Binding") &&
+              xaml.Contains("Text=\"{Binding Target}\""),
+            "The UI may select registered IDs and show exact target metadata, but must not accept free-form target/member input.");
+        Check(viewModel.Contains("SameSnapshot(source, plannedSnapshot)") &&
+              viewModel.Contains("!IsEligible") && xaml.Contains("{Binding EligibilityText}"),
+            "A plan must match the exact current snapshot and display the host context gate.");
+        Check(viewModel.Contains("string.Equals(State, \"Conflict\", StringComparison.OrdinalIgnoreCase)") &&
+              viewModel.Contains("string.Equals(State, \"Failed\", StringComparison.OrdinalIgnoreCase)") &&
+              viewModel.Contains("snapshotReadSucceeded") &&
+              xaml.Contains("AutomationProperties.AutomationId=\"HookLifetimeWarning\"") &&
+              xaml.Contains("AutomationProperties.AutomationId=\"HookApplyPartialWarning\"") &&
+              viewModel.Contains("Ui.HooksApplyPartialWarning"),
+            "The hook workbench must disclose callback lifetime and sequential partial Apply, and allow recovery planning for uncertain hook states.");
+        Check(viewModel.Contains("ReadStrings(root, \"notAttemptedIds\")") &&
+              viewModel.Contains("TryGetStringInsensitive(\"stopReason\"") &&
+              viewModel.Contains("commit.RequiresReconciliation") && viewModel.Contains("requiresSnapshotRefresh") &&
+              viewModel.Contains("Reading fresh hook snapshots before another plan"),
+            "Partial, cancelled, stopped, or unattempted host results must be shown as uncertain and reconciled before another plan.");
+        var snapshotReset = refresh.IndexOf("snapshotReadSucceeded = false;", StringComparison.Ordinal);
+        var canRefresh = refresh.IndexOf("if (!CanRefreshSnapshots(allowWhileBusy))", StringComparison.Ordinal);
+        var cancellationCatch = refresh.IndexOf("catch (OperationCanceledException)", StringComparison.Ordinal);
+        var genericCatch = refresh.IndexOf("catch (Exception error)", StringComparison.Ordinal);
+        var cancellationHandler = cancellationCatch >= 0 && genericCatch > cancellationCatch
+            ? refresh.Substring(cancellationCatch, genericCatch - cancellationCatch)
+            : string.Empty;
+        Check(snapshotReset >= 0 && canRefresh > snapshotReset &&
+              cancellationHandler.Contains("requiresSnapshotRefresh = true;") &&
+              cancellationHandler.Contains("snapshotReadSucceeded = false;") &&
+              Regex.IsMatch(confirmation, @"if\s*\(snapshotReadSucceeded\)\s*Status = outcome;\s*else\s*Status = Text\(""Ui\.HooksUnknownOutcome""", RegexOptions.Singleline),
+            "A cancelled reconciliation refresh must clear the previous success flag so stale snapshots cannot overwrite the uncertain outcome.");
+        foreach (var key in new[] { "Ui.HookWorkbench", "Ui.HooksIdentifier", "Ui.HooksCountFormat", "Ui.HooksConfirmPrompt", "Ui.HooksCancelUnconfirmed", "Ui.HooksLifetimeWarning", "Ui.HooksApplyPartialWarning" })
+            Check(Directory.GetFiles(Path.GetDirectoryName(Desktop("Resources/Strings.en.xaml"))!, "Strings.*.xaml")
+                    .All(file => ReadSourceText(file).Contains("x:Key=\"" + key + "\"")),
+                "Hook workbench localization key is missing from a language dictionary: " + key);
+        Check(viewModel.Contains("RequiredCapabilities") && viewModel.Contains("\"hook-plan-cancel\"") &&
+              viewModel.Contains("Action = \"hook-plan-cancel\"") &&
+              viewModel.Contains("HookIpcCancelPlanRequest { Session = plan.Session, Token = plan.Token }") &&
+              viewModel.IndexOf("TryReadCancelPlanResult(response.Data, plan.Session", StringComparison.Ordinal) <
+              viewModel.IndexOf("if (ReferenceEquals(pendingPlan, plan)) ClearPendingPlan();", StringComparison.Ordinal),
+            "Plan cancellation must use one exact host session/token request and retain the local plan until the matching result is verified.");
+        Check(refresh.Contains("if (HasPendingPlan && !await CancelPendingPlanCoreAsync(cancellation).ConfigureAwait(true)) return;") &&
+              Regex.Matches(refresh, @"session\.SendAsync").Count == 1,
+            "Snapshot refresh must stop when the host cannot confirm cancellation of the current plan.");
+        var cancelCoreStart = viewModel.IndexOf("async Task<bool> CancelPendingPlanCoreAsync", StringComparison.Ordinal);
+        var cancelCoreEnd = viewModel.IndexOf("void ClearPendingPlan()", cancelCoreStart, StringComparison.Ordinal);
+        var cancelCore = cancelCoreStart < 0 || cancelCoreEnd <= cancelCoreStart
+            ? string.Empty
+            : viewModel.Substring(cancelCoreStart, cancelCoreEnd - cancelCoreStart);
+        Check(cancelCore.Contains("if (!TryReadCancelPlanResult(response.Data, plan.Session, out _, out var error))") &&
+              !cancelCore.Contains("|| !cancelled") &&
+              cancelCore.Contains("if (ReferenceEquals(pendingPlan, plan)) ClearPendingPlan();") &&
+              cancelCore.Contains("return true;"),
+            "A valid same-session response that the old token is no longer pending must clear that stale preview and allow snapshot reconciliation.");
+        var cancelParserStart = viewModel.IndexOf("public static bool TryReadCancelPlanResult(", StringComparison.Ordinal);
+        var cancelParser = cancelParserStart < 0 ? string.Empty : viewModel.Substring(cancelParserStart);
+        Check(cancelParser.Contains("string.Equals(session, expectedSession, StringComparison.Ordinal)") &&
+              cancelParser.Contains("TryGetBooleanInsensitive(\"cancelled\", out cancelled)") &&
+              cancelParser.Contains("Plan cancellation response did not match the current session"),
+            "Cancellation results must require the exact session, a Boolean cancellation result, and reject mismatched or malformed payloads.");
+        return Task.CompletedTask;
+    }
+
+    static Task HookWorkbenchReconciliationRefresh()
+    {
+        var viewModel = ReadSourceText(Desktop("Presentation/HookWorkbenchViewModel.cs"));
+        var confirm = viewModel.Substring(viewModel.IndexOf("async Task ConfirmPlanAsync", StringComparison.Ordinal));
+        var refresh = viewModel.Substring(viewModel.IndexOf("async Task RefreshSnapshotsAsync(CancellationToken cancellation, bool allowWhileBusy)", StringComparison.Ordinal));
+        refresh = refresh.Substring(0, refresh.IndexOf("async Task CreatePlanAsync", StringComparison.Ordinal));
+        Check(viewModel.Contains("Task RefreshSnapshotsAsync(CancellationToken cancellation) => RefreshSnapshotsAsync(cancellation, allowWhileBusy: false);") &&
+              viewModel.Contains("await RefreshSnapshotsAsync(cancellation, allowWhileBusy: true)") &&
+              viewModel.Contains("bool CanRefreshSnapshots(bool allowWhileBusy) => !disposed && (allowWhileBusy || !IsBusy)"),
+            "Only the internal post-confirm refresh may bypass the manual refresh busy guard.");
+        Check(refresh.Contains("if (!CanRefreshSnapshots(allowWhileBusy))") &&
+              refresh.Contains("var ownsBusyState = !IsBusy;") &&
+              refresh.Contains("if (ownsBusyState) IsBusy = true;") &&
+              refresh.Contains("if (ownsBusyState) IsBusy = false;"),
+            "The internal refresh must run while confirmation owns busy state and must not release that state early.");
+        Check(confirm.IndexOf("await RefreshSnapshotsAsync(cancellation, allowWhileBusy: true)", StringComparison.Ordinal) >
+              confirm.IndexOf("if (!commit.TokenConsumed)", StringComparison.Ordinal) &&
+              confirm.Contains("if (snapshotReadSucceeded)"),
+            "A consumed hook operation must perform reconciliation before accepting the outcome snapshot.");
         return Task.CompletedTask;
     }
 
@@ -1318,7 +1426,13 @@ internal static class Program
 
     static async Task TacticalStudioEnrichmentAndRolePresets()
     {
-        var studios = ReadSourceText(Desktop("Presentation/DesktopSimulationViewModels.cs"));
+        var studios = string.Join("\n", new[]
+        {
+            "Presentation/DesktopSimulationViewModels.cs",
+            "Presentation/DesktopSimulationViewModels.Operations.cs",
+            "Presentation/DesktopSimulationViewModels.Security.cs",
+            "Presentation/DesktopSimulationViewModels.Workshop.cs"
+        }.Select(path => ReadSourceText(Desktop(path))));
         var shell = ReadSourceText(Desktop("Presentation/DesktopShellViewModel.cs"));
 
         Check(studios.Contains("class StudioConsoleCommand"), "StudioConsoleCommand must be defined");

@@ -8,10 +8,11 @@ from __future__ import annotations
 
 import struct
 import sys
+import re
 import zlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -724,6 +725,28 @@ def later_sibling_in_paint_order(earlier: ET.Element, later: ET.Element,
         return False
 
 
+def effective_visibility_bindings(node: ET.Element,
+                                  parent_by_node: Dict[ET.Element, ET.Element]) -> Set[str]:
+    """Return IsVisible bindings inherited from a node and its ancestors."""
+    bindings: Set[str] = set()
+    current = node
+    while current is not None:
+        value = current.get("IsVisible", "")
+        if value.startswith("@"):
+            bindings.add(value[1:])
+        current = parent_by_node.get(current)
+    return bindings
+
+
+def visibility_bindings_are_exclusive(left: Set[str], right: Set[str],
+                                      exclusive_pairs: Set[Tuple[str, str]]) -> bool:
+    """Whether two widgets require opposite states of a verified VM contract."""
+    return any(
+        (first in left and second in right) or (second in left and first in right)
+        for first, second in exclusive_pairs
+    )
+
+
 def evidence_rectangles(shell: ET.Element, errors: List[str], workbench_rect: Rect) -> List[Tuple[Rect, bool, bool]]:
     """Resolve the evidence ledger in both VM presentation states.
 
@@ -774,7 +797,8 @@ def evidence_rectangles(shell: ET.Element, errors: List[str], workbench_rect: Re
     tops = (float(match.group(1)), float(match.group(2)))
     max_height = number(frame, "MaxHeight")
     right_margin_match = re.search(
-        r"\bWorkspaceRightMargin\s*=>\s*_isDetailedMode\s*&&\s*!evidenceFocused\s*\?\s*"
+        r"\bWorkspaceRightMargin\s*=>\s*_isDetailedMode\s*&&\s*!evidenceFocused\s*"
+        r"(?:&&\s*!IsCampaignRuleBuilderActive\s*)?\?\s*"
         r"([0-9]+(?:\.[0-9]+)?)f\s*:\s*([0-9]+(?:\.[0-9]+)?)f", source)
     if raw_mr == "@WorkspaceRightMargin" and right_margin_match is None:
         errors.append("cannot resolve WorkspaceRightMargin states for the evidence frame")
@@ -973,6 +997,22 @@ def validate_prefab(errors: List[str]) -> None:
                 errors.append("{} must be the last direct child of its briefing card".format(element_id))
 
     parent_by_node = {child: parent for parent in root.iter() for child in parent}
+    exclusive_visibility_pairs: Set[Tuple[str, str]] = set()
+    try:
+        view_model_source = PANEL_VIEW_MODEL.read_text(encoding="utf-8")
+        campaign_source = (ROOT / "src" / "CalradiaForge.Mod" / "PanelViewModel.CampaignRules.cs").read_text(
+            encoding="utf-8")
+    except OSError:
+        view_model_source = ""
+        campaign_source = ""
+    if (re.search(r"\bShowCommandDeck\s*=>\s*!evidenceFocused\s*&&\s*!IsGauntletComposerActive\s*&&\s*!IsCampaignRuleBuilderActive", view_model_source)
+            and re.search(r"\bIsGauntletComposerActive\s*=>\s*current\s*==\s*\"novice-gauntlet-composer\"", view_model_source)
+            and re.search(r"\bIsGauntletComposerWorkspaceVisible\s*=>\s*IsGauntletComposerActive\s*&&\s*!_isGauntletComposerPackageVisible", view_model_source)):
+        exclusive_visibility_pairs.add(("ShowCommandDeck", "IsGauntletComposerWorkspaceVisible"))
+    if (re.search(r"\bShowCommandDeck\s*=>\s*!evidenceFocused\s*&&\s*!IsGauntletComposerActive\s*&&\s*!IsCampaignRuleBuilderActive", view_model_source)
+            and re.search(r"\bIsCampaignRuleBuilderActive\s*=>\s*current\s*==\s*\"novice-campaign-rule-builder\"", campaign_source)
+            and re.search(r"\bIsCampaignRuleBuilderWorkspaceVisible\s*=>\s*IsCampaignRuleBuilderActive\s*&&\s*!_isCampaignRuleBuilderPackageVisible", campaign_source)):
+        exclusive_visibility_pairs.add(("ShowCommandDeck", "IsCampaignRuleBuilderWorkspaceVisible"))
     for rule_id, card_id in zip(
             ("ForgeBriefingContextPatinaRule", "ForgeBriefingTestingPatinaRule",
              "ForgeBriefingEvidencePatinaRule", "ForgeBriefingTestsPatinaRule"),
@@ -1169,10 +1209,15 @@ def validate_prefab(errors: List[str]) -> None:
                             targets, collision_kind: str, detailed_mode: bool = True,
                             evidence_focused: bool = False):
         uncovered = []
+        decoration_visibility = effective_visibility_bindings(decoration_node, parent_by_node)
         visible_decoration_rect = clipped_visible_rect(decoration_node, decoration_rect)
         if visible_decoration_rect is None:
             return uncovered
         for target_node, target_rect, target_path in targets:
+            target_visibility = effective_visibility_bindings(target_node, parent_by_node)
+            if visibility_bindings_are_exclusive(
+                    decoration_visibility, target_visibility, exclusive_visibility_pairs):
+                continue
             visible_target_rect = clipped_visible_rect(target_node, target_rect)
             if visible_target_rect is None:
                 continue
