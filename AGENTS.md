@@ -176,3 +176,6 @@ In addition to root invariants, the repository maintains 43 modular rules in `.a
 | **Verification & Distribution** | `calradia_forge_verification.md`<br>`distribution_safety.md` | Build verification, 5-stage test suite, static source reflection contracts, and exclusion of game DLLs/scripts/zone streams. |
 | **Codex & Multi-Agent** | `codex_compatibility.md`<br>`development_workflow.md` | OpenAI Codex CLI cross-parity, Windows 10 Computer Use proxy (`CodexCaptureCompat`), and Antigravity subagent coordination. |
 | **Packaging & Git Workflow** | `auto_packaging.md`<br>`calradia_forge_packaging.md`<br>`packaging_version.md`<br>`git_sync_workflow.md` | Automated ZIP packaging (`FastPackageEngine`), version synchronization, chat-scoped commits at objective completion, and explicit GitHub synchronization. |
+
+### Explicit follow-up push authorization
+A later user request to push supersedes an earlier no-push instruction for the completed objective. Deliver its scoped commits and requested guide corrections, then review the exact remote SHA and repair task-related CI failures under the same authorization. Do not request permission again or include unrelated concurrent work. Publication and force-push remain outside this authorization. See `.agents/rules/git_sync_workflow.md`.

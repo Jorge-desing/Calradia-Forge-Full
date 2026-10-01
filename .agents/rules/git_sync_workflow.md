@@ -91,3 +91,10 @@ Before pushing a release or a change whose workflow requires full validation, en
    - Report commit/branch synchronization and remote validation separately, with links to the matching runs. Missing, queued, cancelled, inaccessible or still-running checks are **pending/unavailable**, not passing. Explain external blockers without claiming completion of unverified checks.
    - Historical failed runs remain immutable. Do not rewrite Git history, force-push, delete failed evidence, disable tests or weaken assertions merely to remove red indicators. New successful checks establish recovery for the new SHA.
    - Do not create another commit solely to record successful remote checks; report their evidence in the response to avoid an endless commit/check cycle. A separately requested permanent evidence record is a new scoped documentation change and its push must also be reviewed.
+
+## Authorization across follow-up requests
+
+- A scoped local commit and a remote push are separate delivery steps. Honor an explicit no-push instruction until the user later explicitly requests a push; that later request authorizes delivery of the completed objective and its requested rule/skill corrections. Do not ask again for permission already given.
+- The authorization also covers task-related CI correction commits and their pushes until the exact-SHA checks finish, subject to the user's latest scope. It does not authorize unrelated working-tree changes, release publication, force-push or changes to repository protection.
+- Before pushing, inspect the complete outgoing commit range, not only HEAD. Preserve concurrent edits and stage only owned changes. If authorized delivery cannot be separated from unrelated committed history, report the concrete conflict rather than rewriting history.
+- After pushing, verify the exact remote SHA and inspect Actions, check runs and statuses. Do not finish while applicable checks are queued or running; follow the post-push review below and report genuine external blockers explicitly.

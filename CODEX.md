@@ -140,3 +140,6 @@ While Google Antigravity discovers `.agents/rules/*.md` automatically via direct
 7. **Packaging & Git Sync**: `auto_packaging.md`, `calradia_forge_packaging.md`, `packaging_version.md`, `git_sync_workflow.md`.
 
 *Instruction for Codex:* Before editing C#, XML, WPF, or automation scripts, read the corresponding rule file from `.agents/rules/<rule>.md` to maintain full project compliance.
+
+### Explicit follow-up push authorization
+A later user request to push supersedes an earlier no-push instruction for the completed objective. Deliver its scoped commits and requested guide corrections, then review the exact remote SHA and repair task-related CI failures under the same authorization. Do not request permission again or include unrelated concurrent work. Publication and force-push remain outside this authorization. See `.agents/rules/git_sync_workflow.md`.
