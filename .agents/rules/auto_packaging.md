@@ -14,7 +14,7 @@ Whenever a major update is performed, a new version is reached, a milestone or s
 2. **Action:** Execute the workspace's packaging scripts (e.g., `tools\package.ps1`).
 3. **Verification:** Require the canonical pipeline to finish successfully, all three current-version ZIPs to exist, the archive audit to pass, and independently computed SHA-256 hashes to match the generated manifest. Use the actual evidence filenames emitted by the script; do not assume a dotted version in audit/hash filenames.
 4. **Delivery:** Provide absolute clickable paths to Modules, Source-SDK and Desktop ZIPs and their audit/hash evidence. Commits, local tests and green CI do not prove the archives exist. If packaging fails or a prerequisite is missing, report it as incomplete with the actual error; never silently skip it.
-5. **Scope:** Keep archives, staging directories, audit reports and hash manifests in ignored `artifacts/`, outside Git commits. This rule does not authorize a version bump, release publication, push, installation or game launch. Commit intentional project changes at objective completion under the Git workflow.
+5. **Scope:** Keep archives, staging directories, audit reports and hash manifests in ignored `artifacts/`, outside Git commits. This rule does not authorize a version bump, release publication, installation or game launch. Commit and normally push intentional project changes at objective completion under the standing authorization in the Git workflow; honor an explicit no-push override.
 
 ## FastPackageEngine Principles & Performance Constraints
 El pipeline de empaquetado utiliza la arquitectura `FastPackageEngine` para minimizar la latencia de empaquetado y garantizar higiene absoluta:

@@ -1,18 +1,18 @@
 ---
 name: git-sync-workflow
-description: Require a scoped commit at objective completion, push only on request, and verify the exact remote commit and its checks after every push.
+description: Require a scoped commit at objective completion, push by default unless the user opts out, and verify the exact remote commit and its checks after every push.
 trigger: always_on
 ---
 
 # Chat-Scoped Git Commit & Push Workflow
 
-Whenever a user-requested request, objective, or plan in the current chat intentionally creates or changes repository files, it MUST end with one scoped commit containing all intentional repository changes attributable to that request, objective, or plan. Intermediate steps within the same objective do not require separate commits. This applies to small fixes and documentation/rule changes as well as releases. Push only when the user explicitly asks for synchronization or publishing.
+Whenever a user-requested request, objective, or plan in the current chat intentionally creates or changes repository files, it MUST end with one scoped commit containing all intentional repository changes attributable to that request, objective, or plan. Intermediate steps within the same objective do not require separate commits. This applies to small fixes and documentation/rule changes as well as releases. Standing user authorization requires a normal push to the configured upstream after every completed repository-changing objective, unless the user explicitly requests local-only delivery or no push for that objective.
 
 ---
 
 ## 1. Trigger Conditions
 1. **Request / Objective / Plan Completion:** At completion of each coherent user request, objective, or plan that changes repository files, prepare and create a scoped commit. Do not split intermediate steps of the same objective into separate commits.
-2. **Explicit Push Request:** Push only when the user requests "actualiza y sube cambios a github", "haz git push", "sincroniza con el repositorio remoto", or similar.
+2. **Default Push:** Push the complete scoped objective commit to the configured upstream without asking again. Honor a newer explicit no-push/local-only instruction. Use a normal fast-forward push; publication and force-push require separate authorization.
 3. **Milestone / Release Finalization:** Use the release verification workflow before committing a major release; do not infer permission to push from a release milestone.
 
 ---
@@ -92,9 +92,9 @@ Before pushing a release or a change whose workflow requires full validation, en
    - Historical failed runs remain immutable. Do not rewrite Git history, force-push, delete failed evidence, disable tests or weaken assertions merely to remove red indicators. New successful checks establish recovery for the new SHA.
    - Do not create another commit solely to record successful remote checks; report their evidence in the response to avoid an endless commit/check cycle. A separately requested permanent evidence record is a new scoped documentation change and its push must also be reviewed.
 
-## Authorization across follow-up requests
+## Standing push authorization and overrides
 
-- A scoped local commit and a remote push are separate delivery steps. Honor an explicit no-push instruction until the user later explicitly requests a push; that later request authorizes delivery of the completed objective and its requested rule/skill corrections. Do not ask again for permission already given.
+- The user grants standing authorization for commit and push at objective completion. Apply this default to code, tests, assets, documentation, rules and skills. An explicit no-push instruction for the current objective overrides the default until the user changes it. Do not ask again for normal delivery or task-related CI repairs.
 - The authorization also covers task-related CI correction commits and their pushes until the exact-SHA checks finish, subject to the user's latest scope. It does not authorize unrelated working-tree changes, release publication, force-push or changes to repository protection.
 - Before pushing, inspect the complete outgoing commit range, not only HEAD. Preserve concurrent edits and stage only owned changes. If authorized delivery cannot be separated from unrelated committed history, report the concrete conflict rather than rewriting history.
 - After pushing, verify the exact remote SHA and inspect Actions, check runs and statuses. Do not finish while applicable checks are queued or running; follow the post-push review below and report genuine external blockers explicitly.

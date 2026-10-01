@@ -41,7 +41,7 @@ For source-backed persistence, failure-test, CI and distribution details, read [
 6. **Distribution and Remote Evidence**:
    - At release, milestone, significant feature completion or explicit packaging requests, require the three current-version ZIPs even when the version is unchanged; honor an explicit no-ZIP instruction. Documentation-only maintenance does not independently trigger packaging. This applies in every conversation/interface language and includes existing localized resources without inventing translations.
    - Keep archives, staging, audit reports and hash manifests in ignored `artifacts/`; require a passing archive audit and independently matching SHA-256 hashes. Use emitted filenames: `25.2.0` maps to `package-audit-2520.json` and `package-sha256-2520.txt`. Tests or green CI are not archive evidence.
-   - A scoped objective commit does not authorize a push. After an explicitly authorized push, verify the remote branch at the exact pushed SHA and await applicable Actions/check runs/commit statuses for that SHA. Retrieve failing logs, validate task-related corrections through BAT and review the next pushed SHA under the existing authorization. Pending/inaccessible checks remain unverified; link the matching final runs.
+   - Standing user authorization requires a normal push of each completed scoped objective unless the user explicitly opts out. After every push, verify the remote branch at the exact pushed SHA and await applicable Actions/check runs/commit statuses for that SHA. Retrieve failing logs, validate task-related corrections through BAT and review the next pushed SHA under the existing authorization. Pending/inaccessible checks remain unverified; link the matching final runs.
 
 ---
 
