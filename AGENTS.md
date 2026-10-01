@@ -66,6 +66,7 @@ Calradia Forge is an advanced modding framework, live developer tooling suite, a
 ## 3. Essential Commands & Verification Playbook
 
 ### Mandatory Distribution Completion Gate
+- This gate applies regardless of the language of the request, response, interface or packaged resources: English, Spanish and any other supported language. Do not omit applicable localized resources from the distribution; validate existing localization parity without inventing new translations or supported languages.
 - At completion of a release, milestone, significant code/feature update, or an explicit packaging request, generate the three current-version distribution ZIPs before reporting completion. This applies even when the product version is unchanged; a commit or green CI is not a substitute for packaging.
 - Follow [.agents/rules/auto_packaging.md](.agents/rules/auto_packaging.md): run the canonical packaging pipeline, require its archive audit to pass, and verify the SHA-256 of each output against the generated hash manifest. Report clickable absolute paths to all three ZIPs and the audit/hash evidence.
 - Preserve an explicit user instruction not to generate ZIPs for the current request. Documentation-only maintenance does not independently trigger packaging unless requested. Do not silently skip packaging: report a failed prerequisite or missing archive as incomplete.

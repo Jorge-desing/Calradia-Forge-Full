@@ -6,6 +6,8 @@ trigger: always_on
 
 # Auto-Packaging Workflow
 
+This rule is language-independent. It applies to requests and deliveries in English, Spanish and any other language, and to every existing supported interface/resource localization. Package applicable localized resources and verify existing parity; do not silently omit them based on the conversation language. This requirement does not add new supported languages or authorize invented translations.
+
 Whenever a major update is performed, a new version is reached, a milestone or significant batch of code/features is completed, or packaging is explicitly requested, you MUST package the project for distribution before declaring completion. An unchanged version does not waive this requirement. Explicit user instructions not to generate ZIPs for the current request take precedence. Documentation-only maintenance does not independently trigger packaging.
 
 1. **Trigger Condition:** Upon completing an update or feature set, before concluding the goal.
