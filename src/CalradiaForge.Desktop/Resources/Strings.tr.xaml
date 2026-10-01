@@ -194,7 +194,7 @@
  <sys:String x:Key="Viz.Component.SchemaTargetLabel">ŞEMA HEDEFİ</sys:String>
  <sys:String x:Key="Viz.Component.GeneratedMembersLabel">Oluşturulan üyeler</sys:String>
  <sys:String x:Key="Ui.HookWorkbench">Hook çalışma alanı</sys:String>
- <sys:String x:Key="Ui.HookWorkbenchHelp">Kayıtlı Prefix ve Postfix hook’larını inceleyin. Uygulama ve geri alma açık, süreli onay gerektirir.</sys:String>
+ <sys:String x:Key="Ui.HookWorkbenchHelp">Kayıtlı Prefix, Postfix, Finalizer ve Transpiler türündeki hook kayıtlarını inceleyin. Uygulama ve geri alma açık, süreli onay gerektirir.</sys:String>
  <sys:String x:Key="Ui.HooksOpen">HOOK’LAR</sys:String>
  <sys:String x:Key="Ui.HooksRefresh">YENİLE</sys:String>
  <sys:String x:Key="Ui.HooksEligibility">YÖNETİM İZNİ</sys:String>
@@ -239,4 +239,13 @@
  <sys:String x:Key="Ui.HooksNotAttempted">Ana bilgisayar denemedi; durum uzlaştırılmalı.</sys:String>
  <sys:String x:Key="Ui.HooksCancelled">Ana bilgisayar iptal bildirdi; güncel hook durumlarını inceleyin.</sys:String>
  <sys:String x:Key="Ui.HooksPartial">Ana bilgisayar kısmi işlem bildirdi.</sys:String>
+ <sys:String x:Key="Ui.HooksOwnerFilter">Sahibe göre filtrele</sys:String>
+ <sys:String x:Key="Ui.HooksTargetFilter">Hedefe göre filtrele</sys:String>
+ <sys:String x:Key="Ui.HooksTypeFilter">Hook türüne göre filtrele</sys:String>
+ <sys:String x:Key="Ui.HooksVerify">Seçilenleri doğrula</sys:String>
+ <sys:String x:Key="Ui.HooksVerifyFailed">Hook doğrulaması başarısız oldu.</sys:String>
+ <sys:String x:Key="Ui.HooksExportSnapshots">Anlık görüntüleri dışa aktar</sys:String>
+ <sys:String x:Key="Ui.HooksExportResults">Sonuçları dışa aktar</sys:String>
+ <sys:String x:Key="Ui.HooksNoFilterMatches">Geçerli filtrelerle eşleşen kayıtlı hook bulunamadı.</sys:String>
+ <sys:String x:Key="Ui.HooksSelectionCountFormat">{0} seçili; {1} filtrelerle gizlenmiş. İşlemler seçilen tüm hook kayıtlarını kapsar.</sys:String>
 </ResourceDictionary>

@@ -17,7 +17,7 @@ namespace CalradiaForge.DetourFixture
     /// Disposable-process smoke fixture for the experimental native detour backend.
     /// Calls Target serially only; no other thread invokes it while code bytes are written.
     /// </summary>
-    internal static class Program
+    internal static partial class Program
     {
         public static int RunFixture()
         {
@@ -79,6 +79,9 @@ namespace CalradiaForge.DetourFixture
 
             int uncertainHookFixture = RunUncertainApplyFixture();
             if (uncertainHookFixture != 0) return uncertainHookFixture;
+
+            int extensionFixture = RunHookExtensionsFixture();
+            if (extensionFixture != 0) return extensionFixture;
 
             bool patchMayBeActive = false;
             try
@@ -424,6 +427,7 @@ namespace CalradiaForge.DetourFixture
 
             Console.WriteLine("# serial hook benchmark; x64 disposable host; same target measured before and after apply");
             Console.WriteLine("# callbacks are no-op; target JIT is prepared before the first measured call");
+            Console.WriteLine("# il_only inserts a Nop through ILHook, preserves results, and installs no runtime callbacks");
             Console.WriteLine("# allocated bytes use AppDomain counters in this single-threaded isolated host");
             Console.WriteLine("record,scenario,phase,sample,iterations,total_ms,ns_per_call,allocated_bytes,bytes_per_call,gen0_collections,checksum");
 
@@ -435,11 +439,18 @@ namespace CalradiaForge.DetourFixture
             if (result != 0) return result;
             result = RunHookBenchmarkScenario("prefix_postfix", "BenchmarkBothTarget", true, true,
                 warmupIterations, measuredIterations, sampleCount);
+            if (result != 0) return result;
+            result = RunHookBenchmarkScenario("finalizer", "BenchmarkFinalizerTarget", false, false,
+                warmupIterations, measuredIterations, sampleCount, includeFinalizer: true);
+            if (result != 0) return result;
+            result = RunHookBenchmarkScenario("il_only", "BenchmarkIlTarget", false, false,
+                warmupIterations, measuredIterations, sampleCount, includeTranspiler: true);
             return result;
         }
 
         private static int RunHookBenchmarkScenario(string scenario, string targetName, bool includePrefix,
-            bool includePostfix, int warmupIterations, int measuredIterations, int sampleCount)
+            bool includePostfix, int warmupIterations, int measuredIterations, int sampleCount,
+            bool includeFinalizer = false, bool includeTranspiler = false)
         {
             MethodInfo target = typeof(Program).GetMethod(targetName, BindingFlags.Static | BindingFlags.NonPublic);
             if (target == null) return BenchmarkFailure(scenario, "target method could not be resolved");
@@ -451,14 +462,19 @@ namespace CalradiaForge.DetourFixture
 
             bool mayMutate = true;
             var service = new ForgeHookService(() => mayMutate);
-            IForgeHookHandle handle = service.Register(new ForgeHookDefinition
+            var definition = new ForgeHookDefinition
             {
                 Id = "benchmark-" + scenario,
                 Owner = "DetourFixture.Benchmark",
                 Target = target,
                 Prefix = includePrefix ? (ForgeHookCallback)NoOpHookCallback : null,
-                Postfix = includePostfix ? (ForgeHookCallback)NoOpHookCallback : null
-            });
+                Postfix = includePostfix ? (ForgeHookCallback)NoOpHookCallback : null,
+                Finalizer = includeFinalizer ? (ForgeHookCallback)NoOpHookCallback : null
+            };
+            IForgeHookHandle handle = includeTranspiler
+                ? service.RegisterTranspiler(definition, context =>
+                    new MonoMod.Cil.ILCursor(context).Emit(Mono.Cecil.Cil.OpCodes.Nop))
+                : service.Register(definition);
 
             long applyStart = Stopwatch.GetTimestamp();
             ForgeHookOperationResult applied = handle.Apply();
@@ -1835,6 +1851,18 @@ namespace CalradiaForge.DetourFixture
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int BenchmarkBothTarget(int value)
+        {
+            return value * 2 + 1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int BenchmarkFinalizerTarget(int value)
+        {
+            return value * 2 + 1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int BenchmarkIlTarget(int value)
         {
             return value * 2 + 1;
         }

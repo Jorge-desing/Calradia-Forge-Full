@@ -26,6 +26,11 @@ namespace CalradiaForge.Core
         bool testingEnabled,campaignCopyConfirmed;
         public TestEngine() : this(null) { }
         public TestEngine(Func<bool> canManageHooks) { forgeHookService = new ForgeHookService(canManageHooks); }
+#if NETFRAMEWORK
+        /// <summary>Registers a local IL manipulator through the shared hook service without exposing MonoMod in SDK contracts.</summary>
+        public IForgeHookHandle RegisterTranspiler(ForgeHookDefinition metadata, MonoMod.Cil.ILContext.Manipulator manipulator)
+            => forgeHookService.RegisterTranspiler(metadata, manipulator);
+#endif
         public bool TestingEnabled { get {lock(registryGate)return testingEnabled;} set {lock(registryGate)testingEnabled=value;} }
         public bool CampaignCopyConfirmed { get {lock(registryGate)return campaignCopyConfirmed;} set {lock(registryGate)campaignCopyConfirmed=value;} }
         public IEnumerable<Descriptor> Tests

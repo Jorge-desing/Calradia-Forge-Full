@@ -1316,7 +1316,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string InputLabel => current == "novice-gauntlet" || IsGauntletComposerActive ? T("Page title") : T("Search / argument");
         [DataSourceProperty] public bool IsAssemblyWorkbench => _isAssemblyWorkbench;
         [DataSourceProperty] public bool IsNormalInputVisible => !_isAssemblyWorkbench && !IsGauntletComposerActive && !IsCampaignRuleBuilderActive;
-        [DataSourceProperty] public bool IsRegularActionDeckVisible => !_isAssemblyWorkbench && current != "extensions" && !IsGauntletComposerActive && !IsCampaignRuleBuilderActive;
+        [DataSourceProperty] public bool IsRegularActionDeckVisible => !_isAssemblyWorkbench && current != "extensions" && !IsGauntletComposerActive && !IsCampaignRuleBuilderActive && !IsPatchPreflightActive;
         [DataSourceProperty] public bool IsExtensionsActionDeckVisible => !_isAssemblyWorkbench && current == "extensions";
         [DataSourceProperty] public bool IsGauntletComposerActive => current == "novice-gauntlet-composer";
         [DataSourceProperty] public bool IsGauntletComposerWorkspaceVisible => IsGauntletComposerActive && !_isGauntletComposerPackageVisible;
@@ -1632,6 +1632,7 @@ namespace CalradiaForge.Mod
 
         void Labels()
         {
+            foreach (var name in new[] { nameof(IsHookWorkbenchVisible), nameof(HookStatusLabel), nameof(HookNextLabel), nameof(HookVerifyLabel), nameof(HookApplyLabel), nameof(HookRevertLabel), nameof(HookConfirmLabel), nameof(HookCancelLabel), nameof(HookApprovalLabel) }) OnPropertyChanged(name);
             for (int i = 0; i < LabelPropertyNames.Length; i++)
                 OnPropertyChanged(LabelPropertyNames[i]);
             OnPropertyChanged(nameof(NavigationPaletteSearchPlaceholder));
@@ -2900,6 +2901,7 @@ namespace CalradiaForge.Mod
         public void ExecuteClearOutputFilter() => OutputFilterText = string.Empty;
         public void Tick(float dt)
         {
+            RefreshHookConfirmation(dt);
             if (_toastTimer > 0)
             {
                 _toastTimer -= dt;

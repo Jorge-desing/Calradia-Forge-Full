@@ -150,7 +150,7 @@ namespace CalradiaForge.Core
 
         static void AddPatches(HarmonyPatchedMethod row,object info,string kind,HarmonySnapshot result)
         {
-            var property=kind+"es";
+            var property=kind+"s";
             if(kind=="Prefix")property="Prefixes";
             if(kind=="Postfix")property="Postfixes";
             var count=0;

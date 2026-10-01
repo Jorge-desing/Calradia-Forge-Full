@@ -502,7 +502,7 @@ namespace CalradiaForge.Sdk
 
     public static class ForgeApi
     {
-        public const int Version = 12;
+        public const int Version = 13;
         static readonly object availabilityGate=new object();
         static readonly object connectionGate=new object();
         static IForgeRegistry registry;
@@ -549,8 +549,8 @@ namespace CalradiaForge.Sdk
         /// <summary>Gets the optional explicit method-patching capability when the connected host provides it.</summary>
         /// <remarks>Check this property at runtime; <see cref="Version"/> is a compile-time constant and is not a capability probe.</remarks>
         public static IForgePatchService Patches { get {lock(availabilityGate)return patches;} }
-        /// <summary>Gets the optional explicitly managed Prefix/Postfix hook capability.</summary>
-        /// <remarks>Check this capability at runtime. Hook registration is inert until an explicit host Apply operation succeeds.</remarks>
+        /// <summary>Gets the optional explicitly managed Prefix/Postfix/Finalizer hook capability.</summary>
+        /// <remarks>Check this capability at runtime. Hook registration is inert until an explicit host Apply operation succeeds. ILContext transpiler authoring is available only through the Core net472 adapter and is not part of this SDK contract.</remarks>
         public static IForgeHookService Hooks { get {lock(availabilityGate)return hooks;} }
         public static IForgeEventRegistry Events { get {lock(availabilityGate)return events;} }
         public static bool PublishCustomEvent(string topic, IEnumerable<KeyValuePair<string, string>> data = null) => Events?.PublishCustom(topic, data) ?? false;

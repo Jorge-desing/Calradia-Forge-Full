@@ -194,7 +194,7 @@
  <sys:String x:Key="Viz.Component.SchemaTargetLabel">CIBLE DU SCHÉMA</sys:String>
  <sys:String x:Key="Viz.Component.GeneratedMembersLabel">Membres générés</sys:String>
  <sys:String x:Key="Ui.HookWorkbench">Atelier des hooks</sys:String>
- <sys:String x:Key="Ui.HookWorkbenchHelp">Consulte les hooks Prefix et Postfix enregistrés. Appliquer ou rétablir exige une confirmation explicite et limitée dans le temps.</sys:String>
+ <sys:String x:Key="Ui.HookWorkbenchHelp">Examinez les hooks Prefix, Postfix, Finalizer et Transpiler enregistrés. Appliquer et annuler exigent une confirmation explicite limitée dans le temps.</sys:String>
  <sys:String x:Key="Ui.HooksOpen">HOOKS</sys:String>
  <sys:String x:Key="Ui.HooksRefresh">ACTUALISER</sys:String>
  <sys:String x:Key="Ui.HooksEligibility">AUTORISATION DE GESTION</sys:String>
@@ -239,4 +239,13 @@
  <sys:String x:Key="Ui.HooksNotAttempted">Non tenté par l’hôte ; l’état doit être rapproché.</sys:String>
  <sys:String x:Key="Ui.HooksCancelled">L’hôte a signalé une annulation ; examinez les états actualisés.</sys:String>
  <sys:String x:Key="Ui.HooksPartial">L’hôte a signalé une opération partielle.</sys:String>
+ <sys:String x:Key="Ui.HooksOwnerFilter">Filtrer par propriétaire</sys:String>
+ <sys:String x:Key="Ui.HooksTargetFilter">Filtrer par cible</sys:String>
+ <sys:String x:Key="Ui.HooksTypeFilter">Filtrer par type de hook</sys:String>
+ <sys:String x:Key="Ui.HooksVerify">Vérifier la sélection</sys:String>
+ <sys:String x:Key="Ui.HooksVerifyFailed">La vérification des hooks a échoué.</sys:String>
+ <sys:String x:Key="Ui.HooksExportSnapshots">Exporter les instantanés</sys:String>
+ <sys:String x:Key="Ui.HooksExportResults">Exporter les résultats</sys:String>
+ <sys:String x:Key="Ui.HooksNoFilterMatches">Aucun hook enregistré ne correspond aux filtres actuels.</sys:String>
+ <sys:String x:Key="Ui.HooksSelectionCountFormat">{0} sélectionnés ; {1} masqués par les filtres. Les opérations incluent tous les hooks sélectionnés.</sys:String>
 </ResourceDictionary>

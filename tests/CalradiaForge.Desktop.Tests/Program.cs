@@ -927,7 +927,11 @@ internal static class Program
               confirmation.Contains("Ui.HooksUnknownOutcome"),
             "The one-use confirmation token must be discarded before exactly one send, and uncertain outcomes must be reported without retry.");
         Check(viewModel.Contains("new HookIpcSelection { HookIds = selectedIds.ToList() }") &&
-              !xaml.Contains("<TextBox") && !xaml.Contains("TargetMethod=\"{Binding") &&
+              Regex.Matches(xaml, "<TextBox").Count == 3 &&
+              xaml.Contains("Text=\"{Binding OwnerFilter, UpdateSourceTrigger=PropertyChanged}\"") &&
+              xaml.Contains("Text=\"{Binding TargetFilter, UpdateSourceTrigger=PropertyChanged}\"") &&
+              xaml.Contains("Text=\"{Binding TypeFilter, UpdateSourceTrigger=PropertyChanged}\"") &&
+              !xaml.Contains("TargetMethod=\"{Binding") &&
               xaml.Contains("Text=\"{Binding Target}\""),
             "The UI may select registered IDs and show exact target metadata, but must not accept free-form target/member input.");
         Check(viewModel.Contains("SameSnapshot(source, plannedSnapshot)") &&

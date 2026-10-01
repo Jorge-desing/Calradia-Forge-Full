@@ -52,7 +52,7 @@ The `framework` protocol action returns `ForgeWeaveSnapshot`; `event-journal` re
 
 `IPatchBlueprintProvider` is an additive, read-only SDK contract for declaring an intended patch target. Register it with `ForgeApi.PatchBlueprints?.Register(provider)` after Forge is connected. It is separate from `IForgeRegistry` so existing SDK v1 test, command and diagnostic consumers remain compatible.
 
-The provider has a `Descriptor` and returns `PatchBlueprint` records from `Describe(PatchBlueprintRequest)`. Set `Descriptor.ChangesState=false`; Forge rejects state-changing blueprint providers. A blueprint includes a stable ID, hook vocabulary (`Prefix`, `Postfix`, `Transpiler`, `Finalizer`), exact `MethodReference` target, required callback reference, declared priority, before/after owner IDs and rationale. `MethodReference.From(MethodBase)` and `TypeReference.From(Type)` capture a signature without any Harmony type. `ForgeApi.Version` is 12; patch and runtime-hook services remain optional host capabilities, so check `ForgeApi.Patches` or `ForgeApi.Hooks` directly before use.
+The provider has a `Descriptor` and returns `PatchBlueprint` records from `Describe(PatchBlueprintRequest)`. Set `Descriptor.ChangesState=false`; Forge rejects state-changing blueprint providers. A blueprint includes a stable ID, hook vocabulary (`Prefix`, `Postfix`, `Transpiler`, `Finalizer`), exact `MethodReference` target, required callback reference, declared priority, before/after owner IDs and rationale. `MethodReference.From(MethodBase)` and `TypeReference.From(Type)` capture a signature without any Harmony type. `ForgeApi.Version` is 13; patch and runtime-hook services remain optional host capabilities, so check `ForgeApi.Patches` or `ForgeApi.Hooks` directly before use.
 
 Forge executes the provider only for an explicit preflight on the game thread, copies the returned DTOs, and bounds capture size. Do not apply a patch in `Describe`, retain game objects, or start background work. Forge validates the declared target only against already loaded assemblies, records self-referential ordering declarations for review, and never infers final execution order. See [Patch Blueprint Preflight](PATCH_BLUEPRINTS.md) for a complete example and the resolution rules.
 
@@ -61,6 +61,8 @@ Run game operations on the calling game thread. Do not retain live game objects 
 Tests are synchronous and should finish quickly. Transport requests time out after 15 seconds and request cancellation. A timed-out operation may still be completing cleanup; inspect the recorded result before retrying any state-changing action.
 
 The two complete examples are in `examples/CalradiaForge.Examples/Examples.cs`. They obtain `IGameLaboratory` from `ITestServices.GetService`; this game adapter lives in the mod assembly. Their automated tests use a fake laboratory and do not establish native engine correctness.
+
+SDK API 13 exposes optional `ForgeHookDefinition.Finalizer`, mutable invocation `Exception`, and snapshot `HasFinalizer`/`HasTranspiler` flags while preserving earlier constructor signatures. Prefix/Postfix/Finalizer registration uses `IForgeHookService`; local IL transpilers use the Core-only `net472` `ForgeHookService.RegisterTranspiler` adapter. The SDK contains no MonoMod contract types. See [runtime hook policies](PATCH_BLUEPRINTS.md#explicit-runtime-hooks-and-il-transpilers) before registering executable code: Finalizers pass the host callback gate, while an applied IL transformation remains active outside the menu until explicitly reverted.
 
 ## Local protocol
 

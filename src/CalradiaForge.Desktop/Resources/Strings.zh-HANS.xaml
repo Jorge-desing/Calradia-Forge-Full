@@ -194,7 +194,7 @@
  <sys:String x:Key="Viz.Component.SchemaTargetLabel">目标架构</sys:String>
  <sys:String x:Key="Viz.Component.GeneratedMembersLabel">生成的成员</sys:String>
  <sys:String x:Key="Ui.HookWorkbench">钩子工作台</sys:String>
- <sys:String x:Key="Ui.HookWorkbenchHelp">查看主机注册的 Prefix 和 Postfix 钩子。应用和还原需要明确且限时的确认。</sys:String>
+ <sys:String x:Key="Ui.HookWorkbenchHelp">查看已注册的 Prefix、Postfix、Finalizer 和 Transpiler 钩子。应用和还原需要明确且限时的确认。</sys:String>
  <sys:String x:Key="Ui.HooksOpen">钩子</sys:String>
  <sys:String x:Key="Ui.HooksRefresh">刷新</sys:String>
  <sys:String x:Key="Ui.HooksEligibility">管理资格</sys:String>
@@ -239,4 +239,13 @@
  <sys:String x:Key="Ui.HooksNotAttempted">主机未尝试；需要重新核对状态。</sys:String>
  <sys:String x:Key="Ui.HooksCancelled">主机报告已取消；请检查刷新后的钩子状态。</sys:String>
  <sys:String x:Key="Ui.HooksPartial">主机报告了部分操作。</sys:String>
+ <sys:String x:Key="Ui.HooksOwnerFilter">按所有者筛选</sys:String>
+ <sys:String x:Key="Ui.HooksTargetFilter">按目标筛选</sys:String>
+ <sys:String x:Key="Ui.HooksTypeFilter">按钩子类型筛选</sys:String>
+ <sys:String x:Key="Ui.HooksVerify">验证所选项</sys:String>
+ <sys:String x:Key="Ui.HooksVerifyFailed">钩子验证失败。</sys:String>
+ <sys:String x:Key="Ui.HooksExportSnapshots">导出快照</sys:String>
+ <sys:String x:Key="Ui.HooksExportResults">导出结果</sys:String>
+ <sys:String x:Key="Ui.HooksNoFilterMatches">没有已注册的钩子符合当前筛选条件。</sys:String>
+ <sys:String x:Key="Ui.HooksSelectionCountFormat">已选择 {0} 项；筛选条件隐藏了 {1} 项。操作包含所有选中的钩子。</sys:String>
 </ResourceDictionary>

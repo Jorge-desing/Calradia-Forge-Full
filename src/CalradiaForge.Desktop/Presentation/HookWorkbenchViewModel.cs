@@ -25,6 +25,13 @@ namespace CalradiaForge.Desktop.Presentation
         readonly Func<string, string, string> localize;
         readonly ObservableCollection<HookWorkbenchRow> hooks = [];
         readonly ObservableCollection<HookWorkbenchRow> plannedHooks = [];
+        readonly ObservableCollection<HookWorkbenchRow> filteredHooks = [];
+        readonly DesktopReportExportService reportExports = new();
+        string ownerFilter = string.Empty;
+        string targetFilter = string.Empty;
+        string typeFilter = string.Empty;
+        string lastResult = string.Empty;
+        DateTimeOffset? snapshotsCapturedAtUtc;
         readonly DispatcherTimer expiryTimer;
         HookPlan pendingPlan;
         string sessionId = string.Empty;
@@ -48,9 +55,23 @@ namespace CalradiaForge.Desktop.Presentation
             PlanRevertCommand = new(token => CreatePlanAsync("revert", token), () => CanCreatePlan("revert"));
             ConfirmPlanCommand = new(ConfirmPlanAsync, CanConfirmPlan);
             CancelPlanCommand = new AsyncRelayCommand(CancelPendingPlanAsync, () => HasPendingPlan && !IsBusy);
+            VerifySelectedCommand = new(VerifySelectedAsync, CanVerifySelected);
+            ExportSnapshotsCommand = new(ExportSnapshotsAsync, () => !disposed && !IsBusy && snapshotReadSucceeded);
+            ExportResultsCommand = new(ExportResultsAsync, () => !disposed && !IsBusy && lastResult.Length > 0);
         }
 
         public ObservableCollection<HookWorkbenchRow> Hooks => hooks;
+        public ObservableCollection<HookWorkbenchRow> FilteredHooks => filteredHooks;
+        public bool HasFilteredHooks => filteredHooks.Count > 0;
+        public string EmptyInventoryMessage => HasHooks
+            ? Text("Ui.HooksNoFilterMatches", "No registered hooks match the current filters.")
+            : Text("Ui.HooksNoHooks", "No registered hooks are available in this session.");
+        public string OwnerFilter { get => ownerFilter; set { if (Set(ref ownerFilter, value ?? string.Empty)) RefreshFilters(); } }
+        public string TargetFilter { get => targetFilter; set { if (Set(ref targetFilter, value ?? string.Empty)) RefreshFilters(); } }
+        public string TypeFilter { get => typeFilter; set { if (Set(ref typeFilter, value ?? string.Empty)) RefreshFilters(); } }
+        public AsyncRelayCommand VerifySelectedCommand { get; }
+        public AsyncRelayCommand ExportSnapshotsCommand { get; }
+        public AsyncRelayCommand ExportResultsCommand { get; }
         public ObservableCollection<HookWorkbenchRow> PlannedHooks => plannedHooks;
         public bool HasHooks => hooks.Count > 0;
         public bool HasPendingHooks => plannedHooks.Count > 0;
@@ -69,6 +90,7 @@ namespace CalradiaForge.Desktop.Presentation
         public bool IsConnected => session.IsConnected;
         public bool SupportsHookProtocol => RequiredCapabilities.All(session.Supports);
         public int SelectedCount => hooks.Count(item => item.IsSelected);
+        public int HiddenSelectedCount => hooks.Count(item => item.IsSelected && !filteredHooks.Contains(item));
         public string HooksSummary => string.Format(CultureInfo.CurrentCulture,
             Text("Ui.HooksCountFormat", "{0} registered hooks"), hooks.Count);
         public string PendingOperation => pendingPlan?.Operation ?? string.Empty;
@@ -92,9 +114,12 @@ namespace CalradiaForge.Desktop.Presentation
             {
                 var selected = hooks.Where(item => item.IsSelected).ToArray();
                 if (selected.Length == 0) return Text("Ui.HooksNoSelection", "Select registered hooks to plan an operation.");
+                var summary = string.Format(CultureInfo.CurrentCulture,
+                    Text("Ui.HooksSelectionCountFormat", "{0} selected; {1} hidden by filters. Operations include every selected hook."),
+                    selected.Length, HiddenSelectedCount);
                 if (selected.Select(item => item.State).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1)
-                    return Text("Ui.HooksMixedSelection", "Select hooks in one lifecycle state at a time.");
-                return string.Empty;
+                    return summary + " " + Text("Ui.HooksMixedSelection", "Select hooks in one lifecycle state at a time.");
+                return summary;
             }
         }
 
@@ -132,6 +157,71 @@ namespace CalradiaForge.Desktop.Presentation
             pendingPlan.ExpiresAtUtc > DateTimeOffset.UtcNow && IsConfirmationChecked &&
             string.Equals(pendingPlan.Session, SessionId, StringComparison.Ordinal) &&
             pendingPlan.RequiresConfirmation && pendingPlan.Token.Length > 0;
+
+        bool CanVerifySelected() => !disposed && !IsBusy && !HasPendingPlan && !requiresSnapshotRefresh &&
+            IsConnected && IsEligible && session.Supports("hook-verify") && SelectedCount > 0 && SelectedCount <= 32;
+
+        async Task VerifySelectedAsync(CancellationToken cancellation)
+        {
+            if (!CanVerifySelected()) return;
+            var ids = hooks.Where(row => row.IsSelected).Select(row => row.Id).ToArray();
+            IsBusy = true;
+            try
+            {
+                var response = await session.SendAsync(new Request { Action = "hook-verify",
+                    Argument = Json.Serialize(new HookIpcSelection { HookIds = ids.ToList() }) }, cancellation).ConfigureAwait(true);
+                if (response?.Success != true) { Status = response?.Error ?? Text("Ui.HooksVerifyFailed", "Hook verification failed."); return; }
+                if (!TryReadCommit(response.Data, "verify", SessionId, ids, out var commit, out var error)) { Status = error; return; }
+                if (commit.TokenConsumed) { Status = Text("Ui.HooksVerifyFailed", "Hook verification failed."); return; }
+                lastResult = response.Data;
+                var outcome = FormatCommitStatus(commit, ids);
+                Status = outcome;
+                await RefreshSnapshotsAsync(cancellation, allowWhileBusy: true).ConfigureAwait(true);
+                if (snapshotReadSucceeded) Status = outcome;
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { Status = Text("Ui.HooksCancelStatus", "The operation was cancelled."); }
+            catch (Exception error) { Status = error.Message; }
+            finally { IsBusy = false; }
+        }
+
+        async Task ExportSnapshotsAsync(CancellationToken cancellation)
+        {
+            IsBusy = true;
+            try { ShowExportResult(await reportExports.ExportJsonAsync("hook-snapshots", new { Session = SessionId,
+                CapturedAtUtc = snapshotsCapturedAtUtc, Eligible = IsEligible, BlockedReason, Hooks = hooks.Select(row => new {
+                    row.Id, row.Owner, row.Target, row.HasPrefix, row.HasPostfix, row.HasFinalizer, row.HasTranspiler,
+                    row.Priority, row.Before, row.After, row.State, row.Detail }).ToArray() }, cancellation).ConfigureAwait(true)); }
+            finally { IsBusy = false; }
+        }
+
+        async Task ExportResultsAsync(CancellationToken cancellation)
+        {
+            IsBusy = true;
+            try
+            {
+                using var document = JsonDocument.Parse(lastResult);
+                ShowExportResult(await reportExports.ExportJsonAsync("hook-results", document.RootElement.Clone(), cancellation).ConfigureAwait(true));
+            }
+            finally { IsBusy = false; }
+        }
+
+        void ShowExportResult(ReportExportResult result) => Status = result.Status switch {
+            ReportExportStatus.Succeeded => Text("Ui.ReportExported", "Report exported:") + " " + result.Path,
+            ReportExportStatus.Cancelled => Text("Ui.ReportExportCancelled", "Report export was cancelled."),
+            _ => Text("Ui.ReportExportFailed", "Report export failed.") };
+
+        void RefreshFilters()
+        {
+            filteredHooks.Clear();
+            foreach (var row in hooks)
+                if (row.Owner.Contains(OwnerFilter, StringComparison.OrdinalIgnoreCase) &&
+                    row.Target.Contains(TargetFilter, StringComparison.OrdinalIgnoreCase) &&
+                    row.HookKinds.Contains(TypeFilter, StringComparison.OrdinalIgnoreCase)) filteredHooks.Add(row);
+            Raise(nameof(HasFilteredHooks));
+            Raise(nameof(EmptyInventoryMessage));
+            Raise(nameof(HiddenSelectedCount));
+            Raise(nameof(SelectionMessage));
+        }
 
         Task RefreshSnapshotsAsync(CancellationToken cancellation) => RefreshSnapshotsAsync(cancellation, allowWhileBusy: false);
 
@@ -174,6 +264,7 @@ namespace CalradiaForge.Desktop.Presentation
                 ReplaceHooks(envelope.Hooks);
                 requiresSnapshotRefresh = false;
                 snapshotReadSucceeded = true;
+                snapshotsCapturedAtUtc = DateTimeOffset.UtcNow;
                 Status = IsEligible
                     ? Text("Ui.HooksLoaded", "Hook inventory refreshed.")
                     : (string.IsNullOrWhiteSpace(BlockedReason) ? Text("Ui.HooksBlocked", "Hook operations are unavailable in this game context.") : BlockedReason);
@@ -287,6 +378,7 @@ namespace CalradiaForge.Desktop.Presentation
                 }
 
                 var outcome = FormatCommitStatus(commit, plan.HookIds);
+                lastResult = response.Data;
                 if (commit.RequiresReconciliation)
                     Status = Text("Ui.HooksReconciling", "The host reported an incomplete or uncertain result. Reading fresh hook snapshots before another plan.");
                 await RefreshSnapshotsAsync(cancellation, allowWhileBusy: true).ConfigureAwait(true);
@@ -333,6 +425,7 @@ namespace CalradiaForge.Desktop.Presentation
             Raise(nameof(SelectionMessage));
             Raise(nameof(HasHooks));
             Raise(nameof(HooksSummary));
+            RefreshFilters();
             RefreshCommandStates();
         }
 
@@ -340,6 +433,7 @@ namespace CalradiaForge.Desktop.Presentation
         {
             if (args.PropertyName != nameof(HookWorkbenchRow.IsSelected)) return;
             Raise(nameof(SelectedCount));
+            Raise(nameof(HiddenSelectedCount));
             Raise(nameof(SelectionMessage));
             RefreshCommandStates();
         }
@@ -351,6 +445,9 @@ namespace CalradiaForge.Desktop.Presentation
             PlanRevertCommand?.NotifyCanExecuteChanged();
             ConfirmPlanCommand?.NotifyCanExecuteChanged();
             CancelPlanCommand?.NotifyCanExecuteChanged();
+            VerifySelectedCommand?.NotifyCanExecuteChanged();
+            ExportSnapshotsCommand?.NotifyCanExecuteChanged();
+            ExportResultsCommand?.NotifyCanExecuteChanged();
             Raise(nameof(IsConnected));
             Raise(nameof(SupportsHookProtocol));
             Raise(nameof(CapabilityMessage));
@@ -526,7 +623,9 @@ namespace CalradiaForge.Desktop.Presentation
                     var hasPrefix = element.TryGetBooleanInsensitive("hasPrefix", out var prefix) && prefix;
                     var hasPostfix = element.TryGetBooleanInsensitive("hasPostfix", out var postfix) && postfix;
                     var detail = element.TryGetStringInsensitive("detail", out var note) ? note : string.Empty;
-                    rows.Add(new HookWorkbenchRow(id, owner, target, hasPrefix, hasPostfix, priority, before, after, state, detail));
+                    var hasFinalizer = element.TryGetBooleanInsensitive("hasFinalizer", out var finalizer) ? finalizer : (bool?)null;
+                    var hasTranspiler = element.TryGetBooleanInsensitive("hasTranspiler", out var transpiler) ? transpiler : (bool?)null;
+                    rows.Add(new HookWorkbenchRow(id, owner, target, hasPrefix, hasPostfix, priority, before, after, state, detail, hasFinalizer, hasTranspiler));
                 }
                 if (rows.Select(item => item.Id).Distinct(StringComparer.Ordinal).Count() != rows.Count)
                     throw new JsonException("Snapshot payload contained duplicate hook IDs.");
@@ -698,7 +797,9 @@ namespace CalradiaForge.Desktop.Presentation
                 var hasPrefix = hook.TryGetBooleanInsensitive("hasPrefix", out var prefix) && prefix;
                 var hasPostfix = hook.TryGetBooleanInsensitive("hasPostfix", out var postfix) && postfix;
                 var detail = hook.TryGetStringInsensitive("detail", out var note) ? note : string.Empty;
-                rows.Add(new HookWorkbenchRow(id, owner, target, hasPrefix, hasPostfix, priority, before, after, state, detail));
+                var hasFinalizer = hook.TryGetBooleanInsensitive("hasFinalizer", out var finalizer) ? finalizer : (bool?)null;
+                var hasTranspiler = hook.TryGetBooleanInsensitive("hasTranspiler", out var transpiler) ? transpiler : (bool?)null;
+                rows.Add(new HookWorkbenchRow(id, owner, target, hasPrefix, hasPostfix, priority, before, after, state, detail, hasFinalizer, hasTranspiler));
             }
             return rows;
         }
@@ -709,6 +810,7 @@ namespace CalradiaForge.Desktop.Presentation
             string.Equals(left.State, right.State, StringComparison.Ordinal) &&
             string.Equals(left.Detail, right.Detail, StringComparison.Ordinal) &&
             left.HasPrefix == right.HasPrefix && left.HasPostfix == right.HasPostfix && left.Priority == right.Priority &&
+            left.HasFinalizer == right.HasFinalizer && left.HasTranspiler == right.HasTranspiler &&
             left.Before.SequenceEqual(right.Before, StringComparer.Ordinal) && left.After.SequenceEqual(right.After, StringComparer.Ordinal);
 
         static IReadOnlyList<string> ReadStrings(JsonElement element, string name)
@@ -739,6 +841,7 @@ namespace CalradiaForge.Desktop.Presentation
             ClearPendingPlan();
             foreach (var row in hooks) row.PropertyChanged -= OnHookPropertyChanged;
             hooks.Clear();
+            filteredHooks.Clear();
         }
     }
 
@@ -747,13 +850,16 @@ namespace CalradiaForge.Desktop.Presentation
         bool isSelected;
 
         public HookWorkbenchRow(string id, string owner, string target, bool hasPrefix, bool hasPostfix,
-            int? priority, IReadOnlyList<string> before, IReadOnlyList<string> after, string state, string detail)
+            int? priority, IReadOnlyList<string> before, IReadOnlyList<string> after, string state, string detail,
+            bool? hasFinalizer = null, bool? hasTranspiler = null)
         {
             Id = id ?? string.Empty;
             Owner = owner ?? string.Empty;
             Target = target ?? string.Empty;
             HasPrefix = hasPrefix;
             HasPostfix = hasPostfix;
+            HasFinalizer = hasFinalizer;
+            HasTranspiler = hasTranspiler;
             Priority = priority;
             Before = before ?? Array.Empty<string>();
             After = after ?? Array.Empty<string>();
@@ -766,6 +872,8 @@ namespace CalradiaForge.Desktop.Presentation
         public string Target { get; }
         public bool HasPrefix { get; }
         public bool HasPostfix { get; }
+        public bool? HasFinalizer { get; }
+        public bool? HasTranspiler { get; }
         public int? Priority { get; }
         public IReadOnlyList<string> Before { get; }
         public IReadOnlyList<string> After { get; }
@@ -774,7 +882,8 @@ namespace CalradiaForge.Desktop.Presentation
         public string Order => "Priority " + (Priority?.ToString(CultureInfo.InvariantCulture) ?? "default") +
             (Before.Count == 0 ? string.Empty : " · Before: " + string.Join(", ", Before)) +
             (After.Count == 0 ? string.Empty : " · After: " + string.Join(", ", After));
-        public string HookKinds => string.Join(" / ", new[] { HasPrefix ? "Prefix" : null, HasPostfix ? "Postfix" : null }.Where(item => item != null));
+        public string HookKinds => string.Join(" / ", new[] { HasPrefix ? "Prefix" : null, HasPostfix ? "Postfix" : null,
+            HasFinalizer == true ? "Finalizer" : null, HasTranspiler == true ? "Transpiler" : null }.Where(item => item != null));
         public bool IsSelectable => string.Equals(State, "Registered", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(State, "Reverted", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(State, "Applied", StringComparison.OrdinalIgnoreCase) ||
@@ -782,7 +891,7 @@ namespace CalradiaForge.Desktop.Presentation
             string.Equals(State, "Failed", StringComparison.OrdinalIgnoreCase);
         public bool IsSelected { get => isSelected; set { if (Set(ref isSelected, value)) Raise(); } }
 
-        public HookWorkbenchRow Copy() => new(Id, Owner, Target, HasPrefix, HasPostfix, Priority, Before.ToArray(), After.ToArray(), State, Detail);
+        public HookWorkbenchRow Copy() => new(Id, Owner, Target, HasPrefix, HasPostfix, Priority, Before.ToArray(), After.ToArray(), State, Detail, HasFinalizer, HasTranspiler);
     }
 
     internal sealed class HookSnapshotEnvelope(string session, bool eligible, string blockedReason, IReadOnlyList<HookWorkbenchRow> hooks)

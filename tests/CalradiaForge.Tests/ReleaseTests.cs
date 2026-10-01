@@ -19,7 +19,25 @@ internal static class ReleaseTests
         test("English text is independent of selected OS culture",()=>{var previous=Thread.CurrentThread.CurrentUICulture;try{Thread.CurrentThread.CurrentUICulture=new System.Globalization.CultureInfo("es-MX");Assert(Localization.Text("Modules",Localization.DefaultLanguage)=="Modules");}finally{Thread.CurrentThread.CurrentUICulture=previous;}});
         test("Spanish is an explicit secondary translation",()=>Assert(Localization.Text("Modules","es")=="Módulos" && Localization.Text("Modules","en")=="Modules"));
         test("Unsupported languages fall back to English",()=>Assert(Localization.Text("Modules","fr")=="Modules" && Localization.Text("Unregistered extension message","es")=="Unregistered extension message"));
-        test("Protocol advertises the complete standalone developer surface",()=>{var expected=new[]{"hello","summary","scan","modules","dependencies","diagnostics","logs","inspect","pin","compare","snapshots","unpin","tests","commands","command","test-mode","confirm-copy","run","run-batch","metrics","framework","event-journal","replay","harmony","patch-blueprints","patch-preflight","hook-snapshots","hook-apply-plan","hook-apply-confirm","hook-revert-plan","hook-revert-confirm","hook-plan-cancel","report","export","panel-open","panel-close","language","agent-memory"};var capabilities=ForgeProtocol.Hello(SuiteInfo.Version,"1.4.8");Assert(capabilities.Contains("protocol:1")&&expected.All(capabilities.Contains)&&ForgeProtocol.Actions.SequenceEqual(expected)&&capabilities.Length==expected.Length+3);});
+        test("Protocol advertises the complete standalone developer surface",()=>{var expected=new[]{"hello","summary","scan","modules","dependencies","diagnostics","logs","inspect","pin","compare","snapshots","unpin","tests","commands","command","test-mode","confirm-copy","run","run-batch","metrics","framework","event-journal","replay","harmony","patch-blueprints","patch-preflight","hook-snapshots","hook-verify","hook-apply-plan","hook-apply-confirm","hook-revert-plan","hook-revert-confirm","hook-plan-cancel","report","export","panel-open","panel-close","language","agent-memory"};var capabilities=ForgeProtocol.Hello(SuiteInfo.Version,"1.4.8");Assert(capabilities.Contains("protocol:1")&&expected.All(capabilities.Contains)&&ForgeProtocol.Actions.SequenceEqual(expected)&&capabilities.Length==expected.Length+3);});
+        test("Gauntlet hook preview rejects stale, changed and unregistered selections",()=>{
+            var panelType=typeof(Runtime).Assembly.GetType("CalradiaForge.Mod.PanelViewModel",true);
+            var validate=panelType.GetMethod("IsValidHookPlan",BindingFlags.Static|BindingFlags.NonPublic);
+            var now=DateTimeOffset.UtcNow;
+            var selected=new HookIpcSnapshot {Id="own-hook",Owner="fixture",TargetMethod="Fixture.Target",State="Registered",HasFinalizer=true};
+            var status=new HookIpcStatus {Session="own-session",ServiceAvailable=true,CanManage=true,Hooks=new List<HookIpcSnapshot>{selected}};
+            var plan=new HookIpcPlan {Session=status.Session,Operation="apply",Token="own-token",RequiresConfirmation=true,ExpiresAtUtc=now.AddSeconds(60).ToString("O"),Hooks=new List<HookIpcSnapshot>{Json.Deserialize<HookIpcSnapshot>(Json.Serialize(selected))}};
+            Func<bool> accepted=()=> (bool)validate.Invoke(null,new object[]{plan,status,selected.Id,"apply",now});
+            Assert(accepted());
+            plan.ExpiresAtUtc=now.ToString("O");Assert(!accepted());plan.ExpiresAtUtc=now.AddSeconds(60).ToString("O");
+            plan.Session="another-session";Assert(!accepted());plan.Session=status.Session;
+            plan.Hooks[0].HasFinalizer=false;Assert(!accepted());plan.Hooks[0].HasFinalizer=true;
+            plan.Hooks[0].Id="unregistered";Assert(!accepted());plan.Hooks[0].Id=selected.Id;
+            plan.RequiresConfirmation=false;Assert(!accepted());plan.RequiresConfirmation=true;
+            status.CanManage=false;Assert(!accepted());status.CanManage=true;
+            status.Hooks.Add(selected);Assert(!accepted());status.Hooks.RemoveAt(1);
+            plan.Operation="arbitrary";Assert(!accepted());
+        });
         test("Hook IPC DTOs preserve only IDs and single-use confirmation metadata",()=>{
             var selection=Json.Deserialize<HookIpcSelection>(Json.Serialize(new HookIpcSelection {HookIds=new List<string>{"fixture.prefix","fixture.postfix"}}));
             var confirmation=Json.Deserialize<HookIpcConfirmation>(Json.Serialize(new HookIpcConfirmation {Token=new string('a',64)}));
@@ -45,6 +63,48 @@ internal static class ReleaseTests
                 commit.Contains("StopHookCommit")&&commit.Contains("commit.NotAttemptedIds.Count > 0"));
             Assert(create.Contains("snapshot.State == ForgeHookState.Conflict")&&create.Contains("snapshot.State == ForgeHookState.Failed")&&
                 commit.Contains("snapshot.State == ForgeHookState.Conflict")&&commit.Contains("snapshot.State == ForgeHookState.Failed"));
+        });
+        test("Hook console Apply and Revert require the Runtime single-use plan confirmation",()=>{
+            var source=ReadForgeCommandsSource();
+            var applyStart=source.IndexOf("public static string HookApply(",StringComparison.Ordinal);
+            var revertStart=source.IndexOf("public static string HookRevert(",StringComparison.Ordinal);
+            var confirmStart=source.IndexOf("public static string HookConfirm(",StringComparison.Ordinal);
+            var planStart=source.IndexOf("static string PrepareConsoleHookPlan(",StringComparison.Ordinal);
+            var revertAllStart=source.IndexOf("public static string RevertAll(",StringComparison.Ordinal);
+            Assert(applyStart>=0&&revertStart>applyStart&&confirmStart>revertStart&&planStart>confirmStart&&revertAllStart>planStart);
+            var apply=source.Substring(applyStart,revertStart-applyStart);
+            var revert=source.Substring(revertStart,confirmStart-revertStart);
+            var confirm=source.Substring(confirmStart,planStart-confirmStart);
+            var plan=source.Substring(planStart,revertAllStart-planStart);
+            Assert(apply.Contains("PrepareConsoleHookPlan(runtime, \"apply\"")&&!apply.Contains("service.Apply("));
+            Assert(revert.Contains("PrepareConsoleHookPlan(runtime, \"revert\"")&&!revert.Contains("service.Revert(")&&!revert.Contains("service.RevertAll("));
+            Assert(confirm.Contains("hook-apply-confirm")&&confirm.Contains("hook-revert-confirm")&&
+                confirm.Contains("new HookIpcConfirmation { Token = token }")&&confirm.Contains("runtime.Handle"));
+            Assert(plan.Contains("hook-apply-plan")&&plan.Contains("hook-revert-plan")&&
+                plan.Contains("new HookIpcSelection { HookIds = hookIds }")&&plan.Contains("Expires (UTC):")&&
+                plan.Contains("Single-use confirmation token:")&&plan.Contains("target=")&&plan.Contains("plan.Operation"));
+            Assert(source.Contains("cf.hook_confirm <apply|revert> <token>"));
+        });
+        test("Console revert filters inactive records before preparing an explicit plan",()=>{
+            var selector=typeof(ForgeCommands).GetMethod("EligibleConsoleHookRevertIds",BindingFlags.NonPublic|BindingFlags.Static);
+            Assert(selector!=null);
+            Func<string,ForgeHookState,ForgeHookSnapshot> snapshot=(id,state)=>new ForgeHookSnapshot(id,"owner","target",true,false,null,null,null,state,string.Empty);
+            var inventory=new[]{snapshot("registered",ForgeHookState.Registered),snapshot("applied",ForgeHookState.Applied),
+                snapshot("reverted",ForgeHookState.Reverted),snapshot("conflict",ForgeHookState.Conflict),
+                snapshot("failed",ForgeHookState.Failed),snapshot("unsupported",ForgeHookState.Unsupported)};
+            var eligible=(List<string>)selector.Invoke(null,new object[]{inventory});
+            Assert(eligible.SequenceEqual(new[]{"applied","conflict","failed"}));
+            var inactive=(List<string>)selector.Invoke(null,new object[]{new[]{inventory[0],inventory[2],inventory[5]}});
+            Assert(inactive.Count==0);
+            var single=(List<string>)selector.Invoke(null,new object[]{new[]{inventory[1]}});
+            Assert(single.SequenceEqual(new[]{"applied"}));
+            var source=ReadForgeCommandsSource();
+            var start=source.IndexOf("public static string HookRevert(",StringComparison.Ordinal);
+            var end=source.IndexOf("static List<string> EligibleConsoleHookRevertIds(",start,StringComparison.Ordinal);
+            var revert=source.Substring(start,end-start);
+            Assert(revert.Contains("EligibleConsoleHookRevertIds(snapshots.Where(item => selected.Contains(item.Id)))")&&
+                revert.Contains("No selected hooks are eligible for Revert")&&
+                revert.IndexOf("selectedIds.Count == 0",StringComparison.Ordinal)<revert.IndexOf("PrepareConsoleHookPlan(runtime, \"revert\"",StringComparison.Ordinal));
         });
         test("Hook dispatch skips callbacks outside the host-approved context",()=>{
             var source=ReadCoreHookSource();
@@ -89,7 +149,7 @@ internal static class ReleaseTests
                 ReadRuntimeSource().Contains("screenType == officialType"));
         });
         test("Forge hook capability is optional and registration is inert by default",()=>{
-            Assert(ForgeApi.Version==12);
+            Assert(ForgeApi.Version==13);
             var engine=new TestEngine();
             var callbackCount=0;
             ForgeApi.Connect(engine);
@@ -294,7 +354,10 @@ internal static class ReleaseTests
         test("Harmony atlas reports an incompatible runtime without failing",()=>{var result=HarmonyDiagnostics.Inspect(typeof(UnsupportedHarmony));Assert(result.Available&&!result.Supported&&result.Status.Contains("unavailable"));});
         test("Harmony atlas preserves target identity, owners, kinds and ordering",()=>{
             var result=HarmonyDiagnostics.Inspect(typeof(FakeHarmony),null,20);var target=result.Methods.Single(row=>row.Signature.Contains("System.Int32"));var prefix=target.Patches.Single(patch=>patch.Kind=="Prefix");
-            Assert(result.Supported&&result.DiscoveredMethodCount==2&&target.HasMultipleOwners&&target.Owners.SequenceEqual(new[]{"owner.alpha","owner.beta"})&&prefix.Owner=="owner.alpha"&&prefix.Priority==700&&prefix.Before.Single()=="owner.before"&&prefix.After.Single()=="owner.after"&&prefix.PatchMethod=="Prefix");
+            Assert(result.Supported&&result.DiscoveredMethodCount==2&&target.HasMultipleOwners&&target.Owners.SequenceEqual(new[]{"owner.alpha","owner.beta"})&&
+                target.Patches.Select(patch=>patch.Kind).SequenceEqual(new[]{"Prefix","Postfix","Transpiler","Finalizer"})&&
+                prefix.Owner=="owner.alpha"&&prefix.Priority==700&&prefix.Before.Single()=="owner.before"&&prefix.After.Single()=="owner.after"&&prefix.PatchMethod=="Prefix"&&
+                target.Patches.Single(patch=>patch.Kind=="Transpiler").PatchMethod=="Transpiler"&&target.Patches.Single(patch=>patch.Kind=="Finalizer").PatchMethod=="Finalizer");
         });
         test("Harmony atlas filters and explicitly bounds displayed targets",()=>{var filtered=HarmonyDiagnostics.Inspect(typeof(FakeHarmony),"owner.beta",20);var limited=HarmonyDiagnostics.Inspect(typeof(FakeHarmony),null,1);Assert(filtered.Methods.Count==1&&filtered.Methods[0].Owners.Contains("owner.beta")&&limited.Methods.Count==1&&limited.Truncated);});
         test("Harmony atlas tolerates unreadable patch metadata",()=>{var result=HarmonyDiagnostics.Inspect(typeof(BrokenHarmony),null,20);Assert(result.Supported&&result.DiscoveredMethodCount==1&&result.Methods.Count==1);});
@@ -620,6 +683,17 @@ internal static class ReleaseTests
             }
         throw new FileNotFoundException("Could not locate the CalradiaForge.Mod Runtime.cs source for hook IPC contract checks.");
     }
+    static string ReadForgeCommandsSource()
+    {
+        var starts=new[]{new DirectoryInfo(Environment.CurrentDirectory),new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory)};
+        foreach(var start in starts)
+            for(var directory=start;directory!=null;directory=directory.Parent)
+            {
+                var path=Path.Combine(directory.FullName,"src","CalradiaForge.Mod","Commands","ForgeCommands.cs");
+                if(File.Exists(path))return File.ReadAllText(path);
+            }
+        throw new FileNotFoundException("Could not locate CalradiaForge.Mod ForgeCommands.cs for console hook plan contract checks.");
+    }
     static string ReadCoreHookSource()
     {
         var starts=new[]{new DirectoryInfo(Environment.CurrentDirectory),new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory)};
@@ -655,6 +729,8 @@ internal static class ReleaseTests
     {
         public static void Prefix() { }
         public static void Postfix() { }
+        public static void Transpiler() { }
+        public static void Finalizer() { }
     }
     public sealed class FakePatch
     {
@@ -676,7 +752,7 @@ internal static class ReleaseTests
         public static IEnumerable<MethodBase> GetAllPatchedMethods()=>new MethodBase[]{integer,text};
         public static FakePatchInfo GetPatchInfo(MethodBase target)
         {
-            if(target==integer)return new FakePatchInfo {Owners=new List<string>{"owner.beta","owner.alpha"},Prefixes=new List<FakePatch>{new FakePatch{owner="owner.alpha",priority=700,index=2,before=new[]{"owner.before"},after=new[]{"owner.after"},PatchMethod=typeof(FakePatches).GetMethod("Prefix")}},Postfixes=new List<FakePatch>{new FakePatch{owner="owner.beta",priority=200,index=3,PatchMethod=typeof(FakePatches).GetMethod("Postfix")}}};
+            if(target==integer)return new FakePatchInfo {Owners=new List<string>{"owner.beta","owner.alpha"},Prefixes=new List<FakePatch>{new FakePatch{owner="owner.alpha",priority=700,index=2,before=new[]{"owner.before"},after=new[]{"owner.after"},PatchMethod=typeof(FakePatches).GetMethod("Prefix")}},Postfixes=new List<FakePatch>{new FakePatch{owner="owner.beta",priority=200,index=3,PatchMethod=typeof(FakePatches).GetMethod("Postfix")}},Transpilers=new List<FakePatch>{new FakePatch{owner="owner.alpha",priority=300,index=4,PatchMethod=typeof(FakePatches).GetMethod("Transpiler")}},Finalizers=new List<FakePatch>{new FakePatch{owner="owner.beta",priority=400,index=5,PatchMethod=typeof(FakePatches).GetMethod("Finalizer")}}};
             return new FakePatchInfo {Owners=new List<string>{"owner.gamma"},Prefixes=new List<FakePatch>{new FakePatch{owner="owner.gamma",priority=100,index=4,PatchMethod=typeof(FakePatches).GetMethod("Prefix")}}};
         }
     }

@@ -433,6 +433,18 @@ quick_actions=E.SubElement(quick_actions,'Children')
 for cmd,label in [('Refresh','Refresh'),('Scan','Scan'),('Pin','Pin'),('Compare','Compare')]:button(quick_actions,cmd,'@'+label+'Label','@PrimaryActionButtonWidth',height=42)
 button(quick_actions,'Run','@RunLabel','@PrimaryActionButtonWidth',height=42,brush='CalradiaForge.Primary')
 
+hook_host=E.SubElement(E.SubElement(quick_host,'Children'),'Widget',Id='ForgeHookWorkbench',IsVisible='@IsHookWorkbenchVisible',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent')
+hook_children=E.SubElement(hook_host,'Children')
+hook_actions=E.SubElement(E.SubElement(hook_children,'ListPanel',Id='ForgeHookActions',IsVisible='@HasNoHookPlan',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
+for cmd,label in [('HookInventory','HookStatus'),('HookNext','HookNext'),('HookVerify','HookVerify'),('HookApplyPlan','HookApply'),('HookRevertPlan','HookRevert')]:
+    hook_button=button(hook_actions,cmd,'@'+label+'Label','@PrimaryActionButtonWidth',height=42)
+    if cmd not in ('HookInventory','HookNext'): hook_button.set('IsDisabled','@IsHookSelectionDisabled')
+hook_confirm=E.SubElement(E.SubElement(hook_children,'ListPanel',Id='ForgeHookConfirmation',IsVisible='@HasHookPlan',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
+hook_check=E.SubElement(hook_confirm,'ToggleButtonWidget',Id='ForgeHookApproval',IsSelected='@HookConfirmationChecked',IsFocusable='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='240',SuggestedHeight='42',Brush='CalradiaForge.TacticalButton')
+E.SubElement(E.SubElement(hook_check,'Children'),'TextWidget',Text='@HookApprovalLabel',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.ButtonText',HorizontalAlignment='Center',VerticalAlignment='Center')
+button(hook_confirm,'HookConfirm','@HookConfirmLabel','@PrimaryActionButtonWidth',height=42,brush='CalradiaForge.Primary').set('IsDisabled','@IsHookConfirmDisabled')
+button(hook_confirm,'HookCancel','@HookCancelLabel','@PrimaryActionButtonWidth',height=42)
+
 # Evidence ledger stays on an untextured, high-contrast surface; existing page navigation remains intact.
 body_frame=E.SubElement(children,'Widget',Id='ForgeEvidenceFrame',IsVisible='@IsEvidenceFrameVisible',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='280',MarginRight='@WorkspaceRightMargin',MarginTop='@EvidenceTop',MarginBottom='178',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
 body=E.SubElement(E.SubElement(body_frame,'Children'),'Widget',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginTop='1',MarginRight='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0A0D0BFF')
@@ -643,14 +655,15 @@ rule_children=E.SubElement(rule_surface,'Children')
 
 rule_left=E.SubElement(rule_children,'Widget',Id='ForgeCampaignRuleLeftColumn',WidthSizePolicy='Fixed',HeightSizePolicy='StretchToParent',SuggestedWidth='316',MarginLeft='12',MarginTop='12',MarginBottom='12',Sprite='BlankWhiteSquare_9',Color='#14211CFF')
 rule_left_children=E.SubElement(rule_left,'Children')
-E.SubElement(rule_left_children,'TextWidget',Id='ForgeCampaignRuleCatalogHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='26',MarginLeft='10',MarginRight='10',MarginTop='4',Brush='CalradiaForge.HeaderGold',Text='@CampaignRuleBuilderCatalogLabel',**{'Brush.FontSize':'18'})
+E.SubElement(rule_left_children,'TextWidget',Id='ForgeCampaignRuleCatalogHeading',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='26',MarginLeft='10',MarginRight='10',MarginTop='4',Brush='CalradiaForge.HeaderGold',Text='@CampaignRuleBuilderRulesLabel',**{'Brush.FontSize':'18'})
 rule_add=button(rule_left_children,'CampaignRuleAdd','@CampaignRuleBuilderAddRuleLabel',282,height=36,margin_right=0)
 rule_add.set('MarginLeft','10')
 rule_add.set('MarginTop','34')
 rule_add.set('Command.Click','ExecuteCampaignRuleBuilderAdd')
 rule_add.set('IsDisabled','@CampaignRuleBuilderAtCapacity')
 E.SubElement(rule_left_children,'TextWidget',Id='ForgeCampaignRuleCount',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='20',MarginLeft='10',MarginRight='10',MarginTop='76',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderCountLabel',**{'Brush.FontSize':'13'})
-rule_left_scroll=E.SubElement(rule_left_children,'ScrollablePanel',Id='ForgeCampaignRuleLeftScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='8',MarginRight='12',MarginTop='101',MarginBottom='52',ClipRect='ForgeCampaignRuleLeftClip',InnerPanel='ForgeCampaignRuleLeftClip\\ForgeCampaignRuleList',VerticalScrollbar='..\\ForgeCampaignRuleLeftScrollbar')
+E.SubElement(rule_left_children,'TextWidget',Id='ForgeCampaignRuleDraftLoadState',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='18',MarginLeft='10',MarginRight='10',MarginTop='97',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderDraftLoadStatusLabel',ClipContents='true',**{'Brush.FontSize':'12'})
+rule_left_scroll=E.SubElement(rule_left_children,'ScrollablePanel',Id='ForgeCampaignRuleLeftScroll',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='8',MarginRight='12',MarginTop='121',MarginBottom='52',ClipRect='ForgeCampaignRuleLeftClip',InnerPanel='ForgeCampaignRuleLeftClip\\ForgeCampaignRuleList',VerticalScrollbar='..\\ForgeCampaignRuleLeftScrollbar')
 rule_left_clip=E.SubElement(E.SubElement(rule_left_scroll,'Children'),'Widget',Id='ForgeCampaignRuleLeftClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
 rule_list=E.SubElement(E.SubElement(rule_left_clip,'Children'),'ListPanel',Id='ForgeCampaignRuleList',DataSource='{CampaignRuleBuilderRules}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
 rule_template=E.SubElement(rule_list,'ItemTemplate')
@@ -658,8 +671,8 @@ rule_entry=E.SubElement(rule_template,'ButtonWidget',Id='ForgeCampaignRuleRow',I
 rule_entry_children=E.SubElement(rule_entry,'Children')
 E.SubElement(rule_entry_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='18',MarginLeft='8',MarginRight='8',MarginTop='2',Brush='CalradiaForge.Gold',Text='@Id',**{'Brush.FontSize':'12'})
 E.SubElement(rule_entry_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='30',MarginLeft='8',MarginRight='8',MarginTop='20',Brush='CalradiaForge.ButtonText',Text='@Summary',ClipContents='true',**{'Brush.FontSize':'13'})
-scrollbar(rule_left_children,'ForgeCampaignRuleLeftScrollbar',101,52,12)
-E.SubElement(rule_left_children,'TextWidget',Id='ForgeCampaignRuleEmpty',IsVisible='@CampaignRuleBuilderIsEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='44',MarginLeft='12',MarginRight='12',MarginTop='105',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderEmptyLabel',ClipContents='true',**{'Brush.FontSize':'14'})
+scrollbar(rule_left_children,'ForgeCampaignRuleLeftScrollbar',121,52,12)
+E.SubElement(rule_left_children,'TextWidget',Id='ForgeCampaignRuleEmpty',IsVisible='@CampaignRuleBuilderIsEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='44',MarginLeft='12',MarginRight='12',MarginTop='125',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderEmptyLabel',ClipContents='true',**{'Brush.FontSize':'14'})
 rule_order_actions=E.SubElement(E.SubElement(rule_left_children,'ListPanel',Id='ForgeCampaignRuleOrderActions',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='36',MarginLeft='8',MarginRight='8',MarginBottom='8',VerticalAlignment='Bottom',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
 for command,glyph,label,width,handler in [('CampaignRulePrevious','‹','CampaignRuleBuilderPreviousLabel',52,'ExecuteCampaignRuleBuilderSelectPrevious'),('CampaignRuleNext','›','CampaignRuleBuilderNextLabel',52,'ExecuteCampaignRuleBuilderSelectNext'),('CampaignRuleUp','↑','CampaignRuleBuilderMoveUpLabel',48,'ExecuteCampaignRuleBuilderMoveUp'),('CampaignRuleDown','↓','CampaignRuleBuilderMoveDownLabel',48,'ExecuteCampaignRuleBuilderMoveDown'),('CampaignRuleRemove','×','CampaignRuleBuilderRemoveRuleLabel',48,'ExecuteCampaignRuleBuilderRemove')]:
     control=button(rule_order_actions,command,glyph,width,height=32,margin_right=3,hint='@'+label)
@@ -1009,6 +1022,13 @@ for language in menu['languages']:
     catalog.update(dict(zip(menu['keys'],language['values'])))
     catalogs.append((language['iso'],language['folder'],language['id'],catalog))
 briefing=json.loads((ROOT/'localization/native-briefing.json').read_text(encoding='utf-8'))
+hook_labels=json.loads((ROOT/'localization/hook-workbench.json').read_text(encoding='utf-8'))
+for key,translations in hook_labels.items():
+    if translations.get('en')!=key or set(translations)!=set(SUPPORTED_LOCALIZATION_LANGUAGES) or any(not value.strip() for value in translations.values()):
+        raise ValueError('Incomplete hook workbench localization: '+key)
+    english_catalog[key]=translations['en']
+    for language,folder,display,catalog in catalogs:
+        catalog[key]=translations[language]
 english_catalog.update({key:translations['en'] for key,translations in briefing.items()})
 for language,folder,display,catalog in catalogs:
     catalog.update({key:translations[language] for key,translations in briefing.items()})

@@ -194,7 +194,7 @@
  <sys:String x:Key="Viz.Component.SchemaTargetLabel">스키마 대상</sys:String>
  <sys:String x:Key="Viz.Component.GeneratedMembersLabel">생성 멤버</sys:String>
  <sys:String x:Key="Ui.HookWorkbench">후크 작업대</sys:String>
- <sys:String x:Key="Ui.HookWorkbenchHelp">호스트에 등록된 Prefix 및 Postfix 후크를 확인합니다. 적용과 되돌리기에는 명시적이고 시간 제한이 있는 확인이 필요합니다.</sys:String>
+ <sys:String x:Key="Ui.HookWorkbenchHelp">등록된 Prefix, Postfix, Finalizer 및 Transpiler 후크를 확인합니다. 적용과 되돌리기에는 명시적이며 시간 제한이 있는 확인이 필요합니다.</sys:String>
  <sys:String x:Key="Ui.HooksOpen">후크</sys:String>
  <sys:String x:Key="Ui.HooksRefresh">새로 고침</sys:String>
  <sys:String x:Key="Ui.HooksEligibility">관리 권한</sys:String>
@@ -239,4 +239,13 @@
  <sys:String x:Key="Ui.HooksNotAttempted">호스트가 시도하지 않았습니다. 상태를 다시 확인해야 합니다.</sys:String>
  <sys:String x:Key="Ui.HooksCancelled">호스트가 취소를 보고했습니다. 새로 고친 후크 상태를 확인하세요.</sys:String>
  <sys:String x:Key="Ui.HooksPartial">호스트가 부분 작업을 보고했습니다.</sys:String>
+ <sys:String x:Key="Ui.HooksOwnerFilter">소유자로 필터링</sys:String>
+ <sys:String x:Key="Ui.HooksTargetFilter">대상으로 필터링</sys:String>
+ <sys:String x:Key="Ui.HooksTypeFilter">후크 유형으로 필터링</sys:String>
+ <sys:String x:Key="Ui.HooksVerify">선택 항목 검증</sys:String>
+ <sys:String x:Key="Ui.HooksVerifyFailed">후크 검증에 실패했습니다.</sys:String>
+ <sys:String x:Key="Ui.HooksExportSnapshots">스냅샷 내보내기</sys:String>
+ <sys:String x:Key="Ui.HooksExportResults">결과 내보내기</sys:String>
+ <sys:String x:Key="Ui.HooksNoFilterMatches">현재 필터와 일치하는 등록된 후크가 없습니다.</sys:String>
+ <sys:String x:Key="Ui.HooksSelectionCountFormat">선택됨: {0}, 필터로 숨겨짐: {1}. 작업에는 선택한 모든 후크가 포함됩니다.</sys:String>
 </ResourceDictionary>

@@ -194,7 +194,7 @@
  <sys:String x:Key="Viz.Component.SchemaTargetLabel">対象スキーマ</sys:String>
  <sys:String x:Key="Viz.Component.GeneratedMembersLabel">生成されたメンバー</sys:String>
  <sys:String x:Key="Ui.HookWorkbench">フック作業台</sys:String>
- <sys:String x:Key="Ui.HookWorkbenchHelp">ホストに登録された Prefix / Postfix フックを確認します。適用と復元には明示的かつ期限付きの確認が必要です。</sys:String>
+ <sys:String x:Key="Ui.HookWorkbenchHelp">登録済みの Prefix、Postfix、Finalizer、Transpiler フックを確認します。適用と復元には明示的かつ期限付きの確認が必要です。</sys:String>
  <sys:String x:Key="Ui.HooksOpen">フック</sys:String>
  <sys:String x:Key="Ui.HooksRefresh">更新</sys:String>
  <sys:String x:Key="Ui.HooksEligibility">管理の可否</sys:String>
@@ -239,4 +239,13 @@
  <sys:String x:Key="Ui.HooksNotAttempted">ホストは未実行です。状態の再確認が必要です。</sys:String>
  <sys:String x:Key="Ui.HooksCancelled">ホストがキャンセルを報告しました。更新後の状態を確認してください。</sys:String>
  <sys:String x:Key="Ui.HooksPartial">ホストが部分的な操作を報告しました。</sys:String>
+ <sys:String x:Key="Ui.HooksOwnerFilter">所有者で絞り込み</sys:String>
+ <sys:String x:Key="Ui.HooksTargetFilter">対象で絞り込み</sys:String>
+ <sys:String x:Key="Ui.HooksTypeFilter">フックの種類で絞り込み</sys:String>
+ <sys:String x:Key="Ui.HooksVerify">選択項目を検証</sys:String>
+ <sys:String x:Key="Ui.HooksVerifyFailed">フックの検証に失敗しました。</sys:String>
+ <sys:String x:Key="Ui.HooksExportSnapshots">スナップショットをエクスポート</sys:String>
+ <sys:String x:Key="Ui.HooksExportResults">結果をエクスポート</sys:String>
+ <sys:String x:Key="Ui.HooksNoFilterMatches">現在のフィルターに一致する登録済みフックはありません。</sys:String>
+ <sys:String x:Key="Ui.HooksSelectionCountFormat">選択済み: {0}、フィルターで非表示: {1}。操作には選択したすべてのフックが含まれます。</sys:String>
 </ResourceDictionary>

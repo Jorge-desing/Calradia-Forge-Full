@@ -6,10 +6,10 @@ using System.Reflection;
 
 namespace CalradiaForge.Sdk
 {
-    /// <summary>Lifecycle state for a registered Prefix or Postfix hook.</summary>
+    /// <summary>Lifecycle state for a registered runtime callback or local IL hook.</summary>
     public enum ForgeHookState { Registered, Applied, Reverted, Conflict, Failed, Unsupported }
 
-    /// <summary>Mutable call data shared by the Prefix and Postfix callbacks for one invocation.</summary>
+    /// <summary>Mutable call data shared by Prefix, Postfix, and Finalizer callbacks for one invocation.</summary>
     /// <remarks>Arguments may be changed by a Prefix. RunOriginal defaults to true; Result is returned when the original is skipped or replaced.</remarks>
     public sealed class ForgeHookInvocation
     {
@@ -24,12 +24,14 @@ namespace CalradiaForge.Sdk
         public object[] Arguments { get; }
         public bool RunOriginal { get; set; }
         public object Result { get; set; }
+        /// <summary>Pending failure available to a Finalizer; assign null to suppress it or another exception to replace it.</summary>
+        public Exception Exception { get; set; }
     }
 
     /// <summary>Callback executed synchronously on the thread that invoked the target method.</summary>
     public delegate void ForgeHookCallback(ForgeHookInvocation invocation);
 
-    /// <summary>Describes a method target and optional Prefix and Postfix callbacks.</summary>
+    /// <summary>Describes a method target and optional Prefix, Postfix, and Finalizer callbacks.</summary>
     /// <remarks>Only closed, supported managed method signatures are executable. The callbacks and target remain in-process objects and are never accepted over IPC.</remarks>
     public sealed class ForgeHookDefinition
     {
@@ -38,6 +40,9 @@ namespace CalradiaForge.Sdk
         public MethodInfo Target { get; set; }
         public ForgeHookCallback Prefix { get; set; }
         public ForgeHookCallback Postfix { get; set; }
+        /// <summary>Runs after the callback/original path, including failures, while the host callback gate permits execution.</summary>
+        /// <remarks>A pending failure is exposed through Exception. Preserve it, replace it, or assign null to suppress it; a nonvoid target still requires a valid Result. A throwing Finalizer preserves an existing failure together with its own failure in an AggregateException. Without a Finalizer, the existing Prefix/Postfix failure policy is unchanged.</remarks>
+        public ForgeHookCallback Finalizer { get; set; }
         public int? Priority { get; set; }
         public List<string> Before { get; set; } = new List<string>();
         public List<string> After { get; set; } = new List<string>();
@@ -48,6 +53,18 @@ namespace CalradiaForge.Sdk
     {
         public ForgeHookSnapshot(string id, string owner, string targetMethod, bool hasPrefix, bool hasPostfix,
             int? priority, IEnumerable<string> before, IEnumerable<string> after, ForgeHookState state, string detail)
+            : this(id, owner, targetMethod, hasPrefix, hasPostfix, priority, before, after, state, detail, false)
+        {
+        }
+
+        public ForgeHookSnapshot(string id, string owner, string targetMethod, bool hasPrefix, bool hasPostfix,
+            int? priority, IEnumerable<string> before, IEnumerable<string> after, ForgeHookState state, string detail, bool hasFinalizer)
+            : this(id, owner, targetMethod, hasPrefix, hasPostfix, priority, before, after, state, detail, hasFinalizer, false)
+        {
+        }
+
+        public ForgeHookSnapshot(string id, string owner, string targetMethod, bool hasPrefix, bool hasPostfix,
+            int? priority, IEnumerable<string> before, IEnumerable<string> after, ForgeHookState state, string detail, bool hasFinalizer, bool hasTranspiler)
         {
             if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("A hook ID is required.", nameof(id));
             if (!Enum.IsDefined(typeof(ForgeHookState), state)) throw new ArgumentOutOfRangeException(nameof(state));
@@ -56,6 +73,8 @@ namespace CalradiaForge.Sdk
             TargetMethod = targetMethod ?? string.Empty;
             HasPrefix = hasPrefix;
             HasPostfix = hasPostfix;
+            HasFinalizer = hasFinalizer;
+            HasTranspiler = hasTranspiler;
             Priority = priority;
             Before = new ReadOnlyCollection<string>((before ?? Enumerable.Empty<string>()).ToArray());
             After = new ReadOnlyCollection<string>((after ?? Enumerable.Empty<string>()).ToArray());
@@ -68,6 +87,8 @@ namespace CalradiaForge.Sdk
         public string TargetMethod { get; }
         public bool HasPrefix { get; }
         public bool HasPostfix { get; }
+        public bool HasFinalizer { get; }
+        public bool HasTranspiler { get; }
         public int? Priority { get; }
         public IReadOnlyList<string> Before { get; }
         public IReadOnlyList<string> After { get; }
@@ -93,7 +114,7 @@ namespace CalradiaForge.Sdk
         public string Detail { get; }
     }
 
-    /// <summary>Optional capability for explicitly registered Prefix and Postfix hooks.</summary>
+    /// <summary>Optional capability for explicitly registered Prefix, Postfix, and Finalizer hooks and lifecycle management of local IL hooks.</summary>
     /// <remarks>Hooks are never applied during discovery or registration. Apply and Revert are explicit host operations; owners are labels, not authorization boundaries. Callbacks run synchronously on the target caller's thread.</remarks>
     public interface IForgeHookService
     {

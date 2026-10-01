@@ -27,7 +27,7 @@ using System.Threading.Tasks;
 
 public static class FastPackageEngine {
     private static readonly HashSet<string> ExcludedDirNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-        "bin", "obj", "__pycache__", ".venv"
+        "bin", "obj", "__pycache__", ".venv", "node_modules"
     };
 
     private static readonly HashSet<string> ExcludedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
@@ -72,6 +72,8 @@ public static class FastPackageEngine {
         foreach (var file in Directory.EnumerateFiles(currentSource)) {
             var ext = Path.GetExtension(file);
             if (ExcludedExtensions.Contains(ext)) continue;
+            if (string.Equals(ext, ".bat", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(ext, ".ps1", StringComparison.OrdinalIgnoreCase)) continue;
             var name = Path.GetFileName(file);
             if (ExcludeBakRegex.IsMatch(name)) continue;
 
@@ -114,6 +116,8 @@ public static class FastPackageEngine {
         foreach (var file in Directory.EnumerateFiles(currentSource)) {
             var ext = Path.GetExtension(file);
             if (ExcludedExtensions.Contains(ext)) continue;
+            if (string.Equals(ext, ".bat", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(ext, ".ps1", StringComparison.OrdinalIgnoreCase)) continue;
             if (string.Equals(ext, ".pdb", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase)) continue;
             var name = Path.GetFileName(file);
@@ -182,13 +186,19 @@ function New-FastZipArchive {
 }
 
 function Test-ZipEntries {
-    param([string]$Path)
+    param(
+        [string]$Path,
+        [switch]$AllowDesktopLauncher
+    )
     $archive = [System.IO.Compression.ZipFile]::OpenRead($Path)
     try {
         $names = @($archive.Entries | ForEach-Object { $_.FullName })
         if (($names | Select-Object -Unique).Count -ne $names.Count) { throw "Duplicate archive entries: $Path" }
         foreach ($name in $names) {
             $normal = $name.Replace('\', '/')
+            $isScript = $normal.EndsWith('.bat', [StringComparison]::OrdinalIgnoreCase) -or $normal.EndsWith('.ps1', [StringComparison]::OrdinalIgnoreCase)
+            $isDesktopLauncher = $AllowDesktopLauncher -and [string]::Equals($normal, 'Desktop/Run-CalradiaForge-Desktop.bat', [StringComparison]::OrdinalIgnoreCase)
+            if ($isScript -and -not $isDesktopLauncher) { throw "Development or test script included: $name" }
             if ($normal.StartsWith('/') -or $normal.Split('/') -contains '..' -or $normal.Contains(':')) { throw "Unsafe archive entry: $name" }
             if ($normal.EndsWith('.sav', [StringComparison]::OrdinalIgnoreCase) -or $normal.IndexOf('save-backup', [StringComparison]::OrdinalIgnoreCase) -ge 0) { throw "Save data included: $name" }
             if ($normal.EndsWith('.cfcrash', [StringComparison]::OrdinalIgnoreCase) -or $normal.EndsWith('.log', [StringComparison]::OrdinalIgnoreCase)) { throw "Debug or crash dump included: $name" }
@@ -336,7 +346,9 @@ try {
         $zipLevel
     )
 
-    foreach ($zip in @($modulesZip, $sourceZip, $desktopZip)) { Test-ZipEntries $zip }
+    Test-ZipEntries $modulesZip
+    Test-ZipEntries $sourceZip
+    Test-ZipEntries $desktopZip -AllowDesktopLauncher
     & $pythonPath tools/audit_package.py --version $Version
     if ($LASTEXITCODE -ne 0) { throw 'Package audit failed.' }
     $hashLines = @(Get-FileHash -LiteralPath $modulesZip, $sourceZip, $desktopZip -Algorithm SHA256 |

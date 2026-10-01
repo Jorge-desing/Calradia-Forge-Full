@@ -376,6 +376,7 @@ namespace CalradiaForge.Mod
                     case "patch-blueprints": data = Json.Serialize(TestEngine.PatchBlueprintProviders.ToList()); break;
                     case "patch-preflight": patchPreflightCache = PatchPreflightEngine.Inspect(TestEngine.CapturePatchBlueprints(this, token), AppDomain.CurrentDomain.GetAssemblies(), CurrentContext.ToString()); data = Json.Serialize(patchPreflightCache); break;
                     case "hook-snapshots": data = Json.Serialize(CaptureHookStatus()); break;
+                    case "hook-verify": data = VerifyHookSelection(s.Argument, token); break;
                     case "hook-apply-plan": data = CreateHookPlan("apply", s.Argument, token); break;
                     case "hook-apply-confirm": data = CommitHookPlan("apply", s.Argument, token); break;
                     case "hook-revert-plan": data = CreateHookPlan("revert", s.Argument, token); break;
@@ -524,6 +525,35 @@ namespace CalradiaForge.Mod
             foreach (var snapshot in service.GetSnapshots() ?? Array.Empty<ForgeHookSnapshot>())
                 status.Hooks.Add(ToHookIpcSnapshot(snapshot));
             return status;
+        }
+
+        string VerifyHookSelection(string argument, CancellationToken cancellationToken)
+        {
+            RequireHookManagementContext();
+            cancellationToken.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(argument) || argument.Length > 16384)
+                throw new ArgumentException("Provide a bounded registered hook selection.");
+            var ids = Json.Deserialize<HookIpcSelection>(argument)?.HookIds;
+            if (ids == null || ids.Count == 0 || ids.Count > MaximumHookPlanSize ||
+                ids.Any(id => string.IsNullOrWhiteSpace(id) || id.Length > 128 || id.Any(char.IsControl)) ||
+                ids.Distinct(StringComparer.Ordinal).Count() != ids.Count)
+                throw new ArgumentException("Provide unique bounded registered hook IDs.");
+            var service = ForgeApi.Hooks ?? throw new InvalidOperationException("The optional hook service is unavailable.");
+            var registered = service.GetSnapshots().ToDictionary(item => item.Id, StringComparer.Ordinal);
+            if (ids.Any(id => !registered.ContainsKey(id))) throw new ArgumentException("The selection includes an unregistered hook ID.");
+            var response = new HookIpcCommit { Operation = "verify", Session = Log.Id, Succeeded = true };
+            foreach (var id in ids)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                RequireHookManagementContext();
+                var result = service.Verify(id);
+                response.Results.Add(new HookIpcResult { Id = result.Id, State = result.State.ToString(),
+                    Succeeded = result.Succeeded, Verified = result.Succeeded, Detail = result.Detail,
+                    VerificationDetail = result.Detail });
+                response.Succeeded &= result.Succeeded;
+            }
+            response.Partial = !response.Succeeded && response.Results.Any(item => item.Succeeded);
+            return Json.Serialize(response);
         }
 
         string CreateHookPlan(string operation, string argument, CancellationToken cancellationToken)
@@ -754,6 +784,8 @@ namespace CalradiaForge.Mod
                 TargetMethod = snapshot.TargetMethod,
                 HasPrefix = snapshot.HasPrefix,
                 HasPostfix = snapshot.HasPostfix,
+                HasFinalizer = snapshot.HasFinalizer,
+                HasTranspiler = snapshot.HasTranspiler,
                 Priority = snapshot.Priority,
                 Before = snapshot.Before?.ToList() ?? new List<string>(),
                 After = snapshot.After?.ToList() ?? new List<string>(),
@@ -768,6 +800,7 @@ namespace CalradiaForge.Mod
             {
                 Id = snapshot.Id, Owner = snapshot.Owner, TargetMethod = snapshot.TargetMethod,
                 HasPrefix = snapshot.HasPrefix, HasPostfix = snapshot.HasPostfix, Priority = snapshot.Priority,
+                HasFinalizer = snapshot.HasFinalizer, HasTranspiler = snapshot.HasTranspiler,
                 Before = snapshot.Before?.ToList() ?? new List<string>(), After = snapshot.After?.ToList() ?? new List<string>(),
                 State = snapshot.State, Detail = snapshot.Detail
             };
@@ -780,7 +813,8 @@ namespace CalradiaForge.Mod
                 !string.Equals(planned.TargetMethod, current.TargetMethod, StringComparison.Ordinal) ||
                 !string.Equals(planned.Detail, current.Detail, StringComparison.Ordinal) ||
                 !string.Equals(planned.State, current.State.ToString(), StringComparison.Ordinal) ||
-                planned.HasPrefix != current.HasPrefix || planned.HasPostfix != current.HasPostfix || planned.Priority != current.Priority)
+                planned.HasPrefix != current.HasPrefix || planned.HasPostfix != current.HasPostfix ||
+                planned.HasFinalizer != current.HasFinalizer || planned.HasTranspiler != current.HasTranspiler || planned.Priority != current.Priority)
                 return false;
             return SameStrings(planned.Before, current.Before) && SameStrings(planned.After, current.After);
         }

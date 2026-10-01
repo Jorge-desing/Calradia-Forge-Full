@@ -194,7 +194,7 @@
  <sys:String x:Key="Viz.Component.SchemaTargetLabel">ALVO DO ESQUEMA</sys:String>
  <sys:String x:Key="Viz.Component.GeneratedMembersLabel">Membros gerados</sys:String>
  <sys:String x:Key="Ui.HookWorkbench">Bancada de hooks</sys:String>
- <sys:String x:Key="Ui.HookWorkbenchHelp">Revise os hooks Prefix e Postfix registrados pelo host. Aplicar e reverter exigem confirmação explícita e temporária.</sys:String>
+ <sys:String x:Key="Ui.HookWorkbenchHelp">Revise os hooks Prefix, Postfix, Finalizer e Transpiler registrados. Aplicar e reverter exigem confirmação explícita e temporária.</sys:String>
  <sys:String x:Key="Ui.HooksOpen">HOOKS</sys:String>
  <sys:String x:Key="Ui.HooksRefresh">ATUALIZAR</sys:String>
  <sys:String x:Key="Ui.HooksEligibility">PERMISSÃO DE GERENCIAMENTO</sys:String>
@@ -239,4 +239,13 @@
  <sys:String x:Key="Ui.HooksNotAttempted">Não tentado pelo host; o estado precisa ser reconciliado.</sys:String>
  <sys:String x:Key="Ui.HooksCancelled">O host informou cancelamento; confira os estados atualizados.</sys:String>
  <sys:String x:Key="Ui.HooksPartial">O host informou uma operação parcial.</sys:String>
+ <sys:String x:Key="Ui.HooksOwnerFilter">Filtrar por proprietário</sys:String>
+ <sys:String x:Key="Ui.HooksTargetFilter">Filtrar por destino</sys:String>
+ <sys:String x:Key="Ui.HooksTypeFilter">Filtrar por tipo de hook</sys:String>
+ <sys:String x:Key="Ui.HooksVerify">Verificar seleção</sys:String>
+ <sys:String x:Key="Ui.HooksVerifyFailed">A verificação dos hooks falhou.</sys:String>
+ <sys:String x:Key="Ui.HooksExportSnapshots">Exportar instantâneos</sys:String>
+ <sys:String x:Key="Ui.HooksExportResults">Exportar resultados</sys:String>
+ <sys:String x:Key="Ui.HooksNoFilterMatches">Nenhum hook registrado corresponde aos filtros atuais.</sys:String>
+ <sys:String x:Key="Ui.HooksSelectionCountFormat">{0} selecionados; {1} ocultos pelos filtros. As operações incluem todos os hooks selecionados.</sys:String>
 </ResourceDictionary>

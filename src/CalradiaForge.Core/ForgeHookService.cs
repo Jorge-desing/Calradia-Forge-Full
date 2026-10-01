@@ -14,9 +14,9 @@ using MonoMod.RuntimeDetour;
 
 namespace CalradiaForge.Core
 {
-    /// <summary>Explicit Prefix/Postfix hook lifecycle backed by MonoMod RuntimeDetour on the game target.</summary>
+    /// <summary>Explicit runtime callback and local IL hook lifecycle backed by MonoMod RuntimeDetour on the game target.</summary>
     /// <remarks>Registration is inert. On the Bannerlord target, Apply and Revert explicitly update the MonoMod detour chain; upstream documents synchronized chain edits, including removal from the hook currently executing. The disposable fixture covers serial self-removal only and is not a full host-lifecycle or general concurrency certification. These guarantees do not apply to raw ForgeDetour writes. No arbitrary target data is exposed over IPC.</remarks>
-    public sealed class ForgeHookService : IForgeHookService, IForgeHookServiceLifecycle, IForgeHookServiceDisconnectGuard
+    public sealed partial class ForgeHookService : IForgeHookService, IForgeHookServiceLifecycle, IForgeHookServiceDisconnectGuard
     {
         sealed class Entry
         {
@@ -25,6 +25,7 @@ namespace CalradiaForge.Core
             internal MethodInfo Target;
             internal ForgeHookCallback Prefix;
             internal ForgeHookCallback Postfix;
+            internal ForgeHookCallback Finalizer;
             internal int? Priority;
             internal string[] Before;
             internal string[] After;
@@ -43,6 +44,7 @@ namespace CalradiaForge.Core
             }
             internal Func<bool> CanInvoke;
 #if NETFRAMEWORK
+            internal MonoMod.Cil.ILContext.Manipulator Transpiler;
             internal DispatchActivation Activation;
             internal readonly ConcurrentDictionary<string, DispatchActivation> RetiringActivations =
                 new ConcurrentDictionary<string, DispatchActivation>(StringComparer.Ordinal);
@@ -67,6 +69,19 @@ namespace CalradiaForge.Core
             internal readonly ForgeHookService Service;
             internal readonly string DispatchId;
             internal Hook Hook;
+            internal ILHook ILHook;
+            internal bool IlRebuildAuthorized;
+            internal bool HasBackend => Hook != null || ILHook != null;
+            internal bool IsValid => ILHook != null ? ILHook.IsValid : Hook.IsValid;
+            internal bool IsApplied => ILHook != null ? Service.ilHookIsApplied(ILHook) : Service.hookIsApplied(Hook);
+            internal void ApplyBackend() { if (ILHook != null) ILHook.Apply(); else Hook.Apply(); }
+            internal bool IlUndoUncertain { get; private set; }
+            internal void UndoBackend()
+            {
+                if (ILHook == null) { Hook.Undo(); return; }
+                try { Service.UndoIlBackend(ILHook); }
+                catch { IlUndoUncertain = true; throw; }
+            }
             internal DynamicMethod DetourMethod;
             internal Func<Delegate, object, object[], object> OriginalInvoker;
 
@@ -134,14 +149,14 @@ namespace CalradiaForge.Core
 
             internal bool DisposeRetired()
             {
-                Hook hook;
+                IDisposable hook;
                 bool disposeHook;
                 lock (lifetimeGate)
                 {
                     if (disposed) return true;
                     if (!retirementRequested || activeDispatches != 0 || !undoVerified) return false;
                     disposeHook = !hookDisposed;
-                    hook = Hook;
+                    hook = (IDisposable)ILHook ?? Hook;
                 }
 
                 if (disposeHook)
@@ -156,6 +171,7 @@ namespace CalradiaForge.Core
                     lock (lifetimeGate)
                     {
                         Hook = null;
+                        ILHook = null;
                         OriginalInvoker = null;
                         DetourMethod = null;
                         hookDisposed = true;
@@ -251,6 +267,9 @@ namespace CalradiaForge.Core
 #if NETFRAMEWORK
         // Kept per service so the disposable fixture can exercise an unreadable MonoMod status.
         Func<Hook, bool> hookIsApplied = hook => hook.IsApplied;
+        Func<ILHook, bool> ilHookIsApplied = hook => hook.IsApplied;
+        int activeManipulators;
+        int ilCleanupThread;
 #endif
         bool accepting = true;
         int acceptsNewHooks = 1;
@@ -260,8 +279,11 @@ namespace CalradiaForge.Core
         public ForgeHookService(Func<bool> mayMutate = null) { this.mayMutate = mayMutate ?? (() => false); }
 
         public IForgeHookHandle Register(ForgeHookDefinition definition)
+            => RegisterCore(definition);
+
+        IForgeHookHandle RegisterCore(ForgeHookDefinition definition, bool requireCallbacks = true)
         {
-            ValidateDefinition(definition);
+            ValidateDefinition(definition, requireCallbacks);
             lock (gate)
             {
                 if (!accepting || Volatile.Read(ref acceptsNewHooks) == 0)
@@ -270,7 +292,7 @@ namespace CalradiaForge.Core
                 var entry = new Entry
                 {
                     Id = definition.Id.Trim(), Owner = definition.Owner.Trim(), Target = definition.Target,
-                    Prefix = definition.Prefix, Postfix = definition.Postfix, Priority = definition.Priority,
+                    Prefix = definition.Prefix, Postfix = definition.Postfix, Finalizer = definition.Finalizer, Priority = definition.Priority,
                     Before = (definition.Before ?? new List<string>()).Select(value => value.Trim()).ToArray(),
                     After = (definition.After ?? new List<string>()).Select(value => value.Trim()).ToArray(),
                     ParameterTypes = definition.Target.GetParameters().Select(parameter => parameter.ParameterType).ToArray(),
@@ -324,24 +346,30 @@ namespace CalradiaForge.Core
                 try
                 {
                     string dispatchId = Guid.NewGuid().ToString("N");
-                    activation = new DispatchActivation(this, entry, dispatchId, BuildOriginalInvoker(entry.Target));
-                    var method = BuildDetourMethod(entry, dispatchId);
-                    activation.DetourMethod = method;
+                    activation = new DispatchActivation(this, entry, dispatchId,
+                        entry.Transpiler == null ? BuildOriginalInvoker(entry.Target) : null);
                     var configId = "CalradiaForge.Hook." + entry.Id;
                     var config = new DetourConfig(configId, entry.Priority,
                         PrefixIds(entry.Before), PrefixIds(entry.After));
-                    if (!DispatchEntries.TryAdd(dispatchId, activation))
-                        throw new InvalidOperationException("Unable to reserve the internal callback route.");
                     entry.Activation = activation;
-                    var hook = new Hook(entry.Target, method, config, false);
-                    activation.Hook = hook;
-                    if (!hook.IsValid) throw new InvalidOperationException("MonoMod rejected the target/detour signature.");
+                    if (entry.Transpiler != null)
+                        activation.ILHook = new ILHook(entry.Target, context => InvokeTranspiler(activation, context), config, false);
+                    else
+                    {
+                        var method = BuildDetourMethod(entry, dispatchId);
+                        activation.DetourMethod = method;
+                        if (!DispatchEntries.TryAdd(dispatchId, activation))
+                            throw new InvalidOperationException("Unable to reserve the internal callback route.");
+                        activation.Hook = new Hook(entry.Target, method, config, false);
+                    }
+                    if (!activation.IsValid) throw new InvalidOperationException("MonoMod rejected the target/detour signature.");
                     // Reserve before MonoMod mutates its chain. ForgeDetour and this service
                     // share Gate, so raw writes cannot pass their check while apply is in flight.
                     ForgeDetour.RegisterHookTarget(entry.Target);
                     activation.MarkTargetCounted();
-                    hook.Apply();
-                    if (!hookIsApplied(hook) || !hook.IsValid) throw new InvalidOperationException("MonoMod did not confirm the hook after applying it.");
+                    activation.ApplyBackend();
+                    if (!activation.IsApplied || !activation.IsValid) throw new InvalidOperationException("MonoMod did not confirm the hook after applying it.");
+                    if (activation.ILHook != null) Volatile.Write(ref activation.IlRebuildAuthorized, true);
                     entry.State = ForgeHookState.Applied;
                     entry.Detail = "MonoMod RuntimeDetour chain applied and verified.";
                     if (!applyOrder.Contains(entry.Id, StringComparer.OrdinalIgnoreCase)) applyOrder.Add(entry.Id);
@@ -350,9 +378,9 @@ namespace CalradiaForge.Core
                 catch (Exception error)
                 {
                     bool? applied = null;
-                    Hook hook = activation?.Hook;
-                    try { if (hook != null) applied = hookIsApplied(hook); } catch { }
-                    if (hook != null && applied != false)
+                    bool hasBackend = activation != null && activation.HasBackend;
+                    try { if (hasBackend) applied = activation.IsApplied; } catch { }
+                    if (hasBackend && applied != false)
                     {
                         if (activation != null && !activation.HasTargetReservation)
                         {
@@ -408,8 +436,7 @@ namespace CalradiaForge.Core
                         entry.Detail = "Revert request is pending until the active dispatch exits in an approved host context; Undo is not yet verified.";
                         return Result(entry, false);
                     }
-                    Hook hook = entry.Activation?.Hook;
-                    if (hook == null)
+                    if (activation == null || !activation.HasBackend)
                     {
                         bool inactive = entry.State == ForgeHookState.Registered || entry.State == ForgeHookState.Reverted;
                         if (!inactive)
@@ -419,8 +446,8 @@ namespace CalradiaForge.Core
                         }
                         return Result(entry, inactive, entry.Detail);
                     }
-                    bool valid = hook.IsValid;
-                    bool applied = hookIsApplied(hook);
+                    bool valid = activation.IsValid;
+                    bool applied = activation.IsApplied;
                     if (valid && applied && entry.State == ForgeHookState.Applied)
                         return Result(entry, true, "MonoMod reports the owned detour chain active.");
                     if (!applied && entry.State == ForgeHookState.Reverted)
@@ -663,14 +690,19 @@ namespace CalradiaForge.Core
                         return Result(entry, false);
                     }
 
-                    Hook hook = activation.Hook;
+                    if (activation.IlUndoUncertain)
+                    {
+                        entry.State = ForgeHookState.Conflict;
+                        entry.Detail = "An IL chain rebuild failed during Undo; IsApplied cannot prove body restoration. Retain the handle and target reservation until host restart.";
+                        return Result(entry, false);
+                    }
                     if (!activation.UndoVerified)
                     {
-                        if (hook != null)
+                        if (activation.HasBackend)
                         {
-                            bool applied = hookIsApplied(hook);
-                            if (applied) hook.Undo();
-                            if (hookIsApplied(hook) || !hook.IsValid)
+                            bool applied = activation.IsApplied;
+                            if (applied) activation.UndoBackend();
+                            if (activation.IsApplied || !activation.IsValid)
                             {
                                 entry.State = ForgeHookState.Conflict;
                                 entry.Detail = "MonoMod could not confirm removal; the hook, callback, and target reservation remain retained.";
@@ -751,6 +783,9 @@ namespace CalradiaForge.Core
 
         bool MayMutate()
         {
+#if NETFRAMEWORK
+            if (Volatile.Read(ref activeManipulators) != 0) return false;
+#endif
             try { return mayMutate(); }
             catch { return false; }
         }
@@ -782,7 +817,13 @@ namespace CalradiaForge.Core
         }
 
         ForgeHookSnapshot Snapshot(Entry entry) => new ForgeHookSnapshot(entry.Id, entry.Owner, Identity(entry.Target),
-            entry.Prefix != null, entry.Postfix != null, entry.Priority, entry.Before, entry.After, entry.State, entry.Detail);
+            entry.Prefix != null, entry.Postfix != null, entry.Priority, entry.Before, entry.After, entry.State, entry.Detail, entry.Finalizer != null,
+#if NETFRAMEWORK
+            entry.Transpiler != null
+#else
+            false
+#endif
+            );
 
         static ForgeHookOperationResult Result(Entry entry, bool succeeded, string detail = null) =>
             new ForgeHookOperationResult(entry.Id, entry.State, succeeded, detail ?? entry.Detail);
@@ -790,13 +831,13 @@ namespace CalradiaForge.Core
         static ForgeHookOperationResult Result(string id, ForgeHookState state, bool succeeded, string detail) =>
             new ForgeHookOperationResult(id, state, succeeded, detail);
 
-        static void ValidateDefinition(ForgeHookDefinition definition)
+        static void ValidateDefinition(ForgeHookDefinition definition, bool requireCallbacks = true)
         {
             if (definition == null) throw new ArgumentNullException(nameof(definition));
             ValidateToken(definition.Id, "hook ID");
             ValidateToken(definition.Owner, "owner");
             if (definition.Target == null) throw new ArgumentNullException(nameof(definition.Target));
-            if (definition.Prefix == null && definition.Postfix == null) throw new ArgumentException("At least one Prefix or Postfix callback is required.");
+            if (requireCallbacks && definition.Prefix == null && definition.Postfix == null && definition.Finalizer == null) throw new ArgumentException("At least one Prefix, Postfix, or Finalizer callback is required.");
             if (definition.Priority.HasValue && (definition.Priority.Value < -1000 || definition.Priority.Value > 1000)) throw new ArgumentOutOfRangeException(nameof(definition.Priority));
             ValidateOrder(definition.Before, definition.Id, nameof(definition.Before));
             ValidateOrder(definition.After, definition.Id, nameof(definition.After));
@@ -971,6 +1012,8 @@ namespace CalradiaForge.Core
                 // Detours can outlive the menu context in which they were installed. Keep the
                 // detour inert outside the same game-thread context used for Apply/Revert.
                 if (!activation.Service.CallbackAllowed(entry)) return InvokeOriginal(originalInvoker, original, instance, callbackArgs);
+                if (entry.Finalizer != null)
+                    return DispatchWithFinalizer(activation, originalInvoker, original, instance, callbackArgs);
                 object[] originalArgs = entry.Prefix == null ? callbackArgs : (object[])callbackArgs.Clone();
                 var invocation = new ForgeHookInvocation(instance, callbackArgs);
                 try
@@ -1029,6 +1072,74 @@ namespace CalradiaForge.Core
             }
         }
 
+        static object DispatchWithFinalizer(DispatchActivation activation,
+            Func<Delegate, object, object[], object> originalInvoker, Delegate original, object instance, object[] args)
+        {
+            Entry entry = activation.Entry;
+            var invocation = new ForgeHookInvocation(instance, args);
+            object[] originalArgs = entry.Prefix == null ? args : (object[])args.Clone();
+            object result = null;
+            ExceptionDispatchInfo pending = null;
+            try
+            {
+                bool prefixAllowed = entry.Prefix == null || activation.Service.TryInvokeCallback(entry, entry.Prefix, invocation);
+                if (!prefixAllowed || !activation.Service.CallbackAllowed(entry))
+                {
+                    // A host transition discards Prefix argument edits and cancellation.
+                    result = InvokeOriginal(originalInvoker, original, instance, originalArgs);
+                }
+                else
+                {
+                    if (!ArgumentsValid(entry.ParameterTypes, invocation.Arguments))
+                        invocation = new ForgeHookInvocation(instance, originalArgs);
+                    if (invocation.RunOriginal)
+                        result = InvokeOriginal(originalInvoker, original, instance, invocation.Arguments);
+                    else if (entry.Target.ReturnType == typeof(void))
+                        result = null;
+                    else if (ResultValid(entry.Target.ReturnType, invocation.Result))
+                        result = invocation.Result;
+                    else
+                    {
+                        entry.Detail = "Prefix supplied an invalid result; original call continued.";
+                        result = InvokeOriginal(originalInvoker, original, instance, invocation.Arguments);
+                    }
+                    invocation.Result = result;
+                    if (entry.Postfix != null && activation.Service.TryInvokeCallback(entry, entry.Postfix, invocation) &&
+                        (entry.Target.ReturnType == typeof(void) || ResultValid(entry.Target.ReturnType, invocation.Result)))
+                        result = invocation.Result;
+                }
+            }
+            catch (Exception error)
+            {
+                pending = ExceptionDispatchInfo.Capture(error);
+            }
+
+            invocation.Result = result;
+            invocation.Exception = pending?.SourceException;
+            try
+            {
+                activation.Service.TryInvokeCallback(entry, entry.Finalizer, invocation);
+            }
+            catch (Exception finalizerError)
+            {
+                // Preserve both failures if cleanup itself throws, even if the callback
+                // changed Exception before throwing.
+                if (pending != null)
+                    throw new AggregateException("The hook invocation and its Finalizer both failed.", pending.SourceException, finalizerError);
+                throw;
+            }
+
+            if (invocation.Exception != null)
+            {
+                if (pending != null && ReferenceEquals(invocation.Exception, pending.SourceException)) pending.Throw();
+                ExceptionDispatchInfo.Capture(invocation.Exception).Throw();
+            }
+            if (entry.Target.ReturnType == typeof(void)) return null;
+            if (!ResultValid(entry.Target.ReturnType, invocation.Result))
+                throw new InvalidOperationException("Finalizer supplied an invalid result for the target return type.", pending?.SourceException);
+            return invocation.Result;
+        }
+
         bool CallbackAllowed(Entry entry)
         {
             if (Volatile.Read(ref callbacksEnabled) == 0) return false;
@@ -1080,9 +1191,9 @@ namespace CalradiaForge.Core
             {
                 DetachActivationForRevert(entry, activation);
                 if (activation.HasActiveDispatches || !MayMutate()) return false;
-                Hook hook = activation.Hook;
-                if (hook != null && hookIsApplied(hook)) hook.Undo();
-                if (hook != null && hookIsApplied(hook))
+                if (activation.IlUndoUncertain) return false;
+                if (activation.HasBackend && activation.IsApplied) activation.UndoBackend();
+                if (activation.HasBackend && activation.IsApplied)
                 {
                     entry.State = ForgeHookState.Conflict;
                     entry.Detail = "Apply cleanup could not verify that MonoMod removed the hook; activation and target reservation remain retained.";

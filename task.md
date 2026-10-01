@@ -701,3 +701,30 @@
 - [x] Replace obsolete CI examples and fixed historical test thresholds with current BAT workflows and observed evidence.
 - [x] Validate changed skill structure through BAT, check new local reference targets and review scoped staging; commit documentation without push.
 - Evidence: both changed workflow/testing skills pass quick_validate; the ledger BAT audit exits 0 and reports 12 existing missing Spanish counterparts, which remain unresolved. Ongoing hook implementation is not included in this documentation commit.
+
+## Finalizer, IL Transpiler, and confirmed hook utility flow — 2026-10-01 (Rev109)
+- [x] Extend the optional SDK hook contract with Finalizer exception state and keep the MonoMod ILContext transpiler adapter inside Core `net472`.
+- [x] Reuse host-owned single-use plans for console Apply/Revert; require `cf.hook_confirm` to consume the token and revalidate exact session, main-menu context, game thread, and selected snapshots.
+- [x] Synchronize hook utility documentation, UI copy, language catalogs, and regression checks without changing product version 25.2.0.
+- [x] Validate using BAT launchers: Release build 0 warnings/errors, Core 404/404, ForgeWeave 73/73, Desktop 65/65, WPF render 294 cases, utility 29 checks, Gauntlet structural audit, serial detour fixture, and stateless acceptance 4/4.
+- [ ] Complete live in-game proof. F10 did not open the Forge panel in the latest main-menu attempt; WPF reported the hook mutation context unavailable. No live hook mutation was issued; campaign/battle were not opened.
+- [x] Generate the three current-version distribution ZIPs, pass archive audit, exclude scripts/node_modules, and independently verify each SHA-256.
+- [x] Carry the Rev109 changes into the final combined Rev109–Rev113 objective commit; do not push.
+
+## Release archive guard and evidence reconciliation — 2026-10-01 (Rev110)
+- [x] Exclude `.bat`/`.ps1` development scripts and `node_modules` from Modules/Source-SDK staging; allow only the Desktop runtime launcher and enforce the same policy in archive audit.
+- [x] Add staging and ZIP-audit regressions; Asset Pipeline BAT passed 20/20.
+- [x] Capture fresh BAT evidence: Core 404/404, ForgeWeave 73/73, Desktop 65/65, WPF 294 render cases, Hook Utility 29 argument and 22 transport cases.
+- [x] Keep Rev109 immutable and document console-vs-JSON render durations separately.
+- [x] Re-run canonical packaging against Rev110, verify all three archives contain zero forbidden scripts/node_modules, and independently compare SHA-256 manifest.
+- [x] Carry the Rev110 archive-filter changes into the final combined Rev109–Rev113 objective commit; do not push.
+
+## Hook reconstruction and final distribution verification — Rev111–Rev113 — 2026-10-01
+- [x] Preserve a verified applied IL activation through external ILHook chain rebuilds, including after callback shutdown; keep gameplay callbacks and off-menu mutation gates closed.
+- [x] Filter inactive console Revert records before planning, disclose hidden WPF selections, and keep long confirmation rows readable.
+- [x] Make Harmony owner snapshots deterministic and fix Transpiler/Finalizer metadata property resolution; cover all four patch kinds in the Core regression.
+- [x] Validate via BAT launchers: Core 405/405, ForgeWeave 73/73, Desktop 65/65, WPF 294 cases / 182 layout passes, serial x64 fixture, and Asset Pipeline 20/20. Selected Release builds, DocFX, and stateless acceptance passed without warnings/errors.
+- [x] Generate and audit all three 25.2.0 ZIPs; independently compare each SHA-256 against the generated manifest. TpacTool deep parsing was unavailable; live Resource Browser import and Bannerlord rendering remain unverified.
+- [x] Verify the protected DOCX ledger through Rev113; preserve earlier revisions and record append-only EN/ES entries.
+- [x] Commit all intentional changes for this combined objective; do not push.
+- [ ] Complete live in-game hook verification. No mutation was attempted, and no campaign or battle was opened.

@@ -273,4 +273,12 @@
   <string key="2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in." value="2. Yama blueprint incelemesi: Bekleyen bildirimleri incelemek için cf.patch_preflight komutunu çalıştırın. Yama uygulamaz; Forge yönteminin değiştirilmesi ayrı ve açık bir onay gerektirir." />
   <string key="ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools." value="ForgeWeave Olay Hattı: belirlenimci olay kaydı ve sıra yeniden oynatma. Harmony tanılaması ve Patch Blueprint Preflight ayrı araçlardır." />
   <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. Forge yönteminin değiştirilmesi için ayrı ve açık bir istek gerekir; backend’in desteklemediği bildirilen hook türleri meta veri olarak kalır. Patch Preflight salt okunurdur ve callback kodunu çağırmaz. ForgeWeave olay dinleyicilerini AddNonSerializedListener ile serileştirilmeyen durumda tutun." />
+  <string key="Hook inventory" value="Hook envanteri" />
+  <string key="Next hook" value="Sonraki hook" />
+  <string key="Verify selected" value="Seçilenleri doğrula" />
+  <string key="Preview apply" value="Uygulamayı önizle" />
+  <string key="Preview revert" value="Geri almayı önizle" />
+  <string key="Confirm action" value="İşlemi onayla" />
+  <string key="Approve displayed hook plan" value="Gösterilen hook planını onayla" />
+  <string key="Selected hook" value="Seçilen hook" />
 </strings>

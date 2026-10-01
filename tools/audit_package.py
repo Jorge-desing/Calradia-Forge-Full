@@ -41,6 +41,8 @@ def validate_entry(name, desktop):
         raise ValueError(f"Unsafe archive path: {name}")
     if any(part.lower() in {".venv", "venv", "site-packages", "dist-packages"} for part in parts):
         raise ValueError(f"Python environment or installed dependencies included: {name}")
+    if any(part.lower() == "node_modules" for part in parts):
+        raise ValueError(f"Node.js dependencies included: {name}")
     lower = normal.lower()
     if lower.endswith(".sav") or "save-backup" in lower:
         raise ValueError(f"Save data included: {name}")
@@ -48,6 +50,10 @@ def validate_entry(name, desktop):
         raise ValueError(f"Timestamped working backup included: {name}")
     if lower.endswith(".dll") and Path(normal).name.lower().startswith("taleworlds"):
         raise ValueError(f"Game assembly included: {name}")
+    if lower.endswith((".bat", ".ps1")):
+        allowed_desktop_launcher = desktop and lower == "desktop/run-calradiaforge-desktop.bat"
+        if not allowed_desktop_launcher:
+            raise ValueError(f"Development or test script included: {name}")
     assembly_name = Path(normal).name.lower()
     if lower.endswith(".dll") and assembly_name.startswith("asmresolver"):
         allowed_module_path = normal.startswith("CalradiaForge/bin/Win64_Shipping_Client/")

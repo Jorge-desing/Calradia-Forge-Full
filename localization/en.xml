@@ -273,4 +273,12 @@
   <string key="2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in." value="2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in." />
   <string key="ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools." value="ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools." />
   <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." />
+  <string key="Hook inventory" value="Hook inventory" />
+  <string key="Next hook" value="Next hook" />
+  <string key="Verify selected" value="Verify selected" />
+  <string key="Preview apply" value="Preview apply" />
+  <string key="Preview revert" value="Preview revert" />
+  <string key="Confirm action" value="Confirm action" />
+  <string key="Approve displayed hook plan" value="Approve displayed hook plan" />
+  <string key="Selected hook" value="Selected hook" />
 </strings>

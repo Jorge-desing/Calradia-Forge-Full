@@ -7,11 +7,12 @@ import importlib.util
 from pathlib import Path
 from unittest.mock import patch
 from xml.etree import ElementTree
+from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from tools.audit_package import validate_entry
+from tools.audit_package import audit_archive, validate_entry
 from tools import validate_game_icon_assets
 from tools.validate_game_icon_assets import read_png_header, validate_resource_workflow_readme
 
@@ -77,13 +78,100 @@ class AssetPipelineTests(unittest.TestCase):
             with self.subTest(path=path), self.assertRaisesRegex(ValueError, "Python environment or installed dependencies"):
                 validate_entry(path, desktop=False)
 
+    def test_archive_audit_rejects_nested_node_modules_directories(self):
+        for path in (
+            "Source/tools/vibe-coder-planner-mcp/node_modules/@scope/package/index.js",
+            "Desktop/Tools/Nested/NODE_MODULES/package/entry.cmd",
+        ):
+            with self.subTest(path=path), self.assertRaisesRegex(ValueError, "Node.js dependencies"):
+                validate_entry(path, desktop=path.startswith("Desktop/"))
+
     def test_archive_audit_accepts_python_source_and_requirement_manifests(self):
         validate_entry("tools/validate_game_icon_assets.py", desktop=False)
         validate_entry("requirements-tools.txt", desktop=False)
 
+    def test_archive_audit_rejects_development_and_test_scripts_in_release_archives(self):
+        forbidden_entries = (
+            "Source/tools/Run-CalradiaForge-Tests.bat",
+            "CalradiaForge/tools/Deploy.ps1",
+            "Desktop/tools/Test-Desktop.ps1",
+            "Desktop/Run-CalradiaForge-Desktop-copy.bat",
+        )
+        for entry in forbidden_entries:
+            with self.subTest(entry=entry), self.assertRaisesRegex(ValueError, "Development or test script"):
+                validate_entry(entry, desktop=entry.startswith("Desktop/"))
+
+    def test_archive_audit_allows_only_the_desktop_runtime_launcher(self):
+        validate_entry("Desktop/Run-CalradiaForge-Desktop.bat", desktop=True)
+        with self.assertRaisesRegex(ValueError, "Development or test script"):
+            validate_entry("Desktop/Run-CalradiaForge-Desktop.bat", desktop=False)
+
+    def test_zip_archive_audit_rejects_forbidden_script_entries(self):
+        with tempfile.TemporaryDirectory(prefix="CalradiaForge-PackageScripts-") as temporary:
+            archive_path = Path(temporary) / "fixture.zip"
+            with ZipFile(archive_path, "w") as archive:
+                archive.writestr("Source/README.md", "fixture")
+                archive.writestr("Source/tests/Run-Tests.bat", "@echo off")
+
+            with self.assertRaisesRegex(ValueError, "Development or test script"):
+                audit_archive(
+                    archive_path,
+                    expected_roots={"Source"},
+                    required={"Source/README.md"},
+                    version="25.2.0",
+                    desktop=False,
+                )
+
+    def test_zip_archive_audit_rejects_node_modules_payloads(self):
+        with tempfile.TemporaryDirectory(prefix="CalradiaForge-NodeModules-") as temporary:
+            archive_path = Path(temporary) / "fixture.zip"
+            with ZipFile(archive_path, "w") as archive:
+                archive.writestr("Source/README.md", "fixture")
+                archive.writestr(
+                    "Source/tools/vibe-coder-planner-mcp/node_modules/pkg/index.js",
+                    "fixture dependency",
+                )
+
+            with self.assertRaisesRegex(ValueError, "Node.js dependencies"):
+                audit_archive(
+                    archive_path,
+                    expected_roots={"Source"},
+                    required={"Source/README.md"},
+                    version="25.2.0",
+                    desktop=False,
+                )
+
+    def test_zip_archive_audit_accepts_the_desktop_runtime_launcher(self):
+        with tempfile.TemporaryDirectory(prefix="CalradiaForge-DesktopLauncher-") as temporary:
+            archive_path = Path(temporary) / "fixture.zip"
+            with ZipFile(archive_path, "w") as archive:
+                archive.writestr("Desktop/Run-CalradiaForge-Desktop.bat", "@echo off")
+                archive.writestr("README.md", "fixture")
+
+            result = audit_archive(
+                archive_path,
+                expected_roots={"Desktop", "README.md"},
+                required={"Desktop/Run-CalradiaForge-Desktop.bat", "README.md"},
+                version="25.2.0",
+                desktop=True,
+            )
+            self.assertEqual(2, result["entries"])
+
     def test_package_source_excludes_repository_python_environment(self):
         package_script = (ROOT / "tools" / "package.ps1").read_text(encoding="utf-8")
         self.assertIn('".venv"', package_script)
+
+    def test_package_staging_filters_scripts_and_preserves_only_the_desktop_launcher(self):
+        package_script = (ROOT / "tools" / "package.ps1").read_text(encoding="utf-8")
+        self.assertEqual(2, package_script.count('string.Equals(ext, ".bat", StringComparison.OrdinalIgnoreCase)'))
+        self.assertEqual(2, package_script.count('string.Equals(ext, ".ps1", StringComparison.OrdinalIgnoreCase)'))
+        self.assertIn("Test-ZipEntries $desktopZip -AllowDesktopLauncher", package_script)
+        self.assertIn("Desktop/Run-CalradiaForge-Desktop.bat", package_script)
+
+    def test_package_staging_prunes_node_modules_at_any_depth(self):
+        package_script = (ROOT / "tools" / "package.ps1").read_text(encoding="utf-8")
+        excluded_directory_block = package_script.split("ExcludedDirNames =", 1)[1].split("};", 1)[0]
+        self.assertIn('"node_modules"', excluded_directory_block)
 
     def test_sprite_workflow_readme_distinguishes_atlas_from_compiled_tpac(self):
         validate_resource_workflow_readme(ROOT / "modules" / "CalradiaForge")

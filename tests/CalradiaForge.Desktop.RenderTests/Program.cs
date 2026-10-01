@@ -96,6 +96,8 @@ internal static class Program
             app = new App { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             app.InitializeComponent();
             AssertPackagedTextureResources();
+            HookWorkbenchUtilityTests.Run();
+            records.Add(new { test = "hook-workbench-metadata-filters-verification", passed = true });
             records.Add(new { test = "desktop-illustrated-textures-are-local-packaged-pngs", resources = 15, passed = true });
             var semanticGameIcons = new[] { "GameIcon.gears", "GameIcon.gear_hammer", "GameIcon.scroll_unfurled", "GameIcon.magnifying_glass", "GameIcon.stopwatch" };
             foreach (var iconKey in semanticGameIcons)

@@ -1,0 +1,32 @@
+# Rev109 — Finalizer, Transpiler IL y confirmación explícita de hooks
+
+**Fecha:** 1 de octubre de 2026  
+**Versión:** Calradia Forge 25.2.0, sin cambios  
+**Alcance:** SDK, Core, Mod, Gauntlet, Desktop, pruebas, documentación y validación de entrega.
+
+## Problema observado y justificación técnica
+
+El workbench experimental de hooks necesitaba comportamiento explícito para Finalizer y los transpilers IL, mientras que los comandos Apply/Revert de consola no seguían el flujo de vista previa y confirmación de WPF y Gauntlet. Una revisión independiente confirmó que los comandos de consola podían llamar directamente al servicio. El contrato requiere callbacks locales, mutación explícita controlada por el host, verificación recuperable y ninguna afirmación de que los fixtures seriales hagan seguro el parcheo en proceso durante llamadas concurrentes al destino.
+
+## Solución técnica y decisiones arquitectónicas
+
+- La capacidad opcional de hooks del SDK ahora incluye metadatos de Finalizer y el estado de excepción de la invocación. Una excepción pendiente de Prefix, del método original o de Postfix se vuelve a lanzar con `ExceptionDispatchInfo`, salvo que Finalizer la sustituya o suprima explícitamente. Suprimir una excepción para un destino no void requiere un resultado asignable al tipo de retorno. Un resultado de Finalizer inválido lanza `InvalidOperationException`; el fallo del propio Finalizer se propaga directamente si no había un fallo previo y se agrega a la excepción pendiente en caso contrario. Postfix continúa ejecutándose solo si las fases anteriores terminaron correctamente; los hooks sin Finalizer conservan su comportamiento previo ante fallos.
+- Con Finalizer instalado, una excepción del callback Prefix detiene el dispatch antes de llamar al destino original; Finalizer recibe esa excepción. El fixture serial cubre este comportamiento, que difiere de la ruta Prefix/Postfix anterior, donde el fallo de Prefix continúa con la llamada original.
+- El adaptador Core de Bannerlord `net472` usa `ILHook` de MonoMod.RuntimeDetour 25.3.6 para delegates locales `ILContext.Manipulator`. SDK, Desktop, IPC y la prevalidación de Patch Blueprint no reciben ni ejecutan delegates transpiler. Un manipulador puede ejecutarse al aplicar y de nuevo cuando MonoMod reconstruye la cadena IL, así que debe tolerar ejecuciones repetidas. Las transformaciones IL son experimentales, se ejecutan dentro del proceso y pueden permanecer activas fuera del menú hasta que se reviertan explícitamente.
+- Hooks e ILHooks comparten reservas de destinos, snapshots, comprobaciones de ciclo de vida y recuperación de conflictos. Apply/Revert sigue limitado al contexto exacto aprobado del menú principal y al hilo del juego. Los nombres de propietario son etiquetas, no autorización; la ACL del pipe por SID no autentica la identidad del proceso.
+- Apply/Revert por consola ahora usa dos fases. `cf.hook_apply <id>` y `cf.hook_revert <id|owner|all>` solicitan solo una vista previa. La consola muestra IDs registrados seleccionados, propietarios, destinos, sesión, vencimiento y token de un solo uso. `cf.hook_confirm <apply|revert> <token>` envía al Runtime la acción de confirmación correspondiente, consume y valida el token y vuelve a comprobar la sesión, la pantalla y el hilo, el servicio de hooks y los snapshots exactos. IPC no acepta callbacks, cuerpos IL ni destinos arbitrarios.
+
+## Cambios en código, activos, dependencias y validación
+
+- `ForgeApi.Version` es 13; la capacidad pública de hooks sigue siendo opcional y separada de los contratos de registro. MonoMod 25.3.6 permanece confinado al backend Bannerlord `net472`; no cambió la versión del paquete ni del producto.
+- Las etiquetas y ayudas del Hook Workbench WPF y Gauntlet se sincronizaron en los catálogos de idiomas soportados. La utilidad de consola se documentó en inglés y español. La prevalidación Blueprint existente sigue siendo de solo lectura.
+- `cmd.exe /c "tools\Run-CalradiaForge-Tests.bat --no-pause --render-output artifacts\hook-final-render.json <nul"` terminó con código 0: compilación Release con 0 advertencias y 0 errores; fixtures de activos 12/12; Core 404/404; ForgeWeave 73/73; Desktop 65/65; render WPF con 294 casos. El arnés de render final informó 13.960 ms en total, 182 pasadas de render/layout y 6.154,6 ms en llamadas de layout. Son mediciones del arnés, no latencia de interacción de Desktop en vivo.
+- El launcher integrado ejecutó el fixture serial x64 de detours mediante su ruta BAT. Pasó fallos de Finalizer, supresión/sustitución, transformación/orden/reconstrucción/coexistencia IL, ciclo de vida protegido, recuperación de conflictos y restauración exacta; no se inició directamente `DetourFixture.exe`.
+- `cmd.exe /c "tools\Test-CalradiaForge-HookUtility.bat"` terminó con código 0: 29 casos de validación de argumentos y 22 casos de transporte aislado. El fixture de pipe verifica el mapeo/serialización de solicitudes y simula respuestas de token inválido/vencido; no invoca el reloj, sesión, pantalla ni validación de contexto del Runtime de Bannerlord. `cmd.exe /c "tools\Run-CalradiaForge-Gauntlet-Visual-Checks.bat --no-pause <nul"` terminó con código 0 con comprobaciones estructurales de sprites/SpriteData/prefab y el fixture serial anidado aprobados. `cmd.exe /c "tools\Verify-CalradiaForge-StatelessBehavior.bat <nul"` terminó con código 0, con los cuatro criterios de aceptación y compilación limpia.
+- Se omitió el parser profundo de TPAC porque no estaba disponible `TpacTool.Lib.dll` o su fixture local Native. Los análisis de fuentes y estructura no demuestran importación en Resource Browser ni render en el juego.
+
+## Límites de la evidencia
+
+El intento en vivo llegó al menú principal de Bannerlord, pero una pulsación de F10 no mostró el panel de Calradia Forge. Hook Workbench de WPF informó que las operaciones de hooks no estaban disponibles en el contexto de juego actual. No se aplicó, verificó ni revirtió ningún hook en el host real; no se abrió campaña ni batalla. La operación en vivo desde el menú y un fixture registrado dentro del juego siguen pendientes. Los fixtures BAT aprobados son seriales y no demuestran seguridad si otro hilo ejecuta el destino durante instalación o retirada del parche. El backend sigue siendo experimental.
+
+Este anexo agrega evidencia sin reemplazar revisiones previas, contratos públicos, rutas de comandos ni la versión del producto.

@@ -194,7 +194,7 @@
  <sys:String x:Key="Viz.Component.SchemaTargetLabel">ЦЕЛЕВАЯ СХЕМА</sys:String>
  <sys:String x:Key="Viz.Component.GeneratedMembersLabel">Созданные члены</sys:String>
  <sys:String x:Key="Ui.HookWorkbench">Панель хуков</sys:String>
- <sys:String x:Key="Ui.HookWorkbenchHelp">Просмотр зарегистрированных хуков Prefix и Postfix. Применение и откат требуют явного подтверждения с ограниченным сроком.</sys:String>
+ <sys:String x:Key="Ui.HookWorkbenchHelp">Просмотрите зарегистрированные хуки Prefix, Postfix, Finalizer и Transpiler. Применение и отмена требуют явного подтверждения с ограниченным сроком.</sys:String>
  <sys:String x:Key="Ui.HooksOpen">ХУКИ</sys:String>
  <sys:String x:Key="Ui.HooksRefresh">ОБНОВИТЬ</sys:String>
  <sys:String x:Key="Ui.HooksEligibility">ПРАВА УПРАВЛЕНИЯ</sys:String>
@@ -239,4 +239,13 @@
  <sys:String x:Key="Ui.HooksNotAttempted">Хост не предпринимал попытку; состояние нужно сверить.</sys:String>
  <sys:String x:Key="Ui.HooksCancelled">Хост сообщил об отмене; проверьте обновленные состояния хуков.</sys:String>
  <sys:String x:Key="Ui.HooksPartial">Хост сообщил о частичной операции.</sys:String>
+ <sys:String x:Key="Ui.HooksOwnerFilter">Фильтр по владельцу</sys:String>
+ <sys:String x:Key="Ui.HooksTargetFilter">Фильтр по цели</sys:String>
+ <sys:String x:Key="Ui.HooksTypeFilter">Фильтр по типу хука</sys:String>
+ <sys:String x:Key="Ui.HooksVerify">Проверить выбранные</sys:String>
+ <sys:String x:Key="Ui.HooksVerifyFailed">Не удалось проверить хуки.</sys:String>
+ <sys:String x:Key="Ui.HooksExportSnapshots">Экспорт снимков</sys:String>
+ <sys:String x:Key="Ui.HooksExportResults">Экспорт результатов</sys:String>
+ <sys:String x:Key="Ui.HooksNoFilterMatches">Ни один зарегистрированный хук не соответствует текущим фильтрам.</sys:String>
+ <sys:String x:Key="Ui.HooksSelectionCountFormat">Выбрано: {0}; скрыто фильтрами: {1}. Операции включают все выбранные хуки.</sys:String>
 </ResourceDictionary>

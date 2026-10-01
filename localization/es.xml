@@ -273,4 +273,12 @@
   <string key="2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in." value="2. Revisión del blueprint de parches: ejecuta cf.patch_preflight para revisar las declaraciones pendientes. No aplica parches; la sustitución de un método de Forge requiere una operación independiente con aceptación explícita." />
   <string key="ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools." value="Canalización de eventos de ForgeWeave: registro determinista de eventos y reproducción de secuencias. Los diagnósticos de Harmony y Patch Blueprint Preflight son herramientas independientes." />
   <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. La sustitución de un método de Forge requiere una solicitud explícita por separado; los tipos de hook declarados que el backend no admite permanecen como metadatos. Patch Preflight es de solo lectura y no invoca código de callback. Mantén sin serializar los suscriptores de eventos de ForgeWeave mediante AddNonSerializedListener." />
+  <string key="Hook inventory" value="Inventario de hooks" />
+  <string key="Next hook" value="Siguiente hook" />
+  <string key="Verify selected" value="Verificar selección" />
+  <string key="Preview apply" value="Vista previa de aplicación" />
+  <string key="Preview revert" value="Vista previa de reversión" />
+  <string key="Confirm action" value="Confirmar acción" />
+  <string key="Approve displayed hook plan" value="Aprobar el plan de hooks mostrado" />
+  <string key="Selected hook" value="Hook seleccionado" />
 </strings>

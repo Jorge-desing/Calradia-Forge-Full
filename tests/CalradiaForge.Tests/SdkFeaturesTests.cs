@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
@@ -71,7 +71,7 @@ namespace CalradiaForge.Tests
             test("ForgeAgentMemory expired semantic entry releases a global slot", TestForgeAgentMemoryExpiredGlobalSlot);
             test("ForgeLocalApi exposes info and agents endpoints", TestForgeLocalApiEndpoints);
             test("ForgeCampaignEvents logs dispatch errors", TestForgeCampaignEventsErrorLogging);
-            test("ForgeApi Version is 12", TestForgeApiVersion);
+            test("ForgeApi Version is 13", TestForgeApiVersion);
             test("Forge UI registry rejects duplicate IDs and removes an unloaded owner", TestForgeUiRegistry);
             test("Forge UI discovery validates Gauntlet ViewModel and command binding", TestForgeUiDiscovery);
             test("Forge UI policy enforces context and writer gates", TestForgeUiPolicy);
@@ -1326,9 +1326,20 @@ namespace CalradiaForge.Tests
                 ForgeApi.Connect(new TestEngine());
                 if (!ForgeCommands.PatchStatus(new List<string> { "console.owner", "ignored" }).StartsWith("Usage: cf.patch_status", StringComparison.Ordinal) ||
                     !ForgeCommands.PatchStatus(new List<string> { " " }).StartsWith("Usage: cf.patch_status", StringComparison.Ordinal) ||
-                    !ForgeCommands.HookStatus(new List<string> { "console.owner", "ignored" }).StartsWith("Usage: cf.hook_status", StringComparison.Ordinal) ||
+                    !ForgeCommands.HookStatus(new List<string> { "console.owner", "ignored", "prefix", "extra" }).StartsWith("Usage: cf.hook_status", StringComparison.Ordinal) ||
                     !ForgeCommands.HookStatus(new List<string> { " " }).StartsWith("Usage: cf.hook_status", StringComparison.Ordinal))
                     throw new Exception("Optional status commands must reject missing/extra owner arguments instead of silently widening the query.");
+                ForgeApi.Hooks.Register(new ForgeHookDefinition { Id = "console.hook.prefix", Owner = "console.owner", Target = original, Prefix = _ => { } });
+                ForgeApi.Hooks.Register(new ForgeHookDefinition { Id = "console.hook.finalizer", Owner = "other.owner", Target = original, Finalizer = _ => { } });
+                string prefixInventory = ForgeCommands.HookStatus(new List<string> { "console.owner", "TargetMethod", "prefix" });
+                string finalizerInventory = ForgeCommands.HookStatus(new List<string> { "-", "TargetMethod", "finalizer" });
+                if (!prefixInventory.Contains("console.hook.prefix") || prefixInventory.Contains("console.hook.finalizer") ||
+                    !finalizerInventory.Contains("console.hook.finalizer") || finalizerInventory.Contains("console.hook.prefix") ||
+                    !ForgeCommands.HookStatus(new List<string> { "-", "-", "arbitrary" }).StartsWith("Usage:", StringComparison.Ordinal) ||
+                    !ForgeCommands.HookStatus(new List<string> { "-", "no-such-target", "prefix" }).Contains("No registered"))
+                    throw new Exception("Hook inventory must compose owner, target and type filters without applying registered declarations.");
+                if (ForgeApi.Hooks.GetSnapshots().Any(item => item.State != ForgeHookState.Registered))
+                    throw new Exception("Read-only console inventory must not apply hooks.");
                 ForgeDetour.Patch(original, replacement, "console.patch.id", "console.owner");
                 string status = ForgeCommands.PatchStatus(new List<string> { "console.owner" });
                 if (!status.Contains("console.patch.id") || !status.Contains("Applied"))
@@ -2713,8 +2724,8 @@ namespace CalradiaForge.Tests
 
         private static void TestForgeApiVersion()
         {
-            if (ForgeApi.Version != 12)
-                throw new Exception($"ForgeApi.Version should be 12. Got: {ForgeApi.Version}");
+            if (ForgeApi.Version != 13)
+                throw new Exception($"ForgeApi.Version should be 13. Got: {ForgeApi.Version}");
         }
 
         private static void TestForgeUiRegistry()

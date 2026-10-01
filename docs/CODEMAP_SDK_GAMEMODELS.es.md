@@ -1,4 +1,4 @@
-# Mapa de arquitectura del SDK y GameModels — producto 25.2.0, ForgeApi.Version 12
+# Mapa de arquitectura del SDK y GameModels — producto 25.2.0, ForgeApi.Version 13
 
 ## Arquitectura del patrón Builder del SDK
 
@@ -66,7 +66,7 @@ ForgeHintBuilder (UI Hint System)
 
 ## Arquitectura de los servicios del SDK
 
-El código fuente actual del producto es 25.2.0 y `ForgeApi.Version` es 12. El contrato actual incluye el servicio opcional de parches `ForgeApi.Patches` y el servicio opcional de hooks de ejecución `ForgeApi.Hooks`; el reemplazo de métodos se introdujo en la versión 11 y los hooks de ejecución en la versión 12. Estas incorporaciones no cambiaron el contrato de bibliotecas compartidas introducido en la versión 7.
+El código fuente actual del producto es 25.2.0 y `ForgeApi.Version` es 13. El contrato actual incluye el servicio opcional de parches `ForgeApi.Patches` y el servicio opcional de hooks de ejecución `ForgeApi.Hooks`; el reemplazo de métodos se introdujo en la versión 11 y los hooks de ejecución en la versión 12, con Finalizer y metadatos aditivos de tipos de hook en snapshots en la versión 13. Estas incorporaciones no cambiaron el contrato de bibliotecas compartidas introducido en la versión 7.
 
 ### Contrato SDK v10 — resultados explícitos y generaciones de conexión (fuente del producto 25.0.0)
 
@@ -83,7 +83,7 @@ El código fuente actual del producto es 25.2.0 y `ForgeApi.Version` es 12. El c
 `ForgeApi.Libraries` administra `SharedLibraryRegistry`, que está vinculado al hilo que lo creó. Un módulo abre un `ModuleLibrary` y es propietario de sus registros y monitores durante la vida útil del módulo:
 
 ```
-ForgeApi.Libraries (ForgeApi.Version = 12)
+ForgeApi.Libraries (ForgeApi.Version = 13)
 └── OpenModule(moduleId) → ModuleLibrary
     ├── Provide<T> / Require<T> → one service / fail-fast lookup
     ├── Resolve<T> → immutable SharedServiceResolution<T>
@@ -149,7 +149,7 @@ ForgeDetour (Experimental native method replacement)
 └─ Scope: one-for-one executable method replacement; no Harmony hook integration
 ```
 
-`ForgeApi.Patches.ApplyMethodReplacement(string patchId, string owner, MethodInfo target, MethodInfo replacement)` y `ForgePatcher.ApplyAll(Assembly assembly)` son vías de aplicación explícitas e independientes. El escritor de bajo nivel es experimental y no coordina a otros hilos que estén ejecutando el destino. Los tipos de hook declarados en blueprints, como `Prefix`, `Postfix`, `Transpiler` y `Finalizer`, siguen siendo declaraciones salvo que otro backend los implemente; ForgeDetour no expone sobrecargas de HarmonyMethod.
+`ForgeApi.Patches.ApplyMethodReplacement(string patchId, string owner, MethodInfo target, MethodInfo replacement)` y `ForgePatcher.ApplyAll(Assembly assembly)` son vías de aplicación explícitas e independientes. El escritor de bajo nivel es experimental y no coordina a otros hilos que estén ejecutando el destino. Los tipos de hook de blueprints siguen siendo declaraciones inertes. El servicio opcional de ejecución `ForgeHookService` implementa Prefix/Postfix/Finalizer por separado; su adaptador `RegisterTranspiler`, exclusivo de Core `net472`, usa MonoMod `ILHook` sin añadir tipos MonoMod al SDK. ForgeDetour no expone sobrecargas de HarmonyMethod. Consulta las [políticas de hooks de ejecución](PATCH_BLUEPRINTS.es.md#hooks-explícitos-en-ejecución-y-transpilers-il) para manejo de excepciones, duración del cuerpo IL, autorización del host y límites de reconstrucción.
 
 ## Patrón decorador de GameModel
 

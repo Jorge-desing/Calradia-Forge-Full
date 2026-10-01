@@ -2823,9 +2823,8 @@ def audit_prefab(
         brushes_root = ET.parse(brushes_path).getroot()
         sprite_root = ET.parse(sprites_path).getroot()
         vm_source = viewmodel_path.read_text(encoding="utf-8-sig")
-        rule_partial_path = viewmodel_path.with_name(viewmodel_path.stem + ".CampaignRules.cs")
-        if rule_partial_path.is_file():
-            vm_source += "\n" + rule_partial_path.read_text(encoding="utf-8-sig")
+        for partial_path in sorted(viewmodel_path.parent.glob(viewmodel_path.stem + ".*.cs")):
+            vm_source += "\n" + partial_path.read_text(encoding="utf-8-sig")
         tool_item_source = tool_item_viewmodel_path.read_text(encoding="utf-8-sig")
     except (ET.ParseError, OSError, UnicodeError) as exc:
         audit.error(f"Unable to read audit input: {exc}")

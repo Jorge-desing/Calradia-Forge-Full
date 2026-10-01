@@ -26,9 +26,13 @@ namespace CalradiaForge.Mod.Commands
                    "cf.patches - Lists Forge-tracked patch status\n" +
                    "cf.patch_status [owner] - Shows explicit experimental patch records\n" +
                    "cf.patch_revert <id|owner|all> - Explicitly reverts tracked patches\n" +
-                   "cf.hook_status [owner] - Shows registered Prefix/Postfix hook status\n" +
-                   "cf.hook_apply <id> - Explicitly applies one registered hook in the main menu\n" +
-                   "cf.hook_revert <id|owner|all> - Explicitly reverts Forge-owned hooks in the main menu\n" +
+                   "cf.hook_status [owner|-] [target|-] [prefix|postfix|finalizer|transpiler] - Filters registered hook metadata\n" +
+                   "cf.hook_verify <id|owner|all> - Checks backend hook state, not raw bytes\n" +
+                   "cf.hook_export - Exports snapshot JSON to console output\n" +
+                   "cf.hook_fixture <register|run> - Own-target main-menu fixture; registration is inert\n" +
+                   "cf.hook_apply <id> - Prepares an Apply plan; no hook changes until confirmed\n" +
+                   "cf.hook_revert <id|owner|all> - Prepares a Revert plan; no hook changes until confirmed\n" +
+                   "cf.hook_confirm <apply|revert> <token> - Confirms the exact pending single-use plan\n" +
                    "cf.revert_all - Reverts all safely tracked Forge patches\n" +
                    "cf.verify_integrity - Verifies exact Forge-installed patch bytes\n" +
                    "cf.test_log - Tests the ForgeLogger subsystem\n" +
@@ -121,26 +125,75 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("hook_status", "cf")]
         public static string HookStatus(List<string> args)
         {
-            if (args != null && (args.Count > 1 || (args.Count == 1 && string.IsNullOrWhiteSpace(args[0]))))
-                return "Usage: cf.hook_status [owner]";
+            const string usage = "Usage: cf.hook_status [owner|-] [target|-] [prefix|postfix|finalizer|transpiler]";
+            if (args != null && (args.Count > 3 || args.Any(string.IsNullOrWhiteSpace))) return usage;
+            string owner = args != null && args.Count > 0 && args[0] != "-" ? args[0].Trim() : null;
+            string target = args != null && args.Count > 1 && args[1] != "-" ? args[1].Trim() : null;
+            string kind = args != null && args.Count > 2 ? args[2].Trim().ToLowerInvariant() : null;
+            if (kind != null && kind != "prefix" && kind != "postfix" && kind != "finalizer" && kind != "transpiler") return usage;
             IForgeHookService service = ForgeApi.Hooks;
-            if (service == null) return "Prefix/Postfix hook service is unavailable.";
-            string owner = args != null && args.Count > 0 ? args[0].Trim() : null;
-            var snapshots = service.GetSnapshots(owner);
-            if (snapshots.Count == 0) return owner == null ? "No registered hook records found." : "No hook records found for owner '" + owner + "'.";
-            return "Forge hook status (" + snapshots.Count + "):\n" + string.Join("\n", snapshots.Select(hook =>
+            if (service == null) return "Hook service is unavailable.";
+            var snapshots = service.GetSnapshots(owner).Where(hook =>
+                (target == null || hook.TargetMethod.IndexOf(target, StringComparison.OrdinalIgnoreCase) >= 0) &&
+                (kind == null || (kind == "prefix" && hook.HasPrefix) || (kind == "postfix" && hook.HasPostfix) ||
+                 (kind == "finalizer" && hook.HasFinalizer) || (kind == "transpiler" && hook.HasTranspiler))).ToArray();
+            if (snapshots.Length == 0) return "No registered hook records match the filters.";
+            return "Forge hook status (" + snapshots.Length + "):\n" + string.Join("\n", snapshots.Select(hook =>
                 "- [" + hook.State + "] " + hook.Id + " owner=" + hook.Owner + " target=" + hook.TargetMethod +
-                " prefix=" + hook.HasPrefix + " postfix=" + hook.HasPostfix + " — " + hook.Detail));
+                " prefix=" + hook.HasPrefix + " postfix=" + hook.HasPostfix + " finalizer=" + hook.HasFinalizer + " transpiler=" + hook.HasTranspiler + " — " + hook.Detail));
+        }
+
+        [CommandLineFunctionality.CommandLineArgumentFunction("hook_verify", "cf")]
+        public static string HookVerify(List<string> args)
+        {
+            if (args == null || args.Count != 1 || string.IsNullOrWhiteSpace(args[0])) return "Usage: cf.hook_verify <id|owner|all>";
+            var runtime = SubModule.CurrentRuntime;
+            if (runtime == null || !runtime.CanManageHooks) return "Hook verification requires the exact main-menu context.";
+            var service = ForgeApi.Hooks;
+            if (service == null) return "Hook service is unavailable.";
+            var value = args[0].Trim();
+            var snapshots = service.GetSnapshots();
+            bool id = snapshots.Any(item => item.Id.Equals(value, StringComparison.OrdinalIgnoreCase));
+            bool owner = snapshots.Any(item => item.Owner.Equals(value, StringComparison.OrdinalIgnoreCase));
+            if ((id && owner) || (value.Equals("all", StringComparison.OrdinalIgnoreCase) && (id || owner))) return "Ambiguous selection; no operation performed.";
+            var selected = snapshots.Where(item => value.Equals("all", StringComparison.OrdinalIgnoreCase) ||
+                (id ? item.Id.Equals(value, StringComparison.OrdinalIgnoreCase) : item.Owner.Equals(value, StringComparison.OrdinalIgnoreCase))).Select(item => item.Id).ToList();
+            var response = runtime.Handle(new Request { Action = "hook-verify", Argument = Json.Serialize(new HookIpcSelection { HookIds = selected }) }, CancellationToken.None);
+            return response.Success ? response.Data : response.Error;
+        }
+
+        [CommandLineFunctionality.CommandLineArgumentFunction("hook_export", "cf")]
+        public static string HookExport(List<string> args)
+        {
+            if (args != null && args.Count != 0) return "Usage: cf.hook_export";
+            var runtime = SubModule.CurrentRuntime;
+            if (runtime == null) return "Forge runtime is unavailable.";
+            var response = runtime.Handle(new Request { Action = "hook-snapshots" }, CancellationToken.None);
+            return response.Success ? response.Data : response.Error;
+        }
+
+        [CommandLineFunctionality.CommandLineArgumentFunction("hook_fixture", "cf")]
+        public static string HookFixture(List<string> args)
+        {
+            if (args == null || args.Count != 1) return "Usage: cf.hook_fixture <register|run>";
+            var runtime = SubModule.CurrentRuntime;
+            if (runtime == null) return "Forge runtime is unavailable.";
+            try
+            {
+                if (args[0] == "register") return HookMenuFixture.Register(runtime.TestEngine, () => runtime.CanManageHooks);
+                if (args[0] == "run") return HookMenuFixture.Run(() => runtime.CanManageHooks);
+                return "Usage: cf.hook_fixture <register|run>";
+            }
+            catch (Exception error) { return "Hook fixture blocked: " + error.Message; }
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("hook_apply", "cf")]
         public static string HookApply(List<string> args)
         {
             if (args == null || args.Count != 1 || string.IsNullOrWhiteSpace(args[0])) return "Usage: cf.hook_apply <registered-id>";
-            IForgeHookService service = ForgeApi.Hooks;
-            if (service == null) return "Prefix/Postfix hook service is unavailable.";
-            var result = service.Apply(args[0].Trim());
-            return "Hook apply: " + result.Id + " -> " + result.State + (result.Succeeded ? " (verified)." : " (blocked/failed).") + " " + result.Detail;
+            var runtime = SubModule.CurrentRuntime;
+            if (runtime == null) return "Forge runtime is unavailable; no hook was changed.";
+            return PrepareConsoleHookPlan(runtime, "apply", new List<string> { args[0].Trim() });
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("hook_revert", "cf")]
@@ -148,28 +201,97 @@ namespace CalradiaForge.Mod.Commands
         {
             if (args == null || args.Count != 1 || string.IsNullOrWhiteSpace(args[0])) return "Usage: cf.hook_revert <registered-id|owner|all>";
             IForgeHookService service = ForgeApi.Hooks;
-            if (service == null) return "Prefix/Postfix hook service is unavailable.";
+            if (service == null) return "Hook service is unavailable.";
             string target = args[0].Trim();
             var snapshots = service.GetSnapshots();
+            if (snapshots == null || snapshots.Any(item => item == null || string.IsNullOrWhiteSpace(item.Id) || string.IsNullOrWhiteSpace(item.Owner)))
+                return "Hook revert plan stopped: the registered inventory is invalid; no hook was changed.";
             bool matchesId = snapshots.Any(item => string.Equals(item.Id, target, StringComparison.OrdinalIgnoreCase));
             bool matchesOwner = snapshots.Any(item => string.Equals(item.Owner, target, StringComparison.OrdinalIgnoreCase));
-            if (matchesId && matchesOwner) return "Hook revert stopped: argument matches both a hook ID and owner; no change was made.";
+            if (matchesId && matchesOwner) return "Hook revert plan stopped: argument matches both a hook ID and owner; no hook was changed.";
             if (string.Equals(target, "all", StringComparison.OrdinalIgnoreCase) && (matchesId || matchesOwner))
-                return "Hook revert stopped: 'all' collides with a registered hook ID or owner; no change was made.";
-            IReadOnlyList<ForgeHookOperationResult> results;
-            if (string.Equals(target, "all", StringComparison.OrdinalIgnoreCase)) results = service.RevertAll();
+                return "Hook revert plan stopped: 'all' collides with a registered hook ID or owner; no hook was changed.";
+
+            List<string> selectedIds;
+            if (string.Equals(target, "all", StringComparison.OrdinalIgnoreCase)) selectedIds = snapshots.Select(item => item.Id).ToList();
             else if (matchesId)
             {
                 var matches = snapshots.Where(item => string.Equals(item.Id, target, StringComparison.OrdinalIgnoreCase)).ToArray();
-                if (matches.Length != 1) return "Hook revert stopped: registered hook ID is ambiguous.";
-                results = new[] { service.Revert(matches[0].Id) };
+                if (matches.Length != 1) return "Hook revert plan stopped: registered hook ID is ambiguous; no hook was changed.";
+                selectedIds = new List<string> { matches[0].Id };
             }
-            else if (matchesOwner) results = service.RevertOwner(target);
-            else return "No registered hook matches '" + target + "'.";
-            int reverted = results.Count(item => item.Succeeded && item.State == ForgeHookState.Reverted);
-            int blocked = results.Count - reverted;
-            return "Hook revert: " + reverted + " reverted, " + blocked + " blocked or failed." +
-                (results.Count == 0 ? " No matching applied hooks." : "\n" + string.Join("\n", results.Select(item => "- " + item.Id + ": " + item.State + " — " + item.Detail)));
+            else if (matchesOwner) selectedIds = snapshots.Where(item => string.Equals(item.Owner, target, StringComparison.OrdinalIgnoreCase)).Select(item => item.Id).ToList();
+            else return "No registered hook matches '" + target + "'; no hook was changed.";
+
+            var selected = new HashSet<string>(selectedIds, StringComparer.Ordinal);
+            selectedIds = EligibleConsoleHookRevertIds(snapshots.Where(item => selected.Contains(item.Id)));
+            if (selectedIds.Count == 0)
+                return "No selected hooks are eligible for Revert (Applied, Conflict, or Failed); no plan was prepared and no hook was changed.";
+
+            var runtime = SubModule.CurrentRuntime;
+            if (runtime == null) return "Forge runtime is unavailable; no hook was changed.";
+            return PrepareConsoleHookPlan(runtime, "revert", selectedIds);
+        }
+
+        static List<string> EligibleConsoleHookRevertIds(IEnumerable<ForgeHookSnapshot> snapshots)
+        {
+            return snapshots.Where(item => item.State == ForgeHookState.Applied ||
+                item.State == ForgeHookState.Conflict || item.State == ForgeHookState.Failed)
+                .Select(item => item.Id).ToList();
+        }
+
+        [CommandLineFunctionality.CommandLineArgumentFunction("hook_confirm", "cf")]
+        public static string HookConfirm(List<string> args)
+        {
+            const string usage = "Usage: cf.hook_confirm <apply|revert> <64-character single-use token>";
+            if (args == null || args.Count != 2 || string.IsNullOrWhiteSpace(args[0]) || string.IsNullOrWhiteSpace(args[1])) return usage;
+            string operation = args[0].Trim().ToLowerInvariant();
+            string token = args[1].Trim();
+            if ((operation != "apply" && operation != "revert") || token.Length != 64 ||
+                token.Any(character => !(character >= '0' && character <= '9') && !(character >= 'a' && character <= 'f')))
+                return usage;
+
+            var runtime = SubModule.CurrentRuntime;
+            if (runtime == null) return "Forge runtime is unavailable; the pending plan was not confirmed.";
+            var response = runtime.Handle(new Request
+            {
+                Action = operation == "apply" ? "hook-apply-confirm" : "hook-revert-confirm",
+                Argument = Json.Serialize(new HookIpcConfirmation { Token = token })
+            }, CancellationToken.None);
+            return response.Success ? response.Data : "Hook " + operation + " confirmation blocked: " + response.Error;
+        }
+
+        static string PrepareConsoleHookPlan(Runtime runtime, string operation, List<string> hookIds)
+        {
+            if (hookIds == null || hookIds.Count == 0) return "No registered hooks matched; no hook was changed.";
+            var response = runtime.Handle(new Request
+            {
+                Action = operation == "apply" ? "hook-apply-plan" : "hook-revert-plan",
+                Argument = Json.Serialize(new HookIpcSelection { HookIds = hookIds })
+            }, CancellationToken.None);
+            if (!response.Success) return "Hook " + operation + " plan blocked: " + response.Error;
+
+            HookIpcPlan plan;
+            try { plan = Json.Deserialize<HookIpcPlan>(response.Data); }
+            catch { return "Hook plan prepared but could not be decoded; no operation was confirmed.\n" + response.Data; }
+            if (plan == null || !plan.RequiresConfirmation || plan.Hooks == null || string.IsNullOrWhiteSpace(plan.Token))
+                return "Hook plan response is incomplete; no operation was confirmed.\n" + response.Data;
+
+            var lines = new List<string>
+            {
+                "Hook " + plan.Operation + " plan prepared; no hook was changed.",
+                "Session: " + plan.Session,
+                "Expires (UTC): " + plan.ExpiresAtUtc,
+                "Single-use confirmation token: " + plan.Token,
+                "Registered hooks:"
+            };
+            foreach (var hook in plan.Hooks)
+            {
+                if (hook == null) return "Hook plan contains an invalid item; no operation was confirmed.\n" + response.Data;
+                lines.Add("- id=" + hook.Id + " owner=" + hook.Owner + " target=" + hook.TargetMethod + " state=" + hook.State);
+            }
+            lines.Add("Confirm only this preview with: cf.hook_confirm " + plan.Operation + " " + plan.Token);
+            return string.Join("\n", lines);
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("revert_all", "cf")]

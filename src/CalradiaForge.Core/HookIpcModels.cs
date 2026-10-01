@@ -36,6 +36,8 @@ namespace CalradiaForge.Core
         public string TargetMethod { get; set; }
         public bool HasPrefix { get; set; }
         public bool HasPostfix { get; set; }
+        public bool HasFinalizer { get; set; }
+        public bool HasTranspiler { get; set; }
         public int? Priority { get; set; }
         public List<string> Before { get; set; } = new List<string>();
         public List<string> After { get; set; } = new List<string>();

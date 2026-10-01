@@ -194,7 +194,7 @@
  <sys:String x:Key="Viz.Component.SchemaTargetLabel">SCHEMA TARGET</sys:String>
  <sys:String x:Key="Viz.Component.GeneratedMembersLabel">Generated members</sys:String>
  <sys:String x:Key="Ui.HookWorkbench">Hook Workbench</sys:String>
- <sys:String x:Key="Ui.HookWorkbenchHelp">Review registered Prefix and Postfix hooks. Apply and Revert require explicit, time-limited confirmation.</sys:String>
+ <sys:String x:Key="Ui.HookWorkbenchHelp">Review registered Prefix, Postfix, Finalizer and Transpiler hooks. Apply and Revert require explicit, time-limited confirmation.</sys:String>
  <sys:String x:Key="Ui.HooksOpen">HOOKS</sys:String>
  <sys:String x:Key="Ui.HooksRefresh">REFRESH</sys:String>
  <sys:String x:Key="Ui.HooksEligibility">MANAGEMENT ELIGIBILITY</sys:String>
@@ -239,4 +239,13 @@
  <sys:String x:Key="Ui.HooksNotAttempted">Not attempted by the host; state must be reconciled.</sys:String>
  <sys:String x:Key="Ui.HooksCancelled">The host reported cancellation; inspect refreshed hook states.</sys:String>
  <sys:String x:Key="Ui.HooksPartial">The host reported a partial operation.</sys:String>
+ <sys:String x:Key="Ui.HooksOwnerFilter">Filter by owner</sys:String>
+ <sys:String x:Key="Ui.HooksTargetFilter">Filter by target</sys:String>
+ <sys:String x:Key="Ui.HooksTypeFilter">Filter by hook type</sys:String>
+ <sys:String x:Key="Ui.HooksVerify">Verify selected</sys:String>
+ <sys:String x:Key="Ui.HooksVerifyFailed">Hook verification failed.</sys:String>
+ <sys:String x:Key="Ui.HooksExportSnapshots">Export snapshots</sys:String>
+ <sys:String x:Key="Ui.HooksExportResults">Export results</sys:String>
+ <sys:String x:Key="Ui.HooksNoFilterMatches">No registered hooks match the current filters.</sys:String>
+ <sys:String x:Key="Ui.HooksSelectionCountFormat">{0} selected; {1} hidden by filters. Operations include every selected hook.</sys:String>
 </ResourceDictionary>

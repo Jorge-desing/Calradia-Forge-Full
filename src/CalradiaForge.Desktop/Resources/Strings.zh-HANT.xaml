@@ -194,7 +194,7 @@
  <sys:String x:Key="Viz.Component.SchemaTargetLabel">目標結構</sys:String>
  <sys:String x:Key="Viz.Component.GeneratedMembersLabel">產生的成員</sys:String>
  <sys:String x:Key="Ui.HookWorkbench">掛鉤工作台</sys:String>
- <sys:String x:Key="Ui.HookWorkbenchHelp">檢視主機註冊的 Prefix 與 Postfix 掛鉤。套用與還原需要明確且限時的確認。</sys:String>
+ <sys:String x:Key="Ui.HookWorkbenchHelp">檢視已註冊的 Prefix、Postfix、Finalizer 與 Transpiler 掛鉤。套用與還原需要明確且限時的確認。</sys:String>
  <sys:String x:Key="Ui.HooksOpen">掛鉤</sys:String>
  <sys:String x:Key="Ui.HooksRefresh">重新整理</sys:String>
  <sys:String x:Key="Ui.HooksEligibility">管理資格</sys:String>
@@ -239,4 +239,13 @@
  <sys:String x:Key="Ui.HooksNotAttempted">主機未嘗試；需要重新核對狀態。</sys:String>
  <sys:String x:Key="Ui.HooksCancelled">主機回報已取消；請檢查重新整理後的掛鉤狀態。</sys:String>
  <sys:String x:Key="Ui.HooksPartial">主機回報了部分操作。</sys:String>
+ <sys:String x:Key="Ui.HooksOwnerFilter">依擁有者篩選</sys:String>
+ <sys:String x:Key="Ui.HooksTargetFilter">依目標篩選</sys:String>
+ <sys:String x:Key="Ui.HooksTypeFilter">依掛鉤類型篩選</sys:String>
+ <sys:String x:Key="Ui.HooksVerify">驗證所選項目</sys:String>
+ <sys:String x:Key="Ui.HooksVerifyFailed">掛鉤驗證失敗。</sys:String>
+ <sys:String x:Key="Ui.HooksExportSnapshots">匯出快照</sys:String>
+ <sys:String x:Key="Ui.HooksExportResults">匯出結果</sys:String>
+ <sys:String x:Key="Ui.HooksNoFilterMatches">沒有已註冊的掛鉤符合目前的篩選條件。</sys:String>
+ <sys:String x:Key="Ui.HooksSelectionCountFormat">已選取 {0} 項；篩選條件隱藏了 {1} 項。操作包含所有選取的掛鉤。</sys:String>
 </ResourceDictionary>

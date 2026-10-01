@@ -981,3 +981,42 @@ Initial developer preview: Gauntlet panel, WPF client, local named pipes, diagno
 - The nested serial x64 detour fixture BAT passed with unload-inert callbacks and exact `15 → 32 → 15` restoration. `DetourFixture.exe` was not launched directly.
 - `tools\Run-CalradiaForge-Tests.bat --desktop-only --no-pause` passed Desktop 65/65 and 292 render cases; the build reported zero warnings and errors.
 - This entry records only the integrated BAT evidence reported for this validation pass.
+
+## Finalizer, IL Transpiler, and explicit hook confirmation — 2026-10-01 (Rev109)
+
+- Extends the optional hook contract to Finalizer and local `net472` IL transpilers through MonoMod RuntimeDetour 25.3.6. Finalizer preserves the pending exception by default, supports explicitly validated replacement or suppression, and aggregates a Finalizer failure with an earlier failure. IL manipulators remain local callbacks and can run again when MonoMod rebuilds the IL chain; they do not cross SDK, Desktop, or IPC boundaries.
+- Closes the console Apply/Revert bypass: `cf.hook_apply` and `cf.hook_revert` now prepare a host-validated preview, while `cf.hook_confirm <apply|revert> <token>` consumes the exact single-use token and revalidates session, main-menu context, game thread, and selected hook snapshots. The WPF/Gauntlet workbench remains ID-only and explicitly confirmed.
+- BAT verification passed: clean Release build (0 warnings, 0 errors), Core 404/404, ForgeWeave 73/73, Desktop 65/65, WPF render 294 cases (13,960 ms harness time; 182 render/layout passes), hook utility 29/29 (22 isolated transport cases), Gauntlet structural checks, the serial x64 detour fixture, and all four stateless acceptance checks. The utility transport fixture simulates token rejection and does not verify Runtime/Bannerlord session, screen, or expiry state. Harness timings are not application latency, and serial fixtures do not establish safety while another thread is executing a target during patching.
+- Live Bannerlord mutation remains unverified: the attempted main-menu F10 did not display the Forge panel, and the WPF workbench reported the game context as unavailable. No hook Apply/Verify/Revert action was issued; no campaign or battle was opened. The backend remains experimental. Product version stays 25.2.0 and `ForgeApi.Version` is 13.
+
+## Release archive guard and evidence reconciliation — 2026-10-01 (Rev110)
+
+- Hardened distribution staging and auditing: development/test `.bat` and `.ps1` files are excluded from Modules and Source-SDK; only `Desktop/Run-CalradiaForge-Desktop.bat` is allowed in the Desktop archive. Any `node_modules` tree is omitted and rejected by the archive auditor.
+- New BAT evidence: Asset Pipeline 20/20; Hook Utility 29 argument checks and 22 isolated transport cases; integrated suite Core 404/404, ForgeWeave 73/73, Desktop 65/65, and WPF 294 render cases. The render console summary was 13,183 ms while the structured JSON recorded 13,187 ms; both record 182 passes and 5,827.1 ms in layout. Rev109's corresponding console/JSON values were 13,960/13,963 ms. These are separate harness readouts, not Desktop interaction latency.
+- The transport fixture simulates token rejection and does not test Bannerlord Runtime session, screen, expiry, or menu lifecycle. Live hook mutation remains unverified; no Apply/Verify/Revert was issued and no campaign or battle was opened. Product version remains 25.2.0; `ForgeApi.Version` remains 13.
+
+## Hook revert eligibility, confirmation visibility and IL rebuild recovery — 2026-10-01 (Rev111)
+
+- Console Revert filters inactive registered records before preparing an explicit plan and reports an empty eligible selection without mutation. Desktop exposes hidden selection counts and wraps its bounded confirmation preview. Applied IL reconstruction is activation-scoped; off-menu management stays blocked. The public read-only HarmonyDiagnostics compatibility API is restored.
+- BAT validation passed Core 405/405 and ForgeWeave 73/73 with clean selected builds; Desktop 65/65 and WPF 294 render cases, 182 layout passes, console harness 14,410 ms; isolated x64 serial fixture includes IL rebuild 11 → 15 → 11. Harness timing is not application latency and serial fixtures do not certify general concurrency. Live Bannerlord/Resource Browser mutation remains unverified; no campaign or battle validation. Final ZIPs and hashes will be regenerated after Rev111. Product 25.2.0 and SDK API 13 remain unchanged.
+
+## IL reconstruction after callback shutdown — 2026-10-01 (Rev112)
+
+- The exact retained, explicitly authorized IL activation can reconstruct its deterministic transformation after StopCallbacksForUnload when an external ILHook rebuilds the chain, even with a false host gate. Runtime gameplay callbacks remain stopped; new Apply/Revert and CanDisconnect remain denied outside the approved context.
+- The x64 serial fixture BAT passed with 0 warnings/errors: retained reconstruction 11 → 15 → 11 during external ILHook add/undo, approved cleanup restored 3, and uncertain Undo stayed retained/blocked. This does not certify general concurrency or live Bannerlord behavior. Product 25.2.0 and SDK API 13 remain unchanged; final ZIP evidence is not asserted here.
+
+## Deterministic Harmony patch inventory — 2026-10-01 (Rev113)
+
+- Normalize Harmony owner snapshots by case-insensitive deduplication and ordinal sorting, and resolve the explicit `Transpilers` and `Finalizers` metadata properties. The regression now covers deterministic owners and all four patch kinds.
+- Core/ForgeWeave BAT passed 405/405 and 73/73; isolated x64 fixture passed. Canonical packaging succeeded, auditing all three ZIPs and matching their SHA-256 manifest. Desktop passed 65/65; WPF render passed 294 cases / 182 layout passes (13,978 ms harness time, not app latency). Product 25.2.0 and API 13 are unchanged. Deep TPAC parsing and live Resource Browser/Bannerlord rendering remain unverified.
+
+
+# Rev114 — Scoped hook delivery validation — 2026-10-01
+
+The Finalizer/ILHook objective was validated from the staged Git tree in an isolated local snapshot, excluding concurrent SDK/onboarding changes. The snapshot build passed with zero warnings and errors. BAT validation passed Core 405/405, ForgeWeave 73/73, Desktop 65/65, 294 WPF cases with 182 layout passes, Asset Pipeline 20/20, stateless acceptance 4/4 and Gauntlet structural checks. Hook Utility passed 29 argument checks and 22 isolated transport cases. The WPF harness took 14,026 ms; this is not application interaction latency.
+
+A fresh serial BAT benchmark included five samples per scenario: Finalizer median 183.0 ns/call and 136.31 B/call; IL-only median 17.8 ns/call and zero measured allocated bytes. These fixture measurements do not certify concurrent modification safety or live game behavior.
+
+The canonical packaging pipeline generated and audited all three 25.2.0 archives from that scoped snapshot. Independent SHA-256 verification matched its manifest, and the Source-SDK archive excluded concurrent ContentShowcase, HarmonyDiagnostics test-project and SDK evolution additions. Final procedural guides distinguish initial gated application from reconstruction of an already verified owned IL activation; uncertain Undo never authorizes reconstruction.
+
+Live main-menu hook application remains unverified because native-window control is unavailable in the current Computer Use API. No campaign, battle or TaleWorlds target was used. Product version remains 25.2.0, SDK API 13 and MonoMod 25.3.6. Delivery requires a scoped local commit without push; unrelated work remains unstaged.

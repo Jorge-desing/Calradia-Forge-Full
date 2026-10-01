@@ -273,4 +273,12 @@
   <string key="2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in." value="2. 补丁蓝图审查：运行 cf.patch_preflight 以审查待处理的声明。该命令不会应用补丁；替换 Forge 方法需要单独明确选择加入。" />
   <string key="ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools." value="ForgeWeave 事件管线：确定性事件记录与序列回放。Harmony 诊断和 Patch Blueprint Preflight 是独立工具。" />
   <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. 替换 Forge 方法需要单独明确请求；后端不支持的已声明 Hook 类型仅保留为元数据。Patch Preflight 为只读操作，不会调用回调代码。请使用 AddNonSerializedListener，让 ForgeWeave 事件监听器不参与序列化。" />
+  <string key="Hook inventory" value="钩子清单" />
+  <string key="Next hook" value="下一个钩子" />
+  <string key="Verify selected" value="验证所选项" />
+  <string key="Preview apply" value="预览应用" />
+  <string key="Preview revert" value="预览还原" />
+  <string key="Confirm action" value="确认操作" />
+  <string key="Approve displayed hook plan" value="批准显示的钩子计划" />
+  <string key="Selected hook" value="所选钩子" />
 </strings>
