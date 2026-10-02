@@ -36,6 +36,8 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public bool CampaignRuleBuilderCanGenerate => _campaignRuleBuilderDraft.Rules.Count > 0;
         [DataSourceProperty] public bool CampaignRuleBuilderCannotGenerate => !CampaignRuleBuilderCanGenerate;
         [DataSourceProperty] public bool CampaignRuleBuilderCannotSelect => !CampaignRuleBuilderHasSelection;
+        [DataSourceProperty] public bool CampaignRuleBuilderCannotAddConditionA => SelectedCampaignRule == null || SelectedCampaignRule.GroupA.Count >= CampaignRuleBuilderKinds.MaximumConditionsPerGroup;
+        [DataSourceProperty] public bool CampaignRuleBuilderCannotAddConditionB => SelectedCampaignRule == null || SelectedCampaignRule.GroupA.Count == 0 || SelectedCampaignRule.GroupB.Count >= CampaignRuleBuilderKinds.MaximumConditionsPerGroup;
         [DataSourceProperty] public bool CampaignRuleBuilderCanCopy => IsCampaignRuleBuilderPackageVisible && !string.IsNullOrWhiteSpace(full);
         [DataSourceProperty] public bool CampaignRuleBuilderCannotCopy => !CampaignRuleBuilderCanCopy;
         [DataSourceProperty] public string CampaignRuleBuilderOutputText => CampaignRuleBuilderCanCopy ? full : string.Empty;
@@ -91,6 +93,9 @@ namespace CalradiaForge.Mod
                 if (selected == null) return;
                 string edit = value ?? string.Empty;
                 if (edit.Length > 8) edit = edit.Substring(0, 8);
+                string current = _campaignRuleBuilderAmountEdits.TryGetValue(selected.Id, out var existing)
+                    ? existing : selected.Amount.ToString(CultureInfo.InvariantCulture);
+                if (string.Equals(current, edit, StringComparison.Ordinal)) return;
                 _campaignRuleBuilderAmountEdits[selected.Id] = edit;
                 if (int.TryParse(edit, NumberStyles.Integer, CultureInfo.InvariantCulture, out var amount))
                     selected.Amount = amount;
@@ -166,7 +171,7 @@ namespace CalradiaForge.Mod
                 for (int i = 0; i < rule.GroupA.Count; i++) _campaignRuleBuilderConditionsA.Add(new CampaignRuleConditionItemVM(this, rule.Id, false, rule.GroupA[i]));
                 for (int i = 0; i < rule.GroupB.Count; i++) _campaignRuleBuilderConditionsB.Add(new CampaignRuleConditionItemVM(this, rule.Id, true, rule.GroupB[i]));
             }
-            foreach (var name in new[] { nameof(CampaignRuleBuilderHasSelection), nameof(CampaignRuleBuilderCannotSelect), nameof(CampaignRuleBuilderCanGenerate), nameof(CampaignRuleBuilderCannotGenerate), nameof(CampaignRuleBuilderConditionsA), nameof(CampaignRuleBuilderConditionsB), nameof(CampaignRuleBuilderSelectedEventLabel), nameof(CampaignRuleBuilderSelectedEventDisplayLabel), nameof(CampaignRuleBuilderSelectedActionLabel), nameof(CampaignRuleBuilderSelectedTargetLabel), nameof(CampaignRuleBuilderAmountText), nameof(CampaignRuleBuilderPreviewLabel) }) OnPropertyChanged(name);
+            foreach (var name in new[] { nameof(CampaignRuleBuilderHasSelection), nameof(CampaignRuleBuilderCannotSelect), nameof(CampaignRuleBuilderCannotAddConditionA), nameof(CampaignRuleBuilderCannotAddConditionB), nameof(CampaignRuleBuilderCanGenerate), nameof(CampaignRuleBuilderCannotGenerate), nameof(CampaignRuleBuilderConditionsA), nameof(CampaignRuleBuilderConditionsB), nameof(CampaignRuleBuilderSelectedEventLabel), nameof(CampaignRuleBuilderSelectedEventDisplayLabel), nameof(CampaignRuleBuilderSelectedActionLabel), nameof(CampaignRuleBuilderSelectedTargetLabel), nameof(CampaignRuleBuilderAmountText), nameof(CampaignRuleBuilderPreviewLabel) }) OnPropertyChanged(name);
         }
 
         public void ExecuteCampaignRuleBuilderAdd()
@@ -411,6 +416,8 @@ namespace CalradiaForge.Mod
             OnPropertyChanged(nameof(CampaignRuleBuilderAtCapacity));
             OnPropertyChanged(nameof(CampaignRuleBuilderCanGenerate));
             OnPropertyChanged(nameof(CampaignRuleBuilderCannotGenerate));
+            OnPropertyChanged(nameof(CampaignRuleBuilderCannotAddConditionA));
+            OnPropertyChanged(nameof(CampaignRuleBuilderCannotAddConditionB));
             OnPropertyChanged(nameof(CampaignRuleBuilderCountLabel));
             OnPropertyChanged(nameof(CampaignRuleBuilderPreviewLabel));
             NotifyCampaignRuleBuilderVisibility();

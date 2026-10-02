@@ -22,7 +22,7 @@ namespace CalradiaForge.Mod
         string extensionPageOwner;
         string cachedHotkeyName;
         InputKey cachedHotkey = InputKey.F10;
-        bool f10ProbeHeld;
+        F10InputEdgeGate f10InputGate;
         Widget keyboardControl;
         Widget navigationPaletteReturnFocus;
         bool navigationPaletteWasOpen;
@@ -110,16 +110,16 @@ namespace CalradiaForge.Mod
                     runtime.Register("CalradiaForge", "Info", "Panel hotkey polling armed: " + cachedHotkey + ".");
                 }
 
-                var hotkeyPressed = Input.IsKeyPressed(cachedHotkey);
+                var keyPressed = Input.IsKeyPressed(cachedHotkey);
+                var hotkeyPressed = keyPressed;
                 if (cachedHotkey == InputKey.F10)
                 {
-                    var f10Down = Input.IsKeyDown(InputKey.F10);
-                    var f10Immediate = Input.IsKeyDownImmediate(InputKey.F10);
-                    var f10Held = f10Down || f10Immediate;
-                    hotkeyPressed = hotkeyPressed || (f10Held && !f10ProbeHeld);
-                    f10ProbeHeld = f10Held;
+                    hotkeyPressed = f10InputGate.Poll(
+                        keyPressed,
+                        Input.IsKeyDown(InputKey.F10),
+                        Input.IsKeyDownImmediate(InputKey.F10));
                 }
-                else f10ProbeHeld = false;
+                else f10InputGate.Reset();
 
                 if (layer == null && extensionLayer == null)
                 {

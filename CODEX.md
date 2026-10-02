@@ -79,7 +79,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1
 ```
 
 ### Live In-Game UI Review
-- Open the Calradia Forge overlay on a singleplayer screen with `Settings.Hotkey`; the default is `F10`, and pressing it again closes the panel. F10 polling needs an F10-only rising-edge fallback using `IsKeyDown`/`IsKeyDownImmediate` when `IsKeyPressed` misses the key; details are in `.agents/rules/bannerlord_input_debug_agent.md` and `.agents/rules/calradia_forge_ui.md`.
+- Open the Calradia Forge overlay on a singleplayer screen with `Settings.Hotkey`; the default is `F10`, and pressing it again closes the panel. F10 polling uses one rising-edge gate across `IsKeyPressed`, `IsKeyDown`, and `IsKeyDownImmediate`, rearming only after all three clear; other hotkeys keep the normal `IsKeyPressed` path. Details are in `.agents/rules/bannerlord_input_debug_agent.md` and `.agents/rules/calradia_forge_ui.md`.
 - For an authorized live review, build both Client and Modding Kit profiles first, close the Modding Kit completely, launch Bannerlord from Steam with Calradia Forge enabled, and inspect the actual panel. Do not leave the game and Modding Kit open together or ask the user to open the game first.
 - Before each source correction, close Bannerlord and the Modding Kit and end/reset Ordenador/Computer Use; keep them closed through edits and builds. After each live check, close Bannerlord and end/reset the Computer Use session before another correction or task completion.
 - Treat source audits and Resource Browser import as separate from live rendering and interaction evidence.

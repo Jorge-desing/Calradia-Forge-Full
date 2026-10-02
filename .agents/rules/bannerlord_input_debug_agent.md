@@ -10,8 +10,9 @@ When interacting with the engine for runtime data, debugging, or input, follow t
 
 ### Calradia Forge F10 edge detection
 - `Input.IsKeyPressed` remains the normal configured-hotkey signal. A live Bannerlord diagnostic for the Calradia Forge panel showed `IsKeyPressed(F10) == false` and `IsKeyDown(F10) == false` while `IsKeyDownImmediate(F10) == true`.
-- For this F10 case, preserve `IsKeyPressed` and combine it with an F10-only rising-edge fallback: `held = IsKeyDown(F10) || IsKeyDownImmediate(F10)`; trigger on `held && !wasHeld`; then store `held` for the next application tick. This detects one press without repeating while the key remains held.
-- Re-arm only after both down checks are false. Clear the previous-held latch when the configured hotkey changes away from F10. Do not replace the normal key-pressed path for other hotkeys or treat `IsKeyDownImmediate` alone as a one-shot event.
+- Route the three F10 signals through one edge gate: `signal = IsKeyPressed(F10) || IsKeyDown(F10) || IsKeyDownImmediate(F10)`; trigger only on `signal && !signalWasPresent`, then store `signal`. This prevents the normal press signal from toggling again while either held signal remains active.
+- Re-arm when all three signals are false. Reset the gate when the configured hotkey changes away from F10. Keep other configured hotkeys on `IsKeyPressed` without the F10 gate, and do not treat `IsKeyDownImmediate` alone as a level-triggered toggle.
+- Cover normal press, each held fallback, overlapping signals, sustained/repeated signal, release, and the next press with a deterministic gate test; source-token checks alone do not validate tick sequences.
 
 ## 2. Engine Debugging (MBDebug)
 - Namespace: `TaleWorlds.Engine`.

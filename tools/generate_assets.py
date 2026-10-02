@@ -722,6 +722,7 @@ for group in ('A','B'):
     E.SubElement(heading_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='3',Brush='CalradiaForge.HeaderGold',Text='@CampaignRuleBuilderGroup'+group+'Label',VerticalAlignment='Center',**{'Brush.FontSize':'16'})
     add_condition=button(heading_children,'CampaignRuleAddCondition'+group,'@CampaignRuleBuilderAddConditionLabel',170,height=32,margin_right=5)
     add_condition.set('Command.Click','ExecuteCampaignRuleBuilderAddCondition'+group)
+    add_condition.set('IsDisabled','@CampaignRuleBuilderCannotAddCondition'+group)
     list_panel=E.SubElement(group_children,'ListPanel',Id='ForgeCampaignRuleConditions'+group,DataSource='{CampaignRuleBuilderConditions'+group+'}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',MarginTop='38',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
     condition_template=E.SubElement(list_panel,'ItemTemplate')
     condition_row=E.SubElement(condition_template,'Widget',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='106',MarginBottom='5',Sprite='BlankWhiteSquare_9',Color='#0D1511FF')

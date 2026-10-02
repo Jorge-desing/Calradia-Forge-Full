@@ -24,6 +24,7 @@ namespace CalradiaForge.Tests
             test("Campaign rule builder restores the exact draft after explicit save and a new view model", TestViewModelSaveRestoresDraftAfterNewInstance);
             test("Campaign rule builder first visit stays empty until Add rule", TestMissingDraftStartsEmptyUntilAdd);
             test("Campaign rule builder saved empty drafts stay empty", TestEmptyDraftPersistsWithoutImplicitRule);
+            test("Campaign rule builder disables condition buttons at group capacity", TestConditionCapacityControls);
             test("Campaign rule builder IDs survive reorder and removal", TestRuleIdentitySurvivesReorderAndRemoval);
             test("Campaign rule builder preview and copy remain local and complete", TestUiSurfaceContracts);
         }
@@ -211,6 +212,17 @@ namespace CalradiaForge.Tests
                     if (viewModel.CampaignRuleBuilderRules[0].Id != rule.Id || viewModel.CampaignRuleBuilderStatusLabel != "Rule draft loaded." || viewModel.CampaignRuleBuilderDraftLoadStatusLabel != "Rule draft loaded.") throw new Exception("The restored row or load status is incorrect.");
                     if (viewModel.CampaignRuleBuilderSelectedEventLabel != rule.EventId || viewModel.CampaignRuleBuilderAmountText != "100") throw new Exception("Opening the route did not restore the selected rule's event and amount.");
 
+                    byte[] savedBytes = File.ReadAllBytes(path);
+                    viewModel.CampaignRuleBuilderAmountText = viewModel.CampaignRuleBuilderAmountText;
+                    if (viewModel.CampaignRuleBuilderStatusLabel != "Rule draft loaded." || viewModel.CampaignRuleBuilderDraftLoadStatusLabel != "Rule draft loaded." ||
+                        !File.ReadAllBytes(path).SequenceEqual(savedBytes))
+                        throw new Exception("Rebinding the selected amount to its current value must not create an unsaved edit or modify the saved draft.");
+
+                    viewModel.CampaignRuleBuilderAmountText = "101";
+                    if (viewModel.CampaignRuleBuilderAmountText != "101" || viewModel.CampaignRuleBuilderStatusLabel != "Unsaved draft edits." ||
+                        viewModel.CampaignRuleBuilderDraftLoadStatusLabel != "Rule draft loaded." || !File.ReadAllBytes(path).SequenceEqual(savedBytes))
+                        throw new Exception("A real amount edit must be marked unsaved without changing the persisted draft.");
+
                     viewModel.ExecuteCampaignRuleBuilderCycleEvent();
                     if (viewModel.CampaignRuleBuilderRules.Count != 1 || viewModel.CampaignRuleBuilderRules[0].Id != rule.Id) throw new Exception("Cycling the event must edit the selected draft rule without adding a row.");
                     if (viewModel.CampaignRuleBuilderSelectedEventLabel == rule.EventId || viewModel.CampaignRuleBuilderStatusLabel != "Unsaved draft edits.") throw new Exception("Cycling the event must mark only the in-memory draft as edited.");
@@ -293,12 +305,21 @@ namespace CalradiaForge.Tests
             string path = Path.Combine(directory, "campaign-rule-builder.json");
             try
             {
-                var emptyDraft = new CampaignRuleBuilderDraft { Rules = new List<CampaignRuleBuilderRule>() };
-                if (!CampaignRuleBuilderPersistence.TrySave(path, emptyDraft, out var error)) throw new Exception(error);
+                using (var runtime = new Runtime())
+                {
+                    var viewModel = new PanelViewModel(runtime, delegate { }, path);
+                    viewModel.ExecuteNoviceCampaignRuleBuilder();
+                    if (!viewModel.CampaignRuleBuilderIsEmpty || viewModel.CampaignRuleBuilderRules.Count != 0 || viewModel.CampaignRuleBuilderStatusLabel != "No saved rule draft.")
+                        throw new Exception("A first visit must remain empty before an explicit empty save.");
+                    viewModel.ExecuteCampaignRuleBuilderSave();
+                    if (!File.Exists(path) || viewModel.CampaignRuleBuilderStatusLabel != "Rule draft saved.")
+                        throw new Exception("The Save draft command must persist an empty draft and report success.");
+                }
+
                 byte[] savedBytes = File.ReadAllBytes(path);
                 var loaded = CampaignRuleBuilderPersistence.Load(path);
                 if (loaded.Status != CampaignRuleBuilderLoadStatus.Loaded || loaded.Draft.Rules.Count != 0)
-                    throw new Exception("An explicitly saved empty draft must be recognized as loaded and stay empty.");
+                    throw new Exception("The explicitly saved empty draft must be recognized as loaded and stay empty.");
 
                 using (var runtime = new Runtime())
                 {
@@ -314,6 +335,42 @@ namespace CalradiaForge.Tests
                         throw new Exception("A saved empty draft must not produce a package.");
                     if (!File.ReadAllBytes(path).SequenceEqual(savedBytes))
                         throw new Exception("Loading or attempting to generate an empty draft must not rewrite its file.");
+                }
+            }
+            finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+        }
+
+        private static void TestConditionCapacityControls()
+        {
+            string directory = Path.Combine(Path.GetTempPath(), "forge-rule-builder-condition-capacity-" + Guid.NewGuid().ToString("N"));
+            string path = Path.Combine(directory, "campaign-rule-builder.json");
+            try
+            {
+                using (var runtime = new Runtime())
+                {
+                    var viewModel = new PanelViewModel(runtime, delegate { }, path);
+                    viewModel.ExecuteNoviceCampaignRuleBuilder();
+                    viewModel.ExecuteCampaignRuleBuilderAdd();
+                    if (viewModel.CampaignRuleBuilderCannotAddConditionA || !viewModel.CampaignRuleBuilderCannotAddConditionB)
+                        throw new Exception("Group A must be available first, while group B stays disabled until A has a condition.");
+
+                    for (int i = 0; i < CampaignRuleBuilderKinds.MaximumConditionsPerGroup; i++)
+                        viewModel.ExecuteCampaignRuleBuilderAddConditionA();
+                    if (viewModel.CampaignRuleBuilderConditionsA.Count != CampaignRuleBuilderKinds.MaximumConditionsPerGroup ||
+                        !viewModel.CampaignRuleBuilderCannotAddConditionA || viewModel.CampaignRuleBuilderCannotAddConditionB)
+                        throw new Exception("Group A capacity must disable its button and unlock group B.");
+                    viewModel.ExecuteCampaignRuleBuilderAddConditionA();
+                    if (viewModel.CampaignRuleBuilderConditionsA.Count != CampaignRuleBuilderKinds.MaximumConditionsPerGroup)
+                        throw new Exception("The group A command must preserve its three-condition limit.");
+
+                    for (int i = 0; i < CampaignRuleBuilderKinds.MaximumConditionsPerGroup; i++)
+                        viewModel.ExecuteCampaignRuleBuilderAddConditionB();
+                    if (viewModel.CampaignRuleBuilderConditionsB.Count != CampaignRuleBuilderKinds.MaximumConditionsPerGroup ||
+                        !viewModel.CampaignRuleBuilderCannotAddConditionB)
+                        throw new Exception("Group B capacity must disable its button at the three-condition limit.");
+                    viewModel.ExecuteCampaignRuleBuilderAddConditionB();
+                    if (viewModel.CampaignRuleBuilderConditionsB.Count != CampaignRuleBuilderKinds.MaximumConditionsPerGroup)
+                        throw new Exception("The group B command must preserve its three-condition limit.");
                 }
             }
             finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
@@ -536,6 +593,8 @@ namespace CalradiaForge.Tests
             XmlNode emptyState = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleEmpty']");
             XmlNode orderPrevious = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRulePrevious']");
             XmlNode orderRemove = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleRemove']");
+            XmlNode addConditionA = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleAddConditionA']");
+            XmlNode addConditionB = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleAddConditionB']");
             string copy = Slice(panel, "public void ExecuteCampaignRuleBuilderCopy()", "private bool ValidateCampaignRuleBuilderAmounts");
             string clipboard = Slice(shell, "public void ExecuteClipboard()", "public void RefreshLanguage()");
             string preview = Slice(panel, "private string BuildCampaignRulePreview()", "internal sealed class CampaignRuleItemVM");
@@ -560,14 +619,18 @@ namespace CalradiaForge.Tests
                 !panel.Contains("CampaignRuleBuilderEventChangeHintLabel => T(\"Changing the event clears both condition groups.\")") ||
                 !panel.Contains("[DataSourceProperty] public string RowIdentityLabel => Id;") ||
                 !panel.Contains("[DataSourceProperty] public bool CampaignRuleBuilderCannotGenerate => !CampaignRuleBuilderCanGenerate;") ||
-                !panel.Contains("[DataSourceProperty] public bool CampaignRuleBuilderCannotSelect => !CampaignRuleBuilderHasSelection;"))
+                !panel.Contains("[DataSourceProperty] public bool CampaignRuleBuilderCannotSelect => !CampaignRuleBuilderHasSelection;") ||
+                !panel.Contains("[DataSourceProperty] public bool CampaignRuleBuilderCannotAddConditionA") ||
+                !panel.Contains("[DataSourceProperty] public bool CampaignRuleBuilderCannotAddConditionB"))
                 throw new Exception("The explicitly created rule identity and Generate availability must be bound by the ViewModel.");
-            if (rowIdentity == null || eventCycle == null || eventHint == null || eventSurface == null || generateButton == null || emptyState == null || orderPrevious == null || orderRemove == null ||
+            if (rowIdentity == null || eventCycle == null || eventHint == null || eventSurface == null || generateButton == null || emptyState == null || orderPrevious == null || orderRemove == null || addConditionA == null || addConditionB == null ||
                 eventCycle.Attributes["Command.Click"]?.Value != "ExecuteCampaignRuleBuilderCycleEvent" ||
                 generateButton.Attributes["IsDisabled"]?.Value != "@CampaignRuleBuilderCannotGenerate" ||
                 emptyState.Attributes["IsVisible"]?.Value != "@CampaignRuleBuilderIsEmpty" ||
                 orderPrevious.Attributes["IsDisabled"]?.Value != "@CampaignRuleBuilderCannotSelect" ||
                 orderRemove.Attributes["IsDisabled"]?.Value != "@CampaignRuleBuilderCannotSelect" ||
+                addConditionA.Attributes["IsDisabled"]?.Value != "@CampaignRuleBuilderCannotAddConditionA" ||
+                addConditionB.Attributes["IsDisabled"]?.Value != "@CampaignRuleBuilderCannotAddConditionB" ||
                 eventDisplayLabel?.ParentNode?.ParentNode != eventCycle ||
                 eventSurface.Attributes["SuggestedHeight"]?.Value != "87" ||
                 eventHint.Attributes["Text"]?.Value != "@CampaignRuleBuilderEventChangeHintLabel")

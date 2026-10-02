@@ -343,6 +343,7 @@ namespace CalradiaForge.Tests
         {
             GauntletComposerTests.Run(test);
             CampaignRuleBuilderTests.Run(test);
+            F10InputEdgeGateTests.Run(test);
             test("Perk Tree Scaffold generates valid C# with unique perk IDs", TestPerkTreeScaffold);
             test("Diplomatic Matrix generates valid XML and balanced relations", TestDiplomaticMatrix);
             test("Gauntlet Brush XML contains required layers and valid #RRGGBBAA hex", TestGauntletBrushSynthesis);
@@ -2627,8 +2628,8 @@ namespace MyCustomMod.QuestBehaviors
                 "Input.IsKeyPressed(cachedHotkey)",
                 "Input.IsKeyDown(InputKey.F10)",
                 "Input.IsKeyDownImmediate(InputKey.F10)",
-                "f10Held && !f10ProbeHeld",
-                "f10ProbeHeld = f10Held",
+                "f10InputGate.Poll(",
+                "else f10InputGate.Reset();",
                 "Panel hotkey detected: "
             };
             foreach (string token in requiredHotkeyTokens)
