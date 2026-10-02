@@ -623,7 +623,61 @@ namespace CalradiaForge.Mod
             if (string.IsNullOrWhiteSpace(argument) || argument.Length > 1024)
                 throw new ArgumentException("Provide the confirmation token as JSON.");
             var confirmation = Json.Deserialize<HookIpcConfirmation>(argument);
-            var token = confirmation?.Token;
+            var commit = CommitHookPlanCore(
+                ref pendingHookPlan,
+                operation,
+                confirmation?.Token,
+                () => Log.Id,
+                () => DateTime.UtcNow,
+                () => ScreenManager.TopScreen,
+                () => hookContextEpoch,
+                () => CanManageHooks,
+                () => RequireHookManagementContext(),
+                () => ForgeApi.Hooks,
+                (plan, service) =>
+                {
+                    var current = new Dictionary<string, ForgeHookSnapshot>(StringComparer.Ordinal);
+                    foreach (var snapshot in service.GetSnapshots() ?? Array.Empty<ForgeHookSnapshot>())
+                    {
+                        if (snapshot == null || string.IsNullOrWhiteSpace(snapshot.Id) || current.ContainsKey(snapshot.Id))
+                            return "Hook registrations became ambiguous after planning.";
+                        current.Add(snapshot.Id, snapshot);
+                    }
+                    foreach (var planned in plan.Hooks)
+                    {
+                        if (!current.TryGetValue(planned.Id, out var snapshot) || !SameHookSnapshot(planned, snapshot))
+                            return "Hook registration or state changed after planning: " + planned.Id;
+                        var allowed = operation == "apply"
+                            ? snapshot.State == ForgeHookState.Registered || snapshot.State == ForgeHookState.Reverted
+                            : snapshot.State == ForgeHookState.Applied || snapshot.State == ForgeHookState.Conflict || snapshot.State == ForgeHookState.Failed;
+                        if (!allowed) return "Hook is no longer eligible for " + operation + ": " + planned.Id;
+                    }
+                    return null;
+                },
+                cancellationToken,
+                (service, id) => service.Apply(id),
+                (service, id) => service.Revert(id),
+                (service, id) => service.Verify(id));
+            return Json.Serialize(commit);
+        }
+
+        internal static HookIpcCommit CommitHookPlanCore(
+            ref PendingHookPlan pendingHookPlan,
+            string operation,
+            string token,
+            Func<string> currentSession,
+            Func<DateTime> utcNow,
+            Func<object> currentScreen,
+            Func<int> currentContextEpoch,
+            Func<bool> canManageHooks,
+            Action requireHookManagementContext,
+            Func<IForgeHookService> currentHookService,
+            Func<PendingHookPlan, IForgeHookService, string> validateSnapshots,
+            CancellationToken cancellationToken,
+            Func<IForgeHookService, string, ForgeHookOperationResult> apply,
+            Func<IForgeHookService, string, ForgeHookOperationResult> revert,
+            Func<IForgeHookService, string, ForgeHookOperationResult> verify)
+        {
             var plan = pendingHookPlan;
             if (plan == null || string.IsNullOrEmpty(token) || !string.Equals(token, plan.Token, StringComparison.Ordinal) ||
                 !string.Equals(operation, plan.Operation, StringComparison.Ordinal))
@@ -632,36 +686,23 @@ namespace CalradiaForge.Mod
             // Consume a matching token before any mutable precondition check. A denied or partial
             // commit cannot be replayed after the operator changes screens or state.
             pendingHookPlan = null;
-            if (DateTime.UtcNow > plan.ExpiresAtUtc)
+            if (utcNow() > plan.ExpiresAtUtc)
                 throw new InvalidOperationException("Confirmation token expired; create a new plan.");
-            if (!string.Equals(plan.Session, Log.Id, StringComparison.Ordinal))
+            if (!string.Equals(plan.Session, currentSession(), StringComparison.Ordinal))
                 throw new InvalidOperationException("The game session changed after the plan was created.");
-            if (plan.ContextEpoch != hookContextEpoch || !ReferenceEquals(plan.Screen, ScreenManager.TopScreen))
+            if (plan.ContextEpoch != currentContextEpoch() || !ReferenceEquals(plan.Screen, currentScreen()))
                 throw new InvalidOperationException("The main-menu screen changed after planning; the single-use plan was discarded.");
-            RequireHookManagementContext();
-            var service = ForgeApi.Hooks;
+            requireHookManagementContext();
+            var service = currentHookService();
             if (service == null || !ReferenceEquals(service, plan.Service))
                 throw new InvalidOperationException("The hook service changed or became unavailable after planning.");
 
-            var current = new Dictionary<string, ForgeHookSnapshot>(StringComparer.Ordinal);
-            foreach (var snapshot in service.GetSnapshots() ?? Array.Empty<ForgeHookSnapshot>())
-            {
-                if (snapshot == null || string.IsNullOrWhiteSpace(snapshot.Id) || current.ContainsKey(snapshot.Id))
-                    throw new InvalidOperationException("Hook registrations became ambiguous after planning.");
-                current.Add(snapshot.Id, snapshot);
-            }
-            foreach (var planned in plan.Hooks)
-            {
-                if (!current.TryGetValue(planned.Id, out var snapshot) || !SameHookSnapshot(planned, snapshot))
-                    throw new InvalidOperationException("Hook registration or state changed after planning: " + planned.Id);
-                var allowed = operation == "apply"
-                    ? snapshot.State == ForgeHookState.Registered || snapshot.State == ForgeHookState.Reverted
-                    : snapshot.State == ForgeHookState.Applied || snapshot.State == ForgeHookState.Conflict || snapshot.State == ForgeHookState.Failed;
-                if (!allowed) throw new InvalidOperationException("Hook is no longer eligible for " + operation + ": " + planned.Id);
-            }
+            var snapshotError = validateSnapshots(plan, service);
+            if (snapshotError != null) throw new InvalidOperationException(snapshotError);
 
-            var commit = new HookIpcCommit { Operation = operation, Session = Log.Id, TokenConsumed = true, Succeeded = true };
+            var commit = new HookIpcCommit { Operation = operation, Session = currentSession(), TokenConsumed = true, Succeeded = true };
             var ordered = operation == "revert" ? plan.Hooks.AsEnumerable().Reverse().ToList() : plan.Hooks;
+            var applyOrRevert = operation == "apply" ? apply : revert;
             for (var index = 0; index < ordered.Count; index++)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -669,7 +710,7 @@ namespace CalradiaForge.Mod
                     StopHookCommit(commit, ordered, index, "IPC request was cancelled after the current completed hook; refresh snapshots to reconcile actual state.", true);
                     break;
                 }
-                if (!CanManageHooks || plan.ContextEpoch != hookContextEpoch || !ReferenceEquals(plan.Screen, ScreenManager.TopScreen))
+                if (!canManageHooks() || plan.ContextEpoch != currentContextEpoch() || !ReferenceEquals(plan.Screen, currentScreen()))
                 {
                     StopHookCommit(commit, ordered, index, "The hook-management screen or game context changed during the commit; refresh snapshots to reconcile actual state.", false);
                     break;
@@ -677,8 +718,8 @@ namespace CalradiaForge.Mod
                 var planned = ordered[index];
                 try
                 {
-                    var result = operation == "apply" ? service.Apply(planned.Id) : service.Revert(planned.Id);
-                    var verification = service.Verify(planned.Id);
+                    var result = applyOrRevert(service, planned.Id);
+                    var verification = verify(service, planned.Id);
                     var item = new HookIpcResult
                     {
                         Id = planned.Id,
@@ -719,7 +760,7 @@ namespace CalradiaForge.Mod
                 }
             }
             commit.Partial = (!commit.Succeeded && commit.Results.Any(result => result.Succeeded)) || commit.NotAttemptedIds.Count > 0;
-            return Json.Serialize(commit);
+            return commit;
         }
 
         string CancelHookPlan(string argument, CancellationToken cancellationToken)
@@ -839,7 +880,7 @@ namespace CalradiaForge.Mod
         static readonly TimeSpan HookPlanLifetime = TimeSpan.FromSeconds(60);
         PendingHookPlan pendingHookPlan;
 
-        sealed class PendingHookPlan
+        internal sealed class PendingHookPlan
         {
             public PendingHookPlan(string operation, string session, string token, DateTime expiresAtUtc,
                 IForgeHookService service, IEnumerable<HookIpcSnapshot> hooks, object screen, int contextEpoch)

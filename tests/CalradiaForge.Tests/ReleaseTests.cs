@@ -53,16 +53,118 @@ internal static class ReleaseTests
             var source=ReadRuntimeSource();
             var createStart=source.IndexOf("string CreateHookPlan(",StringComparison.Ordinal);
             var commitStart=source.IndexOf("string CommitHookPlan(",StringComparison.Ordinal);
+            var coreStart=source.IndexOf("internal static HookIpcCommit CommitHookPlanCore(",commitStart,StringComparison.Ordinal);
+            var cancelStart=source.IndexOf("string CancelHookPlan(",coreStart,StringComparison.Ordinal);
             var stopStart=source.IndexOf("static void StopHookCommit(",StringComparison.Ordinal);
-            Assert(createStart>=0&&commitStart>createStart&&stopStart>commitStart);
+            Assert(createStart>=0&&commitStart>createStart&&coreStart>commitStart&&cancelStart>coreStart&&stopStart>cancelStart);
             var create=source.Substring(createStart,commitStart-createStart);
-            var commit=source.Substring(commitStart,stopStart-commitStart);
+            var wrapper=source.Substring(commitStart,coreStart-commitStart);
+            var core=source.Substring(coreStart,cancelStart-coreStart);
             Assert(create.IndexOf("pendingHookPlan = null;",StringComparison.Ordinal)<create.IndexOf("RequireHookManagementContext();",StringComparison.Ordinal)&&
                 create.Contains("planningEpoch = hookContextEpoch")&&create.Contains("cancellationToken.ThrowIfCancellationRequested()"));
-            Assert(commit.Contains("plan.ContextEpoch != hookContextEpoch")&&commit.Contains("cancellationToken.IsCancellationRequested")&&
-                commit.Contains("StopHookCommit")&&commit.Contains("commit.NotAttemptedIds.Count > 0"));
+            Assert(wrapper.Contains("CommitHookPlanCore(")&&wrapper.Contains("() => Log.Id")&&wrapper.Contains("() => ScreenManager.TopScreen")&&
+                wrapper.Contains("() => hookContextEpoch")&&wrapper.Contains("() => ForgeApi.Hooks")&&
+                wrapper.Contains("service.Apply(id)")&&wrapper.Contains("service.Revert(id)")&&wrapper.Contains("service.Verify(id)"));
+            Assert(core.Contains("utcNow() > plan.ExpiresAtUtc")&&core.Contains("currentSession()")&&core.Contains("currentContextEpoch()")&&
+                core.Contains("cancellationToken.IsCancellationRequested")&&core.Contains("StopHookCommit")&&core.Contains("validateSnapshots(plan, service)")&&
+                core.Contains("commit.NotAttemptedIds.Count > 0"));
             Assert(create.Contains("snapshot.State == ForgeHookState.Conflict")&&create.Contains("snapshot.State == ForgeHookState.Failed")&&
-                commit.Contains("snapshot.State == ForgeHookState.Conflict")&&commit.Contains("snapshot.State == ForgeHookState.Failed"));
+                wrapper.Contains("snapshot.State == ForgeHookState.Conflict")&&wrapper.Contains("snapshot.State == ForgeHookState.Failed"));
+        });
+        test("Hook commit coordinator enforces single-use expiry, context, cancellation and partial apply",()=>{
+            var utcNow=new DateTime(2026,10,1,12,0,0,DateTimeKind.Utc);
+            var currentSession="session-a";
+            object currentScreen=new object();
+            var contextEpoch=4;
+            var canManage=true;
+            var sessionRead=false;
+            var service=new ForgeHookService(()=>true);
+            IForgeHookService currentService=service;
+            Func<string,ForgeHookOperationResult> applyBehavior=null;
+            Action<string> verifyBehavior=null;
+            var applyCalls=new List<string>();
+            var verifyCalls=new List<string>();
+            const string token="fixture-confirmation-token";
+
+            Runtime.PendingHookPlan NewPlan(string planToken,params string[] ids)
+            {
+                var hooks=ids.Select(id=>new HookIpcSnapshot {Id=id,Owner="fixture",TargetMethod="Fixture.Target",State="Registered"}).ToList();
+                return new Runtime.PendingHookPlan("apply",currentSession,planToken,utcNow.AddSeconds(60),currentService,hooks,currentScreen,contextEpoch);
+            }
+            HookIpcCommit Commit(ref Runtime.PendingHookPlan pending,string confirmationToken,CancellationToken cancellationToken=default(CancellationToken))
+            {
+                return Runtime.CommitHookPlanCore(ref pending,"apply",confirmationToken,
+                    ()=>{sessionRead=true;return currentSession;},()=>utcNow,()=>currentScreen,()=>contextEpoch,()=>canManage,()=>{},()=>currentService,
+                    (plan,activeService)=>null,cancellationToken,
+                    (activeService,id)=>{applyCalls.Add(id);return applyBehavior==null?new ForgeHookOperationResult(id,ForgeHookState.Applied,true,"applied"):applyBehavior(id);},
+                    (activeService,id)=>new ForgeHookOperationResult(id,ForgeHookState.Reverted,true,"reverted"),
+                    (activeService,id)=>{verifyCalls.Add(id);verifyBehavior?.Invoke(id);return new ForgeHookOperationResult(id,ForgeHookState.Applied,true,"verified");});
+            }
+            void ExpectFailure(ref Runtime.PendingHookPlan pending,string confirmationToken,string expected)
+            {
+                try { Commit(ref pending,confirmationToken); }
+                catch(InvalidOperationException error) { Assert(error.Message==expected);return; }
+                throw new Exception("Expected hook commit failure: "+expected);
+            }
+
+            Runtime.PendingHookPlan pending=NewPlan(token,"single");
+            ExpectFailure(ref pending,"wrong-token","Confirmation token is unknown, already used, or for another operation.");
+            Assert(pending!=null&&applyCalls.Count==0);
+            var single=Commit(ref pending,token);
+            Assert(single.Succeeded&&single.TokenConsumed&&single.Results.Single().Id=="single"&&pending==null);
+            ExpectFailure(ref pending,token,"Confirmation token is unknown, already used, or for another operation.");
+            Assert(applyCalls.SequenceEqual(new[]{"single"}));
+
+            sessionRead=false;
+            pending=NewPlan(token,"expired");
+            utcNow=pending.ExpiresAtUtc.AddTicks(1);
+            ExpectFailure(ref pending,token,"Confirmation token expired; create a new plan.");
+            Assert(pending==null&&!sessionRead&&applyCalls.Count==1);
+            ExpectFailure(ref pending,token,"Confirmation token is unknown, already used, or for another operation.");
+            utcNow=new DateTime(2026,10,1,12,0,0,DateTimeKind.Utc);
+
+            var contextFailures=new[]{
+                new { Name="session", Expected="The game session changed after the plan was created." },
+                new { Name="screen", Expected="The main-menu screen changed after planning; the single-use plan was discarded." },
+                new { Name="epoch", Expected="The main-menu screen changed after planning; the single-use plan was discarded." },
+                new { Name="service", Expected="The hook service changed or became unavailable after planning." }
+            };
+            foreach(var scenario in contextFailures)
+            {
+                currentSession="session-a";currentScreen=new object();contextEpoch=4;currentService=service;
+                pending=NewPlan(token,"guarded");
+                if(scenario.Name=="session")currentSession="session-b";
+                else if(scenario.Name=="screen")currentScreen=new object();
+                else if(scenario.Name=="epoch")contextEpoch++;
+                else currentService=new ForgeHookService(()=>true);
+                ExpectFailure(ref pending,token,scenario.Expected);
+                Assert(pending==null&&applyCalls.Count==1);
+            }
+
+            currentSession="session-a";currentScreen=new object();contextEpoch=4;currentService=service;
+            pending=NewPlan(token,"first","second","third");
+            using(var cancellation=new CancellationTokenSource())
+            {
+                verifyBehavior=id=>{if(id=="first")cancellation.Cancel();};
+                var cancelled=Commit(ref pending,token,cancellation.Token);
+                Assert(cancelled.Cancelled&&cancelled.Partial&&!cancelled.Succeeded&&cancelled.Results.Count==1&&
+                    cancelled.Results[0].Id=="first"&&cancelled.Results[0].Succeeded&&cancelled.Results[0].Verified&&
+                    cancelled.NotAttemptedIds.SequenceEqual(new[]{"second","third"})&&applyCalls.Last()=="first"&&
+                    verifyCalls.Last()=="first");
+            }
+            verifyBehavior=null;
+
+            applyCalls.Clear();verifyCalls.Clear();
+            pending=NewPlan(token,"first","failed","remaining");
+            applyBehavior=id=>id=="failed"
+                ?new ForgeHookOperationResult(id,ForgeHookState.Failed,false,"fixture apply failure")
+                :new ForgeHookOperationResult(id,ForgeHookState.Applied,true,"applied");
+            var partial=Commit(ref pending,token);
+            Assert(!partial.Succeeded&&partial.Partial&&!partial.Cancelled&&partial.Results.Count==2&&
+                partial.Results[0].Id=="first"&&partial.Results[0].Succeeded&&partial.Results[1].Id=="failed"&&
+                !partial.Results[1].Succeeded&&partial.NotAttemptedIds.SequenceEqual(new[]{"remaining"})&&
+                applyCalls.SequenceEqual(new[]{"first","failed"})&&verifyCalls.SequenceEqual(new[]{"first","failed"}));
+            applyBehavior=null;
         });
         test("Hook console Apply and Revert require the Runtime single-use plan confirmation",()=>{
             var source=ReadForgeCommandsSource();
