@@ -1020,3 +1020,10 @@ A fresh serial BAT benchmark included five samples per scenario: Finalizer media
 The canonical packaging pipeline generated and audited all three 25.2.0 archives from that scoped snapshot. Independent SHA-256 verification matched its manifest, and the Source-SDK archive excluded concurrent ContentShowcase, HarmonyDiagnostics test-project and SDK evolution additions. Final procedural guides distinguish initial gated application from reconstruction of an already verified owned IL activation; uncertain Undo never authorizes reconstruction.
 
 Live main-menu hook application remains unverified because native-window control is unavailable in the current Computer Use API. No campaign, battle or TaleWorlds target was used. Product version remains 25.2.0, SDK API 13 and MonoMod 25.3.6. Delivery requires a scoped local commit without push; unrelated work remains unstaged.
+
+# Rev116 — Dedicated Hook Workbench routing and responsive WPF states — 2026-10-01
+
+- Moves Hook Workbench from a global header overlay to a dedicated selectable navigation route with mutually exclusive workspace surfaces, an active brass indicator, and route-aware status. Preserves the 194 tool routes, existing commands, 13 locales, and three themes.
+- Closing Hook Workbench reconciles the remembered route with active rail filters; when no route is visible it clears the unreachable selection, and clearing the filter restores an accessible route.
+- Fixes the clipped Connect action in the compact session header and replaces the generic Spanish-only diagnostic action label with the existing localized work-order resource. The render checks verify the complete localized Connect label and keyboard target, plus Hook Workbench layout, localized route status, and hit testing across all locales and themes at minimum and normal viewports.
+- BAT validation: clean build with zero warnings/errors, Desktop 65/65, 295 WPF render cases and 308 layout/render passes. The harness uses fixed WPF DPI and does not emulate Windows display scaling; native keyboard input and live WPF interaction remain unverified. Product version remains 25.2.0; no game session, campaign, or battle was started.

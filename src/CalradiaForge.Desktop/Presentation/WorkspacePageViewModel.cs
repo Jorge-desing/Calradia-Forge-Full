@@ -418,7 +418,7 @@ namespace CalradiaForge.Desktop.Presentation
                 DesktopToolKind.Report => "📋 Compilar Informe de Evidencias",
                 _ => Tool.Group switch
                 {
-                    "Diagnostics" => "🔍 Auditar Evidencia Táctica",
+                    "Diagnostics" => System.Windows.Application.Current?.TryFindResource("Ui.Run") as string ?? "Run work order",
                     "Assets" => "🛠️ Inspeccionar Recurso de Juego",
                     "Economy" => "📈 Simular Indicadores Económicos",
                     "Combat" => "⚔️ Simular Parámetros de Combate",

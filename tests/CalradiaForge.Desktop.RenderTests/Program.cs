@@ -937,6 +937,26 @@ internal static class Program
               string.Equals(AutomationProperties.GetName(dossierToggle), localizedDossierName, StringComparison.Ordinal) &&
               string.Equals(dossierToggle.ToolTip as string, localizedDossierName, StringComparison.Ordinal),
             "The compact dossier icon must preserve its localized accessible name and complete tooltip.");
+
+        var connectButton = Descendants(header).OfType<Button>().SingleOrDefault(item =>
+            string.Equals(AutomationProperties.GetAutomationId(item), "ConnectButton", StringComparison.Ordinal));
+        var localizedConnect = Application.Current.TryFindResource("Ui.Connect") as string;
+        var connectLabel = connectButton == null ? null : Descendants(connectButton).OfType<TextBlock>()
+            .FirstOrDefault(block => block.IsVisible && string.Equals(block.Text, localizedConnect, StringComparison.Ordinal));
+        var naturalConnectLabel = connectLabel == null ? null : new TextBlock
+        {
+            Text = connectLabel.Text,
+            FontFamily = connectLabel.FontFamily,
+            FontSize = connectLabel.FontSize,
+            FontWeight = connectLabel.FontWeight
+        };
+        naturalConnectLabel?.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var connectBounds = connectButton == null ? Rect.Empty : Bounds(connectButton, controls[4]);
+        Check(connectButton != null && connectButton.IsVisible && connectButton.Focusable && connectButton.IsTabStop &&
+              string.Equals(AutomationProperties.GetName(connectButton), localizedConnect, StringComparison.Ordinal) &&
+              connectButton.ActualWidth >= 50 && connectBounds.Left >= -1 && connectBounds.Right <= controls[4].ActualWidth + 1 &&
+              connectLabel != null && naturalConnectLabel != null && connectLabel.ActualWidth + 1 >= naturalConnectLabel.DesiredSize.Width,
+            $"The localized Connect action must remain fully visible, keyboard accessible, and inside the session card at {locale}; label={localizedConnect}, actual={connectLabel?.ActualWidth:0.#}, required={naturalConnectLabel?.DesiredSize.Width:0.#}, button={connectButton?.ActualWidth:0.#}.");
     }
 
     static void AssertCompactHeaderAcrossLocalesAtMinimum(Application app, Window window, object shell)
@@ -1714,6 +1734,15 @@ internal static class Program
                               HasBindingPath(selector, ComboBox.SelectedValueProperty, "ThemeId"))
             .ToArray();
         Check(headerSelectors.Length >= 2, "The language and theme selectors must remain in the adaptive header.");
+        var languageSelector = headerSelectors.SingleOrDefault(selector => HasBindingPath(selector, ComboBox.SelectedItemProperty, "LanguageCode"));
+        Check(languageSelector != null && string.Equals(languageSelector.SelectedItem as string, languageCode, StringComparison.OrdinalIgnoreCase),
+            $"The language selector must show the active {languageCode} locale rather than a clipped or stale selection.");
+        languageSelector.ApplyTemplate();
+        var languageSelection = languageSelector.Template.FindName("SelectionContent", languageSelector) as ContentPresenter;
+        var languageValue = languageSelection == null ? null : Descendants(languageSelection).OfType<TextBlock>()
+            .FirstOrDefault(block => block.IsVisible && string.Equals(block.Text, languageCode, StringComparison.OrdinalIgnoreCase));
+        Check(languageValue != null, $"The full locale code {languageCode} must be realized in the language selector.");
+        AssertSingleLineTextFits(languageValue, $"Language selector {languageCode}");
         foreach (var selector in headerSelectors)
             Check(!titleBounds.IntersectsWith(Bounds(selector, window)),
                 $"The localized title overlaps a header selector at language {languageCode}.");
@@ -1885,14 +1914,36 @@ internal static class Program
             }
         }
 
-        SetPresentationForRender(app, shell, "war-table", "en");
-        window.Width = 1360;
-        window.Height = 820;
-        RefreshSelectorBindings(window);
-        navigationButton.Command?.Execute(null);
-        Render(window);
-        Check(hookViewport.IsVisible && hookPage.ActualWidth > 0 && hookPage.ActualWidth <= hookViewport.ActualWidth + 1,
-            "The hook workbench must also remain responsive at the normal 1360x820-DIP viewport.");
+        foreach (var themeId in themes)
+        foreach (var languageCode in languages)
+        {
+            SetPresentationForRender(app, shell, themeId, languageCode);
+            window.Width = 1360;
+            window.Height = 820;
+            RefreshSelectorBindings(window);
+            hookOpen.SetValue(shell, false);
+            hookOpen.SetValue(shell, true);
+            Render(window);
+            Check(hookViewport.IsVisible && hookPage.ActualWidth > 0 && hookPage.ActualWidth <= hookViewport.ActualWidth + 1 &&
+                  hookViewport.ScrollableWidth <= 1 && !normalViewport.IsVisible,
+                $"The exclusive Hook Workbench route must remain responsive without horizontal overflow at the normal 1360x820-DIP viewport ({themeId}/{languageCode}).");
+            Check(string.Equals(activeRouteStatusText.Text, app.TryFindResource("Ui.HookWorkbench") as string, StringComparison.Ordinal),
+                $"The active route status must refresh to the selected locale at the normal viewport ({themeId}/{languageCode}).");
+            var normalClose = Descendants(hookPage).OfType<Button>().SingleOrDefault(element =>
+                string.Equals(AutomationProperties.GetAutomationId(element), "HookWorkbenchCloseButton", StringComparison.Ordinal));
+            var normalNavigationName = app.TryFindResource("Ui.HookWorkbench") as string;
+            Check(navigationButton.Focusable && navigationButton.IsTabStop &&
+                  string.Equals(AutomationProperties.GetName(navigationButton), normalNavigationName, StringComparison.Ordinal) &&
+                  normalClose != null && normalClose.Focusable && normalClose.IsTabStop,
+                $"Hook Workbench navigation and close controls must expose the localized keyboard-accessible route at normal size ({themeId}/{languageCode}).");
+            var navigationBounds = Bounds(navigationButton, window);
+            var navigationCenter = new Point(navigationBounds.Left + navigationBounds.Width / 2, navigationBounds.Top + navigationBounds.Height / 2);
+            Check(navigationButton.IsVisible && navigationButton.IsHitTestVisible &&
+                  HasVisualAncestorOrSelf(VisualTreeHelper.HitTest(window, navigationCenter)?.VisualHit, navigationButton),
+                $"The dedicated Hook Workbench navigation control must remain hit-testable at normal size ({themeId}/{languageCode}).");
+            if (themeId == "war-table" && languageCode == "en")
+                SavePreview(window, Path.Combine(artifactDirectory, "desktop-hook-workbench-open-normal-current.png"));
+        }
         var closeButtonAtNormalSize = Descendants(hookPage).OfType<Button>().Single(element =>
             string.Equals(AutomationProperties.GetAutomationId(element), "HookWorkbenchCloseButton", StringComparison.Ordinal));
         closeButtonAtNormalSize.Command?.Execute(null);
