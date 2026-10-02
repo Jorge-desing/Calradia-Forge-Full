@@ -2627,12 +2627,37 @@ namespace MyCustomMod.QuestBehaviors
                 "Input.IsKeyPressed(cachedHotkey)",
                 "Input.IsKeyDown(InputKey.F10)",
                 "Input.IsKeyDownImmediate(InputKey.F10)",
-                "f10Held && !f10ProbeHeld",
-                "f10ProbeHeld = f10Held",
+                "var f10SignalActive = hotkeyPressed || f10Down || f10Immediate",
+                "F10InputEdge.Update(f10SignalActive, callbackStarted, ref f10ProbeHeld, ref f10InactiveSinceTimestamp)",
                 "Panel hotkey detected: "
             };
             foreach (string token in requiredHotkeyTokens)
                 if (!tick.Contains(token)) throw new Exception("OnApplicationTick is missing F10 regression guard: " + token);
+            if (tick.Contains("hotkeyPressed = hotkeyPressed ||"))
+                throw new Exception("F10 pressed and held signals must share a rising-edge latch to prevent a single press from opening and immediately closing the panel.");
+
+            bool f10WasActive = false;
+            long f10InactiveSince = 0;
+            long f10Timestamp = 1;
+            if (!F10InputEdge.Update(true, f10Timestamp, ref f10WasActive, ref f10InactiveSince))
+                throw new Exception("The first F10 signal in a press interval must activate the panel.");
+            f10Timestamp += 1;
+            if (F10InputEdge.Update(true, f10Timestamp, ref f10WasActive, ref f10InactiveSince) ||
+                F10InputEdge.Update(true, ++f10Timestamp, ref f10WasActive, ref f10InactiveSince))
+                throw new Exception("Repeated F10 pressed/down signals must not toggle the panel more than once while held.");
+
+            if (F10InputEdge.Update(false, ++f10Timestamp, ref f10WasActive, ref f10InactiveSince))
+                throw new Exception("An inactive F10 sample must not trigger the panel.");
+            if (F10InputEdge.Update(true, ++f10Timestamp, ref f10WasActive, ref f10InactiveSince))
+                throw new Exception("A brief inactive signal gap during one physical press must not re-trigger the panel.");
+
+            if (F10InputEdge.Update(false, ++f10Timestamp, ref f10WasActive, ref f10InactiveSince))
+                throw new Exception("Releasing F10 must only re-arm the edge detector.");
+            f10Timestamp += F10InputEdge.ReleaseDebounceTicks + 1;
+            if (F10InputEdge.Update(false, f10Timestamp, ref f10WasActive, ref f10InactiveSince))
+                throw new Exception("Releasing F10 must only re-arm the edge detector.");
+            if (!F10InputEdge.Update(true, ++f10Timestamp, ref f10WasActive, ref f10InactiveSince))
+                throw new Exception("A new F10 press after release must activate the panel again.");
             if (!tick.Contains("Input.IsKeyPressed(InputKey.W)") || !tick.Contains("vm?.ExecuteToggleLiveWatch()"))
                 throw new Exception("Live Watch must remain reachable through the existing Ctrl+W path.");
 

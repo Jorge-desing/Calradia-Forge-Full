@@ -23,6 +23,7 @@ namespace CalradiaForge.Mod
         string cachedHotkeyName;
         InputKey cachedHotkey = InputKey.F10;
         bool f10ProbeHeld;
+        long f10InactiveSinceTimestamp;
         Widget keyboardControl;
         Widget navigationPaletteReturnFocus;
         bool navigationPaletteWasOpen;
@@ -115,11 +116,14 @@ namespace CalradiaForge.Mod
                 {
                     var f10Down = Input.IsKeyDown(InputKey.F10);
                     var f10Immediate = Input.IsKeyDownImmediate(InputKey.F10);
-                    var f10Held = f10Down || f10Immediate;
-                    hotkeyPressed = hotkeyPressed || (f10Held && !f10ProbeHeld);
-                    f10ProbeHeld = f10Held;
+                    var f10SignalActive = hotkeyPressed || f10Down || f10Immediate;
+                    hotkeyPressed = F10InputEdge.Update(f10SignalActive, callbackStarted, ref f10ProbeHeld, ref f10InactiveSinceTimestamp);
                 }
-                else f10ProbeHeld = false;
+                else
+                {
+                    f10ProbeHeld = false;
+                    f10InactiveSinceTimestamp = 0;
+                }
 
                 if (layer == null && extensionLayer == null)
                 {
