@@ -11,6 +11,51 @@ $ErrorActionPreference = 'Stop'
 $workspace = Split-Path -Parent $PSScriptRoot
 $artifacts = Join-Path $workspace 'artifacts'
 $artifactsRoot = [IO.Path]::GetFullPath($artifacts).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+
+function Assert-PackageOutputPathSafe {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $fullPath = [IO.Path]::GetFullPath($Path).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    $isArtifactsRoot = [string]::Equals($fullPath, $artifactsRoot, [StringComparison]::OrdinalIgnoreCase)
+    $artifactsPrefix = $artifactsRoot + [IO.Path]::DirectorySeparatorChar
+    if (-not $isArtifactsRoot -and -not $fullPath.StartsWith($artifactsPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'PackageOutputDirectory must be inside the ignored artifacts directory.'
+    }
+
+    $relativePath = if ($isArtifactsRoot) { '' } else { $fullPath.Substring($artifactsPrefix.Length) }
+    $currentPath = $artifactsRoot
+    $pathsToCheck = @($currentPath)
+    foreach ($component in ($relativePath -split '[\\/]')) {
+        if ([string]::IsNullOrWhiteSpace($component)) { continue }
+        $currentPath = Join-Path $currentPath $component
+        $pathsToCheck += $currentPath
+    }
+
+    foreach ($candidate in $pathsToCheck) {
+        if (-not (Test-Path -LiteralPath $candidate)) { continue }
+        $item = Get-Item -LiteralPath $candidate -Force
+        if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq [IO.FileAttributes]::ReparsePoint) {
+            throw "Package output path cannot contain a reparse point: $candidate"
+        }
+    }
+}
+
+function Get-PackageFileSha256 {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $stream = [IO.File]::OpenRead($Path)
+    $algorithm = $null
+    try {
+        $algorithm = [Security.Cryptography.SHA256]::Create()
+        $hash = $algorithm.ComputeHash($stream)
+        return [BitConverter]::ToString($hash).Replace('-', '')
+    }
+    finally {
+        if ($algorithm) { $algorithm.Dispose() }
+        $stream.Dispose()
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($PackageOutputDirectory)) {
     $packageOutputDirectory = $artifactsRoot
 }
@@ -20,11 +65,8 @@ else {
     } else {
         [IO.Path]::GetFullPath((Join-Path $workspace $PackageOutputDirectory))
     }
-    $artifactsPrefix = $artifactsRoot + [IO.Path]::DirectorySeparatorChar
-    if (-not $packageOutputDirectory.StartsWith($artifactsPrefix, [StringComparison]::OrdinalIgnoreCase)) {
-        throw 'PackageOutputDirectory must be inside the ignored artifacts directory.'
-    }
 }
+Assert-PackageOutputPathSafe $packageOutputDirectory
 $pythonPath = Join-Path $workspace '.venv\Scripts\python.exe'
 if (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf)) {
     throw "The Calradia Forge Python environment is missing. Run tools\Setup-CalradiaForge-Python.bat first. Expected interpreter: $pythonPath"
@@ -58,6 +100,13 @@ public static class FastPackageEngine {
         public FileCopyItem(string src, string dst) { Source = src; Destination = dst; }
     }
 
+    private static void RejectReparsePoint(string path) {
+        FileAttributes attributes = File.GetAttributes(path);
+        if ((attributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint) {
+            throw new IOException("Package source path cannot contain a reparse point: " + path);
+        }
+    }
+
     public static void FastTreeCopy(string[] sourceDirs, string targetDir, string workspaceRoot) {
         var filesToCopy = new List<FileCopyItem>();
         var directoriesToEnsure = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -84,6 +133,7 @@ public static class FastPackageEngine {
         if (string.Equals(dirName, "api", StringComparison.OrdinalIgnoreCase) && currentSource.IndexOf("docs-site", StringComparison.OrdinalIgnoreCase) >= 0) {
             return;
         }
+        RejectReparsePoint(currentSource);
 
         foreach (var file in Directory.EnumerateFiles(currentSource)) {
             var ext = Path.GetExtension(file);
@@ -92,6 +142,7 @@ public static class FastPackageEngine {
                 string.Equals(ext, ".ps1", StringComparison.OrdinalIgnoreCase)) continue;
             var name = Path.GetFileName(file);
             if (ExcludeBakRegex.IsMatch(name)) continue;
+            RejectReparsePoint(file);
 
             string relative = file.Substring(workspaceRoot.Length).TrimStart('\\', '/');
             string target = Path.Combine(targetBase, relative);
@@ -128,6 +179,7 @@ public static class FastPackageEngine {
     private static void CollectModuleFiles(string currentSource, string targetBase, string rootSource, List<FileCopyItem> files, HashSet<string> dirs) {
         var dirName = Path.GetFileName(currentSource);
         if (ExcludedDirNames.Contains(dirName)) return;
+        RejectReparsePoint(currentSource);
 
         foreach (var file in Directory.EnumerateFiles(currentSource)) {
             var ext = Path.GetExtension(file);
@@ -138,6 +190,7 @@ public static class FastPackageEngine {
                 string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase)) continue;
             var name = Path.GetFileName(file);
             if (ExcludeBakRegex.IsMatch(name)) continue;
+            RejectReparsePoint(file);
 
             string relative = file.Substring(rootSource.Length).TrimStart('\\', '/');
             string target = Path.Combine(targetBase, relative);
@@ -189,28 +242,12 @@ function Copy-TreeWithoutBuildOutput {
     [FastPackageEngine]::FastTreeCopy(@($Source), $Destination, $workspace)
 }
 
-function New-FastZipArchive {
-    param(
-        [string]$SourceDirectory,
-        [string]$DestinationArchive,
-        [System.IO.Compression.CompressionLevel]$CompressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
-    )
-    if ([System.IO.File]::Exists($DestinationArchive)) {
-        [System.IO.File]::Delete($DestinationArchive)
-    }
-    [System.IO.Compression.ZipFile]::CreateFromDirectory(
-        $SourceDirectory,
-        $DestinationArchive,
-        $CompressionLevel,
-        $false
-    )
-}
-
 function Remove-PackageStageSafely {
     param([string]$Path)
 
     if (-not (Test-Path -LiteralPath $Path)) { return }
     try {
+        Assert-PackageOutputPathSafe $Path
         Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
     }
     catch {
@@ -263,6 +300,7 @@ try {
         throw "Refusing to overwrite existing package output(s): $($existingPackageTargets -join ', '). Choose a new PackageOutputDirectory."
     }
     New-Item -ItemType Directory -Force -Path $packageOutputDirectory | Out-Null
+    Assert-PackageOutputPathSafe $packageOutputDirectory
 
     $zipLevel = if ($Quick) { [System.IO.Compression.CompressionLevel]::Fastest } else { [System.IO.Compression.CompressionLevel]::Optimal }
 
@@ -396,8 +434,11 @@ try {
     Test-ZipEntries $desktopZip -AllowDesktopLauncher
     & $pythonPath tools/audit_package.py --version $Version --artifacts-dir $packageOutputDirectory
     if ($LASTEXITCODE -ne 0) { throw 'Package audit failed.' }
-    $hashLines = @(Get-FileHash -LiteralPath $modulesZip, $sourceZip, $desktopZip -Algorithm SHA256 |
-        ForEach-Object { "$($_.Hash) *$([IO.Path]::GetFileName($_.Path))" })
+    $hashLines = @(
+        foreach ($archive in @($modulesZip, $sourceZip, $desktopZip)) {
+            "$(Get-PackageFileSha256 -Path $archive) *$([IO.Path]::GetFileName($archive))"
+        }
+    )
     Set-Content -LiteralPath $packageHashes -Value $hashLines -Encoding utf8
     $completed = $true
     Write-Output $modulesZip

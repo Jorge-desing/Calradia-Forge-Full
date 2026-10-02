@@ -4,7 +4,9 @@ import sys
 import tempfile
 import unittest
 import importlib.util
+import stat
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 from xml.etree import ElementTree
 from zipfile import ZipFile
@@ -12,7 +14,7 @@ from zipfile import ZipFile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from tools.audit_package import audit_archive, validate_entry
+from tools.audit_package import audit_archive, resolve_package_artifacts_directory, validate_entry, write_audit_report
 from tools import validate_game_icon_assets
 from tools.validate_game_icon_assets import read_png_header, validate_resource_workflow_readme
 
@@ -186,15 +188,93 @@ class AssetPipelineTests(unittest.TestCase):
         package_script = (ROOT / "tools" / "package.ps1").read_text(encoding="utf-8")
         audit_script = (ROOT / "tools" / "audit_package.py").read_text(encoding="utf-8")
         self.assertIn("PackageOutputDirectory must be inside the ignored artifacts directory.", package_script)
+        self.assertIn("function Assert-PackageOutputPathSafe", package_script)
+        self.assertIn("[IO.FileAttributes]::ReparsePoint", package_script)
+        self.assertIn("Assert-PackageOutputPathSafe $packageOutputDirectory", package_script)
+        self.assertIn("private static void RejectReparsePoint(string path)", package_script)
+        self.assertEqual(2, package_script.count("RejectReparsePoint(currentSource);"))
+        self.assertEqual(2, package_script.count("RejectReparsePoint(file);"))
+        self.assertIn("function Get-PackageFileSha256", package_script)
+        self.assertIn("$algorithm.ComputeHash($stream)", package_script)
+        self.assertNotIn("Get-FileHash -LiteralPath $modulesZip", package_script)
         self.assertIn("--artifacts-dir $packageOutputDirectory", package_script)
         self.assertIn('parser.add_argument("--artifacts-dir", type=Path, default=None)', audit_script)
+        self.assertIn("resolve_package_artifacts_directory(workspace, args.artifacts_dir)", audit_script)
+        self.assertIn("_reject_reparse_point(output)", audit_script)
+        self.assertIn("os.replace(temporary, output)", audit_script)
+
+    def test_package_audit_rejects_output_outside_ignored_artifacts(self):
+        with tempfile.TemporaryDirectory(prefix="CalradiaForge-package-root-") as temporary:
+            workspace = Path(temporary) / "workspace"
+            workspace.mkdir()
+            with self.assertRaisesRegex(ValueError, "inside the ignored artifacts directory"):
+                resolve_package_artifacts_directory(workspace, Path(temporary) / "outside")
+
+    def test_package_audit_rejects_reparse_output_components(self):
+        with tempfile.TemporaryDirectory(prefix="CalradiaForge-package-reparse-") as temporary:
+            workspace = Path(temporary) / "workspace"
+            artifacts = workspace / "artifacts"
+            artifacts.mkdir(parents=True)
+            link = artifacts / "redirect"
+            original_lstat = Path.lstat
+
+            def lstat_with_reparse_point(path, *args, **kwargs):
+                if path == link:
+                    return SimpleNamespace(st_mode=stat.S_IFDIR, st_file_attributes=0x400)
+                return original_lstat(path, *args, **kwargs)
+
+            with patch.object(Path, "lstat", new=lstat_with_reparse_point):
+                with self.assertRaisesRegex(ValueError, "cannot contain a reparse point"):
+                    resolve_package_artifacts_directory(workspace, link / "nested")
+
+    def test_package_audit_rejects_artifacts_root_reparse_point(self):
+        with tempfile.TemporaryDirectory(prefix="CalradiaForge-package-root-link-") as temporary:
+            workspace = Path(temporary) / "workspace"
+            workspace.mkdir()
+            artifacts = workspace / "artifacts"
+            original_lstat = Path.lstat
+
+            def lstat_with_reparse_point(path, *args, **kwargs):
+                if path == artifacts:
+                    return SimpleNamespace(st_mode=stat.S_IFDIR, st_file_attributes=0x400)
+                return original_lstat(path, *args, **kwargs)
+
+            with patch.object(Path, "lstat", new=lstat_with_reparse_point):
+                with self.assertRaisesRegex(ValueError, "cannot contain a reparse point"):
+                    resolve_package_artifacts_directory(workspace)
+
+    def test_package_audit_refuses_a_reparse_report_file(self):
+        with tempfile.TemporaryDirectory(prefix="CalradiaForge-package-report-") as temporary:
+            output_directory = Path(temporary)
+            report_path = output_directory / "package-audit-2520.json"
+            original_lstat = Path.lstat
+
+            def lstat_with_reparse_point(path, *args, **kwargs):
+                if path == report_path:
+                    return SimpleNamespace(st_mode=stat.S_IFREG, st_file_attributes=0x400)
+                return original_lstat(path, *args, **kwargs)
+
+            with patch.object(Path, "lstat", new=lstat_with_reparse_point):
+                with self.assertRaisesRegex(ValueError, "cannot contain a reparse point"):
+                    write_audit_report(output_directory, "25.2.0", {"verified": True})
+
+    def test_package_audit_replaces_a_regular_report_atomically(self):
+        with tempfile.TemporaryDirectory(prefix="CalradiaForge-package-report-") as temporary:
+            output_directory = Path(temporary)
+            report_path = output_directory / "package-audit-2520.json"
+            report_path.write_text("old report", encoding="utf-8")
+            returned_path = write_audit_report(output_directory, "25.2.0", {"verified": True})
+            self.assertEqual(report_path, returned_path)
+            self.assertIn('"verified": true', report_path.read_text(encoding="utf-8"))
+            self.assertEqual([report_path], list(output_directory.iterdir()))
 
     def test_package_refuses_to_overwrite_existing_outputs(self):
         package_script = (ROOT / "tools" / "package.ps1").read_text(encoding="utf-8")
         self.assertIn("$existingPackageTargets = @($packageTargets | Where-Object { Test-Path -LiteralPath $_ })", package_script)
         self.assertIn("Refusing to overwrite existing package output(s)", package_script)
         self.assertIn("Choose a new PackageOutputDirectory.", package_script)
-        self.assertNotIn("File.Delete(target)", package_script)
+        self.assertNotIn("New-FastZipArchive", package_script)
+        self.assertNotIn("File]::Delete($DestinationArchive)", package_script)
         self.assertNotIn('Remove-Item -LiteralPath (Join-Path $packageOutputDirectory "CalradiaForge-$Version.zip")', package_script)
 
     def test_sprite_workflow_readme_distinguishes_atlas_from_compiled_tpac(self):

@@ -51,6 +51,8 @@ if errorlevel 1 goto failed
 echo [Python] Running archive and asset pipeline unit suite...
 call "%ROOT%\tests\CalradiaForge.AssetPipeline.Tests.bat" --no-pause
 if errorlevel 1 goto failed
+call "%ROOT%\tests\CalradiaForge.PackageContainment.Tests.bat"
+if errorlevel 1 goto failed
 echo [Python] Running image pipeline unit suite...
 "%PYTHON%" -m unittest tests\test_high_quality_image_pipeline.py
 if errorlevel 1 goto failed

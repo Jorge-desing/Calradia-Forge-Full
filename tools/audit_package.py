@@ -2,7 +2,10 @@
 import argparse
 import hashlib
 import json
+import os
 import re
+import stat
+import tempfile
 from pathlib import Path
 from xml.etree import ElementTree
 from zipfile import ZipFile
@@ -28,6 +31,62 @@ GAME_ICONS = {
     "anvil": ("Lorc", "https://game-icons.net/1x1/lorc/anvil.html"),
     "plug": ("Delapouite", "https://game-icons.net/1x1/delapouite/plug.html"),
 }
+
+
+def _reject_reparse_point(path):
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        return
+
+    reparse_attribute = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    is_symlink = stat.S_ISLNK(metadata.st_mode)
+    is_reparse_point = bool(getattr(metadata, "st_file_attributes", 0) & reparse_attribute)
+    if is_symlink or is_reparse_point:
+        raise ValueError(f"Package audit output cannot contain a reparse point: {path}")
+
+
+def resolve_package_artifacts_directory(workspace, candidate=None):
+    """Resolve an output directory lexically under artifacts and reject reparse components."""
+    workspace = Path(workspace).resolve()
+    artifacts_root = Path(os.path.abspath(workspace / "artifacts"))
+    output_directory = Path(candidate) if candidate is not None else artifacts_root
+    if not output_directory.is_absolute():
+        output_directory = workspace / output_directory
+    output_directory = Path(os.path.abspath(output_directory))
+
+    try:
+        relative = output_directory.relative_to(artifacts_root)
+    except ValueError as error:
+        raise ValueError("Package audit output must be inside the ignored artifacts directory.") from error
+
+    candidates = [artifacts_root]
+    current = artifacts_root
+    for component in relative.parts:
+        current = current / component
+        candidates.append(current)
+
+    for path in candidates:
+        _reject_reparse_point(path)
+
+    return output_directory
+
+
+def write_audit_report(output_directory, version, result):
+    output = output_directory / f"package-audit-{version.replace('.', '')}.json"
+    _reject_reparse_point(output)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=".package-audit-", suffix=".tmp", dir=output_directory)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as report:
+            report.write(json.dumps(result, indent=2) + "\n")
+        os.replace(temporary, output)
+    finally:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+    return output
 
 
 def digest(data):
@@ -219,7 +278,7 @@ def audit_archive(path, expected_roots, required, version, desktop, required_fil
 
 
 def audit(root, version, artifacts_directory=None):
-    artifacts = artifacts_directory.resolve() if artifacts_directory else root / "artifacts"
+    artifacts = resolve_package_artifacts_directory(root, artifacts_directory)
     modules = artifacts / f"CalradiaForge-Modules-{version}.zip"
     source = artifacts / f"CalradiaForge-Source-SDK-{version}.zip"
     desktop = artifacts / f"CalradiaForge-Desktop-{version}.zip"
@@ -320,9 +379,12 @@ if __name__ == "__main__":
     if args.version.count(".") != 2 or not all(part.isdigit() for part in args.version.split(".")):
         parser.error("Version must use major.minor.patch numeric components")
     workspace = Path(__file__).resolve().parents[1]
-    result = audit(workspace, args.version, args.artifacts_dir)
-    output_directory = args.artifacts_dir.resolve() if args.artifacts_dir else workspace / "artifacts"
+    try:
+        output_directory = resolve_package_artifacts_directory(workspace, args.artifacts_dir)
+    except ValueError as error:
+        parser.error(str(error))
+    result = audit(workspace, args.version, output_directory)
     output_directory.mkdir(parents=True, exist_ok=True)
-    output = output_directory / f"package-audit-{args.version.replace('.', '')}.json"
-    output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    output_directory = resolve_package_artifacts_directory(workspace, output_directory)
+    output = write_audit_report(output_directory, args.version, result)
     print(f"Verified {len(result)} archives; evidence: {output}")
