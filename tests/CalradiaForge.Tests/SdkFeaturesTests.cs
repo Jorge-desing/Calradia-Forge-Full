@@ -1344,14 +1344,23 @@ namespace CalradiaForge.Tests
                 string status = ForgeCommands.PatchStatus(new List<string> { "console.owner" });
                 if (!status.Contains("console.patch.id") || !status.Contains("Applied"))
                     throw new Exception("patch_status must inventory direct shared-registry records by owner.");
+                string malformedAll = ForgeCommands.RevertAll(new List<string> { "unexpected" });
+                string allOutsideMenu = ForgeCommands.RevertAll(new List<string>());
+                if (!malformedAll.StartsWith("Usage: cf.revert_all", StringComparison.Ordinal) ||
+                    !allOutsideMenu.Contains("exact main-menu screen") || ForgeDetour.GetTrackedSnapshots().Count != 1)
+                    throw new Exception("cf.revert_all must reject extra arguments and preserve tracked bytes outside the exact main-menu context.");
                 string byId = ForgeCommands.PatchRevert(new List<string> { "console.patch.id" });
-                if (!byId.Contains("1 reverted") || ForgeDetour.GetTrackedSnapshots().Count != 0)
-                    throw new Exception("patch_revert by ID did not use the shared registry.");
+                if (!byId.Contains("exact main-menu screen") || ForgeDetour.GetTrackedSnapshots().Count != 1)
+                    throw new Exception("patch_revert by ID must fail closed outside the exact main-menu context.");
+                if (!ForgeDetour.RevertById("console.patch.id").IsReverted)
+                    throw new Exception("The by-ID console fixture could not be cleaned up through the raw test API.");
 
                 ForgeDetour.Patch(original, replacement, "console.patch.owner", "console.owner");
                 string byOwner = ForgeCommands.PatchRevert(new List<string> { "console.owner" });
-                if (!byOwner.Contains("1 reverted") || ForgeDetour.GetTrackedSnapshots().Count != 0)
-                    throw new Exception("patch_revert by owner did not use the shared registry.");
+                if (!byOwner.Contains("exact main-menu screen") || ForgeDetour.GetTrackedSnapshots().Count != 1)
+                    throw new Exception("patch_revert by owner must fail closed outside the exact main-menu context.");
+                if (!ForgeDetour.RevertById("console.patch.owner").IsReverted)
+                    throw new Exception("The by-owner console fixture could not be cleaned up through the raw test API.");
 
                 ForgeDetour.Patch(original, replacement, "same", "same");
                 string ambiguous = ForgeCommands.PatchRevert(new List<string> { "same" });
@@ -1383,8 +1392,10 @@ namespace CalradiaForge.Tests
 
                 ForgeDetour.Patch(original, replacement, "console.patch.all", "console.owner");
                 string all = ForgeCommands.PatchRevert(new List<string> { "all" });
-                if (!all.Contains("1 reverted") || ForgeDetour.GetTrackedSnapshots().Count != 0)
-                    throw new Exception("patch_revert all did not safely revert the global inventory.");
+                if (!all.Contains("exact main-menu screen") || ForgeDetour.GetTrackedSnapshots().Count != 1)
+                    throw new Exception("patch_revert all must fail closed outside the exact main-menu context.");
+                if (!ForgeDetour.RevertById("console.patch.all").IsReverted)
+                    throw new Exception("The all-selection console fixture could not be cleaned up through the raw test API.");
             }
             finally
             {

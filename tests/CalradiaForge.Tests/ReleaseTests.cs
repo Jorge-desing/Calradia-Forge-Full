@@ -444,7 +444,14 @@ internal static class ReleaseTests
         test("Patch console controls are explicit and absent from the read-only IPC action list",()=>{
             var help=ForgeCommands.Help(new List<string>());
             Assert(help.Contains("cf.patch_status [owner]")&&help.Contains("cf.patch_revert <id|owner|all>")&&
+                help.Contains("cf.revert_all - Reverts all safely tracked Forge patches from the exact main-menu context")&&
                 ForgeProtocol.Actions.All(action=>action!="patch_status"&&action!="patch_revert"));
+        });
+        test("Raw patch console reverts fail closed outside the exact main-menu context",()=>{
+            var selected=ForgeCommands.PatchRevert(new List<string>{"all"});
+            var all=ForgeCommands.RevertAll(new List<string>());
+            var malformedAll=ForgeCommands.RevertAll(new List<string>{"unexpected"});
+            Assert(selected.Contains("exact main-menu screen")&&all.Contains("exact main-menu screen")&&malformedAll.StartsWith("Usage: cf.revert_all",StringComparison.Ordinal));
         });
         test("Extension startup keeps healthy registrations after another callback fails",()=>{
             var healthy=false;Action<IForgeRegistry> broken=registry=>throw new InvalidOperationException("broken extension");Action<IForgeRegistry> ready=registry=>healthy=ReferenceEquals(registry,ForgeApi.Registry);

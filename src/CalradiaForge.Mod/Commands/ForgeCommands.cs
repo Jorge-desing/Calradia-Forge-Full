@@ -25,7 +25,7 @@ namespace CalradiaForge.Mod.Commands
                    "cf.help - Shows this list\n" +
                    "cf.patches - Lists Forge-tracked patch status\n" +
                    "cf.patch_status [owner] - Shows explicit experimental patch records\n" +
-                   "cf.patch_revert <id|owner|all> - Explicitly reverts tracked patches\n" +
+                   "cf.patch_revert <id|owner|all> - Reverts tracked patches from the exact main-menu context\n" +
                    "cf.hook_status [owner|-] [target|-] [prefix|postfix|finalizer|transpiler] - Filters registered hook metadata\n" +
                    "cf.hook_verify <id|owner|all> - Checks backend hook state, not raw bytes\n" +
                    "cf.hook_export - Exports snapshot JSON to console output\n" +
@@ -33,7 +33,7 @@ namespace CalradiaForge.Mod.Commands
                    "cf.hook_apply <id> - Prepares an Apply plan; no hook changes until confirmed\n" +
                    "cf.hook_revert <id|owner|all> - Prepares a Revert plan; no hook changes until confirmed\n" +
                    "cf.hook_confirm <apply|revert> <token> - Confirms the exact pending single-use plan\n" +
-                   "cf.revert_all - Reverts all safely tracked Forge patches\n" +
+                   "cf.revert_all - Reverts all safely tracked Forge patches from the exact main-menu context\n" +
                    "cf.verify_integrity - Verifies exact Forge-installed patch bytes\n" +
                    "cf.test_log - Tests the ForgeLogger subsystem\n" +
                    "cf.diplomacy.calc_war_score <military> <gold> <activeWars> <tributeRecv> <tributePaid>\n" +
@@ -93,6 +93,7 @@ namespace CalradiaForge.Mod.Commands
         {
             if (args == null || args.Count != 1 || string.IsNullOrWhiteSpace(args[0]))
                 return "Usage: cf.patch_revert <id|owner|all>";
+
             string target = args[0].Trim();
             var snapshots = ForgeDetour.GetTrackedSnapshots();
             bool matchesId = snapshots.Any(item => string.Equals(item.PatchId, target, StringComparison.OrdinalIgnoreCase));
@@ -102,6 +103,12 @@ namespace CalradiaForge.Mod.Commands
             if (string.Equals(target, "all", StringComparison.OrdinalIgnoreCase) && (matchesId || matchesOwner))
                 return "Patch revert stopped: 'all' is both a reserved command and a patch ID or owner; no write was made.";
 
+            var idMatches = snapshots.Where(item => string.Equals(item.PatchId, target, StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (!string.Equals(target, "all", StringComparison.OrdinalIgnoreCase) && idMatches.Length > 1)
+                return "Patch revert stopped: the ID is ambiguous in the shared registry; no write was made.";
+            if (!CanRevertPatchesFromConsole())
+                return PatchRevertContextError;
+
             var results = new List<ForgePatchRevertResult>();
             if (string.Equals(target, "all", StringComparison.OrdinalIgnoreCase))
             {
@@ -109,9 +116,6 @@ namespace CalradiaForge.Mod.Commands
             }
             else
             {
-                var idMatches = snapshots.Where(item => string.Equals(item.PatchId, target, StringComparison.OrdinalIgnoreCase)).ToArray();
-                if (idMatches.Length > 1)
-                    return "Patch revert stopped: the ID is ambiguous in the shared registry; no write was made.";
                 if (idMatches.Length == 1) results.Add(ForgeDetour.RevertById(idMatches[0].PatchId));
                 else results.AddRange(ForgeDetour.RevertOwner(target));
             }
@@ -297,6 +301,11 @@ namespace CalradiaForge.Mod.Commands
         [CommandLineFunctionality.CommandLineArgumentFunction("revert_all", "cf")]
         public static string RevertAll(List<string> args)
         {
+            if (args != null && args.Count != 0)
+                return "Usage: cf.revert_all";
+            if (!CanRevertPatchesFromConsole())
+                return PatchRevertContextError;
+
             try
             {
                 var results = ForgeDetour.RevertAllTracked();
@@ -309,6 +318,14 @@ namespace CalradiaForge.Mod.Commands
             {
                 return "Error reverting patches: " + ex.Message;
             }
+        }
+
+        const string PatchRevertContextError = "Patch reversion is restricted to Bannerlord's exact main-menu screen on the game thread, with no campaign, mission, or multiplayer session active.";
+
+        static bool CanRevertPatchesFromConsole()
+        {
+            var runtime = SubModule.CurrentRuntime;
+            return runtime != null && runtime.CanManageHooks;
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("verify_integrity", "cf")]
