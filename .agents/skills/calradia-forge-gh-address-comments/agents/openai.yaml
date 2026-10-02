@@ -1,0 +1,6 @@
+interface:
+  display_name: "Address Calradia Forge PR Comments"
+  short_description: "Triage PR feedback and implement scoped fixes"
+  default_prompt: "Use $calradia-forge-gh-address-comments to inspect actionable comments on the specified Calradia Forge pull request."
+policy:
+  allow_implicit_invocation: true

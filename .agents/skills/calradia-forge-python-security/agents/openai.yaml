@@ -1,0 +1,3 @@
+interface:
+  display_name: "Calradia Forge Python Security"
+  short_description: "Review security in Forge Python tools and agents"

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Calradia Forge Threat Model"
+  short_description: "Map security boundaries and evidence across Forge"

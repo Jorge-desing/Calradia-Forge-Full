@@ -1,0 +1,6 @@
+interface:
+  display_name: "Fix Calradia Forge CI"
+  short_description: "Diagnose and repair failing GitHub checks"
+  default_prompt: "Use $calradia-forge-gh-fix-ci to diagnose and repair failing checks on the current Calradia Forge SHA."
+policy:
+  allow_implicit_invocation: true

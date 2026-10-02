@@ -30,7 +30,7 @@ The three project skills are self-contained for their repository responsibilitie
 [bannerlord-combat-ai](../.agents/skills/bannerlord-combat-ai/SKILL.md) · [bannerlord-siege-mechanics](../.agents/skills/bannerlord-siege-mechanics/SKILL.md) · [game-ai-behavior-trees](../.agents/skills/game-ai-behavior-trees/SKILL.md)
 
 ## 6. Cross-cutting methods and tools
-[agent-memory-systems](../.agents/skills/agent-memory-systems/SKILL.md) · [api-builder](../.agents/skills/api-builder/SKILL.md) · [browser-automation](../.agents/skills/browser-automation/SKILL.md) · [code-reviewer](../.agents/skills/code-reviewer/SKILL.md) · [debugging-master](../.agents/skills/debugging-master/SKILL.md) · [frontend-expert](../.agents/skills/frontend-expert/SKILL.md) · [multi-agent-orchestration](../.agents/skills/multi-agent-orchestration/SKILL.md) · [performance-hunter](../.agents/skills/performance-hunter/SKILL.md) · [ponytail](../.agents/skills/ponytail/SKILL.md) · [test-architect](../.agents/skills/test-architect/SKILL.md) · [uiux-designer](../.agents/skills/uiux-designer/SKILL.md)
+[agent-memory-systems](../.agents/skills/agent-memory-systems/SKILL.md) · [api-builder](../.agents/skills/api-builder/SKILL.md) · [browser-automation](../.agents/skills/browser-automation/SKILL.md) · [calradia-forge-gh-fix-ci](../.agents/skills/calradia-forge-gh-fix-ci/SKILL.md) · [calradia-forge-gh-address-comments](../.agents/skills/calradia-forge-gh-address-comments/SKILL.md) · [calradia-forge-python-security](../.agents/skills/calradia-forge-python-security/SKILL.md) · [calradia-forge-security-threat-model](../.agents/skills/calradia-forge-security-threat-model/SKILL.md) · [code-reviewer](../.agents/skills/code-reviewer/SKILL.md) · [debugging-master](../.agents/skills/debugging-master/SKILL.md) · [frontend-expert](../.agents/skills/frontend-expert/SKILL.md) · [multi-agent-orchestration](../.agents/skills/multi-agent-orchestration/SKILL.md) · [performance-hunter](../.agents/skills/performance-hunter/SKILL.md) · [ponytail](../.agents/skills/ponytail/SKILL.md) · [test-architect](../.agents/skills/test-architect/SKILL.md) · [uiux-designer](../.agents/skills/uiux-designer/SKILL.md)
 
 ## Routing
 - Game-module C#: start with calradia-forge-dotnet, then bannerlord-dotnet-artisan and the domain skill.
@@ -42,7 +42,12 @@ The three project skills are self-contained for their repository responsibilitie
 - Custom engine audio & sound categories: consult game-audio and bannerlord-audio-modding.
 - High-fidelity asset generation, prompt engineering (Flux/Midjourney/Gemini), and texture processing: consult high-quality-image-generation.
 - Verification & multi-stage testing architecture: consult test-architect and calradia-forge-dev-workflow.
+- If Ordenador/Computer Use is unavailable, consult [TESTING.md](TESTING.md): the Desktop render and UIA launchers cover WPF layout/accessibility, while Gauntlet audits and campaign fixtures cover source contracts. They do not verify F10, live Gauntlet rendering or interaction, TaleWorlds event cadence, or TPAC import; report those as pending until observed. Route UI to game-ui-design/calradia-forge-ui-automation, campaign cadence to discrete-event-simulation, measured hot paths to performance-hunter, and editor import to bannerlord-resource-browser.
+- Use game-ai-behavior-trees only for tactical AI implementation/review; it is not a general substitute for in-game testing. Use debugging-master to isolate a reproduced failure and preserve its evidence.
 - Autonomous multi-agent coordination & token compaction: consult multi-agent-orchestration, AGENTS.md, and CODEX.md.
+- GitHub Actions failures: consult calradia-forge-gh-fix-ci and validate the exact pushed SHA.
+- GitHub pull request feedback: consult calradia-forge-gh-address-comments; send replies or resolve threads only when explicitly authorized.
+- Security architecture or attack-surface review: consult calradia-forge-security-threat-model; use calradia-forge-python-security for Python tooling only.
 - Docs or release evidence: start with calradia-forge-docs and add its specialist.
 - General implementation: start with calradia-forge-dev-workflow; its six project phases include the applicable quality gates.
 
