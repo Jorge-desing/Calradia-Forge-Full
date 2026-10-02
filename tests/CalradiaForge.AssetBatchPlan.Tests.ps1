@@ -168,8 +168,15 @@ try {
     $planBatch = Join-Path $repositoryRoot 'tools\Plan-CalradiaForge-AssetBatch.bat'
     $batchOutput = Join-Path $testRoot 'reports\batch wrapper report.json'
     $batchCommand = '"' + $planBatch + '" -SourceDirectory "' + $source + '" -OutputJson "' + $batchOutput + '" -EditorDirectory "' + $script:editorFixture + '"'
-    $batchOutputText = & $env:ComSpec /d /c $batchCommand 2>&1
-    $batchExitCode = $LASTEXITCODE
+    $previousPreference = $ErrorActionPreference
+    try {
+        # Native stderr is diagnostic output, not a PowerShell exception. Preserve
+        # it so the assertion can report the wrapper's actual exit code and text.
+        $ErrorActionPreference = 'Continue'
+        $batchOutputText = & $env:ComSpec /d /c $batchCommand 2>&1
+        $batchExitCode = $LASTEXITCODE
+    }
+    finally { $ErrorActionPreference = $previousPreference }
     Assert ($batchExitCode -eq 0 -and (Test-Path -LiteralPath $batchOutput -PathType Leaf)) "BAT wrapper failed with spaced repository/output paths: $($batchOutputText | Out-String)"
     $batchReport = Get-Content -LiteralPath $batchOutput -Raw | ConvertFrom-Json
     Assert ($batchReport.summary.totalFiles -eq 11 -and $batchReport.importExecuted -eq $false) 'The BAT wrapper did not preserve its quoted arguments or inventory-only mode.'

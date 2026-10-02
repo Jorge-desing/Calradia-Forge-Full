@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using CalradiaForge.Core;
 using CalradiaForge.Sdk;
 using CalradiaForge.Sdk.Patcher;
@@ -156,10 +158,19 @@ namespace CalradiaForge.DetourFixture
             var service = new ForgeHookService(() => allowed);
             int firstCalls = 0;
             int secondCalls = 0;
+            bool runtimeRegistrationRejected = false;
+            bool transpilerRegistrationRejected = false;
             var add = service.RegisterTranspiler(new ForgeHookDefinition { Id = "il-add", Owner = "DetourFixture", Target = target, Priority = -10, Before = new List<string> { "il-multiply" } }, context =>
             {
                 firstCalls++;
-                RequireHook(!service.Revert("il-add").Succeeded, "reentrant IL mutation rejected");
+                bool reentrantMutationRejected = false;
+                try { service.Revert("il-add"); }
+                catch (InvalidOperationException) { reentrantMutationRejected = true; }
+                RequireHook(reentrantMutationRejected, "reentrant IL mutation rejected");
+                try { service.Register(new ForgeHookDefinition { Id = "reentrant-runtime-hook", Owner = "DetourFixture", Target = target, Prefix = _ => { } }); }
+                catch (InvalidOperationException) { runtimeRegistrationRejected = true; }
+                try { service.RegisterTranspiler(new ForgeHookDefinition { Id = "reentrant-il-hook", Owner = "DetourFixture", Target = target }, nested => { }); }
+                catch (InvalidOperationException) { transpilerRegistrationRejected = true; }
                 RewriteConstant(context, value => value + 2);
             });
             var multiply = service.RegisterTranspiler(new ForgeHookDefinition { Id = "il-multiply", Owner = "DetourFixture", Target = target, Priority = 100, After = new List<string> { "il-add" } }, context =>
@@ -174,6 +185,9 @@ namespace CalradiaForge.DetourFixture
                 RequireHook(!add.Apply().Succeeded && firstCalls == 0, "transpiler apply context guard");
                 allowed = true;
                 RequireHook(add.Apply().Succeeded && TranspilerTarget(2) == 5, "observable transformed IL");
+                RequireHook(runtimeRegistrationRejected && transpilerRegistrationRejected &&
+                    !service.GetSnapshots().Any(snapshot => snapshot.Id == "reentrant-runtime-hook" || snapshot.Id == "reentrant-il-hook"),
+                    "runtime-hook and ILHook registration are rejected during transpiler execution");
                 bool rawRejected = false;
                 try { ForgeDetour.Patch(target, replacement); } catch (InvalidOperationException) { rawRejected = true; }
                 RequireHook(rawRejected, "raw detour rejected while ILHook owns reservation");
@@ -233,8 +247,170 @@ namespace CalradiaForge.DetourFixture
             catch (ArgumentException) { mixedRejected = true; }
             RequireHook(mixedRejected, "transpiler metadata rejects runtime callbacks");
             service.Disconnect();
+            RunTranspilerReentrancyDeadlockCase();
             RunCleanIlUnloadCase();
             RunFailedIlUndoCase();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        static int ConcurrentTranspilerTarget(int value) => value + 1;
+
+        static void RunTranspilerReentrancyDeadlockCase()
+        {
+            MethodInfo target = typeof(Program).GetMethod(nameof(ConcurrentTranspilerTarget), BindingFlags.Static | BindingFlags.NonPublic);
+            RuntimeHelpers.PrepareMethod(target.MethodHandle);
+
+            using (var callbackEntered = new ManualResetEventSlim(false))
+            using (var applyHeldServiceGate = new ManualResetEventSlim(false))
+            using (var releaseApplyGate = new ManualResetEventSlim(false))
+            using (var externalApplied = new ManualResetEventSlim(false))
+            using (var releaseExternal = new ManualResetEventSlim(false))
+            using (var probeCompleted = new ManualResetEventSlim(false))
+            using (var applyCompleted = new ManualResetEventSlim(false))
+            using (var externalCompleted = new ManualResetEventSlim(false))
+            {
+                int applyThreadId = 0;
+                int probeThreadId = 0;
+                int pauseNextManipulator = 0;
+                int probeWasFast = 0;
+                int probeRejectedAllServiceOperations = 0;
+                Exception probeError = null;
+                Exception applyError = null;
+                Exception externalError = null;
+                ForgeHookOperationResult applyResult = null;
+                var service = new ForgeHookService(() =>
+                {
+                    if (Thread.CurrentThread.ManagedThreadId == Volatile.Read(ref applyThreadId))
+                    {
+                        applyHeldServiceGate.Set();
+                        // Apply has already entered the service lock here. Keep it there
+                        // until the external rebuild callback has exercised its fail-fast path.
+                        if (!releaseApplyGate.Wait(TimeSpan.FromSeconds(5))) return false;
+                    }
+                    return Thread.CurrentThread.ManagedThreadId != Volatile.Read(ref probeThreadId);
+                });
+
+                IForgeHookHandle baseHook = service.RegisterTranspiler(new ForgeHookDefinition
+                {
+                    Id = "concurrent-base", Owner = "fixture", Target = target
+                }, context =>
+                {
+                    if (Interlocked.Exchange(ref pauseNextManipulator, 0) == 1)
+                    {
+                        callbackEntered.Set();
+                        if (!applyHeldServiceGate.Wait(TimeSpan.FromSeconds(5)))
+                            throw new TimeoutException("Concurrent service Apply did not reach its guarded host check.");
+
+                        var probe = new Thread(() =>
+                        {
+                            Volatile.Write(ref probeThreadId, Thread.CurrentThread.ManagedThreadId);
+                            try
+                            {
+                                int rejected = 0;
+                                Action[] serviceOperations =
+                                {
+                                    () => service.GetSnapshots(),
+                                    () => service.Apply("concurrent-inactive"),
+                                    () => service.Verify("concurrent-inactive"),
+                                    () => service.Revert("concurrent-inactive"),
+                                    () => service.RevertOwner("fixture"),
+                                    () => service.RevertAll(),
+                                    () => service.Disconnect(),
+                                    () => service.Reconnect()
+                                };
+                                foreach (Action operation in serviceOperations)
+                                {
+                                    try { operation(); }
+                                    catch (InvalidOperationException) { rejected++; }
+                                }
+                                string reason;
+                                bool canDisconnect = service.CanDisconnect(out reason);
+                                Volatile.Write(ref probeRejectedAllServiceOperations,
+                                    rejected == serviceOperations.Length && !canDisconnect &&
+                                    reason.IndexOf("transpiler callback", StringComparison.OrdinalIgnoreCase) >= 0 ? 1 : 0);
+                            }
+                            catch (Exception error) { probeError = error; }
+                            finally { probeCompleted.Set(); }
+                        }) { IsBackground = true, Name = "CalradiaForge transpiler reentrancy probe" };
+                        probe.Start();
+                        Volatile.Write(ref probeWasFast,
+                            probeCompleted.Wait(TimeSpan.FromMilliseconds(750)) ? 1 : 0);
+                    }
+                    RewriteConstant(context, value => value + 2);
+                });
+
+                IForgeHookHandle inactive = service.RegisterTranspiler(new ForgeHookDefinition
+                {
+                    Id = "concurrent-inactive", Owner = "fixture", Target = target
+                }, context => { });
+                IForgeHookHandle added = service.RegisterTranspiler(new ForgeHookDefinition
+                {
+                    Id = "concurrent-added", Owner = "fixture", Target = target
+                }, context => { });
+
+                RequireHook(baseHook.Apply().Succeeded, "concurrent fail-fast fixture base hook applies");
+                Thread externalThread = new Thread(() =>
+                {
+                    try
+                    {
+                        using (var external = new ILHook(target, context => RewriteConstant(context, value => value + 4),
+                            new DetourConfig("fixture-concurrent-external-il", after: new[] { "CalradiaForge.Hook.concurrent-base" }), false))
+                        {
+                            Interlocked.Exchange(ref pauseNextManipulator, 1);
+                            external.Apply();
+                            externalApplied.Set();
+                            if (!releaseExternal.Wait(TimeSpan.FromSeconds(8)))
+                                throw new TimeoutException("The concurrent external ILHook was not released for cleanup.");
+                            external.Undo();
+                        }
+                    }
+                    catch (Exception error) { externalError = error; }
+                    finally { externalCompleted.Set(); }
+                }) { IsBackground = true, Name = "CalradiaForge external IL rebuild" };
+
+                Thread applyThread = null;
+                try
+                {
+                    applyThread = new Thread(() =>
+                    {
+                        Volatile.Write(ref applyThreadId, Thread.CurrentThread.ManagedThreadId);
+                        try { applyResult = added.Apply(); }
+                        catch (Exception error) { applyError = error; }
+                        finally { applyCompleted.Set(); }
+                    }) { IsBackground = true, Name = "CalradiaForge concurrent service Apply" };
+                    applyThread.Start();
+
+                    bool applyReachedGate = applyHeldServiceGate.Wait(TimeSpan.FromSeconds(5));
+                    if (applyReachedGate) externalThread.Start();
+                    bool callbackEnteredGate = applyReachedGate && callbackEntered.Wait(TimeSpan.FromSeconds(5));
+                    bool externalReturned = callbackEnteredGate && externalApplied.Wait(TimeSpan.FromSeconds(5));
+                    // Always release Apply after the probe has had its bounded opportunity
+                    // to fail fast; this also prevents a failed assertion from stranding a worker.
+                    releaseApplyGate.Set();
+                    bool applyReturned = applyCompleted.Wait(TimeSpan.FromSeconds(5));
+                    RequireHook(applyReachedGate && callbackEnteredGate && externalReturned && applyReturned,
+                        "bounded callback barrier releases both concurrent backend operations");
+                    RequireHook(externalError == null && applyError == null && applyResult != null && applyResult.Succeeded,
+                        "external reconstruction and concurrent Forge Apply complete without lock inversion");
+                    RequireHook(Volatile.Read(ref probeWasFast) == 1 && probeCompleted.IsSet && probeError == null &&
+                        Volatile.Read(ref probeRejectedAllServiceOperations) == 1,
+                        "all public service operations fail fast during the active manipulator instead of waiting on gate");
+                }
+                finally
+                {
+                    releaseApplyGate.Set();
+                    releaseExternal.Set();
+                    if (applyThread != null && applyThread.IsAlive) applyThread.Join(TimeSpan.FromSeconds(5));
+                    if (externalThread.IsAlive) externalThread.Join(TimeSpan.FromSeconds(5));
+                }
+
+                RequireHook(externalCompleted.IsSet && externalError == null,
+                    "external ILHook Undo and bounded thread cleanup complete");
+                RequireHook(added.Revert().Succeeded && baseHook.Revert().Succeeded,
+                    "concurrent fail-fast fixture restores Forge-owned IL hooks");
+                service.Disconnect();
+                _ = inactive;
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]

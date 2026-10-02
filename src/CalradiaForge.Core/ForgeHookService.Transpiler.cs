@@ -13,6 +13,9 @@ namespace CalradiaForge.Core
         /// <remarks>The metadata must have no runtime callbacks. Initial application and management require the approved host context. After explicit application, MonoMod may reconstruct that activation on another caller's thread, even after the host context changes or gameplay callbacks shut down, while the activation remains owned and its cleanup is not uncertain. Manipulators must tolerate repeated execution, use only the supplied IL and stable configuration, and never access live game state. Transformed method bodies remain active until explicit reversion. ILContext is never exposed through SDK or IPC.</remarks>
         public IForgeHookHandle RegisterTranspiler(ForgeHookDefinition metadata, ILContext.Manipulator manipulator)
         {
+#if NETFRAMEWORK
+            ThrowIfTranspilerIsActive();
+#endif
             if (metadata == null) throw new ArgumentNullException(nameof(metadata));
             if (manipulator == null) throw new ArgumentNullException(nameof(manipulator));
             if (metadata.Prefix != null || metadata.Postfix != null || metadata.Finalizer != null)
@@ -21,9 +24,16 @@ namespace CalradiaForge.Core
                 throw new ArgumentException("A transpiler requires a managed method body.", nameof(metadata));
             lock (gate)
             {
-                IForgeHookHandle handle = RegisterCore(metadata, false);
-                entries[metadata.Id].Transpiler = manipulator;
-                return handle;
+                if (!Monitor.TryEnter(transpilerInvocationGate))
+                    throw new InvalidOperationException("Hook service operations are unavailable while a transpiler callback is running.");
+                try
+                {
+                    ThrowIfTranspilerIsActive();
+                    IForgeHookHandle handle = RegisterCore(metadata, false);
+                    entries[metadata.Id].Transpiler = manipulator;
+                    return handle;
+                }
+                finally { Monitor.Exit(transpilerInvocationGate); }
             }
         }
 
@@ -43,9 +53,12 @@ namespace CalradiaForge.Core
                 if (!owned || activation.IlUndoUncertain ||
                     (!reconstructionAllowed && !CallbackAllowed(entry) && !CleanupRebuildAllowed(entry)))
                     throw new InvalidOperationException("IL chain rebuild rejected outside the approved host context or during unload.");
-                Interlocked.Increment(ref activeManipulators);
-                try { entry.Transpiler(context); }
-                finally { Interlocked.Decrement(ref activeManipulators); }
+                lock (transpilerInvocationGate)
+                {
+                    Interlocked.Increment(ref activeManipulators);
+                    try { entry.Transpiler(context); }
+                    finally { Interlocked.Decrement(ref activeManipulators); }
+                }
             }
         }
 

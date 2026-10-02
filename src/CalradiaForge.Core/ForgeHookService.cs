@@ -268,6 +268,7 @@ namespace CalradiaForge.Core
         // Kept per service so the disposable fixture can exercise an unreadable MonoMod status.
         Func<Hook, bool> hookIsApplied = hook => hook.IsApplied;
         Func<ILHook, bool> ilHookIsApplied = hook => hook.IsApplied;
+        readonly object transpilerInvocationGate = new object();
         int activeManipulators;
         int ilCleanupThread;
 #endif
@@ -283,42 +284,79 @@ namespace CalradiaForge.Core
 
         IForgeHookHandle RegisterCore(ForgeHookDefinition definition, bool requireCallbacks = true)
         {
+#if NETFRAMEWORK
+            ThrowIfTranspilerIsActive();
+#endif
             ValidateDefinition(definition, requireCallbacks);
             lock (gate)
             {
-                if (!accepting || Volatile.Read(ref acceptsNewHooks) == 0)
-                    throw new InvalidOperationException("The hook service is disconnected or shutting down and rejects new hooks.");
-                if (entries.ContainsKey(definition.Id)) throw new InvalidOperationException("Hook ID already exists: " + definition.Id);
-                var entry = new Entry
+#if NETFRAMEWORK
+                // Transpilers may run on a MonoMod rebuild thread. Do not wait for the
+                // manipulator while holding gate: its callback can re-enter this service.
+                if (!Monitor.TryEnter(transpilerInvocationGate))
+                    throw new InvalidOperationException("Hook registration is unavailable while a transpiler callback is running.");
+                try
                 {
-                    Id = definition.Id.Trim(), Owner = definition.Owner.Trim(), Target = definition.Target,
-                    Prefix = definition.Prefix, Postfix = definition.Postfix, Finalizer = definition.Finalizer, Priority = definition.Priority,
-                    Before = (definition.Before ?? new List<string>()).Select(value => value.Trim()).ToArray(),
-                    After = (definition.After ?? new List<string>()).Select(value => value.Trim()).ToArray(),
-                    ParameterTypes = definition.Target.GetParameters().Select(parameter => parameter.ParameterType).ToArray(),
-                    CanInvoke = mayMutate,
-                    State = ForgeHookState.Registered, Detail = "Registered only; no detour has been applied."
-                };
-                entries.Add(entry.Id, entry);
-                return new Handle(this, entry.Id);
+                    ThrowIfTranspilerIsActive();
+                    return RegisterValidatedLocked(definition);
+                }
+                finally { Monitor.Exit(transpilerInvocationGate); }
+#else
+                return RegisterValidatedLocked(definition);
+#endif
             }
         }
 
+        IForgeHookHandle RegisterValidatedLocked(ForgeHookDefinition definition)
+        {
+            if (!accepting || Volatile.Read(ref acceptsNewHooks) == 0)
+                throw new InvalidOperationException("The hook service is disconnected or shutting down and rejects new hooks.");
+            if (entries.ContainsKey(definition.Id)) throw new InvalidOperationException("Hook ID already exists: " + definition.Id);
+            var entry = new Entry
+            {
+                Id = definition.Id.Trim(), Owner = definition.Owner.Trim(), Target = definition.Target,
+                Prefix = definition.Prefix, Postfix = definition.Postfix, Finalizer = definition.Finalizer, Priority = definition.Priority,
+                Before = (definition.Before ?? new List<string>()).Select(value => value.Trim()).ToArray(),
+                After = (definition.After ?? new List<string>()).Select(value => value.Trim()).ToArray(),
+                ParameterTypes = definition.Target.GetParameters().Select(parameter => parameter.ParameterType).ToArray(),
+                CanInvoke = mayMutate,
+                State = ForgeHookState.Registered, Detail = "Registered only; no detour has been applied."
+            };
+            entries.Add(entry.Id, entry);
+            return new Handle(this, entry.Id);
+        }
+
+#if NETFRAMEWORK
+        void ThrowIfTranspilerIsActive()
+        {
+            if (Volatile.Read(ref activeManipulators) != 0)
+                throw new InvalidOperationException("Hook service operations are unavailable while a transpiler callback is running.");
+        }
+#endif
+
         public IReadOnlyList<ForgeHookSnapshot> GetSnapshots(string owner = null)
         {
+#if NETFRAMEWORK
+            ThrowIfTranspilerIsActive();
+#endif
             lock (gate)
             {
+                Entry[] allEntries = entries.Values.ToArray();
+                var orderDiagnostics = AnalyzeOrdering(allEntries);
                 return applyOrder.Concat(entries.Keys.Except(applyOrder, StringComparer.OrdinalIgnoreCase))
                     .Where(id => entries.ContainsKey(id))
                     .Select(id => entries[id])
                     .Where(entry => string.IsNullOrWhiteSpace(owner) || string.Equals(entry.Owner, owner, StringComparison.OrdinalIgnoreCase))
-                    .Select(Snapshot).ToArray();
+                    .Select(entry => Snapshot(entry, orderDiagnostics.TryGetValue(entry.Id, out var finding) ? finding : null)).ToArray();
             }
         }
 
         public ForgeHookOperationResult Apply(string hookId)
         {
             if (string.IsNullOrWhiteSpace(hookId)) throw new ArgumentException("A hook ID is required.", nameof(hookId));
+#if NETFRAMEWORK
+            ThrowIfTranspilerIsActive();
+#endif
             lock (gate)
             {
                 lock (ForgeDetour.Gate)
@@ -422,6 +460,9 @@ namespace CalradiaForge.Core
         public ForgeHookOperationResult Verify(string hookId)
         {
             if (string.IsNullOrWhiteSpace(hookId)) throw new ArgumentException("A hook ID is required.", nameof(hookId));
+#if NETFRAMEWORK
+            ThrowIfTranspilerIsActive();
+#endif
             lock (gate)
             {
                 Entry entry;
@@ -471,6 +512,9 @@ namespace CalradiaForge.Core
         public ForgeHookOperationResult Revert(string hookId)
         {
             if (string.IsNullOrWhiteSpace(hookId)) throw new ArgumentException("A hook ID is required.", nameof(hookId));
+#if NETFRAMEWORK
+            ThrowIfTranspilerIsActive();
+#endif
             lock (gate)
             {
                 lock (ForgeDetour.Gate)
@@ -492,6 +536,9 @@ namespace CalradiaForge.Core
         public IReadOnlyList<ForgeHookOperationResult> RevertOwner(string owner)
         {
             if (string.IsNullOrWhiteSpace(owner)) throw new ArgumentException("An owner label is required.", nameof(owner));
+#if NETFRAMEWORK
+            ThrowIfTranspilerIsActive();
+#endif
             lock (gate)
                 lock (ForgeDetour.Gate)
                 {
@@ -504,6 +551,9 @@ namespace CalradiaForge.Core
 
         public IReadOnlyList<ForgeHookOperationResult> RevertAll()
         {
+#if NETFRAMEWORK
+            ThrowIfTranspilerIsActive();
+#endif
             lock (gate)
                 lock (ForgeDetour.Gate)
                 {
@@ -548,6 +598,9 @@ namespace CalradiaForge.Core
 
         public void Disconnect()
         {
+#if NETFRAMEWORK
+            ThrowIfTranspilerIsActive();
+#endif
             lock (gate)
             {
                 lock (ForgeDetour.Gate)
@@ -601,6 +654,13 @@ namespace CalradiaForge.Core
 
         public bool CanDisconnect(out string reason)
         {
+#if NETFRAMEWORK
+            if (Volatile.Read(ref activeManipulators) != 0)
+            {
+                reason = "A transpiler callback is running; the hook service cannot be inspected for disconnect readiness.";
+                return false;
+            }
+#endif
             lock (gate)
             {
                 if (HasActiveDispatches())
@@ -620,6 +680,9 @@ namespace CalradiaForge.Core
 
         public void Reconnect()
         {
+#if NETFRAMEWORK
+            ThrowIfTranspilerIsActive();
+#endif
             lock (gate)
             {
                 if (accepting) return;
@@ -816,14 +879,20 @@ namespace CalradiaForge.Core
             return ids;
         }
 
-        ForgeHookSnapshot Snapshot(Entry entry) => new ForgeHookSnapshot(entry.Id, entry.Owner, Identity(entry.Target),
-            entry.Prefix != null, entry.Postfix != null, entry.Priority, entry.Before, entry.After, entry.State, entry.Detail, entry.Finalizer != null,
+        ForgeHookSnapshot Snapshot(Entry entry, string orderDiagnostics = null)
+        {
+            string detail = entry.Detail ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(orderDiagnostics))
+                detail = string.IsNullOrWhiteSpace(detail) ? "Order diagnostics: " + orderDiagnostics : detail + " Order diagnostics: " + orderDiagnostics;
+            return new ForgeHookSnapshot(entry.Id, entry.Owner, Identity(entry.Target),
+            entry.Prefix != null, entry.Postfix != null, entry.Priority, entry.Before, entry.After, entry.State, detail, entry.Finalizer != null,
 #if NETFRAMEWORK
             entry.Transpiler != null
 #else
             false
 #endif
             );
+        }
 
         static ForgeHookOperationResult Result(Entry entry, bool succeeded, string detail = null) =>
             new ForgeHookOperationResult(entry.Id, entry.State, succeeded, detail ?? entry.Detail);

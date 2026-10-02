@@ -137,14 +137,41 @@ namespace CalradiaForge.Mod.Commands
             if (kind != null && kind != "prefix" && kind != "postfix" && kind != "finalizer" && kind != "transpiler") return usage;
             IForgeHookService service = ForgeApi.Hooks;
             if (service == null) return "Hook service is unavailable.";
-            var snapshots = service.GetSnapshots(owner).Where(hook =>
+            IReadOnlyList<ForgeHookSnapshot> registered;
+            try { registered = service.GetSnapshots(owner); }
+            catch (InvalidOperationException error)
+            {
+                return "Hook status is temporarily unavailable while a transpiler callback is running. " + error.Message;
+            }
+            var snapshots = registered.Where(hook =>
                 (target == null || hook.TargetMethod.IndexOf(target, StringComparison.OrdinalIgnoreCase) >= 0) &&
                 (kind == null || (kind == "prefix" && hook.HasPrefix) || (kind == "postfix" && hook.HasPostfix) ||
                  (kind == "finalizer" && hook.HasFinalizer) || (kind == "transpiler" && hook.HasTranspiler))).ToArray();
             if (snapshots.Length == 0) return "No registered hook records match the filters.";
             return "Forge hook status (" + snapshots.Length + "):\n" + string.Join("\n", snapshots.Select(hook =>
                 "- [" + hook.State + "] " + hook.Id + " owner=" + hook.Owner + " target=" + hook.TargetMethod +
-                " prefix=" + hook.HasPrefix + " postfix=" + hook.HasPostfix + " finalizer=" + hook.HasFinalizer + " transpiler=" + hook.HasTranspiler + " — " + hook.Detail));
+                " prefix=" + hook.HasPrefix + " postfix=" + hook.HasPostfix + " finalizer=" + hook.HasFinalizer + " transpiler=" + hook.HasTranspiler +
+                " priority=" + (hook.Priority.HasValue ? hook.Priority.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "default") +
+                " before=[" + FormatHookOrderReferences(hook.Before) + "] after=[" + FormatHookOrderReferences(hook.After) + "] — " + hook.Detail));
+        }
+
+        const int MaximumHookStatusOrderReferences = 8;
+        const int MaximumHookStatusOrderReferenceCharacters = 64;
+
+        static string FormatHookOrderReferences(IReadOnlyList<string> references)
+        {
+            if (references == null || references.Count == 0) return string.Empty;
+            int displayed = Math.Min(references.Count, MaximumHookStatusOrderReferences);
+            var values = references.Take(displayed).Select(reference =>
+            {
+                string value = reference ?? string.Empty;
+                return value.Length <= MaximumHookStatusOrderReferenceCharacters
+                    ? value
+                    : value.Substring(0, MaximumHookStatusOrderReferenceCharacters - 3) + "...";
+            }).ToList();
+            int omitted = references.Count - displayed;
+            if (omitted > 0) values.Add("... (" + omitted + " omitted)");
+            return string.Join(", ", values);
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("hook_verify", "cf")]

@@ -441,6 +441,56 @@ internal static class ReleaseTests
             Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.duplicate",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"fixture.other","CalradiaForge.Hook.fixture.other"}}));
             Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.contradiction",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"fixture.other"},After=new List<string>{"CalradiaForge.Hook.fixture.other"}}));
         });
+        test("Forge hook snapshots diagnose unresolved, cross-target and cyclic ordering without applying hooks",()=>{
+            var service=new ForgeHookService(()=>true);
+            var target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)});
+            var otherTarget=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(string)});
+            var callbacks=0;
+            service.Register(new ForgeHookDefinition {Id="cycle.a",Owner="cycle.owner",Target=target,Prefix=_=>callbacks++,Before=new List<string>{"CalradiaForge.Hook.cycle.b"}});
+            service.Register(new ForgeHookDefinition {Id="cycle.b",Owner="other.cycle.owner",Target=target,Prefix=_=>callbacks++,Before=new List<string>{"cycle.a","cycle.tail","cycle.c"}});
+            service.Register(new ForgeHookDefinition {Id="cycle.tail",Owner="cycle.owner",Target=target,Prefix=_=>callbacks++});
+            service.Register(new ForgeHookDefinition {Id="cycle.c",Owner="cycle.owner",Target=target,Prefix=_=>callbacks++,Before=new List<string>{"cycle.d"}});
+            service.Register(new ForgeHookDefinition {Id="cycle.d",Owner="cycle.owner",Target=target,Prefix=_=>callbacks++,Before=new List<string>{"cycle.c"}});
+            service.Register(new ForgeHookDefinition {Id="cross.target",Owner="cross.owner",Target=target,Prefix=_=>callbacks++,Before=new List<string>{"other.target"}});
+            service.Register(new ForgeHookDefinition {Id="other.target",Owner="cross.owner",Target=otherTarget,Prefix=_=>callbacks++});
+            service.Register(new ForgeHookDefinition {Id="missing.target",Owner="missing.owner",Target=target,Prefix=_=>callbacks++,After=new List<string>{"future.external"}});
+            service.Register(new ForgeHookDefinition {Id="priority.before",Owner="priority.owner",Target=target,Prefix=_=>callbacks++,Priority=100,Before=new List<string>{"priority.after"}});
+            service.Register(new ForgeHookDefinition {Id="priority.after",Owner="priority.owner",Target=target,Prefix=_=>callbacks++,Priority=-100});
+            var snapshots=service.GetSnapshots().ToDictionary(item=>item.Id,StringComparer.OrdinalIgnoreCase);
+            Assert(snapshots["cycle.a"].Detail.Contains("ordering declarations contain a cycle")&&
+                snapshots["cycle.b"].Detail.Contains("ordering declarations contain a cycle")&&
+                snapshots["cycle.a"].Detail.Contains("cycle.a, cycle.b")&&!snapshots["cycle.a"].Detail.Contains("cycle.c")&&
+                snapshots["cycle.c"].Detail.Contains("cycle.c, cycle.d")&&!snapshots["cycle.c"].Detail.Contains("cycle.a")&&
+                !snapshots["cycle.tail"].Detail.Contains("ordering declarations contain a cycle")&&
+                snapshots["cross.target"].Detail.Contains("different target")&&
+                snapshots["missing.target"].Detail.Contains("not present in the current Forge registry")&&
+                !snapshots["priority.before"].Detail.Contains("Order diagnostics:")&&callbacks==0&&
+                snapshots.Values.All(item=>item.State==ForgeHookState.Registered));
+            Assert(service.GetSnapshots("cycle.owner").Single(item=>item.Id=="cycle.a").Detail.Contains("ordering declarations contain a cycle"));
+        });
+        test("Forge hook cycle diagnostics bound snapshot detail for large cycles",()=>{
+            var service=new ForgeHookService(()=>true);
+            var target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)});
+            const int count=24;
+            string suffix=new string('x',80);
+            var ids=Enumerable.Range(0,count).Select(index=>"large-cycle-"+index.ToString("D2")+suffix).ToArray();
+            for(int index=0;index<count;index++)
+                service.Register(new ForgeHookDefinition {Id=ids[index],Owner="large-cycle",Target=target,Prefix=_=>{},Before=new List<string>{ids[(index+1)%count]}});
+            var snapshots=service.GetSnapshots().ToArray();
+            Assert(snapshots.Length==count&&snapshots.All(snapshot=>snapshot.Detail.Length<1200&&
+                snapshot.Detail.Contains("showing 8 of 24 cycle members")&&snapshot.Detail.Contains("...")));
+        });
+        test("Forge hook ordering diagnostics bound many missing references per hook",()=>{
+            var service=new ForgeHookService(()=>true);
+            var target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)});
+            var missing=Enumerable.Range(0,80).Select(index=>"missing.reference."+index.ToString("D3")+new string('x',96)).ToList();
+            service.Register(new ForgeHookDefinition {Id="many.missing",Owner="many.owner",Target=target,Prefix=_=>{},Before=missing});
+            var snapshot=service.GetSnapshots().Single(item=>item.Id=="many.missing");
+            Assert(snapshot.Detail.Length<2400&&snapshot.Detail.Contains("additional ordering finding(s) omitted")&&
+                snapshot.Detail.Contains("73 additional ordering finding(s) omitted")&&
+                snapshot.Detail.Contains("missing.reference.000")&&!snapshot.Detail.Contains("missing.reference.007")&&
+                !snapshot.Detail.Contains("missing.reference.079"));
+        });
         test("Patch console controls are explicit and absent from the read-only IPC action list",()=>{
             var help=ForgeCommands.Help(new List<string>());
             Assert(help.Contains("cf.patch_status [owner]")&&help.Contains("cf.patch_revert <id|owner|all>")&&

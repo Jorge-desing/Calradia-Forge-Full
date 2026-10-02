@@ -1323,23 +1323,56 @@ namespace CalradiaForge.Tests
             ForgeDetour.SetMemoryAdapterForTests(adapter);
             try
             {
-                ForgeApi.Connect(new TestEngine());
+                var consoleEngine = new TestEngine(() => true);
+                ForgeApi.Connect(consoleEngine);
                 if (!ForgeCommands.PatchStatus(new List<string> { "console.owner", "ignored" }).StartsWith("Usage: cf.patch_status", StringComparison.Ordinal) ||
                     !ForgeCommands.PatchStatus(new List<string> { " " }).StartsWith("Usage: cf.patch_status", StringComparison.Ordinal) ||
                     !ForgeCommands.HookStatus(new List<string> { "console.owner", "ignored", "prefix", "extra" }).StartsWith("Usage: cf.hook_status", StringComparison.Ordinal) ||
                     !ForgeCommands.HookStatus(new List<string> { " " }).StartsWith("Usage: cf.hook_status", StringComparison.Ordinal))
                     throw new Exception("Optional status commands must reject missing/extra owner arguments instead of silently widening the query.");
-                ForgeApi.Hooks.Register(new ForgeHookDefinition { Id = "console.hook.prefix", Owner = "console.owner", Target = original, Prefix = _ => { } });
+                ForgeApi.Hooks.Register(new ForgeHookDefinition { Id = "console.hook.prefix", Owner = "console.owner", Target = original, Prefix = _ => { }, Priority = 100, Before = new List<string> { "console.hook.finalizer" } });
                 ForgeApi.Hooks.Register(new ForgeHookDefinition { Id = "console.hook.finalizer", Owner = "other.owner", Target = original, Finalizer = _ => { } });
+                var manyBefore = Enumerable.Range(0, 20).Select(index => "console.missing.before." + index.ToString("D2") + new string('b', 80)).ToList();
+                var manyAfter = Enumerable.Range(0, 12).Select(index => "console.missing.after." + index.ToString("D2") + new string('a', 80)).ToList();
+                ForgeApi.Hooks.Register(new ForgeHookDefinition { Id = "console.hook.bounded", Owner = "console.owner", Target = original, Prefix = _ => { }, Before = manyBefore, After = manyAfter });
                 string prefixInventory = ForgeCommands.HookStatus(new List<string> { "console.owner", "TargetMethod", "prefix" });
                 string finalizerInventory = ForgeCommands.HookStatus(new List<string> { "-", "TargetMethod", "finalizer" });
-                if (!prefixInventory.Contains("console.hook.prefix") || prefixInventory.Contains("console.hook.finalizer") ||
-                    !finalizerInventory.Contains("console.hook.finalizer") || finalizerInventory.Contains("console.hook.prefix") ||
+                string boundedInventory = ForgeCommands.HookStatus(new List<string> { "console.owner", "TargetMethod", "prefix" });
+                string boundedInventoryAgain = ForgeCommands.HookStatus(new List<string> { "console.owner", "TargetMethod", "prefix" });
+                string boundedLine = boundedInventory.Split('\n').Single(line => line.Contains("] console.hook.bounded owner="));
+                int beforeStart = boundedLine.IndexOf(" before=[", StringComparison.Ordinal) + " before=[".Length;
+                int afterMarker = boundedLine.IndexOf("] after=[", beforeStart, StringComparison.Ordinal);
+                int afterStart = afterMarker + "] after=[".Length;
+                int detailStart = boundedLine.IndexOf(" — ", afterStart, StringComparison.Ordinal);
+                string beforeDisplay = beforeStart >= " before=[".Length && afterMarker >= beforeStart
+                    ? boundedLine.Substring(beforeStart, afterMarker - beforeStart) : string.Empty;
+                string afterDisplay = afterStart >= "] after=[".Length && detailStart >= afterStart
+                    ? boundedLine.Substring(afterStart, detailStart - afterStart) : string.Empty;
+                if (!prefixInventory.Contains("] console.hook.prefix owner=") || prefixInventory.Contains("] console.hook.finalizer owner=") ||
+                    !prefixInventory.Contains("priority=100 before=[console.hook.finalizer]") ||
+                    !finalizerInventory.Contains("] console.hook.finalizer owner=") || finalizerInventory.Contains("] console.hook.prefix owner=") ||
+                    !boundedInventory.Contains("... (12 omitted)") || !boundedInventory.Contains("... (4 omitted)") ||
+                    !beforeDisplay.Contains(manyBefore[0].Substring(0, 61) + "...") || beforeDisplay.Contains(manyBefore[0]) ||
+                    !afterDisplay.Contains(manyAfter[0].Substring(0, 61) + "...") || afterDisplay.Contains(manyAfter[0]) ||
+                    !boundedInventory.Contains("additional ordering finding(s) omitted") || boundedInventory.Length > 8000 ||
+                    !string.Equals(boundedInventory, boundedInventoryAgain, StringComparison.Ordinal) ||
                     !ForgeCommands.HookStatus(new List<string> { "-", "-", "arbitrary" }).StartsWith("Usage:", StringComparison.Ordinal) ||
                     !ForgeCommands.HookStatus(new List<string> { "-", "no-such-target", "prefix" }).Contains("No registered"))
                     throw new Exception("Hook inventory must compose owner, target and type filters without applying registered declarations.");
                 if (ForgeApi.Hooks.GetSnapshots().Any(item => item.State != ForgeHookState.Registered))
                     throw new Exception("Read-only console inventory must not apply hooks.");
+#if NETFRAMEWORK
+                string hookStatusDuringTranspiler = null;
+                MethodInfo hookStatusTarget = typeof(SdkFeaturesTests).GetMethod(nameof(HookStatusTranspilerTarget), BindingFlags.Static | BindingFlags.NonPublic);
+                IForgeHookHandle hookStatusTranspiler = consoleEngine.RegisterTranspiler(new ForgeHookDefinition
+                {
+                    Id = "console.hook.status-reentrant", Owner = "console.owner", Target = hookStatusTarget
+                }, _ => hookStatusDuringTranspiler = ForgeCommands.HookStatus(new List<string>()));
+                if (!hookStatusTranspiler.Apply().Succeeded || hookStatusDuringTranspiler == null ||
+                    !hookStatusDuringTranspiler.Contains("temporarily unavailable while a transpiler callback is running") ||
+                    !hookStatusTranspiler.Revert().Succeeded)
+                    throw new Exception("cf.hook_status must report a bounded busy state instead of throwing during an IL reconstruction callback.");
+#endif
                 ForgeDetour.Patch(original, replacement, "console.patch.id", "console.owner");
                 string status = ForgeCommands.PatchStatus(new List<string> { "console.owner" });
                 if (!status.Contains("console.patch.id") || !status.Contains("Applied"))
@@ -1615,6 +1648,11 @@ namespace CalradiaForge.Tests
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static string TargetMethod() => "Original";
+
+#if NETFRAMEWORK
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining | System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        private static int HookStatusTranspilerTarget(int value) => value + 1;
+#endif
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static string ReplacementMethod() => "Replacement";
