@@ -2,8 +2,9 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $analyzerScript = Join-Path $repositoryRoot 'tools\Inspect-CalradiaForge-Fbx.ps1'
 $analyzerBatch = Join-Path $repositoryRoot 'tools\Inspect-CalradiaForge-Fbx.bat'
-$powerShell = Get-Command 'powershell.exe' -ErrorAction SilentlyContinue
-if (-not $powerShell) { $powerShell = Get-Command 'pwsh.exe' -ErrorAction SilentlyContinue }
+$powerShellName = if ([string]::IsNullOrWhiteSpace($env:CALRADIAFORGE_POWERSHELL)) { 'powershell.exe' } else { $env:CALRADIAFORGE_POWERSHELL }
+$powerShell = Get-Command $powerShellName -ErrorAction SilentlyContinue
+if (-not $powerShell -and [string]::IsNullOrWhiteSpace($env:CALRADIAFORGE_POWERSHELL)) { $powerShell = Get-Command 'pwsh.exe' -ErrorAction SilentlyContinue }
 if (-not $powerShell) { throw 'PowerShell is required for FBX preflight fixtures.' }
 $testRoot = Join-Path $env:TEMP ('CalradiaForge-FbxPreflight-' + [Guid]::NewGuid().ToString('N'))
 

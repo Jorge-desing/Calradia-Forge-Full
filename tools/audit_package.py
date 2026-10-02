@@ -218,8 +218,8 @@ def audit_archive(path, expected_roots, required, version, desktop, required_fil
         }
 
 
-def audit(root, version):
-    artifacts = root / "artifacts"
+def audit(root, version, artifacts_directory=None):
+    artifacts = artifacts_directory.resolve() if artifacts_directory else root / "artifacts"
     modules = artifacts / f"CalradiaForge-Modules-{version}.zip"
     source = artifacts / f"CalradiaForge-Source-SDK-{version}.zip"
     desktop = artifacts / f"CalradiaForge-Desktop-{version}.zip"
@@ -315,11 +315,14 @@ def audit(root, version):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", required=True)
+    parser.add_argument("--artifacts-dir", type=Path, default=None)
     args = parser.parse_args()
     if args.version.count(".") != 2 or not all(part.isdigit() for part in args.version.split(".")):
         parser.error("Version must use major.minor.patch numeric components")
     workspace = Path(__file__).resolve().parents[1]
-    result = audit(workspace, args.version)
-    output = workspace / "artifacts" / f"package-audit-{args.version.replace('.', '')}.json"
+    result = audit(workspace, args.version, args.artifacts_dir)
+    output_directory = args.artifacts_dir.resolve() if args.artifacts_dir else workspace / "artifacts"
+    output_directory.mkdir(parents=True, exist_ok=True)
+    output = output_directory / f"package-audit-{args.version.replace('.', '')}.json"
     output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(f"Verified {len(result)} archives; evidence: {output}")

@@ -12,8 +12,8 @@ Whenever a user-requested request, objective, or plan in the current chat intent
 
 ## 1. Trigger Conditions
 1. **Request / Objective / Plan Completion:** At completion of each coherent user request, objective, or plan that changes repository files, prepare and create a scoped commit. Do not split intermediate steps of the same objective into separate commits.
-2. **Default Push:** Push the complete scoped objective commit to the configured upstream without asking again. Honor a newer explicit no-push/local-only instruction. Use a normal fast-forward push; publication and force-push require separate authorization.
-3. **Milestone / Release Finalization:** Use the release verification workflow before committing a major release; do not infer permission to push from a release milestone.
+2. **Default Push:** Push the complete scoped objective commit to the configured upstream without asking again. Honor a newer explicit no-push/local-only instruction. If the user later explicitly asks to push that same objective, the later request supersedes its earlier no-push instruction; resume delivery without asking again, limited to that objective's owned commits. Use a normal fast-forward push; publication and force-push require separate authorization.
+3. **Milestone / Release Finalization:** Use the release verification workflow before committing a major release. The milestone itself grants no extra permission; the standing default push still applies unless the user opted out for this objective.
 
 ---
 
@@ -95,6 +95,8 @@ Before pushing a release or a change whose workflow requires full validation, en
 ## Standing push authorization and overrides
 
 - The user grants standing authorization for commit and push at objective completion. Apply this default to code, tests, assets, documentation, rules and skills. An explicit no-push instruction for the current objective overrides the default until the user changes it. Do not ask again for normal delivery or task-related CI repairs.
+- A later explicit user request to push supersedes an earlier no-push/local-only instruction for the same objective. Treat that request as authorization to deliver the already-scoped objective commits and requested rule/skill corrections; do not ask the user to repeat it. Do not include unrelated commits or another chat's work.
 - The authorization also covers task-related CI correction commits and their pushes until the exact-SHA checks finish, subject to the user's latest scope. It does not authorize unrelated working-tree changes, release publication, force-push or changes to repository protection.
 - Before pushing, inspect the complete outgoing commit range, not only HEAD. Preserve concurrent edits and stage only owned changes. If authorized delivery cannot be separated from unrelated committed history, report the concrete conflict rather than rewriting history.
 - After pushing, verify the exact remote SHA and inspect Actions, check runs and statuses. Do not finish while applicable checks are queued or running; follow the post-push review below and report genuine external blockers explicitly.
+- The objective is not complete until the remote branch is confirmed at the pushed SHA and all applicable checks for that exact SHA finish successfully. On failure, fetch logs, correct task-related causes, validate by the appropriate BAT launcher, push the correction under the existing authorization, and repeat the exact-SHA review. If checks cannot be reached or remain pending, keep the objective incomplete and report that limitation; never convert it to a pass.

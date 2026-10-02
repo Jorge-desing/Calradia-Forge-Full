@@ -828,7 +828,7 @@ namespace CalradiaForge.Mod
                 return;
 
             evidenceFocused = focused;
-            foreach (var name in new[] { nameof(ShowCommandDeck), nameof(IsPlaybookVisible), nameof(WorkspaceRightMargin), nameof(EvidenceTop), nameof(EvidenceHeight), nameof(EvidenceFontSize), nameof(FocusEvidenceLabel) }) OnPropertyChanged(name);
+            foreach (var name in new[] { nameof(ShowCommandDeck), nameof(IsHookWorkbenchVisible), nameof(IsPlaybookVisible), nameof(WorkspaceRightMargin), nameof(EvidenceTop), nameof(EvidenceHeight), nameof(EvidenceFontSize), nameof(FocusEvidenceLabel) }) OnPropertyChanged(name);
         }
 
         void ExpandEvidenceForOutputComparison()
@@ -1626,7 +1626,7 @@ namespace CalradiaForge.Mod
             nameof(CategoryPlaybookTitle), nameof(CategoryPlaybookStep1), nameof(CategoryPlaybookStep2), nameof(CategoryPlaybookStep3),
             nameof(CategoryTroubleshootingTitle), nameof(CategoryTroubleshootingAdvice),
             nameof(CategoryRecommendedMacro), nameof(IsDetailedMode), nameof(DetailModeLabel), nameof(DetailModeHint),
-            nameof(IsPlaybookVisible), nameof(WorkspaceRightMargin), nameof(PrimaryActionButtonWidth), nameof(ShowCommandDeck), nameof(EvidenceTop),
+            nameof(IsPatchPreflightActive), nameof(IsHookWorkbenchVisible), nameof(IsPlaybookVisible), nameof(WorkspaceRightMargin), nameof(PrimaryActionButtonWidth), nameof(ShowCommandDeck), nameof(EvidenceTop),
             nameof(MacroActionLabel), nameof(MacroActionHint)
         };
 

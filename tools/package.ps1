@@ -1,6 +1,7 @@
 param(
     [string]$Version,
     [string]$TpacToolDirectory = '',
+    [string]$PackageOutputDirectory = '',
     [switch]$RequireTpacMetadata = $false,
     [switch]$SkipTests = $false,
     [switch]$Quick = $false
@@ -9,6 +10,21 @@ param(
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path -Parent $PSScriptRoot
 $artifacts = Join-Path $workspace 'artifacts'
+$artifactsRoot = [IO.Path]::GetFullPath($artifacts).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+if ([string]::IsNullOrWhiteSpace($PackageOutputDirectory)) {
+    $packageOutputDirectory = $artifactsRoot
+}
+else {
+    $packageOutputDirectory = if ([IO.Path]::IsPathRooted($PackageOutputDirectory)) {
+        [IO.Path]::GetFullPath($PackageOutputDirectory)
+    } else {
+        [IO.Path]::GetFullPath((Join-Path $workspace $PackageOutputDirectory))
+    }
+    $artifactsPrefix = $artifactsRoot + [IO.Path]::DirectorySeparatorChar
+    if (-not $packageOutputDirectory.StartsWith($artifactsPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'PackageOutputDirectory must be inside the ignored artifacts directory.'
+    }
+}
 $pythonPath = Join-Path $workspace '.venv\Scripts\python.exe'
 if (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf)) {
     throw "The Calradia Forge Python environment is missing. Run tools\Setup-CalradiaForge-Python.bat first. Expected interpreter: $pythonPath"
@@ -146,13 +162,18 @@ public static class FastPackageEngine {
             int idx = i;
             actions[idx] = () => {
                 var target = destinationZips[idx];
-                if (File.Exists(target)) {
-                    File.Delete(target);
-                }
                 ZipFile.CreateFromDirectory(sourceDirs[idx], target, level, false);
             };
         }
-        Parallel.Invoke(actions);
+        try {
+            Parallel.Invoke(actions);
+        } catch (AggregateException exception) {
+            var details = new List<string>();
+            foreach (var inner in exception.Flatten().InnerExceptions) {
+                details.Add(inner.GetType().FullName + ": " + inner.Message);
+            }
+            throw new IOException("Parallel archive compression failed: " + string.Join(" | ", details.ToArray()), exception);
+        }
     }
 }
 '@
@@ -183,6 +204,18 @@ function New-FastZipArchive {
         $CompressionLevel,
         $false
     )
+}
+
+function Remove-PackageStageSafely {
+    param([string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+    try {
+        Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
+    }
+    catch {
+        Write-Warning "Generated package staging directory remains under ignored artifacts/: $Path ($($_.Exception.Message))"
+    }
 }
 
 function Test-ZipEntries {
@@ -217,6 +250,19 @@ try {
     if ([string]::IsNullOrWhiteSpace($Version)) { $Version = $release }
     if ($Version -ne $release) { throw "Requested version '$Version' does not match shared release value '$release'." }
     if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Release version must use major.minor.patch.' }
+
+    $modulesZip = Join-Path $packageOutputDirectory "CalradiaForge-Modules-$Version.zip"
+    $sourceZip = Join-Path $packageOutputDirectory "CalradiaForge-Source-SDK-$Version.zip"
+    $desktopZip = Join-Path $packageOutputDirectory "CalradiaForge-Desktop-$Version.zip"
+    $versionKey = $Version.Replace('.', '')
+    $packageAudit = Join-Path $packageOutputDirectory "package-audit-$versionKey.json"
+    $packageHashes = Join-Path $packageOutputDirectory "package-sha256-$versionKey.txt"
+    $packageTargets = @($modulesZip, $sourceZip, $desktopZip, $packageAudit, $packageHashes)
+    $existingPackageTargets = @($packageTargets | Where-Object { Test-Path -LiteralPath $_ })
+    if ($existingPackageTargets.Count -gt 0) {
+        throw "Refusing to overwrite existing package output(s): $($existingPackageTargets -join ', '). Choose a new PackageOutputDirectory."
+    }
+    New-Item -ItemType Directory -Force -Path $packageOutputDirectory | Out-Null
 
     $zipLevel = if ($Quick) { [System.IO.Compression.CompressionLevel]::Fastest } else { [System.IO.Compression.CompressionLevel]::Optimal }
 
@@ -339,10 +385,6 @@ try {
     Copy-Item -LiteralPath 'src/CalradiaForge.Desktop/Resources/GameIcons/ATTRIBUTION.json' -Destination (Join-Path $desktopRoot 'GameIcons-ATTRIBUTION.json') -Force
     Copy-Item -LiteralPath 'docs/DESKTOP.md' -Destination (Join-Path $desktopStage 'README.md') -Force
 
-    $modulesZip = Join-Path $artifacts "CalradiaForge-Modules-$Version.zip"
-    $sourceZip = Join-Path $artifacts "CalradiaForge-Source-SDK-$Version.zip"
-    $desktopZip = Join-Path $artifacts "CalradiaForge-Desktop-$Version.zip"
-
     [FastPackageEngine]::CompressParallel(
         @($moduleStage, $sourceStage, $desktopStage),
         @($modulesZip, $sourceZip, $desktopZip),
@@ -352,23 +394,17 @@ try {
     Test-ZipEntries $modulesZip
     Test-ZipEntries $sourceZip
     Test-ZipEntries $desktopZip -AllowDesktopLauncher
-    & $pythonPath tools/audit_package.py --version $Version
+    & $pythonPath tools/audit_package.py --version $Version --artifacts-dir $packageOutputDirectory
     if ($LASTEXITCODE -ne 0) { throw 'Package audit failed.' }
     $hashLines = @(Get-FileHash -LiteralPath $modulesZip, $sourceZip, $desktopZip -Algorithm SHA256 |
         ForEach-Object { "$($_.Hash) *$([IO.Path]::GetFileName($_.Path))" })
-    Set-Content -LiteralPath (Join-Path $artifacts "package-sha256-$($Version.Replace('.', '')).txt") -Value $hashLines -Encoding utf8
-    Remove-Item -LiteralPath (Join-Path $artifacts "CalradiaForge-$Version.zip") -Force -ErrorAction SilentlyContinue
+    Set-Content -LiteralPath $packageHashes -Value $hashLines -Encoding utf8
     $completed = $true
     Write-Output $modulesZip
     Write-Output $sourceZip
     Write-Output $desktopZip
 }
 finally {
-    foreach ($stage in $stages) { if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force } }
-    if ($completed) {
-        Get-ChildItem -LiteralPath $artifacts -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -match '^(staging|source-staging|desktop-staging)-' } |
-            ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force }
-    }
+    foreach ($stage in $stages) { Remove-PackageStageSafely $stage }
     Pop-Location
 }

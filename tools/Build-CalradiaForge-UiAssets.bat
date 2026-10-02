@@ -8,7 +8,8 @@ for %%A in (%*) do (
     if /I "%%~A"=="--no-pause" set "PAUSE_ON_EXIT=0"
 )
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%" %PS_ARGS%
+if not defined CALRADIAFORGE_POWERSHELL set "CALRADIAFORGE_POWERSHELL=powershell.exe"
+"%CALRADIAFORGE_POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%" %PS_ARGS%
 set "RESULT=%ERRORLEVEL%"
 if "%PAUSE_ON_EXIT%"=="1" pause
 exit /b %RESULT%

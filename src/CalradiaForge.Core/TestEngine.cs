@@ -29,7 +29,16 @@ namespace CalradiaForge.Core
 #if NETFRAMEWORK
         /// <summary>Registers a local IL manipulator through the shared hook service without exposing MonoMod in SDK contracts.</summary>
         public IForgeHookHandle RegisterTranspiler(ForgeHookDefinition metadata, MonoMod.Cil.ILContext.Manipulator manipulator)
-            => forgeHookService.RegisterTranspiler(metadata, manipulator);
+        {
+            if (metadata == null) throw new ArgumentNullException(nameof(metadata));
+            lock (registryGate)
+            {
+                if (string.IsNullOrWhiteSpace(metadata.Id)) throw new ArgumentException("Hook ID is required.", nameof(metadata));
+                if (!ids.Add(metadata.Id)) throw new ArgumentException("Duplicate ID: " + metadata.Id);
+                try { return forgeHookService.RegisterTranspiler(metadata, manipulator); }
+                catch { ids.Remove(metadata.Id); throw; }
+            }
+        }
 #endif
         public bool TestingEnabled { get {lock(registryGate)return testingEnabled;} set {lock(registryGate)testingEnabled=value;} }
         public bool CampaignCopyConfirmed { get {lock(registryGate)return campaignCopyConfirmed;} set {lock(registryGate)campaignCopyConfirmed=value;} }

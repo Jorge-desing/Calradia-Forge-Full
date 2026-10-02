@@ -173,6 +173,30 @@ class AssetPipelineTests(unittest.TestCase):
         excluded_directory_block = package_script.split("ExcludedDirNames =", 1)[1].split("};", 1)[0]
         self.assertIn('"node_modules"', excluded_directory_block)
 
+    def test_package_cleanup_is_scoped_and_retains_stages_when_the_filesystem_denies_cleanup(self):
+        package_script = (ROOT / "tools" / "package.ps1").read_text(encoding="utf-8")
+        cleanup_helper = package_script.split("function Remove-PackageStageSafely", 1)[1].split("function Test-ZipEntries", 1)[0]
+        cleanup_finally = package_script.rsplit("finally {", 1)[1].split("\n}", 1)[0]
+        self.assertIn("Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop", cleanup_helper)
+        self.assertIn("Write-Warning", cleanup_helper)
+        self.assertIn("foreach ($stage in $stages) { Remove-PackageStageSafely $stage }", cleanup_finally)
+        self.assertNotIn("Get-ChildItem -LiteralPath $artifacts -Directory", cleanup_finally)
+
+    def test_package_output_directory_is_bounded_to_ignored_artifacts(self):
+        package_script = (ROOT / "tools" / "package.ps1").read_text(encoding="utf-8")
+        audit_script = (ROOT / "tools" / "audit_package.py").read_text(encoding="utf-8")
+        self.assertIn("PackageOutputDirectory must be inside the ignored artifacts directory.", package_script)
+        self.assertIn("--artifacts-dir $packageOutputDirectory", package_script)
+        self.assertIn('parser.add_argument("--artifacts-dir", type=Path, default=None)', audit_script)
+
+    def test_package_refuses_to_overwrite_existing_outputs(self):
+        package_script = (ROOT / "tools" / "package.ps1").read_text(encoding="utf-8")
+        self.assertIn("$existingPackageTargets = @($packageTargets | Where-Object { Test-Path -LiteralPath $_ })", package_script)
+        self.assertIn("Refusing to overwrite existing package output(s)", package_script)
+        self.assertIn("Choose a new PackageOutputDirectory.", package_script)
+        self.assertNotIn("File.Delete(target)", package_script)
+        self.assertNotIn('Remove-Item -LiteralPath (Join-Path $packageOutputDirectory "CalradiaForge-$Version.zip")', package_script)
+
     def test_sprite_workflow_readme_distinguishes_atlas_from_compiled_tpac(self):
         validate_resource_workflow_readme(ROOT / "modules" / "CalradiaForge")
 

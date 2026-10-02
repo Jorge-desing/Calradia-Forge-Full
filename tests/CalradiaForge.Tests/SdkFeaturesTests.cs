@@ -72,6 +72,9 @@ namespace CalradiaForge.Tests
             test("ForgeLocalApi exposes info and agents endpoints", TestForgeLocalApiEndpoints);
             test("ForgeCampaignEvents logs dispatch errors", TestForgeCampaignEventsErrorLogging);
             test("ForgeApi Version is 13", TestForgeApiVersion);
+#if NETFRAMEWORK
+            test("Transpiler registrations share TestEngine's global extension ID registry", TestTranspilerSharedIdRegistry);
+#endif
             test("Forge UI registry rejects duplicate IDs and removes an unloaded owner", TestForgeUiRegistry);
             test("Forge UI discovery validates Gauntlet ViewModel and command binding", TestForgeUiDiscovery);
             test("Forge UI policy enforces context and writer gates", TestForgeUiPolicy);
@@ -1652,6 +1655,36 @@ namespace CalradiaForge.Tests
 #if NETFRAMEWORK
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining | System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
         private static int HookStatusTranspilerTarget(int value) => value + 1;
+#endif
+
+#if NETFRAMEWORK
+        private static void TestTranspilerSharedIdRegistry()
+        {
+            const string sharedId = "dummy_command";
+            MethodInfo target = typeof(SdkFeaturesTests).GetMethod(nameof(HookStatusTranspilerTarget), BindingFlags.Static | BindingFlags.NonPublic);
+            ForgeHookDefinition Definition(MethodInfo method) => new ForgeHookDefinition { Id = sharedId, Owner = "id-collision-fixture", Target = method };
+
+            var commandFirst = new TestEngine();
+            commandFirst.Register(new DummyCommand());
+            bool transpilerRejected = false;
+            try { commandFirst.RegisterTranspiler(Definition(target), _ => { }); }
+            catch (ArgumentException) { transpilerRejected = true; }
+            if (!transpilerRejected) throw new Exception("A transpiler must not reuse an ID already owned by a command.");
+
+            var transpilerFirst = new TestEngine();
+            transpilerFirst.RegisterTranspiler(Definition(target), _ => { });
+            bool commandRejected = false;
+            try { transpilerFirst.Register(new DummyCommand()); }
+            catch (ArgumentException) { commandRejected = true; }
+            if (!commandRejected) throw new Exception("A command must not reuse an ID already owned by a transpiler.");
+
+            var failedTranspiler = new TestEngine();
+            bool invalidTargetRejected = false;
+            try { failedTranspiler.RegisterTranspiler(Definition(null), _ => { }); }
+            catch (ArgumentNullException) { invalidTargetRejected = true; }
+            if (!invalidTargetRejected) throw new Exception("The invalid transpiler fixture did not fail validation.");
+            failedTranspiler.Register(new DummyCommand());
+        }
 #endif
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]

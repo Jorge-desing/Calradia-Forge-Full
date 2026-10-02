@@ -367,6 +367,7 @@ namespace CalradiaForge.Tests
             test("ForgeDetour rejects incompatible signatures before native writes", TestForgeDetourUnpatch);
             test("ForgeUI clears extension-page handlers", TestForgeUI_Clear);
             test("PanelViewModel & CalradiaForge.xml UI telemetry, clear output, and empty-state placeholder", TestPanelViewModelAndPrefabPolish);
+            test("Gauntlet Hook Workbench is scoped to Patch Preflight without hiding navigation or evidence", TestGauntletHookWorkbenchRouteVisibility);
             test("Gauntlet evidence ledger retains 160 DIP at 1280x720 without colliding with controls", TestGauntletEvidenceLedgerGeometry);
             test("Gauntlet live output filter preserves source, argument, wrapping, and paging", TestGauntletLiveOutputFilter);
             test("Gauntlet output comparison is deterministic, filtered, paged, and bounded", TestGauntletOutputComparison);
@@ -972,6 +973,82 @@ namespace MyCustomMod.QuestBehaviors
                 throw new Exception("PanelViewModel.cs missing ExecuteClearOutput method.");
             if (!vmContent.Contains("case \"ForgeClear\": ExecuteClearOutput(); break;"))
                 throw new Exception("PanelViewModel.cs ExecuteKeyboardControl missing ForgeClear mapping.");
+        }
+
+        private static void TestGauntletHookWorkbenchRouteVisibility()
+        {
+            string prefabPath = Path.GetFullPath("modules/CalradiaForge/GUI/Prefabs/CalradiaForge.xml");
+            string generatorPath = Path.GetFullPath("tools/generate_assets.py");
+            string viewModelPath = Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.cs");
+            string hookViewModelPath = Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.Hooks.cs");
+            if (!File.Exists(prefabPath)) throw new FileNotFoundException("CalradiaForge.xml not found", prefabPath);
+            if (!File.Exists(generatorPath)) throw new FileNotFoundException("Gauntlet prefab generator not found", generatorPath);
+            if (!File.Exists(viewModelPath)) throw new FileNotFoundException("PanelViewModel.cs not found", viewModelPath);
+            if (!File.Exists(hookViewModelPath)) throw new FileNotFoundException("PanelViewModel.Hooks.cs not found", hookViewModelPath);
+
+            XDocument prefab = XDocument.Load(prefabPath);
+            string generator = File.ReadAllText(generatorPath);
+            XElement Find(string id) => prefab.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == id);
+            XElement shell = Find("ForgeWorkbenchShell");
+            XElement navigation = Find("ForgeNavigationRail");
+            XElement evidence = Find("ForgeEvidenceFrame");
+            XElement commandHost = Find("ForgePrimaryCommandHost");
+            XElement regularDeck = Find("ForgePrimaryCommandDeck");
+            XElement hookWorkbench = Find("ForgeHookWorkbench");
+
+            if (shell == null || navigation == null || evidence == null || commandHost == null ||
+                regularDeck == null || hookWorkbench == null)
+                throw new Exception("The native prefab must retain the shell, navigation rail, evidence ledger, action host, and both action routes.");
+            if ((string)shell.Attribute("IsVisible") != null || (string)navigation.Attribute("IsVisible") != null ||
+                (string)evidence.Attribute("IsVisible") != "@IsEvidenceFrameVisible")
+                throw new Exception("Hook routing must not globally hide the shell/navigation or replace the separate evidence visibility contract.");
+            if ((string)commandHost.Attribute("IsVisible") != "@ShowCommandDeck" ||
+                (string)hookWorkbench.Attribute("IsVisible") != "@IsHookWorkbenchVisible" ||
+                (string)regularDeck.Attribute("IsVisible") != "@IsRegularActionDeckVisible" ||
+                hookWorkbench.Parent?.Parent != commandHost || regularDeck.Parent?.Parent != commandHost ||
+                commandHost.Descendants().Contains(navigation) || commandHost.Descendants().Contains(evidence))
+                throw new Exception("Hook Workbench must be a conditional sibling action route inside the command host, separate from navigation and evidence.");
+
+            string viewModel = File.ReadAllText(viewModelPath);
+            string hookViewModel = File.ReadAllText(hookViewModelPath);
+            if (!hookViewModel.Contains("[DataSourceProperty] public bool IsHookWorkbenchVisible => IsPatchPreflightActive && ShowCommandDeck;") ||
+                !viewModel.Contains("[DataSourceProperty] public bool IsPatchPreflightActive => current == \"patch-preflight\";") ||
+                !viewModel.Contains("[DataSourceProperty] public bool ShowCommandDeck => !evidenceFocused && !IsGauntletComposerActive && !IsCampaignRuleBuilderActive;") ||
+                !viewModel.Contains("public bool IsRegularActionDeckVisible => !_isAssemblyWorkbench && current != \"extensions\" && !IsGauntletComposerActive && !IsCampaignRuleBuilderActive && !IsPatchPreflightActive;"))
+                throw new Exception("The hook action route must be active only for Patch Preflight while the command deck is available; regular actions must yield there.");
+            if (!generator.Contains("Id='ForgePrimaryCommandHost',IsVisible='@ShowCommandDeck'") ||
+                !generator.Contains("Id='ForgeHookWorkbench',IsVisible='@IsHookWorkbenchVisible'") ||
+                !generator.Contains("Id='ForgePrimaryCommandDeck',IsVisible='@IsRegularActionDeckVisible'") ||
+                !generator.Contains("Id='ForgeEvidenceFrame',IsVisible='@IsEvidenceFrameVisible'"))
+                throw new Exception("The Gauntlet generator must preserve the generated Hook Workbench, regular deck, and separate evidence visibility bindings.");
+
+            const string notificationListStart = "private static readonly string[] LayoutStatePropertyNames = new[]";
+            int notificationStart = viewModel.IndexOf(notificationListStart, StringComparison.Ordinal);
+            int notificationEnd = notificationStart < 0 ? -1 : viewModel.IndexOf("};", notificationStart, StringComparison.Ordinal);
+            string notifications = notificationStart >= 0 && notificationEnd > notificationStart
+                ? viewModel.Substring(notificationStart, notificationEnd - notificationStart)
+                : string.Empty;
+            if (!notifications.Contains("nameof(IsPatchPreflightActive)") ||
+                !notifications.Contains("nameof(IsHookWorkbenchVisible)") ||
+                !notifications.Contains("nameof(ShowCommandDeck)"))
+                throw new Exception("Section navigation must notify Gauntlet bindings for the active patch route and derived Hook Workbench visibility.");
+
+            int focusStart = viewModel.IndexOf("void SetEvidenceFocus(bool focused)", StringComparison.Ordinal);
+            int focusEnd = focusStart < 0 ? -1 : viewModel.IndexOf("void ExpandEvidenceForOutputComparison()", focusStart, StringComparison.Ordinal);
+            string focusNotifications = focusStart >= 0 && focusEnd > focusStart
+                ? viewModel.Substring(focusStart, focusEnd - focusStart)
+                : string.Empty;
+            if (!focusNotifications.Contains("nameof(ShowCommandDeck)") ||
+                !focusNotifications.Contains("nameof(IsHookWorkbenchVisible)"))
+                throw new Exception("Focusing the evidence ledger must notify Gauntlet to hide the hook controls with the command deck.");
+
+            int selectStart = viewModel.IndexOf("void SelectSection(string section, bool executeOnSelect)", StringComparison.Ordinal);
+            int currentAssignment = selectStart < 0 ? -1 : viewModel.IndexOf("current = section;", selectStart, StringComparison.Ordinal);
+            int routeNotification = currentAssignment < 0 ? -1 : viewModel.IndexOf("NotifyLayout();", currentAssignment, StringComparison.Ordinal);
+            if (currentAssignment < selectStart || routeNotification < currentAssignment ||
+                !viewModel.Contains("public void ExecutePatchPreflight() => SelectSection(\"patch-preflight\");") ||
+                !viewModel.Contains("public void ExecuteSummary() => SelectSection(\"summary\");"))
+                throw new Exception("Changing into or out of Patch Preflight must run the route notification path for both hook and regular sections.");
         }
 
         private static void TestGauntletEvidenceLedgerGeometry()

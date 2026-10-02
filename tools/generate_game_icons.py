@@ -1,5 +1,6 @@
 """Rebuild font-independent WPF paths and per-icon Game-icons.net attribution."""
 import json
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -136,8 +137,9 @@ with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=F
     request_path = Path(request.name)
 try:
     renderer = Path(__file__).with_name("render_game_icons.ps1")
+    powershell_host = os.environ.get("CALRADIAFORGE_POWERSHELL") or "powershell.exe"
     result = subprocess.run(
-        ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(renderer), "-Manifest", str(request_path)],
+        [powershell_host, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(renderer), "-Manifest", str(request_path)],
         check=False,
         capture_output=True,
         text=True,

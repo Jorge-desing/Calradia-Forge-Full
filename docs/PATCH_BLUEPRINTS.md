@@ -78,7 +78,7 @@ This low-level backend requires a 64-bit process, remains experimental, and does
 
 ## Viewing results
 
-- The native panel exposes **Patch preflight** beside the Modules and Dependencies actions. It keeps the existing eight-section rail and uses the normal result ledger and paging.
+- The native panel exposes **Patch preflight** beside the Modules and Dependencies actions. Hook Workbench is a conditional action surface inside that route; it is shown only while Patch Preflight is selected and the command deck is available. It is not a global overlay and must not hide or replace the section rail or evidence ledger. It uses the normal result ledger and paging.
 - The desktop application has a separate **Patch preflight** section. It shows a captured report offline and enables **Check patch blueprints** only for a connected server that advertises the `patch-preflight` capability.
 - `patch-blueprints` lists registered provider descriptors. `patch-preflight` captures and evaluates declarations. Both are read-only protocol actions.
 - `cf.patch_status [owner]` is a read-only game-console query. `cf.patch_revert <id|owner|all>` is an explicit state-changing console command; it is not exposed as a write-capable IPC action. The native Patch Preflight panel and `patch-blueprints`/`patch-preflight` protocol actions remain read-only.
