@@ -43,3 +43,25 @@ Extraídos de `artifacts/package-sha256-2520.txt`:
 - `CalradiaForge-Modules-25.2.0.zip`: `EBC5E959175503A1AED75B4A879C01CF2E0BF2BEC1F7F848E4CE77104C45888A`
 - `CalradiaForge-Source-SDK-25.2.0.zip`: `979617F0F5F05562E42749D884F00130C46F33D137115647EAD207A3B91318BB`
 - `CalradiaForge-Desktop-25.2.0.zip`: `56D3B5D994BF7B6225BACE7A192E69F16C0ADEA077199CADCBF6CA36FF4BD471`
+
+## Validación de seguimiento — 2026-10-02
+
+Esta es una ejecución de seguimiento separada en la versión 25.2.0; no cambiaron la versión del producto ni la API pública del SDK. Cubre la identificación de la fila inicial del Constructor de reglas de campaña, el control de evento y las correcciones del generador/pipeline que conservan los bindings Gauntlet y los recursos localizados después del empaquetado.
+
+### Verificaciones superadas
+
+- La compilación Release terminó con 0 advertencias y 0 errores. Los perfiles Client y Modding Kit editor también compilaron durante el despliegue.
+- `tools/verify_stateless_behavior.ps1`: pasaron las cuatro comprobaciones de aceptación.
+- `tools/audit_gauntlet_ui.py`: PASS, 0 errores y 0 advertencias.
+- `tools/audit_localization.py`: PASS; 13 idiomas nativos con 747 claves cada uno, incluidas 71 claves del Constructor de reglas de campaña.
+- `tools/Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul`: pasaron todas las suites seleccionadas. Las regresiones del Constructor de reglas de campaña cubren identidad inicial, reordenamiento/eliminación, guardado/carga, compilación del comportamiento generado y vista previa/copiado local. La suite de renderizado WPF pasó 295 casos; ForgeWeave pasó 73 pruebas; Desktop MVVM pasó 65 pruebas.
+- `tools/package.ps1`: los tres archivos 25.2.0 pasaron la auditoría de archivos. La comprobación independiente de SHA-256 coincidió con `artifacts/package-sha256-2520.txt`.
+- El despliegue por Steam terminó en los perfiles Client y Modding Kit con respaldos. El prefab instalado, los recursos de idioma inglés y español y el ensamblado Client coincidieron por hash con los del workspace. El TPAC de Steam permaneció sin cambios en `8899A48A407591ADA53573EFC0DD699EA47D2A30F32A0C12C1875003F7993047`.
+- Bannerlord se inició mediante la ruta documentada de Steam y llegó al menú principal de 1920×1080. La sesión disponible de Computer Use capturó la ventana del juego, pero F10 no mostró el panel Forge y las flechas no cambiaron la selección del menú. Por lo tanto, el panel dentro del juego, la interacción por teclado y los tamaños menores solicitados **no quedan verificados** en esta ejecución. El juego se cerró al terminar.
+- Pasó el preflight estructural de cabecera/tabla TPAC. Se omitió el análisis profundo porque TpacTool y el fixture nativo local no estaban disponibles; no se intentó importar TPAC.
+
+### SHA-256 de los paquetes de seguimiento
+
+- `CalradiaForge-Modules-25.2.0.zip`: `CE75B6B186D4D26DD1113BB2A02294317EF5B9353929EAF805DAEF8AEA868E48`
+- `CalradiaForge-Source-SDK-25.2.0.zip`: `417C8215289EE64319E4C9F838CEE4B17C640D8903ECDE32B4BD3A59119660FF`
+- `CalradiaForge-Desktop-25.2.0.zip`: `B49CA3A85944DCCAA2580DF3819C842B8DB95174FC4AD92CAB603C74FF3F71B5`

@@ -16,6 +16,7 @@ namespace CalradiaForge.Mod
         private CampaignRuleBuilderDraft _campaignRuleBuilderDraft = new CampaignRuleBuilderDraft();
         private string _campaignRuleBuilderDraftPath;
         private string _selectedCampaignRuleBuilderRuleId = string.Empty;
+        private string _campaignRuleBuilderStarterRuleId = string.Empty;
         private string _campaignRuleBuilderStatusKey = "No saved rule draft.";
         private string _campaignRuleBuilderDraftLoadStatusKey = "No saved rule draft.";
         private bool _campaignRuleBuilderDraftLoaded;
@@ -44,6 +45,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string CampaignRuleBuilderRulesLabel => T("Rule order");
         [DataSourceProperty] public string CampaignRuleBuilderPropertiesLabel => T("Selected rule");
         [DataSourceProperty] public string CampaignRuleBuilderEventLabel => T("When · event (click to change)");
+        [DataSourceProperty] public string CampaignRuleBuilderEventChangeHintLabel => T("Changing the event clears both condition groups.");
         [DataSourceProperty] public string CampaignRuleBuilderActionLabel => T("Then · action");
         [DataSourceProperty] public string CampaignRuleBuilderTargetLabel => T("Target");
         [DataSourceProperty] public string CampaignRuleBuilderAmountLabel => T("Amount");
@@ -67,6 +69,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string CampaignRuleBuilderConditionValueLabel => T("Threshold (1-1000)");
         [DataSourceProperty] public string CampaignRuleBuilderPackageHeadingLabel => T("Generated package");
         [DataSourceProperty] public string CampaignRuleBuilderSelectedEventLabel => SelectedCampaignRule?.EventId ?? string.Empty;
+        [DataSourceProperty] public string CampaignRuleBuilderSelectedEventDisplayLabel => SelectedCampaignRule == null ? string.Empty : "‹ " + SelectedCampaignRule.EventId + " ›";
         [DataSourceProperty] public string CampaignRuleBuilderSelectedActionLabel => LocalizeCampaignRuleAction(SelectedCampaignRule?.ActionId);
         [DataSourceProperty] public string CampaignRuleBuilderSelectedTargetLabel => LocalizeCampaignRuleTarget(SelectedCampaignRule?.TargetId);
         [DataSourceProperty] public string CampaignRuleBuilderPreviewLabel => BuildCampaignRulePreview();
@@ -120,14 +123,18 @@ namespace CalradiaForge.Mod
             _campaignRuleBuilderDraft = loaded.Draft ?? new CampaignRuleBuilderDraft();
             bool createdStarterRule = loaded.Status == CampaignRuleBuilderLoadStatus.Missing;
             if (createdStarterRule)
-                _campaignRuleBuilderDraft.Rules.Add(CampaignRuleBuilderKinds.CreateRule());
+            {
+                var starterRule = CampaignRuleBuilderKinds.CreateRule();
+                _campaignRuleBuilderStarterRuleId = starterRule.Id;
+                _campaignRuleBuilderDraft.Rules.Add(starterRule);
+            }
             switch (loaded.Status)
             {
                 case CampaignRuleBuilderLoadStatus.Loaded: _campaignRuleBuilderDraftLoadStatusKey = "Rule draft loaded."; break;
-                case CampaignRuleBuilderLoadStatus.Invalid: _campaignRuleBuilderDraftLoadStatusKey = "Saved rule draft is damaged. It will stay until you save."; break;
-                case CampaignRuleBuilderLoadStatus.TooLarge: _campaignRuleBuilderDraftLoadStatusKey = "Saved rule draft exceeds 64 KiB. It will stay until you save."; break;
-                case CampaignRuleBuilderLoadStatus.UnknownVersion: _campaignRuleBuilderDraftLoadStatusKey = "Saved rule draft uses an unsupported version. It will stay until you save."; break;
-                case CampaignRuleBuilderLoadStatus.Unavailable: _campaignRuleBuilderDraftLoadStatusKey = "Saved rule draft could not be read. It will stay until you save."; break;
+                case CampaignRuleBuilderLoadStatus.Invalid: _campaignRuleBuilderDraftLoadStatusKey = "Damaged draft; preserved until save."; break;
+                case CampaignRuleBuilderLoadStatus.TooLarge: _campaignRuleBuilderDraftLoadStatusKey = "Draft over 64 KiB; preserved until save."; break;
+                case CampaignRuleBuilderLoadStatus.UnknownVersion: _campaignRuleBuilderDraftLoadStatusKey = "Unsupported draft version; preserved until save."; break;
+                case CampaignRuleBuilderLoadStatus.Unavailable: _campaignRuleBuilderDraftLoadStatusKey = "Unreadable draft; preserved until save."; break;
                 case CampaignRuleBuilderLoadStatus.Missing: _campaignRuleBuilderDraftLoadStatusKey = "Unsaved starter rule."; break;
                 default: _campaignRuleBuilderDraftLoadStatusKey = "No saved rule draft."; break;
             }
@@ -164,7 +171,7 @@ namespace CalradiaForge.Mod
                 for (int i = 0; i < rule.GroupA.Count; i++) _campaignRuleBuilderConditionsA.Add(new CampaignRuleConditionItemVM(this, rule.Id, false, rule.GroupA[i]));
                 for (int i = 0; i < rule.GroupB.Count; i++) _campaignRuleBuilderConditionsB.Add(new CampaignRuleConditionItemVM(this, rule.Id, true, rule.GroupB[i]));
             }
-            foreach (var name in new[] { nameof(CampaignRuleBuilderHasSelection), nameof(CampaignRuleBuilderConditionsA), nameof(CampaignRuleBuilderConditionsB), nameof(CampaignRuleBuilderSelectedEventLabel), nameof(CampaignRuleBuilderSelectedActionLabel), nameof(CampaignRuleBuilderSelectedTargetLabel), nameof(CampaignRuleBuilderAmountText), nameof(CampaignRuleBuilderPreviewLabel) }) OnPropertyChanged(name);
+            foreach (var name in new[] { nameof(CampaignRuleBuilderHasSelection), nameof(CampaignRuleBuilderConditionsA), nameof(CampaignRuleBuilderConditionsB), nameof(CampaignRuleBuilderSelectedEventLabel), nameof(CampaignRuleBuilderSelectedEventDisplayLabel), nameof(CampaignRuleBuilderSelectedActionLabel), nameof(CampaignRuleBuilderSelectedTargetLabel), nameof(CampaignRuleBuilderAmountText), nameof(CampaignRuleBuilderPreviewLabel) }) OnPropertyChanged(name);
         }
 
         public void ExecuteCampaignRuleBuilderAdd()
@@ -213,9 +220,16 @@ namespace CalradiaForge.Mod
         {
             int index = _campaignRuleBuilderDraft.Rules.FindIndex(rule => rule.Id == _selectedCampaignRuleBuilderRuleId);
             if (index < 0) return;
+            bool removedStarter = string.Equals(_campaignRuleBuilderDraft.Rules[index].Id, _campaignRuleBuilderStarterRuleId, StringComparison.Ordinal);
             _campaignRuleBuilderAmountEdits.Remove(_selectedCampaignRuleBuilderRuleId);
             _campaignRuleBuilderDraft.Rules.RemoveAt(index);
             _campaignRuleBuilderRules.RemoveAt(index);
+            if (removedStarter)
+            {
+                _campaignRuleBuilderStarterRuleId = string.Empty;
+                _campaignRuleBuilderDraftLoadStatusKey = "No saved rule draft.";
+                OnPropertyChanged(nameof(CampaignRuleBuilderDraftLoadStatusLabel));
+            }
             _selectedCampaignRuleBuilderRuleId = _campaignRuleBuilderDraft.Rules.Count == 0 ? string.Empty : _campaignRuleBuilderDraft.Rules[Math.Min(index, _campaignRuleBuilderDraft.Rules.Count - 1)].Id;
             RefreshCampaignRuleBuilderSelection();
             MarkCampaignRuleBuilderEdited();
@@ -344,6 +358,8 @@ namespace CalradiaForge.Mod
                 SetCampaignRuleBuilderStatus(error ?? "The rule draft could not be saved.");
                 return;
             }
+            _campaignRuleBuilderStarterRuleId = string.Empty;
+            foreach (var row in _campaignRuleBuilderRules) row.RefreshIdentityLabel();
             _campaignRuleBuilderDraftLoadStatusKey = "Rule draft saved.";
             OnPropertyChanged(nameof(CampaignRuleBuilderDraftLoadStatusLabel));
             SetCampaignRuleBuilderStatus("Rule draft saved.");
@@ -420,8 +436,16 @@ namespace CalradiaForge.Mod
 
         private void RefreshCampaignRuleBuilderRows()
         {
-            foreach (var row in _campaignRuleBuilderRules) row.RefreshSummary();
+            foreach (var row in _campaignRuleBuilderRules)
+            {
+                row.RefreshSummary();
+                row.RefreshIdentityLabel();
+            }
         }
+
+        internal string CampaignRuleBuilderRowIdentityLabel(string ruleId) =>
+            string.Equals(ruleId, _campaignRuleBuilderStarterRuleId, StringComparison.Ordinal)
+                ? CampaignRuleBuilderDraftLoadStatusLabel : ruleId;
 
         private void NotifyCampaignRuleBuilderVisibility()
         {
@@ -430,7 +454,7 @@ namespace CalradiaForge.Mod
 
         private void NotifyCampaignRuleBuilderLabels()
         {
-            foreach (var name in new[] { nameof(NoviceCampaignRuleBuilderLabel), nameof(NoviceCampaignRuleBuilderHint), nameof(CampaignRuleBuilderTitleLabel), nameof(CampaignRuleBuilderEmptyLabel), nameof(CampaignRuleBuilderRulesLabel), nameof(CampaignRuleBuilderPropertiesLabel), nameof(CampaignRuleBuilderEventLabel), nameof(CampaignRuleBuilderActionLabel), nameof(CampaignRuleBuilderTargetLabel), nameof(CampaignRuleBuilderAmountLabel), nameof(CampaignRuleBuilderGroupALabel), nameof(CampaignRuleBuilderGroupBLabel), nameof(CampaignRuleBuilderAddConditionLabel), nameof(CampaignRuleBuilderCycleKindLabel), nameof(CampaignRuleBuilderCycleOperatorLabel), nameof(CampaignRuleBuilderRemoveConditionLabel), nameof(CampaignRuleBuilderAddRuleLabel), nameof(CampaignRuleBuilderPreviousLabel), nameof(CampaignRuleBuilderNextLabel), nameof(CampaignRuleBuilderMoveUpLabel), nameof(CampaignRuleBuilderMoveDownLabel), nameof(CampaignRuleBuilderRemoveRuleLabel), nameof(CampaignRuleBuilderSaveLabel), nameof(CampaignRuleBuilderValidateLabel), nameof(CampaignRuleBuilderGenerateLabel), nameof(CampaignRuleBuilderCopyLabel), nameof(CampaignRuleBuilderPreviewHeadingLabel), nameof(CampaignRuleBuilderConditionValueLabel), nameof(CampaignRuleBuilderPackageHeadingLabel), nameof(CampaignRuleBuilderStatusLabel), nameof(CampaignRuleBuilderDraftLoadStatusLabel), nameof(CampaignRuleBuilderSelectedActionLabel), nameof(CampaignRuleBuilderSelectedTargetLabel), nameof(CampaignRuleBuilderPreviewLabel) }) OnPropertyChanged(name);
+            foreach (var name in new[] { nameof(NoviceCampaignRuleBuilderLabel), nameof(NoviceCampaignRuleBuilderHint), nameof(CampaignRuleBuilderTitleLabel), nameof(CampaignRuleBuilderEmptyLabel), nameof(CampaignRuleBuilderRulesLabel), nameof(CampaignRuleBuilderPropertiesLabel), nameof(CampaignRuleBuilderEventLabel), nameof(CampaignRuleBuilderEventChangeHintLabel), nameof(CampaignRuleBuilderActionLabel), nameof(CampaignRuleBuilderTargetLabel), nameof(CampaignRuleBuilderAmountLabel), nameof(CampaignRuleBuilderGroupALabel), nameof(CampaignRuleBuilderGroupBLabel), nameof(CampaignRuleBuilderAddConditionLabel), nameof(CampaignRuleBuilderCycleKindLabel), nameof(CampaignRuleBuilderCycleOperatorLabel), nameof(CampaignRuleBuilderRemoveConditionLabel), nameof(CampaignRuleBuilderAddRuleLabel), nameof(CampaignRuleBuilderPreviousLabel), nameof(CampaignRuleBuilderNextLabel), nameof(CampaignRuleBuilderMoveUpLabel), nameof(CampaignRuleBuilderMoveDownLabel), nameof(CampaignRuleBuilderRemoveRuleLabel), nameof(CampaignRuleBuilderSaveLabel), nameof(CampaignRuleBuilderValidateLabel), nameof(CampaignRuleBuilderGenerateLabel), nameof(CampaignRuleBuilderCopyLabel), nameof(CampaignRuleBuilderPreviewHeadingLabel), nameof(CampaignRuleBuilderConditionValueLabel), nameof(CampaignRuleBuilderPackageHeadingLabel), nameof(CampaignRuleBuilderStatusLabel), nameof(CampaignRuleBuilderDraftLoadStatusLabel), nameof(CampaignRuleBuilderSelectedActionLabel), nameof(CampaignRuleBuilderSelectedTargetLabel), nameof(CampaignRuleBuilderPreviewLabel) }) OnPropertyChanged(name);
             RefreshCampaignRuleBuilderRows();
             RefreshCampaignRuleBuilderSelection();
         }
@@ -517,9 +541,11 @@ namespace CalradiaForge.Mod
         internal CampaignRuleItemVM(PanelViewModel parent, CampaignRuleBuilderRule model) { _parent = parent; _model = model; }
         [DataSourceProperty] public string Id => _model.Id;
         [DataSourceProperty] public string Summary => _model.EventId + " · " + _parent.LocalizeCampaignRuleAction(_model.ActionId);
+        [DataSourceProperty] public string RowIdentityLabel => _parent.CampaignRuleBuilderRowIdentityLabel(Id);
         [DataSourceProperty] public bool IsSelected { get => _isSelected; set { if (_isSelected == value) return; _isSelected = value; OnPropertyChangedWithValue(value, nameof(IsSelected)); } }
         internal void RefreshSelection(string selectedId) => IsSelected = string.Equals(Id, selectedId, StringComparison.Ordinal);
         internal void RefreshSummary() => OnPropertyChanged(nameof(Summary));
+        internal void RefreshIdentityLabel() => OnPropertyChanged(nameof(RowIdentityLabel));
         public void ExecuteSelect() => _parent.SelectCampaignRule(Id);
     }
 

@@ -880,75 +880,75 @@
       ]
     },
     {
-      "key": "Saved rule draft could not be read. It will stay until you save.",
+      "key": "Unreadable draft; preserved until save.",
       "values": [
-        "Saved rule draft could not be read. It will stay until you save.",
-        "No se pudo leer el borrador de reglas. El archivo se conservará hasta que guardes.",
-        "Não foi possível ler o rascunho de regra salvo. Ele permanecerá até você salvar.",
-        "Der gespeicherte Regelentwurf konnte nicht gelesen werden. Es bleibt bestehen, bis Sie es speichern.",
-        "Le projet de règle enregistré n'a pas pu être lu. Il restera jusqu'à ce que vous sauvegardiez.",
-        "Impossibile leggere la bozza della regola salvata. Rimarrà finché non salvi.",
-        "Nie można odczytać zapisanej wersji roboczej reguły. Pozostanie, dopóki nie zapiszesz.",
-        "Не удалось прочитать сохраненный проект правила. Он останется до тех пор, пока вы не сохраните его.",
-        "Kaydedilen kural taslağı okunamadı. Siz kurtarana kadar kalacak.",
-        "无法读取保存的规则草稿。它将一直保留到您保存为止。",
-        "無法讀取已儲存的規則草稿。它將保留到您保存為止。",
-        "保存されたルールドラフトを読み取れませんでした。保存するまで残ります。",
-        "저장된 규칙 초안을 읽을 수 없습니다. 저장할 때까지 유지됩니다."
+        "Unreadable draft; preserved until save.",
+        "Ilegible; se conserva hasta guardar.",
+        "Ilegível; mantido até salvar.",
+        "Unlesbar; bis zum Speichern behalten.",
+        "Illisible; gardé jusqu'à sauvegarde.",
+        "Illeggibile; conservata fino al salvataggio.",
+        "Nieczytelny; zachowany do zapisu.",
+        "Не читается; сохранён до сохранения.",
+        "Okunamıyor; kaydedene dek korunur.",
+        "无法读取；保存前保留。",
+        "無法讀取；儲存前保留。",
+        "読み取り不可。保存まで保持。",
+        "읽을 수 없음; 저장 전까지 보존."
       ]
     },
     {
-      "key": "Saved rule draft exceeds 64 KiB. It will stay until you save.",
+      "key": "Draft over 64 KiB; preserved until save.",
       "values": [
-        "Saved rule draft exceeds 64 KiB. It will stay until you save.",
-        "El borrador de reglas supera los 64 KiB. El archivo se conservará hasta que guardes.",
-        "O rascunho de regra salvo excede 64 KiB. Ele permanecerá até você salvar.",
-        "Der gespeicherte Regelentwurf überschreitet 64 KiB. Es bleibt bestehen, bis Sie es speichern.",
-        "Le brouillon de règle enregistré dépasse 64 Ko. Il restera jusqu'à ce que vous sauvegardiez.",
-        "La bozza della regola salvata supera i 64 KiB. Rimarrà finché non salvi.",
-        "Zapisana wersja robocza reguły przekracza 64 KiB. Pozostanie, dopóki nie zapiszesz.",
-        "Размер сохраненного проекта правила превышает 64 КиБ. Он останется до тех пор, пока вы не сохраните его.",
-        "Kaydedilen kural taslağı 64 KiB'yi aşıyor. Siz kurtarana kadar kalacak.",
-        "保存的规则草稿超过 64 KiB。它将一直保留到您保存为止。",
-        "保存的規則草稿超過 64 KiB。它將保留到您保存為止。",
-        "保存されたルールドラフトが 64 KiB を超えています。保存するまで残ります。",
-        "저장된 규칙 초안이 64KiB를 초과합니다. 저장할 때까지 유지됩니다."
+        "Draft over 64 KiB; preserved until save.",
+        "Más de 64 KiB; se conserva hasta guardar.",
+        "Mais de 64 KiB; mantido até salvar.",
+        "Über 64 KiB; bis zum Speichern behalten.",
+        ">64 Kio; gardé jusqu'à sauvegarde.",
+        "Oltre 64 KiB; conservata fino al salvataggio.",
+        "Ponad 64 KiB; zachowany do zapisu.",
+        "Более 64 КиБ; сохранён до сохранения.",
+        "64 KiB üstü; kaydedene dek korunur.",
+        "超过 64 KiB；保存前保留。",
+        "超過 64 KiB；儲存前保留。",
+        "64 KiB超。保存まで保持。",
+        "64 KiB 초과; 저장 전까지 보존."
       ]
     },
     {
-      "key": "Saved rule draft is damaged. It will stay until you save.",
+      "key": "Damaged draft; preserved until save.",
       "values": [
-        "Saved rule draft is damaged. It will stay until you save.",
-        "El borrador de reglas está dañado. El archivo se conservará hasta que guardes.",
-        "O rascunho de regra salvo está danificado. Ele permanecerá até você salvar.",
-        "Der gespeicherte Regelentwurf ist beschädigt. Es bleibt bestehen, bis Sie es speichern.",
-        "Le brouillon de règle enregistré est endommagé. Il restera jusqu'à ce que vous sauvegardiez.",
-        "La bozza della regola salvata è danneggiata. Rimarrà finché non salvi.",
-        "Zapisana wersja robocza reguły jest uszkodzona. Pozostanie, dopóki nie zapiszesz.",
-        "Сохраненный проект правила поврежден. Он останется до тех пор, пока вы не сохраните его.",
-        "Kaydedilen kural taslağı hasarlı. Siz kaydedene kadar korunacak.",
-        "保存的规则草稿已损坏。它将一直保留到您保存为止。",
-        "已儲存的規則草稿已損壞。它將保留到您保存為止。",
-        "保存されたルールドラフトが破損しています。保存するまで残ります。",
-        "저장된 규칙 초안이 손상되었습니다. 저장할 때까지 유지됩니다."
+        "Damaged draft; preserved until save.",
+        "Dañado; se conserva hasta guardar.",
+        "Danificado; mantido até salvar.",
+        "Beschädigt; bis zum Speichern behalten.",
+        "Endommagé; gardé jusqu'à sauvegarde.",
+        "Danneggiata; conservata fino al salvataggio.",
+        "Uszkodzony; zachowany do zapisu.",
+        "Повреждён; сохранён до сохранения.",
+        "Bozuk; kaydedene dek korunur.",
+        "已损坏；保存前保留。",
+        "已損壞；儲存前保留。",
+        "破損。保存まで保持。",
+        "손상됨; 저장 전까지 보존."
       ]
     },
     {
-      "key": "Saved rule draft uses an unsupported version. It will stay until you save.",
+      "key": "Unsupported draft version; preserved until save.",
       "values": [
-        "Saved rule draft uses an unsupported version. It will stay until you save.",
-        "El borrador de reglas usa una versión no compatible. El archivo se conservará hasta que guardes.",
-        "O rascunho de regra salvo usa uma versão não compatível. Ele permanecerá até você salvar.",
-        "Der gespeicherte Regelentwurf verwendet eine nicht unterstützte Version. Es bleibt bestehen, bis Sie es speichern.",
-        "Le brouillon de règle enregistré utilise une version non prise en charge. Il restera jusqu'à ce que vous sauvegardiez.",
-        "La bozza della regola salvata utilizza una versione non supportata. Rimarrà finché non salvi.",
-        "Zapisana wersja robocza reguły korzysta z nieobsługiwanej wersji. Pozostanie, dopóki nie zapiszesz.",
-        "В сохраненном проекте правила используется неподдерживаемая версия. Он останется до тех пор, пока вы не сохраните его.",
-        "Kaydedilen kural taslağı desteklenmeyen bir sürüm kullanıyor. Siz kurtarana kadar kalacak.",
-        "保存的规则草稿使用不受支持的版本。它将一直保留到您保存为止。",
-        "儲存的規則草稿使用不支援的版本。它將保留到您保存為止。",
-        "保存されたルール ドラフトはサポートされていないバージョンを使用しています。保存するまで残ります。",
-        "저장된 규칙 초안은 지원되지 않는 버전을 사용합니다. 저장할 때까지 유지됩니다."
+        "Unsupported draft version; preserved until save.",
+        "Versión incompatible; se conserva hasta guardar.",
+        "Versão incompatível; mantida até salvar.",
+        "Version inkompatibel; Datei bleibt.",
+        "Version incompatible; fichier gardé.",
+        "Versione incompatibile; file conservato.",
+        "Wersja niezgodna; plik zachowany.",
+        "Версия не поддерживается; файл сохранён.",
+        "Uyumsuz sürüm; dosya korunur.",
+        "版本不兼容；文件保留。",
+        "版本不相容；檔案保留。",
+        "非対応版。ファイル保持。",
+        "지원되지 않는 버전; 파일 보존."
       ]
     },
     {
@@ -1273,6 +1273,24 @@
         "每日定居點事件：此規則會針對事件中的定居點進行評估。只有條件相符時才執行動作；給予玩家的獎勵可能會對每個相符的定居點重複。",
         "集落ごとの日次イベント: このルールはイベントの集落を対象に評価されます。条件が一致した場合のみ処理され、プレイヤー向け報酬は一致した集落ごとに繰り返される場合があります。",
         "정착지별 일일 이벤트: 이 규칙은 이벤트의 정착지를 대상으로 평가됩니다. 조건이 일치할 때만 동작하며, 플레이어 보상은 일치하는 정착지마다 반복될 수 있습니다."
+      ]
+    },
+    {
+      "key": "Changing the event clears both condition groups.",
+      "values": [
+        "Changing the event clears both condition groups.",
+        "Cambiar el evento borra los dos grupos.",
+        "Mudar o evento limpa os dois grupos.",
+        "Ein Ereigniswechsel leert beide Gruppen.",
+        "Changer l'événement efface les deux groupes.",
+        "Cambiare evento svuota entrambi i gruppi.",
+        "Zmiana wydarzenia czyści obie grupy.",
+        "Смена события очищает обе группы.",
+        "Olayı değiştirmek iki grubu da temizler.",
+        "更改事件会清空两个条件组。",
+        "更改事件會清空兩個條件組。",
+        "イベント変更で両条件グループが消去されます。",
+        "이벤트를 바꾸면 두 조건 그룹이 지워집니다."
       ]
     }
   ]

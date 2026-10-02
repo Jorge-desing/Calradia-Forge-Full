@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.CodeDom.Compiler;
+using System.Xml;
 using Microsoft.CSharp;
 using CalradiaForge.Mod;
 
@@ -22,6 +23,7 @@ namespace CalradiaForge.Tests
             test("Campaign rule builder restores its draft after the Gauntlet view model is constructed", TestRouteLoadsDraftAfterConstruction);
             test("Campaign rule builder restores the exact draft after explicit save and a new view model", TestViewModelSaveRestoresDraftAfterNewInstance);
             test("Campaign rule builder first visit shows an unsaved starter rule", TestMissingDraftStartsWithUnsavedStarterRule);
+            test("Campaign rule builder starter identity survives reorder and removal", TestStarterIdentitySurvivesReorderAndRemoval);
             test("Campaign rule builder preview and copy remain local and complete", TestUiSurfaceContracts);
         }
 
@@ -229,7 +231,8 @@ namespace CalradiaForge.Tests
                     viewModel.ExecuteNoviceCampaignRuleBuilder();
                     if (viewModel.CampaignRuleBuilderIsEmpty || viewModel.CampaignRuleBuilderRules.Count != 1 ||
                         viewModel.CampaignRuleBuilderStatusLabel != "Unsaved starter rule." ||
-                        viewModel.CampaignRuleBuilderDraftLoadStatusLabel != "Unsaved starter rule.")
+                        viewModel.CampaignRuleBuilderDraftLoadStatusLabel != "Unsaved starter rule." ||
+                        viewModel.CampaignRuleBuilderRules[0].RowIdentityLabel != "Unsaved starter rule.")
                         throw new Exception("A first visit without a saved file must show one clearly marked in-memory starter rule.");
                     string starterId = viewModel.CampaignRuleBuilderRules[0].Id;
                     string starterEvent = viewModel.CampaignRuleBuilderSelectedEventLabel;
@@ -243,16 +246,76 @@ namespace CalradiaForge.Tests
                     if (viewModel.CampaignRuleBuilderDraftLoadStatusLabel != "Unsaved starter rule." || File.Exists(path))
                         throw new Exception("Editing the starter must preserve its unsaved first-visit state.");
 
+                    viewModel.CampaignRuleBuilderAmountText = "0";
+                    viewModel.ExecuteCampaignRuleBuilderSave();
+                    if (viewModel.CampaignRuleBuilderRules[0].RowIdentityLabel != "Unsaved starter rule." || File.Exists(path))
+                        throw new Exception("A rejected save must keep the starter marked as unsaved and must not create a draft file.");
+                    viewModel.CampaignRuleBuilderAmountText = "100";
+
                     viewModel.ExecuteCampaignRuleBuilderAdd();
                     if (viewModel.CampaignRuleBuilderRules.Count != 2 || viewModel.CampaignRuleBuilderRules[0].Id != starterId ||
-                        viewModel.CampaignRuleBuilderRules[1].Id == starterId || File.Exists(path))
+                        viewModel.CampaignRuleBuilderRules[1].Id == starterId ||
+                        viewModel.CampaignRuleBuilderRules[0].RowIdentityLabel != "Unsaved starter rule." ||
+                        viewModel.CampaignRuleBuilderRules[1].RowIdentityLabel != viewModel.CampaignRuleBuilderRules[1].Id || File.Exists(path))
                         throw new Exception("Add rule must append a second in-memory row without replacing or saving the starter.");
 
                     viewModel.ExecuteCampaignRuleBuilderSave();
                     var saved = CampaignRuleBuilderPersistence.Load(path);
                     if (!File.Exists(path) || saved.Status != CampaignRuleBuilderLoadStatus.Loaded || saved.Draft.Rules.Count != 2 ||
-                        saved.Draft.Rules[0].Id != starterId || viewModel.CampaignRuleBuilderDraftLoadStatusLabel != "Rule draft saved.")
+                        saved.Draft.Rules[0].Id != starterId || viewModel.CampaignRuleBuilderDraftLoadStatusLabel != "Rule draft saved." ||
+                        viewModel.CampaignRuleBuilderRules[0].RowIdentityLabel != starterId)
                         throw new Exception("Only explicit Save draft should persist the starter and the added rule.");
+                }
+            }
+            finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+        }
+
+        private static void TestStarterIdentitySurvivesReorderAndRemoval()
+        {
+            string directory = Path.Combine(Path.GetTempPath(), "forge-rule-builder-starter-order-" + Guid.NewGuid().ToString("N"));
+            string path = Path.Combine(directory, "campaign-rule-builder.json");
+            try
+            {
+                using (var runtime = new Runtime())
+                {
+                    var viewModel = new PanelViewModel(runtime, delegate { }, path);
+                    viewModel.ExecuteNoviceCampaignRuleBuilder();
+                    string starterId = viewModel.CampaignRuleBuilderRules[0].Id;
+
+                    viewModel.ExecuteCampaignRuleBuilderAdd();
+                    string addedId = viewModel.CampaignRuleBuilderRules[1].Id;
+                    viewModel.ExecuteCampaignRuleBuilderMoveUp();
+                    if (viewModel.CampaignRuleBuilderRules[0].Id != addedId ||
+                        viewModel.CampaignRuleBuilderRules[0].RowIdentityLabel != addedId ||
+                        viewModel.CampaignRuleBuilderRules[1].Id != starterId ||
+                        viewModel.CampaignRuleBuilderRules[1].RowIdentityLabel != "Unsaved starter rule.")
+                        throw new Exception("Reordering must keep the starter marker attached to its stable rule ID.");
+
+                    viewModel.ExecuteCampaignRuleBuilderSelectNext();
+                    viewModel.ExecuteCampaignRuleBuilderRemove();
+                    if (viewModel.CampaignRuleBuilderRules.Count != 1 ||
+                        viewModel.CampaignRuleBuilderRules[0].Id != addedId ||
+                        viewModel.CampaignRuleBuilderRules[0].RowIdentityLabel != addedId || File.Exists(path))
+                        throw new Exception("Removing the starter must leave added rules unmarked and must not save them.");
+                }
+
+                using (var emptyRuntime = new Runtime())
+                {
+                    var emptyViewModel = new PanelViewModel(emptyRuntime, delegate { }, path);
+                    emptyViewModel.ExecuteNoviceCampaignRuleBuilder();
+                    emptyViewModel.ExecuteCampaignRuleBuilderRemove();
+                    if (!emptyViewModel.CampaignRuleBuilderIsEmpty || emptyViewModel.CampaignRuleBuilderRules.Count != 0 || File.Exists(path))
+                        throw new Exception("Removing the only starter must leave an empty unsaved editor.");
+
+                    emptyViewModel.ExecuteCampaignRuleBuilderAdd();
+                    string newRuleId = emptyViewModel.CampaignRuleBuilderRules[0].Id;
+                    if (emptyViewModel.CampaignRuleBuilderRules[0].RowIdentityLabel != newRuleId)
+                        throw new Exception("A manually added rule must not inherit the removed starter marker.");
+                    emptyViewModel.ExecuteCampaignRuleBuilderSave();
+                    var saved = CampaignRuleBuilderPersistence.Load(path);
+                    if (saved.Status != CampaignRuleBuilderLoadStatus.Loaded || saved.Draft.Rules.Count != 1 ||
+                        saved.Draft.Rules[0].Id != newRuleId || emptyViewModel.CampaignRuleBuilderRules[0].RowIdentityLabel != newRuleId)
+                        throw new Exception("Saving after removing the starter must persist only the manually added rule.");
                 }
             }
             finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
@@ -417,6 +480,13 @@ namespace CalradiaForge.Tests
             string shell = File.ReadAllText("src/CalradiaForge.Mod/PanelViewModel.cs");
             string input = File.ReadAllText("src/CalradiaForge.Mod/SubModule.cs");
             string prefab = File.ReadAllText("modules/CalradiaForge/GUI/Prefabs/CalradiaForge.xml");
+            var prefabDocument = new XmlDocument();
+            prefabDocument.LoadXml(prefab);
+            XmlNode rowIdentity = prefabDocument.SelectSingleNode("//*[@Text='@RowIdentityLabel']");
+            XmlNode eventCycle = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleEventCycle']");
+            XmlNode eventDisplayLabel = prefabDocument.SelectSingleNode("//*[@Text='@CampaignRuleBuilderSelectedEventDisplayLabel']");
+            XmlNode eventHint = prefabDocument.SelectSingleNode("//*[@Text='@CampaignRuleBuilderEventChangeHintLabel']");
+            XmlNode eventSurface = prefabDocument.SelectSingleNode("//*[@Id='CampaignRuleEvent']");
             string copy = Slice(panel, "public void ExecuteCampaignRuleBuilderCopy()", "private bool ValidateCampaignRuleBuilderAmounts");
             string clipboard = Slice(shell, "public void ExecuteClipboard()", "public void RefreshLanguage()");
             string preview = Slice(panel, "private string BuildCampaignRulePreview()", "internal sealed class CampaignRuleItemVM");
@@ -433,9 +503,19 @@ namespace CalradiaForge.Tests
             if (!prefab.Contains("Id=\"ForgeCampaignRuleAdd\"") || !prefab.Contains("Command.Click=\"ExecuteCampaignRuleBuilderAdd\"") ||
                 !prefab.Contains("Text=\"@CampaignRuleBuilderRulesLabel\"") || prefab.Contains("Text=\"@CampaignRuleBuilderCatalogLabel\"") ||
                 !prefab.Contains("Id=\"ForgeCampaignRuleDraftLoadState\"") || !prefab.Contains("Text=\"@CampaignRuleBuilderDraftLoadStatusLabel\"") ||
+                !prefab.Contains("Text=\"@RowIdentityLabel\"") ||
                 !prefab.Contains("Id=\"ForgeCampaignRuleEventCycle\"") || !prefab.Contains("Command.Click=\"ExecuteCampaignRuleBuilderCycleEvent\"") ||
-                !prefab.Contains("Text=\"@CampaignRuleBuilderEventLabel\""))
-                throw new Exception("The rule list, load state, and event-cycle control must be explicit in the Gauntlet surface.");
+                !prefab.Contains("Text=\"@CampaignRuleBuilderEventLabel\"") ||
+                !prefab.Contains("Text=\"@CampaignRuleBuilderSelectedEventDisplayLabel\"") ||
+                !prefab.Contains("Text=\"@CampaignRuleBuilderEventChangeHintLabel\"") ||
+                !panel.Contains("CampaignRuleBuilderEventChangeHintLabel => T(\"Changing the event clears both condition groups.\")"))
+                throw new Exception("The starter row and its cycling event must be clearly identified in the Gauntlet surface.");
+            if (rowIdentity == null || eventCycle == null || eventHint == null || eventSurface == null ||
+                eventCycle.Attributes["Command.Click"]?.Value != "ExecuteCampaignRuleBuilderCycleEvent" ||
+                eventDisplayLabel?.ParentNode?.ParentNode != eventCycle ||
+                eventSurface.Attributes["SuggestedHeight"]?.Value != "87" ||
+                eventHint.Attributes["Text"]?.Value != "@CampaignRuleBuilderEventChangeHintLabel")
+                throw new Exception("The parsed Gauntlet prefab must bind the starter identity and the event-loss warning to the expected controls.");
         }
 
         private static string Slice(string source, string start, string end)

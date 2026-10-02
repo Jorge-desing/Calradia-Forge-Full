@@ -109,6 +109,20 @@ def main() -> None:
         campaign_rules[source] = translations
     if not campaign_rules:
         raise ValueError("Campaign Rule Builder translation source is empty")
+    compact_campaign_ui_keys = (
+        "Unreadable draft; preserved until save.",
+        "Draft over 64 KiB; preserved until save.",
+        "Damaged draft; preserved until save.",
+        "Unsupported draft version; preserved until save.",
+        "Changing the event clears both condition groups.",
+    )
+    for source in compact_campaign_ui_keys:
+        translations = campaign_rules.get(source)
+        if translations is None:
+            raise ValueError(f"Campaign Rule Builder is missing concise UI text: {source!r}")
+        long_values = {language: len(value) for language, value in translations.items() if len(value) > 48}
+        if long_values:
+            raise ValueError(f"Campaign Rule Builder UI text exceeds the 48-character layout budget for {source!r}: {long_values}")
     rule_required_texts = set()
     for line in (panel_source + "\n" + rule_ui_source).splitlines():
         if "CampaignRuleBuilder" in line or "NoviceCampaignRuleBuilder" in line:

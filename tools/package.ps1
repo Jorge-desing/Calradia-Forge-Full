@@ -231,6 +231,9 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Native UI and manifest generation failed.' }
     }
 
+    & $pythonPath tools/regenerate_language_resources.py
+    if ($LASTEXITCODE -ne 0) { throw 'Native Bannerlord localization resource generation failed.' }
+
     dotnet build CalradiaForge.sln -c Release --no-restore -v:minimal
     if ($LASTEXITCODE -ne 0) { throw 'Release build failed.' }
 

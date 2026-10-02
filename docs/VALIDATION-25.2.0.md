@@ -43,3 +43,25 @@ Extracted from `artifacts/package-sha256-2520.txt`:
 - `CalradiaForge-Modules-25.2.0.zip`: `EBC5E959175503A1AED75B4A879C01CF2E0BF2BEC1F7F848E4CE77104C45888A`
 - `CalradiaForge-Source-SDK-25.2.0.zip`: `979617F0F5F05562E42749D884F00130C46F33D137115647EAD207A3B91318BB`
 - `CalradiaForge-Desktop-25.2.0.zip`: `56D3B5D994BF7B6225BACE7A192E69F16C0ADEA077199CADCBF6CA36FF4BD471`
+
+## Follow-up validation — 2026-10-02
+
+This is a separate follow-up run on version 25.2.0; the product version and public SDK API were not changed. It covers the Campaign Rule Builder starter-row/event affordance and the generator/pipeline fixes that keep Gauntlet bindings and localized resources intact after packaging.
+
+### Passed verification
+
+- Release build completed with 0 warnings and 0 errors. The Client and Modding Kit editor profiles both compiled during deployment.
+- `tools/verify_stateless_behavior.ps1`: all four acceptance checks passed.
+- `tools/audit_gauntlet_ui.py`: PASS, 0 errors and 0 warnings.
+- `tools/audit_localization.py`: PASS; 13 native languages with 747 keys each, including 71 Campaign Rule Builder keys.
+- `tools/Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul`: all selected suites passed. Campaign Rule Builder regressions cover first-visit starter identity, reorder/removal, save/reload, generated behavior compilation, and local preview/copy. The WPF render suite passed 295 cases; ForgeWeave passed 73 tests; Desktop MVVM passed 65 tests.
+- `tools/package.ps1`: the three 25.2.0 archives passed the archive audit. Independent SHA-256 checks matched `artifacts/package-sha256-2520.txt`.
+- Steam deployment completed to Client and Modding Kit profiles with backups. The installed prefab, English and Spanish language resources, and Client assembly matched their workspace hashes. The Steam runtime TPAC remained unchanged at `8899A48A407591ADA53573EFC0DD699EA47D2A30F32A0C12C1875003F7993047`.
+- Bannerlord launched through the documented Steam path and reached the 1920×1080 main menu. The available Computer Use session captured the game window, but F10 did not reveal the Forge panel and arrow input did not change the menu selection. Therefore the in-game panel, keyboard interaction, and the requested smaller layouts are **not verified** in this run. The game was closed afterward.
+- TPAC header/table structural preflight passed. Deep TPAC parsing was skipped because TpacTool and the local native fixture were unavailable; no TPAC import was attempted.
+
+### Follow-up package SHA-256
+
+- `CalradiaForge-Modules-25.2.0.zip`: `CE75B6B186D4D26DD1113BB2A02294317EF5B9353929EAF805DAEF8AEA868E48`
+- `CalradiaForge-Source-SDK-25.2.0.zip`: `417C8215289EE64319E4C9F838CEE4B17C640D8903ECDE32B4BD3A59119660FF`
+- `CalradiaForge-Desktop-25.2.0.zip`: `B49CA3A85944DCCAA2580DF3819C842B8DB95174FC4AD92CAB603C74FF3F71B5`

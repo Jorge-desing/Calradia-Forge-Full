@@ -669,7 +669,7 @@ rule_list=E.SubElement(E.SubElement(rule_left_clip,'Children'),'ListPanel',Id='F
 rule_template=E.SubElement(rule_list,'ItemTemplate')
 rule_entry=E.SubElement(rule_template,'ButtonWidget',Id='ForgeCampaignRuleRow',IsFocusable='true',IsSelected='@IsSelected',DoNotPassEventsToChildren='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='54',MarginBottom='4',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteSelect'})
 rule_entry_children=E.SubElement(rule_entry,'Children')
-E.SubElement(rule_entry_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='18',MarginLeft='8',MarginRight='8',MarginTop='2',Brush='CalradiaForge.Gold',Text='@Id',**{'Brush.FontSize':'12'})
+E.SubElement(rule_entry_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='18',MarginLeft='8',MarginRight='8',MarginTop='2',Brush='CalradiaForge.Gold',Text='@RowIdentityLabel',**{'Brush.FontSize':'12'})
 E.SubElement(rule_entry_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='30',MarginLeft='8',MarginRight='8',MarginTop='20',Brush='CalradiaForge.ButtonText',Text='@Summary',ClipContents='true',**{'Brush.FontSize':'13'})
 scrollbar(rule_left_children,'ForgeCampaignRuleLeftScrollbar',121,52,12)
 E.SubElement(rule_left_children,'TextWidget',Id='ForgeCampaignRuleEmpty',IsVisible='@CampaignRuleBuilderIsEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='44',MarginLeft='12',MarginRight='12',MarginTop='125',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderEmptyLabel',ClipContents='true',**{'Brush.FontSize':'14'})
@@ -688,15 +688,20 @@ rule_right_items=E.SubElement(rule_right_content,'Children')
 E.SubElement(rule_right_items,'TextWidget',Id='ForgeCampaignRuleNoSelection',IsVisible='@CampaignRuleBuilderIsEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='42',MarginLeft='4',MarginRight='6',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderEmptyLabel',ClipContents='true',**{'Brush.FontSize':'15'})
 
 def rule_cycle_row(label_binding, value_binding, command, widget_id):
-    row=E.SubElement(rule_right_items,'Widget',Id=widget_id,IsVisible='@CampaignRuleBuilderHasSelection',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='67',MarginBottom='3')
+    is_event = widget_id == 'CampaignRuleEvent'
+    row_height = '87' if is_event else '67'
+    row=E.SubElement(rule_right_items,'Widget',Id=widget_id,IsVisible='@CampaignRuleBuilderHasSelection',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight=row_height,MarginBottom='3')
     row_children=E.SubElement(row,'Children')
     E.SubElement(row_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='20',MarginLeft='3',MarginRight='6',Brush='CalradiaForge.Muted',Text='@'+label_binding,**{'Brush.FontSize':'13'})
-    control=button(row_children,widget_id+'Cycle','@'+value_binding,460,height=38,margin_right=0)
+    value_label_binding = 'CampaignRuleBuilderSelectedEventDisplayLabel' if is_event else value_binding
+    control=button(row_children,widget_id+'Cycle','@'+value_label_binding,460,height=38,margin_right=0)
     control.set('WidthSizePolicy','StretchToParent')
     control.set('MarginLeft','3')
     control.set('MarginRight','6')
     control.set('MarginTop','23')
     control.set('Command.Click',command)
+    if is_event:
+        E.SubElement(row_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='18',MarginLeft='3',MarginRight='6',MarginTop='64',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderEventChangeHintLabel',ClipContents='true',**{'Brush.FontSize':'12'})
 
 rule_cycle_row('CampaignRuleBuilderEventLabel','CampaignRuleBuilderSelectedEventLabel','ExecuteCampaignRuleBuilderCycleEvent','CampaignRuleEvent')
 rule_cycle_row('CampaignRuleBuilderActionLabel','CampaignRuleBuilderSelectedActionLabel','ExecuteCampaignRuleBuilderCycleAction','CampaignRuleAction')
