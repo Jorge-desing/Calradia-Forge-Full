@@ -151,6 +151,7 @@ namespace CalradiaForge.Tests
             if (Count(code, "HeroGainedSkill.AddNonSerializedListener") != 1) throw new Exception("Expected one event subscription.");
             if (!code.Contains("skill != null && changeAmount >= 10") || !code.Contains(" || (hero == Hero.MainHero)")) throw new Exception("AND/OR conditions missing.");
             if (!code.Contains("finally { _executing = false; }") || !code.Contains("public override void SyncData(IDataStore dataStore) { }") || code.Contains("SaveableTypeDefiner")) throw new Exception("Stateless reentrancy contract missing.");
+            if (!package.Integration.Contains("TaleWorlds.CampaignSystem.CampaignGameStarter") || !package.Integration.Contains("YOUR_MOD_NAMESPACE.CampaignBehaviors.GeneratedCampaignRulesBehavior")) throw new Exception("Integration must fully qualify the game starter and generated behavior types.");
             if (!package.FullText.Contains(package.BehaviorCode) || !package.FullText.Contains(package.Integration) || !package.FullText.Contains(package.ValidationReport)) throw new Exception("Incomplete package copy.");
             var dailyHeroRule = CampaignRuleBuilderKinds.CreateRule();
             dailyHeroRule.EventId = "DailyTickHeroEvent";
@@ -158,10 +159,11 @@ namespace CalradiaForge.Tests
             dailySettlementRule.EventId = "DailyTickSettlementEvent";
             if (!CampaignRuleBuilderGenerator.TryGenerate(new CampaignRuleBuilderDraft { Rules = new List<CampaignRuleBuilderRule> { dailyHeroRule, dailySettlementRule } }, out var cadencePackage, out errors))
                 throw new Exception(string.Join("; ", errors));
-            if (!cadencePackage.ValidationReport.Contains("Each action runs once for every matching event occurrence.") ||
+            if (!cadencePackage.ValidationReport.Contains("Each matching event occurrence is evaluated once.") ||
+                !cadencePackage.ValidationReport.Contains("Synchronous callbacks that re-enter this behavior while an action is running are skipped to prevent action loops.") ||
                 !cadencePackage.ValidationReport.Contains("DailyTickHeroEvent evaluates the rule for the event's hero") ||
                 !cadencePackage.ValidationReport.Contains("DailyTickSettlementEvent evaluates the rule for the event's settlement"))
-                throw new Exception("Generated validation must explain per-occurrence and per-entity event cadence.");
+                throw new Exception("Generated validation must explain per-occurrence cadence, reentrancy, and per-entity event behavior.");
             var clanRule = CampaignRuleBuilderKinds.CreateRule();
             clanRule.EventId = "OnClanCreatedEvent";
             clanRule.ActionId = "influence";
@@ -209,7 +211,7 @@ namespace CalradiaForge.Tests
                     if (viewModel.CampaignRuleBuilderRules.Count != 0) throw new Exception("Draft loading must wait until the route is opened after the Gauntlet view model is bound.");
                     viewModel.ExecuteNoviceCampaignRuleBuilder();
                     if (viewModel.CampaignRuleBuilderRules.Count != 1 || viewModel.CampaignRuleBuilderIsEmpty) throw new Exception("Opening the route did not restore the saved rule list.");
-                    if (viewModel.CampaignRuleBuilderRules[0].Id != rule.Id || viewModel.CampaignRuleBuilderStatusLabel != "Rule draft loaded." || viewModel.CampaignRuleBuilderDraftLoadStatusLabel != "Rule draft loaded.") throw new Exception("The restored row or load status is incorrect.");
+                    if (viewModel.CampaignRuleBuilderRules[0].Id != rule.Id || viewModel.CampaignRuleBuilderStatusLabel != "Rule draft loaded." || viewModel.CampaignRuleBuilderDraftLoadStatusLabel != "Rule draft loaded." || viewModel.CampaignRuleBuilderOperationStatusVisible) throw new Exception("The restored row or load status is incorrect.");
                     if (viewModel.CampaignRuleBuilderSelectedEventLabel != rule.EventId || viewModel.CampaignRuleBuilderAmountText != "100") throw new Exception("Opening the route did not restore the selected rule's event and amount.");
 
                     byte[] savedBytes = File.ReadAllBytes(path);
@@ -219,7 +221,7 @@ namespace CalradiaForge.Tests
                         throw new Exception("Rebinding the selected amount to its current value must not create an unsaved edit or modify the saved draft.");
 
                     viewModel.CampaignRuleBuilderAmountText = "101";
-                    if (viewModel.CampaignRuleBuilderAmountText != "101" || viewModel.CampaignRuleBuilderStatusLabel != "Unsaved draft edits." ||
+                    if (viewModel.CampaignRuleBuilderAmountText != "101" || viewModel.CampaignRuleBuilderStatusLabel != "Unsaved draft edits." || !viewModel.CampaignRuleBuilderOperationStatusVisible ||
                         viewModel.CampaignRuleBuilderDraftLoadStatusLabel != "Rule draft loaded." || !File.ReadAllBytes(path).SequenceEqual(savedBytes))
                         throw new Exception("A real amount edit must be marked unsaved without changing the persisted draft.");
 
@@ -569,9 +571,10 @@ namespace CalradiaForge.Tests
                     string netstandardFacade = Path.Combine(gameBin, "mono", "lib", "mono", "4.7.2-api", "Facades", "netstandard.dll");
                     if (!File.Exists(netstandardFacade)) throw new Exception("The installed Bannerlord net472 netstandard facade is required for generated-code compilation.");
                     parameters.ReferencedAssemblies.Add(netstandardFacade);
-                    var result = provider.CompileAssemblyFromSource(parameters, package.BehaviorCode);
+                    string integrationProbe = "namespace YOUR_MOD_NAMESPACE { public sealed class GeneratedIntegrationProbe { public void Register(object gameStarterObject) {\n" + package.Integration + "\n} } }";
+                    var result = provider.CompileAssemblyFromSource(parameters, package.BehaviorCode, integrationProbe);
                     var failures = result.Errors.Cast<CompilerError>().Where(e => !e.IsWarning).Select(e => e.ToString()).ToArray();
-                    if (failures.Length > 0) throw new Exception("Combination batch " + start + ": " + string.Join(Environment.NewLine, failures));
+                    if (failures.Length > 0) throw new Exception("Combination batch " + start + " including SubModule integration: " + string.Join(Environment.NewLine, failures));
                 }
             }
         }
@@ -581,6 +584,7 @@ namespace CalradiaForge.Tests
             string panel = File.ReadAllText("src/CalradiaForge.Mod/PanelViewModel.CampaignRules.cs");
             string shell = File.ReadAllText("src/CalradiaForge.Mod/PanelViewModel.cs");
             string input = File.ReadAllText("src/CalradiaForge.Mod/SubModule.cs");
+            string assetGenerator = File.ReadAllText("tools/generate_assets.py");
             string prefab = File.ReadAllText("modules/CalradiaForge/GUI/Prefabs/CalradiaForge.xml");
             var prefabDocument = new XmlDocument();
             prefabDocument.LoadXml(prefab);
@@ -589,6 +593,10 @@ namespace CalradiaForge.Tests
             XmlNode eventDisplayLabel = prefabDocument.SelectSingleNode("//*[@Text='@CampaignRuleBuilderSelectedEventDisplayLabel']");
             XmlNode eventHint = prefabDocument.SelectSingleNode("//*[@Text='@CampaignRuleBuilderEventChangeHintLabel']");
             XmlNode eventSurface = prefabDocument.SelectSingleNode("//*[@Id='CampaignRuleEvent']");
+            XmlNode draftLoadState = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleDraftLoadState']");
+            XmlNode operationStatus = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleStatus']");
+            XmlNode statusGroup = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleStatusGroup']");
+            XmlNode actionDeck = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleActionDeck']");
             XmlNode generateButton = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleGenerate']");
             XmlNode emptyState = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleEmpty']");
             XmlNode orderPrevious = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRulePrevious']");
@@ -608,6 +616,8 @@ namespace CalradiaForge.Tests
                 throw new Exception("Sample preview must evaluate only local draft data and never invoke campaign actions.");
             if (!prefab.Contains("Id=\"ForgeCampaignRuleRow\"") || !input.Contains("ExecuteCampaignRuleBuilderSelectIndex(rowIndex)"))
                 throw new Exception("Every ordered rule row must be reachable through Tab and Enter.");
+            if (!assetGenerator.Contains("Id='ForgeCampaignRuleStatusGroup'") || !assetGenerator.Contains("Id='ForgeCampaignRuleStatus',IsVisible='@CampaignRuleBuilderOperationStatusVisible'"))
+                throw new Exception("The asset generator must preserve the non-duplicated draft status layout when regenerating the Gauntlet prefab.");
             if (!prefab.Contains("Id=\"ForgeCampaignRuleAdd\"") || !prefab.Contains("Command.Click=\"ExecuteCampaignRuleBuilderAdd\"") ||
                 !prefab.Contains("Text=\"@CampaignRuleBuilderRulesLabel\"") || prefab.Contains("Text=\"@CampaignRuleBuilderCatalogLabel\"") ||
                 !prefab.Contains("Id=\"ForgeCampaignRuleDraftLoadState\"") || !prefab.Contains("Text=\"@CampaignRuleBuilderDraftLoadStatusLabel\"") ||
@@ -624,6 +634,7 @@ namespace CalradiaForge.Tests
                 !panel.Contains("[DataSourceProperty] public bool CampaignRuleBuilderCannotAddConditionB"))
                 throw new Exception("The explicitly created rule identity and Generate availability must be bound by the ViewModel.");
             if (rowIdentity == null || eventCycle == null || eventHint == null || eventSurface == null || generateButton == null || emptyState == null || orderPrevious == null || orderRemove == null || addConditionA == null || addConditionB == null ||
+                draftLoadState == null || operationStatus == null || statusGroup == null || actionDeck == null ||
                 eventCycle.Attributes["Command.Click"]?.Value != "ExecuteCampaignRuleBuilderCycleEvent" ||
                 generateButton.Attributes["IsDisabled"]?.Value != "@CampaignRuleBuilderCannotGenerate" ||
                 emptyState.Attributes["IsVisible"]?.Value != "@CampaignRuleBuilderIsEmpty" ||
@@ -631,10 +642,15 @@ namespace CalradiaForge.Tests
                 orderRemove.Attributes["IsDisabled"]?.Value != "@CampaignRuleBuilderCannotSelect" ||
                 addConditionA.Attributes["IsDisabled"]?.Value != "@CampaignRuleBuilderCannotAddConditionA" ||
                 addConditionB.Attributes["IsDisabled"]?.Value != "@CampaignRuleBuilderCannotAddConditionB" ||
+                draftLoadState.Attributes["Text"]?.Value != "@CampaignRuleBuilderDraftLoadStatusLabel" ||
+                operationStatus.Attributes["Text"]?.Value != "@CampaignRuleBuilderStatusLabel" ||
+                operationStatus.Attributes["IsVisible"]?.Value != "@CampaignRuleBuilderOperationStatusVisible" ||
+                draftLoadState.ParentNode?.ParentNode != statusGroup || operationStatus.ParentNode?.ParentNode != statusGroup ||
+                statusGroup.ParentNode?.ParentNode != actionDeck ||
                 eventDisplayLabel?.ParentNode?.ParentNode != eventCycle ||
                 eventSurface.Attributes["SuggestedHeight"]?.Value != "87" ||
                 eventHint.Attributes["Text"]?.Value != "@CampaignRuleBuilderEventChangeHintLabel")
-                throw new Exception("The parsed Gauntlet prefab must bind empty state, disabled generation, rule identity, and event-loss warning correctly.");
+                throw new Exception("The parsed Gauntlet prefab must bind empty state, disabled generation, rule identity, visible draft provenance, and event-loss warning correctly.");
         }
 
         private static string Slice(string source, string start, string end)

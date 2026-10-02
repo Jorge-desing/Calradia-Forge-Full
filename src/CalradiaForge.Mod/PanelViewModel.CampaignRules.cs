@@ -44,6 +44,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string CampaignRuleBuilderCountLabel => _campaignRuleBuilderRules.Count.ToString(CultureInfo.InvariantCulture) + " / " + CampaignRuleBuilderKinds.MaximumRules.ToString(CultureInfo.InvariantCulture);
         [DataSourceProperty] public string CampaignRuleBuilderStatusLabel => T(_campaignRuleBuilderStatusKey);
         [DataSourceProperty] public string CampaignRuleBuilderDraftLoadStatusLabel => T(_campaignRuleBuilderDraftLoadStatusKey);
+        [DataSourceProperty] public bool CampaignRuleBuilderOperationStatusVisible => !string.Equals(_campaignRuleBuilderStatusKey, _campaignRuleBuilderDraftLoadStatusKey, StringComparison.Ordinal);
         [DataSourceProperty] public string CampaignRuleBuilderTitleLabel => T("Campaign Rule Builder");
         [DataSourceProperty] public string CampaignRuleBuilderEmptyLabel => T("Add a rule to begin. The preview uses sample data only.");
         [DataSourceProperty] public string CampaignRuleBuilderRulesLabel => T("Rule order");
@@ -140,7 +141,7 @@ namespace CalradiaForge.Mod
             }
             _campaignRuleBuilderStatusKey = _campaignRuleBuilderDraftLoadStatusKey;
             RebuildCampaignRuleBuilderRules();
-            foreach (var name in new[] { nameof(CampaignRuleBuilderRules), nameof(CampaignRuleBuilderIsEmpty), nameof(CampaignRuleBuilderCanAdd), nameof(CampaignRuleBuilderAtCapacity), nameof(CampaignRuleBuilderCanGenerate), nameof(CampaignRuleBuilderCannotGenerate), nameof(CampaignRuleBuilderCannotSelect), nameof(CampaignRuleBuilderCountLabel), nameof(CampaignRuleBuilderStatusLabel), nameof(CampaignRuleBuilderDraftLoadStatusLabel) }) OnPropertyChanged(name);
+            foreach (var name in new[] { nameof(CampaignRuleBuilderRules), nameof(CampaignRuleBuilderIsEmpty), nameof(CampaignRuleBuilderCanAdd), nameof(CampaignRuleBuilderAtCapacity), nameof(CampaignRuleBuilderCanGenerate), nameof(CampaignRuleBuilderCannotGenerate), nameof(CampaignRuleBuilderCannotSelect), nameof(CampaignRuleBuilderCountLabel), nameof(CampaignRuleBuilderStatusLabel), nameof(CampaignRuleBuilderDraftLoadStatusLabel), nameof(CampaignRuleBuilderOperationStatusVisible) }) OnPropertyChanged(name);
         }
 
         private void RebuildCampaignRuleBuilderRules()
@@ -427,6 +428,7 @@ namespace CalradiaForge.Mod
         {
             _campaignRuleBuilderStatusKey = status ?? string.Empty;
             OnPropertyChanged(nameof(CampaignRuleBuilderStatusLabel));
+            OnPropertyChanged(nameof(CampaignRuleBuilderOperationStatusVisible));
         }
 
         private void RefreshCampaignRuleBuilderRows()

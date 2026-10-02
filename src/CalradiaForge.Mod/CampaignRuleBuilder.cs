@@ -243,9 +243,9 @@ namespace CalradiaForge.Mod
             var code = BuildCode(normalized);
             ValidateCodeContract(normalized, code, errors);
             if (errors.Count > 0) return false;
-            const string integration = "// SubModule.OnGameStart: register exactly once for a campaign game.\nif (gameStarterObject is CampaignGameStarter campaignStarter)\n    campaignStarter.AddBehavior(new GeneratedCampaignRulesBehavior());\n// Do not also add AutoRegisterBehavior to the generated class.\n// The designer only emits text; it does not register or execute these rules.";
+            const string integration = "// SubModule.OnGameStart: register exactly once for a campaign game.\nTaleWorlds.CampaignSystem.CampaignGameStarter campaignStarter = gameStarterObject as TaleWorlds.CampaignSystem.CampaignGameStarter;\nif (campaignStarter != null)\n    campaignStarter.AddBehavior(new YOUR_MOD_NAMESPACE.CampaignBehaviors.GeneratedCampaignRulesBehavior());\n// Do not also add AutoRegisterBehavior to the generated class.\n// The designer only emits text; it does not register or execute these rules.";
             var eventIds = normalized.Rules.Select(r => r.EventId).Distinct(StringComparer.Ordinal).ToArray();
-            string report = "Validated " + normalized.Rules.Count + " rule(s), " + eventIds.Length + " unique event subscription(s). Each action runs once for every matching event occurrence. Conditions use AND within groups and OR between groups.";
+            string report = "Validated " + normalized.Rules.Count + " rule(s), " + eventIds.Length + " unique event subscription(s). Each matching event occurrence is evaluated once. Synchronous callbacks that re-enter this behavior while an action is running are skipped to prevent action loops. Conditions use AND within groups and OR between groups.";
             if (eventIds.Contains("DailyTickHeroEvent", StringComparer.Ordinal))
                 report += " DailyTickHeroEvent evaluates the rule for the event's hero; actions run only when conditions match, so player-targeted rewards may repeat across matching hero events.";
             if (eventIds.Contains("DailyTickSettlementEvent", StringComparer.Ordinal))
