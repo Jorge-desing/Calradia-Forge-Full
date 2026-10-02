@@ -677,6 +677,7 @@ rule_order_actions=E.SubElement(E.SubElement(rule_left_children,'ListPanel',Id='
 for command,glyph,label,width,handler in [('CampaignRulePrevious','‹','CampaignRuleBuilderPreviousLabel',52,'ExecuteCampaignRuleBuilderSelectPrevious'),('CampaignRuleNext','›','CampaignRuleBuilderNextLabel',52,'ExecuteCampaignRuleBuilderSelectNext'),('CampaignRuleUp','↑','CampaignRuleBuilderMoveUpLabel',48,'ExecuteCampaignRuleBuilderMoveUp'),('CampaignRuleDown','↓','CampaignRuleBuilderMoveDownLabel',48,'ExecuteCampaignRuleBuilderMoveDown'),('CampaignRuleRemove','×','CampaignRuleBuilderRemoveRuleLabel',48,'ExecuteCampaignRuleBuilderRemove')]:
     control=button(rule_order_actions,command,glyph,width,height=32,margin_right=3,hint='@'+label)
     control.set('Command.Click',handler)
+    control.set('IsDisabled','@CampaignRuleBuilderCannotSelect')
 
 rule_right=E.SubElement(rule_children,'Widget',Id='ForgeCampaignRuleRightColumn',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='340',MarginRight='12',MarginTop='12',MarginBottom='12',Sprite='BlankWhiteSquare_9',Color='#14211CFF')
 rule_right_children=E.SubElement(rule_right,'Children')
@@ -742,7 +743,9 @@ rule_actions=horizontal_row('ForgeCampaignRuleActionDeck',visibility='IsCampaign
 for command,label,width,handler in [('CampaignRuleSave','CampaignRuleBuilderSaveLabel',150,'ExecuteCampaignRuleBuilderSave'),('CampaignRuleValidate','CampaignRuleBuilderValidateLabel',150,'ExecuteCampaignRuleBuilderValidate'),('CampaignRuleGenerate','CampaignRuleBuilderGenerateLabel',150,'ExecuteCampaignRuleBuilderGenerate'),('CampaignRuleCopy','CampaignRuleBuilderCopyLabel',166,'ExecuteCampaignRuleBuilderCopy')]:
     control=button(rule_actions,command,'@'+label,width,height=42,brush='CalradiaForge.Primary' if command=='CampaignRuleGenerate' else 'CalradiaForge.TacticalButton',margin_right=8)
     control.set('Command.Click',handler)
-    if command=='CampaignRuleCopy':
+    if command=='CampaignRuleGenerate':
+        control.set('IsDisabled','@CampaignRuleBuilderCannotGenerate')
+    elif command=='CampaignRuleCopy':
         control.set('IsDisabled','@CampaignRuleBuilderCannotCopy')
 E.SubElement(rule_actions,'TextWidget',Id='ForgeCampaignRuleStatus',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='4',MarginRight='4',Brush='CalradiaForge.Muted',Text='@CampaignRuleBuilderStatusLabel',VerticalAlignment='Center',ClipContents='true',**{'Brush.FontSize':'13'})
 E.SubElement(children,'TextWidget',Id='ForgeNavigationFooter',IsVisible='@IsNavigationFooterVisible',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='27',MarginLeft='280',MarginRight='24',MarginBottom='14',VerticalAlignment='Bottom',Brush='CalradiaForge.Muted',Text='@NavigationLabel',**{'Brush.FontSize':'16'})
