@@ -65,7 +65,7 @@ internal static class ReleaseTests
             Assert(wrapper.Contains("CommitHookPlanCore(")&&wrapper.Contains("() => Log.Id")&&wrapper.Contains("() => ScreenManager.TopScreen")&&
                 wrapper.Contains("() => hookContextEpoch")&&wrapper.Contains("() => ForgeApi.Hooks")&&
                 wrapper.Contains("service.Apply(id)")&&wrapper.Contains("service.Revert(id)")&&wrapper.Contains("service.Verify(id)"));
-            Assert(core.Contains("utcNow() > plan.ExpiresAtUtc")&&core.Contains("currentSession()")&&core.Contains("currentContextEpoch()")&&
+            Assert(core.Contains("utcNow() >= plan.ExpiresAtUtc")&&core.Contains("currentSession()")&&core.Contains("currentContextEpoch()")&&
                 core.Contains("cancellationToken.IsCancellationRequested")&&core.Contains("StopHookCommit")&&core.Contains("validateSnapshots(plan, service)")&&
                 core.Contains("commit.NotAttemptedIds.Count > 0"));
             Assert(create.Contains("snapshot.State == ForgeHookState.Conflict")&&create.Contains("snapshot.State == ForgeHookState.Failed")&&
@@ -115,6 +115,13 @@ internal static class ReleaseTests
             ExpectFailure(ref pending,token,"Confirmation token is unknown, already used, or for another operation.");
             Assert(applyCalls.SequenceEqual(new[]{"single"}));
 
+            sessionRead=false;
+            pending=NewPlan(token,"expires-at-boundary");
+            utcNow=pending.ExpiresAtUtc;
+            ExpectFailure(ref pending,token,"Confirmation token expired; create a new plan.");
+            Assert(pending==null&&!sessionRead&&applyCalls.Count==1);
+
+            utcNow=new DateTime(2026,10,1,12,0,0,DateTimeKind.Utc);
             sessionRead=false;
             pending=NewPlan(token,"expired");
             utcNow=pending.ExpiresAtUtc.AddTicks(1);

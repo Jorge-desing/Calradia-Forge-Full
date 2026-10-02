@@ -37,6 +37,7 @@ namespace CalradiaForge.Desktop.Presentation
         string sessionId = string.Empty;
         string blockedReason = string.Empty;
         string status = string.Empty;
+        Func<string> statusProvider;
         bool isEligible;
         bool isBusy;
         bool isConfirmationChecked;
@@ -83,7 +84,15 @@ namespace CalradiaForge.Desktop.Presentation
         public string SessionId { get => sessionId; private set => Set(ref sessionId, value ?? string.Empty); }
         public bool IsEligible { get => isEligible; private set => Set(ref isEligible, value); }
         public string BlockedReason { get => blockedReason; private set => Set(ref blockedReason, value ?? string.Empty); }
-        public string Status { get => status; private set => Set(ref status, value ?? string.Empty); }
+        public string Status
+        {
+            get => status;
+            private set
+            {
+                statusProvider = null;
+                Set(ref status, value ?? string.Empty);
+            }
+        }
         public bool IsBusy { get => isBusy; private set { if (Set(ref isBusy, value)) RefreshCommandStates(); } }
         public bool IsConfirmationChecked { get => isConfirmationChecked; set { if (Set(ref isConfirmationChecked, value)) ConfirmPlanCommand.NotifyCanExecuteChanged(); } }
         public bool HasPendingPlan => pendingPlan != null;
@@ -170,16 +179,15 @@ namespace CalradiaForge.Desktop.Presentation
             {
                 var response = await session.SendAsync(new Request { Action = "hook-verify",
                     Argument = Json.Serialize(new HookIpcSelection { HookIds = ids.ToList() }) }, cancellation).ConfigureAwait(true);
-                if (response?.Success != true) { Status = response?.Error ?? Text("Ui.HooksVerifyFailed", "Hook verification failed."); return; }
+                if (response?.Success != true) { SetRawOrLocalizedStatus(response?.Error, "Ui.HooksVerifyFailed", "Hook verification failed."); return; }
                 if (!TryReadCommit(response.Data, "verify", SessionId, ids, out var commit, out var error)) { Status = error; return; }
-                if (commit.TokenConsumed) { Status = Text("Ui.HooksVerifyFailed", "Hook verification failed."); return; }
+                if (commit.TokenConsumed) { SetLocalizedStatus("Ui.HooksVerifyFailed", "Hook verification failed."); return; }
                 lastResult = response.Data;
-                var outcome = FormatCommitStatus(commit, ids);
-                Status = outcome;
+                SetLocalizedStatusProvider(() => FormatCommitStatus(commit, ids));
                 await RefreshSnapshotsAsync(cancellation, allowWhileBusy: true).ConfigureAwait(true);
-                if (snapshotReadSucceeded) Status = outcome;
+                if (snapshotReadSucceeded) SetLocalizedStatusProvider(() => FormatCommitStatus(commit, ids));
             }
-            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { Status = Text("Ui.HooksCancelStatus", "The operation was cancelled."); }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { SetLocalizedStatus("Ui.HooksCancelStatus", "The operation was cancelled."); }
             catch (Exception error) { Status = error.Message; }
             finally { IsBusy = false; }
         }
@@ -205,10 +213,21 @@ namespace CalradiaForge.Desktop.Presentation
             finally { IsBusy = false; }
         }
 
-        void ShowExportResult(ReportExportResult result) => Status = result.Status switch {
-            ReportExportStatus.Succeeded => Text("Ui.ReportExported", "Report exported:") + " " + result.Path,
-            ReportExportStatus.Cancelled => Text("Ui.ReportExportCancelled", "Report export was cancelled."),
-            _ => Text("Ui.ReportExportFailed", "Report export failed.") };
+        void ShowExportResult(ReportExportResult result)
+        {
+            switch (result.Status)
+            {
+                case ReportExportStatus.Succeeded:
+                    SetLocalizedStatus("Ui.ReportExported", "Report exported:", " " + result.Path);
+                    break;
+                case ReportExportStatus.Cancelled:
+                    SetLocalizedStatus("Ui.ReportExportCancelled", "Report export was cancelled.");
+                    break;
+                default:
+                    SetLocalizedStatus("Ui.ReportExportFailed", "Report export failed.");
+                    break;
+            }
+        }
 
         void RefreshFilters()
         {
@@ -232,7 +251,7 @@ namespace CalradiaForge.Desktop.Presentation
             RefreshCommandStates();
             if (!CanRefreshSnapshots(allowWhileBusy))
             {
-                Status = CapabilityMessage;
+                SetLocalizedStatusProvider(() => CapabilityMessage);
                 return;
             }
 
@@ -242,13 +261,13 @@ namespace CalradiaForge.Desktop.Presentation
 
             var ownsBusyState = !IsBusy;
             if (ownsBusyState) IsBusy = true;
-            Status = Text("Ui.HooksLoading", "Reading registered hook snapshots…");
+            SetLocalizedStatus("Ui.HooksLoading", "Reading registered hook snapshots…");
             try
             {
                 var response = await session.SendAsync(new Request { Action = "hook-snapshots" }, cancellation).ConfigureAwait(true);
                 if (response?.Success != true)
                 {
-                    ApplySnapshotFailure(response?.Error ?? Text("Ui.HooksRefreshFailed", "Hook snapshots could not be read."));
+                    ApplySnapshotFailure(response?.Error);
                     return;
                 }
 
@@ -265,15 +284,14 @@ namespace CalradiaForge.Desktop.Presentation
                 requiresSnapshotRefresh = false;
                 snapshotReadSucceeded = true;
                 snapshotsCapturedAtUtc = DateTimeOffset.UtcNow;
-                Status = IsEligible
-                    ? Text("Ui.HooksLoaded", "Hook inventory refreshed.")
-                    : (string.IsNullOrWhiteSpace(BlockedReason) ? Text("Ui.HooksBlocked", "Hook operations are unavailable in this game context.") : BlockedReason);
+                if (IsEligible) SetLocalizedStatus("Ui.HooksLoaded", "Hook inventory refreshed.");
+                else SetRawOrLocalizedStatus(BlockedReason, "Ui.HooksBlocked", "Hook operations are unavailable in this game context.");
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
                 requiresSnapshotRefresh = true;
                 snapshotReadSucceeded = false;
-                Status = Text("Ui.HooksCancelStatus", "The operation was cancelled.");
+                SetLocalizedStatus("Ui.HooksCancelStatus", "The operation was cancelled.");
             }
             catch (Exception error)
             {
@@ -292,14 +310,14 @@ namespace CalradiaForge.Desktop.Presentation
             var selectedIds = selected.Select(item => item.Id).ToArray();
             var action = operation == "apply" ? "hook-apply-plan" : "hook-revert-plan";
             IsBusy = true;
-            Status = Text("Ui.HooksPlanning", "Preparing the hook plan…");
+            SetLocalizedStatus("Ui.HooksPlanning", "Preparing the hook plan…");
             try
             {
                 var argument = Json.Serialize(new HookIpcSelection { HookIds = selectedIds.ToList() });
                 var response = await session.SendAsync(new Request { Action = action, Argument = argument }, cancellation).ConfigureAwait(true);
                 if (response?.Success != true)
                 {
-                    Status = response?.Error ?? Text("Ui.HooksPlanFailed", "The host did not create a hook plan.");
+                    SetRawOrLocalizedStatus(response?.Error, "Ui.HooksPlanFailed", "The host did not create a hook plan.");
                     return;
                 }
 
@@ -323,11 +341,11 @@ namespace CalradiaForge.Desktop.Presentation
                 Raise(nameof(HasPendingHooks));
                 expiryTimer.Start();
                 CancelPlanCommand.NotifyCanExecuteChanged();
-                Status = Text("Ui.HooksReviewConfirm", "Review the selected hooks and confirm before continuing.");
+                SetLocalizedStatus("Ui.HooksReviewConfirm", "Review the selected hooks and confirm before continuing.");
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
-                Status = Text("Ui.HooksCancelStatus", "Plan creation was cancelled; no operation was confirmed.");
+                SetLocalizedStatus("Ui.HooksCancelStatus", "Plan creation was cancelled; no operation was confirmed.");
             }
             catch (Exception error)
             {
@@ -351,7 +369,7 @@ namespace CalradiaForge.Desktop.Presentation
             requiresSnapshotRefresh = true;
             RefreshCommandStates();
             IsBusy = true;
-            Status = Text("Ui.HooksSending", "Sending the confirmed operation…");
+            SetLocalizedStatus("Ui.HooksSending", "Sending the confirmed operation…");
             try
             {
                 var response = await session.SendAsync(new Request
@@ -361,39 +379,39 @@ namespace CalradiaForge.Desktop.Presentation
                 }, cancellation).ConfigureAwait(true);
                 if (response?.Success != true)
                 {
-                    Status = Text("Ui.HooksUnknownOutcome", "The result is uncertain. Refresh snapshots before planning another operation.") + " " + (response?.Error ?? string.Empty);
+                    SetLocalizedStatus("Ui.HooksUnknownOutcome", "The result is uncertain. Refresh snapshots before planning another operation.",
+                        string.IsNullOrWhiteSpace(response?.Error) ? string.Empty : " " + response.Error);
                     return;
                 }
 
                 if (!TryReadCommit(response.Data, plan.Operation, plan.Session, plan.HookIds, out var commit, out var error))
                 {
-                    Status = Text("Ui.HooksUnknownOutcome", "The result is uncertain. Refresh snapshots before planning another operation.") + " " + error;
+                    SetLocalizedStatus("Ui.HooksUnknownOutcome", "The result is uncertain. Refresh snapshots before planning another operation.", " " + error);
                     return;
                 }
 
                 if (!commit.TokenConsumed)
                 {
-                    Status = Text("Ui.HooksUnknownOutcome", "The result is uncertain. Refresh snapshots before planning another operation.");
+                    SetLocalizedStatus("Ui.HooksUnknownOutcome", "The result is uncertain. Refresh snapshots before planning another operation.");
                     return;
                 }
 
-                var outcome = FormatCommitStatus(commit, plan.HookIds);
                 lastResult = response.Data;
                 if (commit.RequiresReconciliation)
-                    Status = Text("Ui.HooksReconciling", "The host reported an incomplete or uncertain result. Reading fresh hook snapshots before another plan.");
+                    SetLocalizedStatus("Ui.HooksReconciling", "The host reported an incomplete or uncertain result. Reading fresh hook snapshots before another plan.");
                 await RefreshSnapshotsAsync(cancellation, allowWhileBusy: true).ConfigureAwait(true);
                 if (snapshotReadSucceeded)
-                    Status = outcome;
+                    SetLocalizedStatusProvider(() => FormatCommitStatus(commit, plan.HookIds));
                 else
-                    Status = Text("Ui.HooksUnknownOutcome", "The result is uncertain. Refresh snapshots before planning another operation.") + Environment.NewLine + Status;
+                    SetLocalizedStatusWithPrevious("Ui.HooksUnknownOutcome", "The result is uncertain. Refresh snapshots before planning another operation.");
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
-                Status = Text("Ui.HooksUnknownOutcome", "Confirmation was interrupted. Its outcome is unknown; refresh snapshots manually.");
+                SetLocalizedStatus("Ui.HooksUnknownOutcome", "Confirmation was interrupted. Its outcome is unknown; refresh snapshots manually.");
             }
             catch (Exception error)
             {
-                Status = Text("Ui.HooksUnknownOutcome", "The result is uncertain. Refresh snapshots before planning another operation.") + " " + error.Message;
+                SetLocalizedStatus("Ui.HooksUnknownOutcome", "The result is uncertain. Refresh snapshots before planning another operation.", " " + error.Message);
             }
             finally
             {
@@ -407,7 +425,7 @@ namespace CalradiaForge.Desktop.Presentation
             snapshotReadSucceeded = false;
             IsEligible = false;
             BlockedReason = detail ?? string.Empty;
-            Status = BlockedReason.Length == 0 ? Text("Ui.HooksRefreshFailed", "Hook snapshots could not be read.") : BlockedReason;
+            SetRawOrLocalizedStatus(BlockedReason, "Ui.HooksRefreshFailed", "Hook snapshots could not be read.");
             ReplaceHooks(Array.Empty<HookWorkbenchRow>());
             SessionId = string.Empty;
         }
@@ -460,7 +478,19 @@ namespace CalradiaForge.Desktop.Presentation
             requiresSnapshotRefresh = true;
             snapshotReadSucceeded = false;
             RefreshCommandStates();
-            if (!IsConnected) Status = CapabilityMessage;
+            if (!IsConnected) SetLocalizedStatusProvider(() => CapabilityMessage);
+        }
+
+        public void NotifyLocalizationChanged()
+        {
+            Raise(nameof(EmptyInventoryMessage));
+            Raise(nameof(HooksSummary));
+            Raise(nameof(PlanWarning));
+            Raise(nameof(CapabilityMessage));
+            Raise(nameof(EligibilityText));
+            Raise(nameof(PlanHeading));
+            Raise(nameof(SelectionMessage));
+            RefreshLocalizedStatus();
         }
 
         async Task CancelPendingPlanAsync(CancellationToken cancellation)
@@ -476,13 +506,13 @@ namespace CalradiaForge.Desktop.Presentation
             if (!IsConnected || !session.Supports("hook-plan-cancel") ||
                 !string.Equals(plan.Session, SessionId, StringComparison.Ordinal))
             {
-                Status = Text("Ui.HooksCancelUnconfirmed", "Plan cancellation was not confirmed; the pending plan remains available.");
+                SetLocalizedStatus("Ui.HooksCancelUnconfirmed", "Plan cancellation was not confirmed; the pending plan remains available.");
                 return false;
             }
 
             var ownsBusyState = !IsBusy;
             if (ownsBusyState) IsBusy = true;
-            Status = Text("Ui.HooksPlanning", "Requesting cancellation of the pending plan…");
+            SetLocalizedStatus("Ui.HooksPlanning", "Requesting cancellation of the pending plan…");
             try
             {
                 // This is a single idempotent host request. Do not clear the local token until
@@ -494,15 +524,15 @@ namespace CalradiaForge.Desktop.Presentation
                 }, cancellation).ConfigureAwait(true);
                 if (response?.Success != true)
                 {
-                    Status = Text("Ui.HooksCancelUnconfirmed", "Plan cancellation was not confirmed; the pending plan remains available.") +
-                        (string.IsNullOrWhiteSpace(response?.Error) ? string.Empty : " " + response.Error);
+                    SetLocalizedStatus("Ui.HooksCancelUnconfirmed", "Plan cancellation was not confirmed; the pending plan remains available.",
+                        string.IsNullOrWhiteSpace(response?.Error) ? string.Empty : " " + response.Error);
                     return false;
                 }
 
                 if (!TryReadCancelPlanResult(response.Data, plan.Session, out _, out var error))
                 {
-                    Status = Text("Ui.HooksCancelUnconfirmed", "Plan cancellation was not confirmed; the pending plan remains available.") +
-                        (string.IsNullOrWhiteSpace(error) ? string.Empty : " " + error);
+                    SetLocalizedStatus("Ui.HooksCancelUnconfirmed", "Plan cancellation was not confirmed; the pending plan remains available.",
+                        string.IsNullOrWhiteSpace(error) ? string.Empty : " " + error);
                     return false;
                 }
 
@@ -510,17 +540,17 @@ namespace CalradiaForge.Desktop.Presentation
                 // Context changes and another client's newer plan can invalidate this token
                 // before refresh. A matching-session `cancelled: false` proves this exact token
                 // is no longer pending, so it is safe to discard the local preview and reconcile.
-                Status = Text("Ui.HooksCancelStatus", "The operation was cancelled or the pending plan was discarded.");
+                SetLocalizedStatus("Ui.HooksCancelStatus", "The operation was cancelled or the pending plan was discarded.");
                 return true;
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
-                Status = Text("Ui.HooksCancelUnconfirmed", "Plan cancellation was not confirmed; the pending plan remains available.");
+                SetLocalizedStatus("Ui.HooksCancelUnconfirmed", "Plan cancellation was not confirmed; the pending plan remains available.");
                 return false;
             }
             catch (Exception error)
             {
-                Status = Text("Ui.HooksCancelUnconfirmed", "Plan cancellation was not confirmed; the pending plan remains available.") + " " + error.Message;
+                SetLocalizedStatus("Ui.HooksCancelUnconfirmed", "Plan cancellation was not confirmed; the pending plan remains available.", " " + error.Message);
                 return false;
             }
             finally
@@ -554,7 +584,7 @@ namespace CalradiaForge.Desktop.Presentation
             if (IsPlanExpired)
             {
                 ClearPendingPlan();
-                Status = Text("Ui.HooksPlanExpired", "The plan expired. Refresh snapshots and create a new plan.");
+                SetLocalizedStatus("Ui.HooksPlanExpired", "The plan expired. Refresh snapshots and create a new plan.");
             }
             else ConfirmPlanCommand.NotifyCanExecuteChanged();
         }
@@ -589,6 +619,34 @@ namespace CalradiaForge.Desktop.Presentation
         }
 
         string Text(string key, string fallback) => localize(key, fallback) ?? fallback;
+
+        void SetRawOrLocalizedStatus(string raw, string key, string fallback)
+        {
+            if (!string.IsNullOrWhiteSpace(raw)) Status = raw;
+            else SetLocalizedStatus(key, fallback);
+        }
+
+        void SetLocalizedStatus(string key, string fallback, string suffix = "") =>
+            SetLocalizedStatusProvider(() => Text(key, fallback) + suffix);
+
+        void SetLocalizedStatusWithPrevious(string key, string fallback)
+        {
+            var previousStatus = statusProvider?.Invoke() ?? status;
+            SetLocalizedStatusProvider(() => Text(key, fallback) + Environment.NewLine +
+                previousStatus);
+        }
+
+        void SetLocalizedStatusProvider(Func<string> provider)
+        {
+            statusProvider = provider;
+            RefreshLocalizedStatus();
+        }
+
+        void RefreshLocalizedStatus()
+        {
+            if (statusProvider == null) return;
+            Set(ref status, statusProvider() ?? string.Empty, nameof(Status));
+        }
 
         public static bool TryReadSnapshotEnvelope(string json, out HookSnapshotEnvelope envelope, out string error)
         {

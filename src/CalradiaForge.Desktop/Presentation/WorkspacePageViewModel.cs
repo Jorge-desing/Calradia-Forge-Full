@@ -82,19 +82,28 @@ namespace CalradiaForge.Desktop.Presentation
         public WorkspaceEvidence[] Evidence { get; set; } = [];
     }
 
-    internal sealed class CopyableConsoleCommand
+    internal sealed class CopyableConsoleCommand : ObservableObject
     {
-        internal CopyableConsoleCommand(string text, int index, string accessibleNameFormat)
+        readonly Func<string, string> localize;
+        string accessibleName = string.Empty;
+
+        internal CopyableConsoleCommand(string text, int index, Func<string, string> localize)
         {
             Text = text ?? string.Empty;
             AutomationId = "CopyConsoleCommandButton" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            AccessibleName = string.Format(System.Globalization.CultureInfo.CurrentCulture,
-                accessibleNameFormat ?? "Copy console command: {0}", Text);
+            this.localize = localize ?? (_ => null);
+            RefreshLocalization();
         }
 
         public string Text { get; }
         public string AutomationId { get; }
-        public string AccessibleName { get; }
+        public string AccessibleName { get => accessibleName; private set => Set(ref accessibleName, value); }
+
+        internal void RefreshLocalization()
+        {
+            var format = localize("Ui.CopyCommandAccessibleNameFormat") ?? "Copy console command: {0}";
+            AccessibleName = string.Format(System.Globalization.CultureInfo.CurrentCulture, format, Text);
+        }
     }
 
     internal interface IWorkspacePage : IDisposable
@@ -135,9 +144,8 @@ namespace CalradiaForge.Desktop.Presentation
             this.pickInput = pickInput;
             this.clipboardWriter = clipboardWriter ?? (_ => false);
             this.localize = localize ?? (key => key);
-            var copyNameFormat = this.localize("Ui.CopyCommandAccessibleNameFormat") ?? "Copy console command: {0}";
             ConsoleCommandEntries = Array.AsReadOnly(Tool.ConsoleCommands
-                .Select((command, index) => new CopyableConsoleCommand(command, index, copyNameFormat)).ToArray());
+                .Select((command, index) => new CopyableConsoleCommand(command, index, this.localize)).ToArray());
             var studio = tool.Studio;
             IsTroopTreeVisualizer = studio == DesktopStudioKind.TroopTree;
             IsAudioMixerInspector = studio == DesktopStudioKind.AudioMixer;
@@ -341,6 +349,10 @@ namespace CalradiaForge.Desktop.Presentation
 
         public ToolDefinition Tool { get; }
         public IReadOnlyList<CopyableConsoleCommand> ConsoleCommandEntries { get; }
+        internal void RefreshLocalizedText()
+        {
+            foreach (var command in ConsoleCommandEntries) command.RefreshLocalization();
+        }
         [ForgeUiCommand("run", "Primary", cancellable: true)]
         public AsyncRelayCommand RunCommand { get; }
         [ForgeUiCommand("cancel", "Secondary", cancellable: false)]

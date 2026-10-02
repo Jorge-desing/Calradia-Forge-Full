@@ -1,6 +1,6 @@
 # Bibliotecas compartidas para autores de mods
 
-`ForgeApi.Libraries` es un registro de servicios versionados y con nombre explícito que comparten módulos de Bannerlord. Forge lo crea antes de la notificación `ForgeApi.Available` y lo invalida cuando Forge se desconecta. Se suma al registro heredado de pruebas y comandos SDK v1 y sigue disponible desde SDK v3; no sustituye al cargador de módulos de Bannerlord ni a Harmony. La versión actual de `ForgeApi.Version` es 12 e incluye la capacidad opcional del servicio de parches; esto no cambia el contrato de `ForgeApi.Libraries`. El SDK tiene como destinos `net472` y `net8.0`; el módulo del juego tiene como destino `net472`. Las operaciones del registro se ejecutan en el hilo que lo creó (el hilo del juego en Forge).
+`ForgeApi.Libraries` es un registro de servicios versionados y con nombre explícito que comparten módulos de Bannerlord. Forge lo crea antes de la notificación `ForgeApi.Available` y lo invalida cuando Forge se desconecta. Se suma al registro heredado de pruebas y comandos SDK v1 y sigue disponible desde SDK v3; no sustituye al cargador de módulos de Bannerlord ni a Harmony. La versión actual de `ForgeApi.Version` es 13; esto no cambia el contrato de `ForgeApi.Libraries`. El SDK tiene como destinos `net472` y `net8.0`; el módulo del juego tiene como destino `net472`. Las operaciones del registro se ejecutan en el hilo que lo creó (el hilo del juego en Forge).
 
 ## Modificadores de modelos y ciclo de vida del propietario
 

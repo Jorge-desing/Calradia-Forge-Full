@@ -1,5 +1,9 @@
 # Changelog
 
+## Hook plan expiry and Desktop localization integrity — 2026-10-02
+
+- Hook plans now expire at the exact deadline, with a boundary regression. The WPF resource generator preserves all 248 committed strings, adds the localized language-change status across 13 locales, rejects duplicate JSON/resource keys, and is run by the Python BAT checks. Hook Workbench status strings re-resolve on language change while raw host diagnostics remain unchanged. Release, Core 414/414, ForgeWeave 73/73, Desktop 65/65, the serial x64 hook fixture, WPF 295 cases / 308 layout passes, Python checks, and stateless verification passed locally. Distribution ZIPs are generated and audited separately by the canonical packaging gate; live Bannerlord behavior remains unverified.
+
 ## Current patch management audits — 2026-10-01 (Registry Rev103)
 
 - Agent audits follow current receipt synchronization and tracked detour verification instead of obsolete names, with five regressions rejecting missing protections. Hosted agent stateless verification uses the portable BAT gateway. Local Python checks pass; remote optional-agent validation is pending. Static management evidence does not prove concurrent-target safety.

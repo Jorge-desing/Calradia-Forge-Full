@@ -89,6 +89,21 @@
     "ja": "操作を確認",
     "ko": "작업 확인"
   },
+  "Cancel": {
+    "en": "Cancel",
+    "es": "Cancelar",
+    "pt": "Cancelar",
+    "de": "Abbrechen",
+    "fr": "Annuler",
+    "it": "Annulla",
+    "pl": "Anuluj",
+    "ru": "Отмена",
+    "tr": "İptal",
+    "zh-HANS": "取消",
+    "zh-HANT": "取消",
+    "ja": "キャンセル",
+    "ko": "취소"
+  },
   "Approve displayed hook plan": {
     "en": "Approve displayed hook plan",
     "es": "Aprobar el plan de hooks mostrado",

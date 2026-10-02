@@ -686,7 +686,7 @@ namespace CalradiaForge.Mod
             // Consume a matching token before any mutable precondition check. A denied or partial
             // commit cannot be replayed after the operator changes screens or state.
             pendingHookPlan = null;
-            if (utcNow() > plan.ExpiresAtUtc)
+            if (utcNow() >= plan.ExpiresAtUtc)
                 throw new InvalidOperationException("Confirmation token expired; create a new plan.");
             if (!string.Equals(plan.Session, currentSession(), StringComparison.Ordinal))
                 throw new InvalidOperationException("The game session changed after the plan was created.");

@@ -70,10 +70,18 @@ echo [Python] Running optional Antigravity agent unit suite...
 "%PYTHON%" -m unittest tests\test_forge_agents.py
 if errorlevel 1 goto failed
 :ci_success
+echo [Python] Regenerating native and Desktop localization catalogs from their canonical sources...
+"%PYTHON%" tools\regenerate_language_resources.py
+if errorlevel 1 goto failed
+"%PYTHON%" tools\generate_desktop_resources.py
+if errorlevel 1 goto failed
 echo [Python] Validating decorative sprites and imported icon metadata...
 call "%ROOT%\tools\Validate-CalradiaForge-DecorativeSprites.bat" --no-pause
 if errorlevel 1 goto failed
 "%PYTHON%" tools\validate_game_icon_assets.py --require-tpac
+if errorlevel 1 goto failed
+echo [Python] Auditing generated localization catalogs, including Hook Workbench translations...
+"%PYTHON%" tools\audit_localization.py
 if errorlevel 1 goto failed
 echo Calradia Forge Python checks passed.
 set "RESULT=0"

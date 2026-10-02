@@ -312,6 +312,9 @@ namespace CalradiaForge.Desktop.Presentation
                 var next = DesktopTextCatalog.ResolveCode(value);
                 if (!Set(ref languageCode, next)) return;
                 using (metrics.Start("language:" + next, "Short desktop resource change only; not a game-performance attribution.")) localization.Apply(next);
+                Raise(nameof(ActiveRouteStatus));
+                HookWorkbench.NotifyLocalizationChanged();
+                CurrentPage?.RefreshLocalizedText();
                 Raise(nameof(ActiveModderRoleLabel));
                 Raise(nameof(ActiveModderRoleHint));
                 var apiDeprecationTool = Catalog.Find(ToolDefinition.ApiDeprecationToolId);
@@ -326,7 +329,8 @@ namespace CalradiaForge.Desktop.Presentation
                 Raise(nameof(PinnedToolCategory));
                 PersistPreferences();
                 Raise(nameof(AvailableThemes));
-                Status = "Language changed to " + next;
+                Status = string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    localization.GetText("Ui.LanguageChanged", "Language changed to {0}"), next);
             }
         }
         public IReadOnlyList<DesktopThemeDescriptor> AvailableThemes => theme.AvailableThemes;

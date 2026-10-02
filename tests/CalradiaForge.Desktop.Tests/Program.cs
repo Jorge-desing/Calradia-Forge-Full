@@ -350,7 +350,7 @@ internal static class Program
     {
         var resourceKeys = new[]
         {
-            "Ui.SearchHint", "Ui.RoleLabel", "Ui.Role.All", "Ui.Role.NarrativeDialogues",
+            "Ui.SearchHint", "Ui.LanguageChanged", "Ui.RoleLabel", "Ui.Role.All", "Ui.Role.NarrativeDialogues",
             "Ui.Role.TroopCombatArtisan", "Ui.Role.EconomyWorldArchitect", "Ui.Role.CoreDevPerformanceAuditor",
             "Ui.Role.Hint.All", "Ui.Role.Hint.NarrativeDialogues", "Ui.Role.Hint.TroopCombatArtisan",
             "Ui.Role.Hint.EconomyWorldArchitect", "Ui.Role.Hint.CoreDevPerformanceAuditor", "Ui.Role.FilteredStatus"
@@ -962,8 +962,19 @@ internal static class Program
         Check(snapshotReset >= 0 && canRefresh > snapshotReset &&
               cancellationHandler.Contains("requiresSnapshotRefresh = true;") &&
               cancellationHandler.Contains("snapshotReadSucceeded = false;") &&
-              Regex.IsMatch(confirmation, @"if\s*\(snapshotReadSucceeded\)\s*Status = outcome;\s*else\s*Status = Text\(""Ui\.HooksUnknownOutcome""", RegexOptions.Singleline),
-            "A cancelled reconciliation refresh must clear the previous success flag so stale snapshots cannot overwrite the uncertain outcome.");
+              confirmation.Contains("if (snapshotReadSucceeded)") &&
+              confirmation.Contains("SetLocalizedStatusProvider(() => FormatCommitStatus(commit, plan.HookIds))") &&
+              confirmation.Contains("SetLocalizedStatusWithPrevious("),
+            "A cancelled reconciliation refresh must clear stale success state, preserve uncertainty, and keep localized status text refreshable.");
+        var localizationRefreshStart = viewModel.IndexOf("public void NotifyLocalizationChanged()", StringComparison.Ordinal);
+        var localizationRefreshEnd = viewModel.IndexOf("async Task CancelPendingPlanAsync", localizationRefreshStart, StringComparison.Ordinal);
+        var localizationRefresh = localizationRefreshStart < 0 || localizationRefreshEnd <= localizationRefreshStart
+            ? string.Empty
+            : viewModel.Substring(localizationRefreshStart, localizationRefreshEnd - localizationRefreshStart);
+        Check(localizationRefresh.Contains("RefreshLocalizedStatus();") &&
+              viewModel.Contains("statusProvider = provider;") &&
+              viewModel.Contains("Set(ref status, statusProvider() ?? string.Empty, nameof(Status));"),
+            "Hook Workbench status messages must resolve again after the selected UI language changes.");
         foreach (var key in new[] { "Ui.HookWorkbench", "Ui.HooksIdentifier", "Ui.HooksCountFormat", "Ui.HooksConfirmPrompt", "Ui.HooksCancelUnconfirmed", "Ui.HooksLifetimeWarning", "Ui.HooksApplyPartialWarning" })
             Check(Directory.GetFiles(Path.GetDirectoryName(Desktop("Resources/Strings.en.xaml"))!, "Strings.*.xaml")
                     .All(file => ReadSourceText(file).Contains("x:Key=\"" + key + "\"")),

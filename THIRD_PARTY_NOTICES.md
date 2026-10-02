@@ -12,7 +12,7 @@ Calradia Forge 25.2.0 targets Bannerlord 1.4.8. The Modules archive includes the
 | AsmResolver | 6.0.1 | MIT | Core metadata dependency of AsmResolver.DotNet. | https://github.com/Washi1337/AsmResolver |
 | MonoMod.Backports | 1.1.2 | MIT | Runtime compatibility dependency of MonoMod RuntimeDetour. | https://github.com/MonoMod/MonoMod/tree/a1b82852b2574742776af08818487b90b0bfab93 |
 | MonoMod.ILHelpers | 1.1.0 | MIT | Runtime compatibility dependency of MonoMod RuntimeDetour. | https://github.com/MonoMod/MonoMod/tree/a1b82852b2574742776af08818487b90b0bfab93 |
-| MonoMod.RuntimeDetour | 25.3.6 | MIT | Explicit in-process Prefix/Postfix hooks in the Bannerlord `net472` host. | https://github.com/MonoMod/MonoMod/tree/a74a1cf0d15c5e82dfa6ef8bbe7a131b60bed3fd |
+| MonoMod.RuntimeDetour | 25.3.6 | MIT | Explicit in-process Prefix/Postfix/Finalizer hooks and the Core-local `ILHook` transpiler backend in the Bannerlord `net472` host. | https://github.com/MonoMod/MonoMod/tree/a74a1cf0d15c5e82dfa6ef8bbe7a131b60bed3fd |
 | MonoMod.Core (includes `MonoMod.Iced.dll`) | 1.3.6 | MIT | RuntimeDetour backend support in the Bannerlord `net472` host; the embedded Iced decoder has its own notice below. | https://github.com/MonoMod/MonoMod/tree/a74a1cf0d15c5e82dfa6ef8bbe7a131b60bed3fd |
 | MonoMod.Utils | 25.0.14 | MIT | RuntimeDetour utility dependency in the Bannerlord `net472` host. | https://github.com/MonoMod/MonoMod/tree/a74a1cf0d15c5e82dfa6ef8bbe7a131b60bed3fd |
 | Mono.Cecil (includes `.Mdb`, `.Pdb`, and `.Rocks` assemblies) | 0.11.6 | MIT | Metadata dependency deployed with RuntimeDetour in the Bannerlord `net472` host. | https://github.com/jbevain/cecil/blob/master/LICENSE.txt |
@@ -21,7 +21,7 @@ Calradia Forge 25.2.0 targets Bannerlord 1.4.8. The Modules archive includes the
 
 AsmResolver parses the selected file as data on a worker thread. It does not load or execute that file. Version editing is opt-in, rejects signed and mixed-mode assemblies, preserves the original, creates a separate output and source backup, records hashes, and reopens the result for validation. It is not an IL editor or a compatibility/safety verdict.
 
-MonoMod.RuntimeDetour is referenced only for the `net472` Bannerlord host and is included in the Modules runtime dependency copy set. It is not referenced by Desktop or the `net8.0` Core target. Runtime hooks expose the supported explicit Prefix/Postfix capability; registration does not install a hook, and application remains restricted to the approved main-menu context. See the patch-engine documentation for experimental-safety limits.
+MonoMod.RuntimeDetour is referenced only for the `net472` Bannerlord host and is included in the Modules runtime dependency copy set. It is not referenced by Desktop or the `net8.0` Core target. Runtime hooks expose explicit Prefix/Postfix/Finalizer callbacks, while the advanced transpiler adapter is local to Core and backed by `ILHook`; neither MonoMod nor `ILContext` is referenced by Desktop or exposed through SDK/IPC. Registration does not install a hook, and application remains restricted to the approved main-menu context. See the patch-engine documentation for experimental-safety limits.
 
 ### MIT notices for the Bannerlord runtime dependency set
 

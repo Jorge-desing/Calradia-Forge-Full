@@ -17,6 +17,17 @@ LANGUAGES = {
     "CNs": ("zh-HANS", "简体中文"), "CNt": ("zh-HANT", "繁體中文"), "JP": ("ja", "日本語"), "KO": ("ko", "한국어"),
 }
 VERSION = __import__("re").search(r"<CalradiaForgeVersion>([^<]+)</CalradiaForgeVersion>", (ROOT / "Directory.Build.props").read_text(encoding="utf-8")).group(1)
+
+
+def reject_duplicate_json_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"Duplicate localization JSON key: {key}")
+        result[key] = value
+    return result
+
+
 SOURCE_LOCALIZED_PANEL_KEYS = (
     "Evidence",
     "Filter current output without changing the tool argument.",
@@ -76,13 +87,17 @@ def main() -> None:
         folder: {entry.attrib["key"]: entry.attrib["value"] for entry in ET.parse(ROOT / "localization" / f"{iso}.xml").getroot()}
         for folder, (iso, _) in LANGUAGES.items()
     }
-    navigation_palette = json.loads((ROOT / "localization" / "navigation-palette.json").read_text(encoding="utf-8"))
+    navigation_palette = json.loads((ROOT / "localization" / "navigation-palette.json").read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_json_keys)
+    hook_workbench = json.loads((ROOT / "localization" / "hook-workbench.json").read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_json_keys)
     required_locale_order = [iso for iso, _ in LANGUAGES.values()]
     required_locales = set(required_locale_order)
     for text, localized in navigation_palette.items():
         if localized.get("en") != text or set(localized) != required_locales or any(not value.strip() for value in localized.values()):
             raise ValueError(f"Incomplete navigation palette translation: {text}")
-    composer_source = json.loads((ROOT / "localization" / "gauntlet-composer.json").read_text(encoding="utf-8"))
+    for text, localized in hook_workbench.items():
+        if localized.get("en") != text or set(localized) != required_locales or any(not value.strip() for value in localized.values()):
+            raise ValueError(f"Incomplete Hook Workbench translation: {text}")
+    composer_source = json.loads((ROOT / "localization" / "gauntlet-composer.json").read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_json_keys)
     composer_languages = composer_source.get("languages", [])
     composer_entries = composer_source.get("entries", [])
     if composer_languages != required_locale_order:
@@ -111,7 +126,7 @@ def main() -> None:
     missing_composer_texts = composer_required_texts.difference(gauntlet_composer)
     if missing_composer_texts:
         raise ValueError("Gauntlet Composer UI text lacks source translations: " + ", ".join(sorted(missing_composer_texts)))
-    rule_source = json.loads((ROOT / "localization" / "campaign-rule-builder.json").read_text(encoding="utf-8"))
+    rule_source = json.loads((ROOT / "localization" / "campaign-rule-builder.json").read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_json_keys)
     if rule_source.get("languages") != required_locale_order:
         raise ValueError("Campaign Rule Builder translation locales differ from supported languages")
     campaign_rules: dict[str, dict[str, str]] = {}
@@ -142,7 +157,7 @@ def main() -> None:
     if missing_rule_texts:
         raise ValueError("Campaign Rule Builder UI text lacks source translations: " + ", ".join(sorted(missing_rule_texts)))
     english_by_old_id = original["EN"]
-    english_texts = list(dict.fromkeys(list(english_by_old_id.values()) + sorted(literal_keys) + sorted(navigation_palette) + sorted(gauntlet_composer) + sorted(campaign_rules)))
+    english_texts = list(dict.fromkeys(list(english_by_old_id.values()) + sorted(literal_keys) + sorted(navigation_palette) + sorted(hook_workbench) + sorted(gauntlet_composer) + sorted(campaign_rules)))
     old_ids_by_text: dict[str, list[str]] = {}
     for old_id, text in english_by_old_id.items():
         old_ids_by_text.setdefault(text, []).append(old_id)
@@ -157,7 +172,10 @@ def main() -> None:
             composer_translation = gauntlet_composer.get(text)
             campaign_translation = campaign_rules.get(text)
             palette_translation = navigation_palette.get(text)
-            if campaign_translation is not None:
+            hook_workbench_translation = hook_workbench.get(text)
+            if hook_workbench_translation is not None:
+                localized = hook_workbench_translation[iso]
+            elif campaign_translation is not None:
                 localized = campaign_translation[iso]
             elif composer_translation is not None:
                 localized = composer_translation[iso]

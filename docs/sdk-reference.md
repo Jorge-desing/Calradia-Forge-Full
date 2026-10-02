@@ -160,9 +160,9 @@ Reversion is allowed only when the target bytes still match the exact jump bytes
 
 This low-level writer remains experimental. Neither executable-page protection changes nor instruction-cache flushing coordinate other threads that may be executing the target. The current backend does not claim safe concurrent hot patching; use a disposable, isolated fixture and ensure no thread can execute the method while code is changed. Do not use this as a production patch framework. The owner field is descriptive only. Preflight hook declarations such as `Transpiler` and `Finalizer` are not implemented by the method-replacement backend.
 
-`ForgeLivePatcher` and the older detour utilities remain compatibility surfaces. `ApplyDetour(original, replacement)` uses Forge's low-level replacement path; `ApplyPatch`/`RevertPatch` only raise their corresponding request events for a registered consumer. Forge does not provide Harmony or automatically turn declarative blueprint entries into runtime hooks. Use the separate `ForgeApi.Hooks` capability for explicitly registered Prefix/Postfix callbacks; `Transpiler` and `Finalizer` remain unsupported by these backends.
+`ForgeLivePatcher` and the older detour utilities remain compatibility surfaces. `ApplyDetour(original, replacement)` uses Forge's low-level replacement path; `ApplyPatch`/`RevertPatch` only raise their corresponding request events for a registered consumer. Forge does not provide Harmony or automatically turn declarative blueprint entries into runtime hooks. The separate `ForgeApi.Hooks` capability supports explicitly registered Prefix, Postfix, and Finalizer callbacks. The Core-only local IL transpiler adapter is a separate `net472` capability; it is not part of the one-for-one replacement or legacy detour backend, and `ILContext` is not exposed through the SDK or IPC.
 
-## 7. Explicit Prefix and Postfix runtime hooks
+## 7. Explicit runtime hooks and Core-only IL transpilers
 
 The optional `IForgeHookService` capability is available as `ForgeApi.Hooks`. It is independent of the declarative Patch Blueprint registry and the one-for-one replacement service at `ForgeApi.Patches`; adding it does not add members to `IForgeRegistry`. Hosts that need to reopen the same service after reconnect can implement the separate optional `IForgeHookServiceLifecycle`. `ForgeApi.Version` is a compile-time constant, so test `ForgeApi.Hooks != null` at runtime to determine whether the connected host supplies this capability. Hook definitions and delegates stay in-process and are not transported over IPC.
 
@@ -180,7 +180,8 @@ IForgeHookHandle handle = hooks.Register(new ForgeHookDefinition
     Owner = "MyModule",
     Target = targetMethod,
     Prefix = invocation => { /* inspect or update supported arguments */ },
-    Postfix = invocation => { /* inspect or update the result */ }
+    Postfix = invocation => { /* inspect or update the result */ },
+    Finalizer = invocation => { /* preserve, replace, or suppress a pending exception */ }
 });
 
 ForgeHookOperationResult applied = handle.Apply();
@@ -189,17 +190,19 @@ ForgeHookOperationResult reverted = handle.Revert();
 // Dispose also requests a best-effort revert; retain the handle for status and diagnostics.
 ```
 
-`ForgeHookInvocation` exposes the target instance and an argument array. A Prefix can update supported arguments, set `RunOriginal = false`, and supply a type-compatible `Result`; a Postfix can inspect or replace a type-compatible result after the original returns. Callbacks execute synchronously on the thread invoking the target. Prefix callback failures fall back to the original call, and Postfix callback failures preserve the original result. Do not block these callbacks or assume they run on the game thread.
+`ForgeHookInvocation` exposes the target instance and an argument array. A Prefix can update supported arguments, set `RunOriginal = false`, and supply a type-compatible `Result`; a Postfix can inspect or replace a type-compatible result after the original returns. Callbacks execute synchronously on the thread invoking the target. Without a Finalizer, a Prefix callback failure falls back to the original call, a Postfix callback failure preserves the original result, and an original-method failure propagates without running Postfix. With a Finalizer, failures from Prefix, the original method, or Postfix are exposed as `ForgeHookInvocation.Exception`; Postfix still runs only after a successful Prefix/original path. An unchanged pending exception is rethrown with its original identity and stack, a Finalizer may replace or suppress it, and suppressing an exception from a non-void target requires a type-compatible `Result`. If the Finalizer throws while another failure is pending, both are retained in an `AggregateException`. The host callback gate can skip a Finalizer, so it is not an unconditional cleanup guarantee. Do not block callbacks or assume they run on the game thread.
 
 `GetSnapshots(owner)` returns point-in-time snapshots; the service also exposes `Apply`, `Verify`, `Revert`, `RevertOwner` and `RevertAll`. Results identify `Registered`, `Applied`, `Reverted`, `Conflict`, `Failed` or `Unsupported`. Owner is a tracking label, not an authorization boundary. `Before`, `After` and `Priority` are forwarded as MonoMod RuntimeDetour ordering metadata on the supported game target. Registration rejects unsupported signatures, including open generics, constructors, abstract methods, P/Invoke/internal-call and varargs methods, by-ref or pointer parameters/returns, byref-like types, value-type instance targets, and targets with more than 12 parameters.
 
 The built-in Bannerlord host permits Apply/Revert only on the exact main-menu screen, on the game thread, with no campaign, mission or multiplayer session active. The executable RuntimeDetour backend is included for the module's `net472` target; applying hooks on `net8.0` is unsupported. Registration remains inert on every target. On disconnect, the service attempts to revert its applied hooks in reverse order and retains unresolved records; reconnect is rejected while a hook is active, conflicted or uncertain.
 
-This runtime-hook path is experimental. Its fixture tests are serial and do not prove safety while another thread executes the target during Apply or Revert. Keep targets quiescent during changes, use isolated fixtures for validation, and do not treat this capability as a production hot-patching guarantee. Prefix/Postfix are supported; Harmony, Transpiler and Finalizer execution is not provided.
+This runtime-hook path is experimental. Its fixture tests are serial and do not prove safety while another thread executes the target during Apply or Revert. Keep targets quiescent during changes, use isolated fixtures for validation, and do not treat this capability as a production hot-patching guarantee. Forge does not provide Harmony.
+
+Advanced IL manipulation is separate from the SDK callback hooks. Only `CalradiaForge.Core` compiled for the Bannerlord `net472` target exposes `ForgeHookService.RegisterTranspiler(ForgeHookDefinition, MonoMod.Cil.ILContext.Manipulator)`, backed by MonoMod `ILHook`. A transpiler definition cannot also contain Prefix, Postfix, or Finalizer callbacks. Registration is inert; Patch Blueprint Preflight does not execute the manipulator. Apply and later IL-chain rebuilds can execute it repeatedly, including on another caller's thread after an explicitly authorized Apply. Manipulators must tolerate repeated execution and use only the supplied IL and stable configuration; they must not access live game state. `ILContext` and executable delegates never cross SDK contracts or IPC. A transformed body remains active outside the menu until explicit verified Revert/Undo; the runtime callback gate does not guard invocations of transformed IL. Keep this backend experimental: fixture coverage does not establish safe concurrent mutation or prove safety for in-flight calls.
 
 ## 8. ForgeApi contract version
 
-Contract 12 adds the optional Prefix/Postfix runtime-hook surface. Contract 11 added the separate optional method-replacement service. Because the version is a compile-time constant embedded in the consuming assembly, check the optional capability at runtime instead of using a version comparison:
+Contract 13 adds Finalizer metadata and compatibility-preserving hook snapshots to the optional runtime-hook surface. The local Core `net472` ILHook adapter remains outside the SDK callback contract. Contract 12 added the optional Prefix/Postfix runtime-hook surface, and contract 11 added the separate optional method-replacement service. Because the version is a compile-time constant embedded in the consuming assembly, check the optional capability at runtime instead of using a version comparison:
 
 ```csharp
 if (ForgeApi.Hooks == null)
@@ -208,6 +211,7 @@ if (ForgeApi.Hooks == null)
 
 | Contract | Product source | Relevant addition |
 |---|---|---|
+| 13 | 25.2.0 | Finalizer callback contract and compatible hook snapshot metadata; local Core `net472` transpiler adapter uses MonoMod `ILHook` without exposing `ILContext` through SDK or IPC. |
 | 12 | 25.2.0 | Optional `IForgeHookService` for explicitly registered Prefix/Postfix callbacks; Apply, Verify and Revert are explicit, with MonoMod RuntimeDetour on the Bannerlord `net472` target. |
 | 11 | 25.0.0 | Optional `IForgePatchService` with explicit method-replacement handles, verification and conflict-aware reversion. |
 | 10 | 25.0.0 | Explicit safe-save outcomes, bounded auto-registration reports, typed Semantic/Procedural memory reads, and generation-safe availability delivery. |

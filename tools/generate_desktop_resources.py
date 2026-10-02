@@ -1,7 +1,18 @@
 # -*- coding: utf-8 -*-
 """Generate the complete Forge-owned desktop UI catalogs from the English key set."""
+import json
 from pathlib import Path
 from xml.sax.saxutils import escape
+
+
+def reject_duplicate_json_keys(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"Duplicate JSON key in desktop extension catalog: {key}")
+        result[key] = value
+    return result
+
 
 root = Path(__file__).resolve().parents[1] / "src" / "CalradiaForge.Desktop" / "Resources"
 keys = [
@@ -41,6 +52,20 @@ catalogs = {
 "ja": ["CALRADIA FORGE", "戦術開発者ワークベンチ", "言語", "セッション", "作業領域", "ツールを検索", "必要な入力", "作業指示を実行", "キャンセル", "結果をエクスポート", "証拠をエクスポート", "証拠", "証拠台帳", "生の結果", "検証済みワークベンチ", "準備完了", "未実行", "Calradia Forge が {0} 向けに生成しました。この編集可能な開始点を確認してください。"],
 "ko": ["CALRADIA FORGE", "전술 개발자 작업대", "언어", "세션", "작업 영역", "도구 검색", "필수 입력", "작업 지시 실행", "취소", "결과 내보내기", "증거 내보내기", "증거", "증거 장부", "원시 결과", "검증된 작업대", "준비됨", "실행 안 됨", "Calradia Forge가 {0}용으로 생성했습니다. 이 편집 가능한 시작점을 검토하세요."],
 }
+extension_path = Path(__file__).resolve().parents[1] / "localization" / "desktop-extensions.json"
+extension_catalog = json.loads(extension_path.read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_json_keys)
+extension_languages = set(catalogs)
+extension_keys = sorted(extension_catalog)
+if len(keys) != len(set(keys)):
+    raise RuntimeError("Desktop base resource keys contain duplicates")
+if set(extension_catalog).intersection(keys):
+    raise RuntimeError("Desktop extension catalog duplicates an existing resource key")
+for resource_key, translations in extension_catalog.items():
+    if not isinstance(translations, dict) or set(translations) != extension_languages:
+        raise RuntimeError(f"Desktop extension has incomplete language coverage: {resource_key}")
+    if any(not isinstance(value, str) or not value.strip() for value in translations.values()):
+        raise RuntimeError(f"Desktop extension has an empty or invalid translation: {resource_key}")
+keys.extend(extension_keys)
 connect_labels = {
     "en": "Connect", "es": "Conectar", "pt": "Conectar", "de": "Verbinden", "fr": "Connecter",
     "it": "Connetti", "pl": "Połącz", "ru": "Подключить", "tr": "Bağlan",
@@ -74,6 +99,21 @@ clear_search_labels = {
     "fr": "Effacer la recherche", "it": "Cancella ricerca", "pl": "Wyczyść wyszukiwanie",
     "ru": "Очистить поиск", "tr": "Aramayı temizle", "zh-HANS": "清除搜索", "zh-HANT": "清除搜尋",
     "ja": "検索をクリア", "ko": "검색 지우기",
+}
+search_hint_labels = {
+    "en": "Search by title, identifier, or category",
+    "es": "Buscar por título, identificador o categoría",
+    "pt": "Pesquisar por título, identificador ou categoria",
+    "de": "Nach Titel, Kennung oder Kategorie suchen",
+    "fr": "Rechercher par titre, identifiant ou catégorie",
+    "it": "Cerca per titolo, identificatore o categoria",
+    "pl": "Szukaj według tytułu, identyfikatora lub kategorii",
+    "ru": "Поиск по названию, идентификатору или категории",
+    "tr": "Başlığa, tanımlayıcıya veya kategoriye göre ara",
+    "zh-HANS": "按标题、标识符或类别搜索",
+    "zh-HANT": "依標題、識別碼或類別搜尋",
+    "ja": "タイトル、識別子、カテゴリで検索",
+    "ko": "제목, 식별자 또는 범주로 검색",
 }
 additional_labels = {
     "en": ["Tools visible", "Browse files", "Browse folders", "Decorative artwork", "No evidence retained yet.", "Open command palette", "Open command palette from the Forge seal", "Close", "Maximize", "Minimize", "Restore"],
@@ -177,8 +217,10 @@ for code, values in catalogs.items():
     values.append(clear_search_labels[code])
     values.extend(additional_labels[code])
     values.extend(api_deprecation_labels[code])
+    values.extend(extension_catalog[resource_key][code] for resource_key in extension_keys)
     if len(values) != len(keys):
         raise RuntimeError(f"{code} does not match English key count")
+    values[keys.index("Ui.SearchHint")] = search_hint_labels[code]
     body = "\n".join(f' <sys:String x:Key="{key}">{escape(value)}</sys:String>' for key, value in zip(keys, values))
     (root / f"Strings.{code}.xaml").write_text(
         '<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">\n'

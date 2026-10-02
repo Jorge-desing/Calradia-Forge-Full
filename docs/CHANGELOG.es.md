@@ -1,5 +1,9 @@
 # Lista de cambios
 
+## Caducidad de planes de hooks e integridad de localización Desktop — 2026-10-02
+
+- Los planes de hooks caducan también al llegar exactamente a su límite, con una regresión de frontera. El generador WPF conserva las 248 cadenas comprometidas, añade en 13 idiomas el estado de cambio de idioma, rechaza claves JSON/de recursos duplicadas y se ejecuta desde las comprobaciones Python mediante BAT. Los estados del Hook Workbench se vuelven a traducir al cambiar de idioma, mientras que los diagnósticos originales del host permanecen intactos. Pasaron localmente Release, Core 414/414, ForgeWeave 73/73, Desktop 65/65, el fixture serial x64 de hooks, WPF con 295 casos / 308 pases de layout, las comprobaciones Python y la aceptación stateless. Los ZIP se generan y auditan aparte mediante el gate canónico de empaquetado; el comportamiento en Bannerlord en vivo sigue sin verificarse.
+
 ## Auditorías actuales de gestión de parches — 2026-10-01 (Registro Rev103)
 
 - Las auditorías de agentes siguen la sincronización de recibos y la verificación del detour registrado actuales, en lugar de nombres obsoletos, con cinco regresiones que rechazan protecciones ausentes. La verificación stateless alojada usa el gateway BAT portable. Las comprobaciones Python locales aprueban; la validación remota de agentes opcionales queda pendiente. La evidencia estática de gestión no demuestra seguridad concurrente del destino.

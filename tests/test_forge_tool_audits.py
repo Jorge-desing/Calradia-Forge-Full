@@ -1,8 +1,10 @@
 """Static tool regressions, runnable without optional cloud SDK dependencies."""
+import json
 import unittest
 from pathlib import Path
 
 from agents.tools import _patch_concurrency_issues, audit_concurrency_hazards
+from tools.regenerate_language_resources import reject_duplicate_json_keys
 
 
 class PatchManagementAuditTests(unittest.TestCase):
@@ -33,6 +35,13 @@ class PatchManagementAuditTests(unittest.TestCase):
     def test_missing_tracked_registry_lock_is_rejected(self):
         source = self.detour.replace("lock (Gate)", "lock (otherGate)")
         self.assertTrue(any("Gate" in issue for issue in _patch_concurrency_issues(self.patcher, source)))
+
+
+class LocalizationGeneratorAuditTests(unittest.TestCase):
+    def test_duplicate_keys_are_rejected_before_catalog_generation(self):
+        duplicate_json = '{"outer":{"label":"first","label":"second"}}'
+        with self.assertRaisesRegex(ValueError, "Duplicate localization JSON key: label"):
+            json.loads(duplicate_json, object_pairs_hook=reject_duplicate_json_keys)
 
 
 if __name__ == "__main__":

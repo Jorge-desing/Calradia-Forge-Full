@@ -38,6 +38,18 @@ REQUIRED_TRANSLATED_NATIVE_IDS = {
 VERSION = __import__("re").search(r"<CalradiaForgeVersion>([^<]+)</CalradiaForgeVersion>", (ROOT / "Directory.Build.props").read_text(encoding="utf-8")).group(1)
 
 
+def load_json_unique(path: Path):
+    def reject_duplicate_keys(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"{path} contains a duplicate JSON key: {key}")
+            result[key] = value
+        return result
+
+    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_keys)
+
+
 def load_native(folder: str) -> dict[str, str]:
     path = NATIVE / folder / "forge_strings.xml"
     if path.read_bytes()[:3] != b"\xef\xbb\xbf":
@@ -49,7 +61,9 @@ def main() -> None:
     english = load_native("EN")
     if not english:
         raise ValueError("English native catalog is empty")
-    navigation_palette = json.loads((CORE / "navigation-palette.json").read_text(encoding="utf-8"))
+    navigation_palette = load_json_unique(CORE / "navigation-palette.json")
+    hook_workbench = load_json_unique(CORE / "hook-workbench.json")
+    desktop_extensions = load_json_unique(CORE / "desktop-extensions.json")
     if set(navigation_palette) != REQUIRED_NAVIGATION_PALETTE_TEXTS:
         raise ValueError("Navigation palette translation source does not contain the required English strings")
     required_locale_order = list(LANGUAGES.values())
@@ -59,7 +73,17 @@ def main() -> None:
             raise ValueError(f"Navigation palette translation locales differ from supported languages: {source!r}")
         if any(not value.strip() for value in translations.values()):
             raise ValueError(f"Navigation palette contains an empty translation: {source!r}")
-    composer_source = json.loads((CORE / "gauntlet-composer.json").read_text(encoding="utf-8"))
+    for source, translations in hook_workbench.items():
+        if translations.get("en") != source or set(translations) != required_isos:
+            raise ValueError(f"Hook Workbench translation locales differ from supported languages: {source!r}")
+        if any(not value.strip() for value in translations.values()):
+            raise ValueError(f"Hook Workbench contains an empty translation: {source!r}")
+    for resource_key, translations in desktop_extensions.items():
+        if set(translations) != required_isos:
+            raise ValueError(f"Desktop resource translation locales differ from supported languages: {resource_key!r}")
+        if any(not isinstance(value, str) or not value.strip() for value in translations.values()):
+            raise ValueError(f"Desktop resource contains an empty translation: {resource_key!r}")
+    composer_source = load_json_unique(CORE / "gauntlet-composer.json")
     composer_languages = composer_source.get("languages", [])
     composer_entries = composer_source.get("entries", [])
     if composer_languages != required_locale_order:
@@ -92,7 +116,7 @@ def main() -> None:
     missing_composer_texts = composer_required_texts.difference(gauntlet_composer)
     if missing_composer_texts:
         raise ValueError("Gauntlet Composer UI text lacks source translations: " + ", ".join(sorted(missing_composer_texts)))
-    rule_source = json.loads((CORE / "campaign-rule-builder.json").read_text(encoding="utf-8"))
+    rule_source = load_json_unique(CORE / "campaign-rule-builder.json")
     if rule_source.get("languages") != required_locale_order:
         raise ValueError("Campaign Rule Builder translation locales differ from supported languages")
     campaign_rules = {}
@@ -155,6 +179,10 @@ def main() -> None:
             identifier = "forge_" + hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
             if entries.get(identifier) != translations[iso]:
                 raise ValueError(f"{folder} is missing the navigation palette translation for {source!r}")
+        for source, translations in hook_workbench.items():
+            identifier = "forge_" + hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
+            if entries.get(identifier) != translations[iso]:
+                raise ValueError(f"{folder} is missing the Hook Workbench translation for {source!r}")
         for source, translations in gauntlet_composer.items():
             identifier = "forge_" + hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
             if entries.get(identifier) != translations[iso]:
@@ -187,15 +215,30 @@ def main() -> None:
         if not resource.exists():
             raise ValueError(f"Desktop resource dictionary is missing: {resource}")
         document = ET.parse(resource)
-        keys = {node.attrib.get("{http://schemas.microsoft.com/winfx/2006/xaml}Key") for node in document.iter() if node.attrib.get("{http://schemas.microsoft.com/winfx/2006/xaml}Key")}
+        resource_keys = [
+            node.attrib["{http://schemas.microsoft.com/winfx/2006/xaml}Key"]
+            for node in document.iter()
+            if node.attrib.get("{http://schemas.microsoft.com/winfx/2006/xaml}Key")
+        ]
+        if len(resource_keys) != len(set(resource_keys)):
+            raise ValueError(f"Desktop resource dictionary {iso} contains duplicate keys")
+        resource_values = {
+            node.attrib["{http://schemas.microsoft.com/winfx/2006/xaml}Key"]: node.text or ""
+            for node in document.iter()
+            if node.attrib.get("{http://schemas.microsoft.com/winfx/2006/xaml}Key")
+        }
+        keys = set(resource_values)
         if desktop_resource_keys is None:
             desktop_resource_keys = keys
         elif keys != desktop_resource_keys:
             raise ValueError(f"Desktop resource dictionary {iso} does not have English key parity")
         if not keys:
             raise ValueError(f"Desktop resource dictionary {iso} is empty")
+        for resource_key, translations in desktop_extensions.items():
+            if resource_values.get(resource_key) != translations[iso]:
+                raise ValueError(f"Desktop resource dictionary {iso} has an incorrect translation for {resource_key}")
 
-    evidence = {"nativeLanguages": native_results, "navigationPaletteKeys": len(navigation_palette), "gauntletComposerKeys": len(gauntlet_composer), "campaignRuleBuilderKeys": len(campaign_rules), "desktopLanguages": len(required_core), "desktopKeys": len(english_keys), "desktopResourceKeys": len(desktop_resource_keys), "valid": True}
+    evidence = {"nativeLanguages": native_results, "navigationPaletteKeys": len(navigation_palette), "hookWorkbenchKeys": len(hook_workbench), "gauntletComposerKeys": len(gauntlet_composer), "campaignRuleBuilderKeys": len(campaign_rules), "desktopLanguages": len(required_core), "desktopKeys": len(english_keys), "desktopExtensionKeys": len(desktop_extensions), "desktopResourceKeys": len(desktop_resource_keys), "valid": True}
     output = ROOT / "artifacts" / f"localization-audit-{VERSION.replace('.', '')}.json"
     output.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(evidence, indent=2))

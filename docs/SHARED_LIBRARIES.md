@@ -1,6 +1,6 @@
 # Shared libraries for mod authors
 
-`ForgeApi.Libraries` is a registry for explicitly named, versioned services shared between Bannerlord modules. Forge creates it before the `ForgeApi.Available` notification and invalidates it when Forge disconnects. It is additive to the legacy SDK v1 test/command registry and remains available from SDK v3; it does not replace Bannerlord's module loader or Harmony. The current `ForgeApi.Version` is 12, including the optional patch-service capability; this does not change the `ForgeApi.Libraries` contract. The SDK targets `net472` and `net8.0`; the game module targets `net472`. Registry operations run on the registry's creating thread (the game thread in Forge).
+`ForgeApi.Libraries` is a registry for explicitly named, versioned services shared between Bannerlord modules. Forge creates it before the `ForgeApi.Available` notification and invalidates it when Forge disconnects. It is additive to the legacy SDK v1 test/command registry and remains available from SDK v3; it does not replace Bannerlord's module loader or Harmony. The current `ForgeApi.Version` is 13; this does not change the `ForgeApi.Libraries` contract. The SDK targets `net472` and `net8.0`; the game module targets `net472`. Registry operations run on the registry's creating thread (the game thread in Forge).
 
 ## Game-model modifiers and owner lifetime
 
