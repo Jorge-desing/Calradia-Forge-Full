@@ -603,6 +603,10 @@ namespace CalradiaForge.Tests
             XmlNode orderRemove = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleRemove']");
             XmlNode addConditionA = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleAddConditionA']");
             XmlNode addConditionB = prefabDocument.SelectSingleNode("//*[@Id='ForgeCampaignRuleAddConditionB']");
+            if (!shell.Contains("Tab / Shift+Tab  |  Enter") ||
+                !input.Contains("Input.IsKeyDown(InputKey.LeftShift)") ||
+                !input.Contains("Input.IsKeyDown(InputKey.RightShift)"))
+                throw new Exception("The footer must advertise Shift+Tab, and reverse focus navigation must recognize either Shift key.");
             string copy = Slice(panel, "public void ExecuteCampaignRuleBuilderCopy()", "private bool ValidateCampaignRuleBuilderAmounts");
             string clipboard = Slice(shell, "public void ExecuteClipboard()", "public void RefreshLanguage()");
             string preview = Slice(panel, "private string BuildCampaignRulePreview()", "internal sealed class CampaignRuleItemVM");

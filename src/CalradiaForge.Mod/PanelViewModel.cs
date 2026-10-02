@@ -1276,7 +1276,7 @@ namespace CalradiaForge.Mod
         {
             get
             {
-                if (keyboardFocus.Length > 0) return T("Keyboard focus") + ": " + keyboardFocus + "  |  Tab / Ctrl+Tab  |  Enter";
+                if (keyboardFocus.Length > 0) return T("Keyboard focus") + ": " + keyboardFocus + "  |  Tab / Shift+Tab  |  Enter";
                 if (current == "framework") return T("Framework") + "  |  Ctrl+1…9  |  Ctrl+←/→  |  Ctrl+F  |  Ctrl+Enter";
                 return T(CurrentName) + "  |  Ctrl+1…9  |  Ctrl+←/→  |  Ctrl+F  |  Ctrl+Enter";
             }
