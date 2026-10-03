@@ -324,6 +324,12 @@ internal static class Program
 
     static Task FocusSafeTestLauncherSurface()
     {
+        string testProject = ReadSourceText(Path.Combine(WorkspaceRoot(), "tests/CalradiaForge.Desktop.Tests/CalradiaForge.Desktop.Tests.csproj"));
+        string testLauncher = ReadSourceText(Path.Combine(WorkspaceRoot(), "tools/Run-CalradiaForge-Desktop-Tests.bat"));
+        Check(testProject.Contains("<TargetFramework>net8.0-windows</TargetFramework>") &&
+              testLauncher.Contains("bin\\Release\\net8.0-windows\\CalradiaForge.Desktop.Tests.dll"),
+            "The Desktop test BAT must launch the output for the project's declared Windows target framework.");
+
         string launcher = ReadSourceText(Path.Combine(WorkspaceRoot(), "tools/Run-CalradiaForge-Desktop-Checks-Hidden.vbs"));
         Check(launcher.Contains("Run-CalradiaForge-Tests.bat") &&
               !launcher.Contains("Test-CalradiaForge-Desktop-Uia.bat") &&
@@ -996,14 +1002,18 @@ internal static class Program
         foreach (var expected in expectations)
         {
             var page = new ToolPageViewModel(toolByStudio[expected.Studio], (_, _, _) => Task.FromResult(new WorkspaceExecutionResult()), export: _ => { });
+            page.Evidence.Add(new("Test / Baseline", "Retained", "Initial evidence sentinel."));
+            var retainedEvidence = page.Evidence.ToArray();
             var notifications = new List<string>();
             page.PropertyChanged += (_, change) => notifications.Add(change.PropertyName);
             for (var index = 1; index <= expected.Labels.Length; index++)
             {
                 notifications.Clear();
                 page.LoadPresetCommand.Execute(null);
-                Check(page.Evidence.Count == index, expected.Studio + " must append one retained evidence record per preset.");
-                var evidence = page.Evidence[index - 1];
+                Check(page.Evidence.Count == retainedEvidence.Length + index &&
+                      page.Evidence.Take(retainedEvidence.Length).SequenceEqual(retainedEvidence),
+                    expected.Studio + " must append one retained evidence record per preset without replacing initial evidence.");
+                var evidence = page.Evidence[retainedEvidence.Length + index - 1];
                 Check(evidence.Source == expected.Source && evidence.Status == "Loaded" && evidence.Detail == expected.Detail(page, index),
                     expected.Studio + " changed its preset evidence contract at cycle " + index + ".");
                 Check(page.PresetActionLabel == expected.Labels[index - 1], expected.Studio + " changed its preset label at cycle " + index + ".");

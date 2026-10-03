@@ -3,7 +3,7 @@ setlocal EnableExtensions
 set "ROOT=%~dp0.."
 set "PAUSE_ON_EXIT=1"
 for %%A in (%*) do if /I "%%~A"=="--no-pause" set "PAUSE_ON_EXIT=0"
-set "TEST_ASSEMBLY=%ROOT%\tests\CalradiaForge.Desktop.Tests\bin\Release\net8.0\CalradiaForge.Desktop.Tests.dll"
+set "TEST_ASSEMBLY=%ROOT%\tests\CalradiaForge.Desktop.Tests\bin\Release\net8.0-windows\CalradiaForge.Desktop.Tests.dll"
 
 if not exist "%TEST_ASSEMBLY%" (
     echo ERROR: Desktop test output is missing. Build the solution first.
