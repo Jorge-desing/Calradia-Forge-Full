@@ -1023,16 +1023,18 @@ def _table_playbook_literals(audit: Audit, source: str) -> dict[str, list[str]]:
         return {}
     table_source = source[table_start:table_end]
     quoted = r'"(?:\\.|[^"\\])*"'
-    fields = rf"(?:\s*{quoted}\s*,){{6}}\s*{quoted}\s*"
+    # Seven Playbook literals are followed by the two category presentation
+    # fields used by PanelViewModel's consolidated metadata catalog.
+    fields = rf"(?:\s*{quoted}\s*,){{8}}\s*{quoted}\s*"
     entry_pattern = re.compile(rf'\["(?P<category>[^"]+)"\]\s*=\s*\((?P<fields>{fields})\)\s*,?', re.DOTALL)
     entries = {}
     for match in entry_pattern.finditer(table_source):
         category = match.group("category")
         literals = [token[1:-1] for token in re.findall(quoted, match.group("fields"))]
-        if category in entries or len(literals) != 7:
+        if category in entries or len(literals) != 9:
             audit.error(f"s_catData has duplicate or incomplete Playbook category {category}")
             continue
-        entries[category] = literals
+        entries[category] = literals[:7]
     missing = PLAYBOOK_TABLE_CATEGORIES - set(entries)
     if missing:
         audit.error(f"s_catData is missing required Playbook categories: {sorted(missing)}")

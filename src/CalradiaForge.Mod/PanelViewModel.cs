@@ -4986,54 +4986,14 @@ namespace CalradiaForge.Mod
         }
 
         string GetCategoryMissionDescription(string cat)
-        {
-            switch (cat)
-            {
-                case "overview":
-                    return T("Project Initial Setup & Health: Verifies SubModule.xml manifests, module load order, dependency graph discovery, and session runtime error logs.");
-                case "inspector":
-                    return T("Live Campaign Entity Inspector: Safe, read-only inspection of active Hero, Settlement, MobileParty, and Clan instances, state snapshots, and GC heap memory metrics.");
-                case "toolkit":
-                    return T("Integration Testing & Extensibility: Non-destructive test harness, SDK extension commands, and configuration persistence without leaving the game session.");
-                case "weave":
-                    return T("ForgeWeave: Event recording and sequence replay. Patch diagnostics inspect Forge-owned hooks and patches; a compatible loaded runtime is observed read-only when available. Patch Preflight checks blueprint declarations without applying patches.");
-                case "simulate":
-                    return T("Mathematical Balance Simulators: Offline mathematical models for kingdom war viability, settlement loyalty drift, supply/demand trade, and combat casualty math.");
-                case "audit":
-                    return T("Architectural Compliance Auditor: Enforces all 36 Bannerlord modding rules, GameModel decorator chains, diagnostic telemetry dumps, and save health.");
-                case "novice":
-                    return T("Novice Modder Scaffold Hub: Interactive wizards for creating safe CampaignBehaviors, NPCCharacters.xml, QuestBase classes, Items.xml, and SubModule.xml.");
-                case "sdk":
-                    return T("Advanced Developer SDK: Surface contracts for 110+ SDK tools, bounded NPC memory inspired by CoALA concepts, and decoupled engine API bridges.");
-                default:
-                    return T("Calradia Forge In-Game Workbench: Unified modding framework and developer tooling suite for Mount & Blade II: Bannerlord.");
-            }
-        }
+            => s_catData.TryGetValue(cat ?? string.Empty, out var data)
+                ? T(data.MissionDescription)
+                : T("Calradia Forge In-Game Workbench: Unified modding framework and developer tooling suite for Mount & Blade II: Bannerlord.");
 
         string GetCategoryEngineRules(string cat)
-        {
-            switch (cat)
-            {
-                case "overview":
-                    return T("1. SubModule.xml <Id> MUST strictly match folder name in Modules/.\n2. Output DLLs must reside in bin/Win64_Shipping_Client/.\n3. Keep OnSubModuleLoad() lightweight; register campaign behaviors in OnGameStart().\n4. Never package raw TaleWorlds.*.dll assemblies or user save files in distributions.");
-                case "inspector":
-                    return T("1. Never mutate engine entities during render ticks.\n2. Never store raw Hero, Settlement, or MobileParty pointers in persistent fields; resolve by StringId via MBObjectManager.\n3. Inspection queries must be read-only; measure the complete query path before making performance claims.\n4. ForgeAgentMemory queries bounded NPC memory data; it is not a CoALA language-agent runtime.");
-                case "toolkit":
-                    return T("1. State-changing integration tests require explicit testing mode and confirmed campaign copy.\n2. Maintain deterministic test seeds for reproducibility.\n3. ModSettings must serialize safely without corrupting global game configurations.\n4. Cognitive memory export dumps bounded JSON payloads without blocking render ticks.");
-                case "weave":
-                    return T("1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener.");
-                case "simulate":
-                    return T("1. GameModel decorators must wrap _previousModel and apply ExplainedNumber deltas.\n2. For optional periodic hero work, use ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) for stable buckets. Defer only work that can wait up to 24 in-game hours, and measure before claiming a performance gain.\n3. Simulation routines must be pure, thread-safe, and free of side effects.\n4. Tactical combat formulas must respect engine casualty pipelines.");
-                case "audit":
-                    return T("1. GEMINI Rule A: 0 folders, namespaces, or classes named 'Campaign' or 'Localization'.\n2. GEMINI Rule B: 100% stateless campaign behaviors (0 SaveableTypeDefiner, empty SyncData).\n3. SaveableTypeDefiner base IDs must be >= 2,500,000.\n4. String serialization must never exceed 31KB limit (use ForgeSaveChunker).");
-                case "novice":
-                    return T("1. Double SetDialogs() Rule: MUST invoke SetDialogs() in BOTH Quest constructor AND InitializeQuestOnGameLoad().\n2. CampaignBehaviors must subscribe with AddNonSerializedListener in RegisterEvents().\n3. Custom audio must use lowercase .ogg in ModuleSounds/ and map to valid engine mixer categories.\n4. Troop XML trees must avoid circular upgrade paths.");
-                case "sdk":
-                    return T("1. Core SDK net8.0 mode must have zero hard dependencies on TaleWorlds assemblies.\n2. Shared registries must be thread-safe (ConcurrentDictionary).\n3. Agent memory facts must compute utility decay: U = 0.4*R + 0.3*F + 0.3*I.\n4. Decoupled API bridges must never retain transient engine entity pointers.");
-                default:
-                    return T("Adhere to Calradia Forge architectural constraints and TaleWorlds engine threading rules at all times.");
-            }
-        }
+            => s_catData.TryGetValue(cat ?? string.Empty, out var data)
+                ? T(data.EngineRules)
+                : T("Adhere to Calradia Forge architectural constraints and TaleWorlds engine threading rules at all times.");
 
         static string WrapPlaybookText(string text, int maxLineLength)
         {
@@ -5068,8 +5028,8 @@ namespace CalradiaForge.Mod
         }
 
         // Rev097: Consolidated from 7 identical switch(cat) methods — ~175 lines saved
-        static readonly Dictionary<string, (string PlaybookTitle, string Step1, string Step2, string Step3, string TroubleshootingTitle, string TroubleshootingAdvice, string RecommendedMacro)> s_catData
-            = new Dictionary<string, (string, string, string, string, string, string, string)>(StringComparer.Ordinal)
+        static readonly Dictionary<string, (string PlaybookTitle, string Step1, string Step2, string Step3, string TroubleshootingTitle, string TroubleshootingAdvice, string RecommendedMacro, string MissionDescription, string EngineRules)> s_catData
+            = new Dictionary<string, (string, string, string, string, string, string, string, string, string)>(StringComparer.Ordinal)
         {
             ["overview"] = (
                 "Playbook: Mod Environment & Distribution Readiness",
@@ -5078,7 +5038,9 @@ namespace CalradiaForge.Mod
                 "3. Preflight Readiness: Run cf.novice_checklist to verify zero proprietary DLLs, no raw scripts, and valid XML syntax.",
                 "Troubleshooting: Game Crash on Startup / Module Discovery Failure",
                 "Remedy: Check %ProgramData%\\Mount and Blade II Bannerlord\\logs\\rgl_log.txt. Common causes: Unmatched SubModule <Id>, missing .NET 4.7.2 assemblies, or NTFS Zone.Identifier stream on downloaded ZIP files.",
-                "Preflight Environment Audit"),
+                "Preflight Environment Audit",
+                "Project Initial Setup & Health: Verifies SubModule.xml manifests, module load order, dependency graph discovery, and session runtime error logs.",
+                "1. SubModule.xml <Id> MUST strictly match folder name in Modules/.\n2. Output DLLs must reside in bin/Win64_Shipping_Client/.\n3. Keep OnSubModuleLoad() lightweight; register campaign behaviors in OnGameStart().\n4. Never package raw TaleWorlds.*.dll assemblies or user save files in distributions."),
             ["inspector"] = (
                 "Playbook: Safe Runtime Entity & Cognitive Memory Inspection",
                 "1. Select Entity: Type Hero string ID (e.g. Hero_1) or settlement name in the search/argument field.",
@@ -5086,7 +5048,9 @@ namespace CalradiaForge.Mod
                 "3. Evaluate Salience: Execute cf.agent_memory_salience to inspect exponential decay and retrieval scores.",
                 "Troubleshooting: Memory Leak or Persistent Ghost References",
                 "Remedy: Never store Hero or Settlement pointers in static/class fields. Resolve transiently via StringId (MBObjectManager.GetObject<Hero>(id)) and purge expired semantic entries with cf.force_gc.",
-                "Hero Cognitive Diagnostic"),
+                "Hero Cognitive Diagnostic",
+                "Live Campaign Entity Inspector: Safe, read-only inspection of active Hero, Settlement, MobileParty, and Clan instances, state snapshots, and GC heap memory metrics.",
+                "1. Never mutate engine entities during render ticks.\n2. Never store raw Hero, Settlement, or MobileParty pointers in persistent fields; resolve by StringId via MBObjectManager.\n3. Inspection queries must be read-only; measure the complete query path before making performance claims.\n4. ForgeAgentMemory queries bounded NPC memory data; it is not a CoALA language-agent runtime."),
             ["toolkit"] = (
                 "Playbook: Non-Destructive Test Execution & Config Persistence",
                 "1. Enable Test Mode: Toggle Enable Testing ensuring campaign copy confirmation flag is active.",
@@ -5094,7 +5058,9 @@ namespace CalradiaForge.Mod
                 "3. Export Telemetry: Use cf.agent_memory_export to output full JSON snapshot of cognitive belief networks.",
                 "Troubleshooting: Test Engine Save Corruption Warning",
                 "Remedy: Always test on disposable sandbox save files. Verify that testing mode does not invoke dataStore.SyncData on actual game saves; use isolated memory buffers.",
-                "Safety & Save Benchmark"),
+                "Safety & Save Benchmark",
+                "Integration Testing & Extensibility: Non-destructive test harness, SDK extension commands, and configuration persistence without leaving the game session.",
+                "1. State-changing integration tests require explicit testing mode and confirmed campaign copy.\n2. Maintain deterministic test seeds for reproducibility.\n3. ModSettings must serialize safely without corrupting global game configurations.\n4. Cognitive memory export dumps bounded JSON payloads without blocking render ticks."),
             ["weave"] = (
                 "Event Replay & Patch Diagnostics",
                 "1. Enumerate Handlers: Run cf.extensions to verify active event listeners and circuit breaker health.",
@@ -5102,7 +5068,9 @@ namespace CalradiaForge.Mod
                 "3. Deterministic Replay: Replay captured execution sequences in the isolated lab to reproduce anomalies.",
                 "Troubleshooting: Shared method hooks or patch replacement integrity warning",
                 "Remedy: Run cf.patch_diagnostics to review Forge-owned hook and patch records. A compatible external runtime is observed only when already loaded; shared targets are review signals, not proof of conflict. Never throw uncaught exceptions across engine boundaries.",
-                "Event Replay & Patch Diagnostics"),
+                "Event Replay & Patch Diagnostics",
+                "ForgeWeave: Event recording and sequence replay. Patch diagnostics inspect Forge-owned hooks and patches; a compatible loaded runtime is observed read-only when available. Patch Preflight checks blueprint declarations without applying patches.",
+                "1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener."),
             ["simulate"] = (
                 "Playbook: Tactical Combat, Settlement Equilibrium & Trade Balance",
                 "1. Combat Shock Modeling: Execute cf.sim_tactics cavalry/infantry/archery to calculate momentum thresholds.",
@@ -5110,7 +5078,9 @@ namespace CalradiaForge.Mod
                 "3. Trade Pricing & Workshops: Run cf.sim_economy workshops to verify supply/demand curves and daily net gold yield.",
                 "Troubleshooting: Settlement Rebellion Avalanche or Infinite Gold Exploit",
                 "Remedy: Check loyalty equilibrium deltas; ensure culture mismatch penalty (-3) is balanced by governor/food. For workshops, verify production volume caps and wage floors to prevent runaway compounding.",
-                "Full Realm Equilibrium Audit"),
+                "Full Realm Equilibrium Audit",
+                "Mathematical Balance Simulators: Offline mathematical models for kingdom war viability, settlement loyalty drift, supply/demand trade, and combat casualty math.",
+                "1. GameModel decorators must wrap _previousModel and apply ExplainedNumber deltas.\n2. For optional periodic hero work, use ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) for stable buckets. Defer only work that can wait up to 24 in-game hours, and measure before claiming a performance gain.\n3. Simulation routines must be pure, thread-safe, and free of side effects.\n4. Tactical combat formulas must respect engine casualty pipelines."),
             ["audit"] = (
                 "Playbook: Comprehensive Architectural & Persistence Compliance",
                 "1. Full Compliance Audit: Execute cf.audit to verify all 36 Bannerlord modding rules across installed assemblies.",
@@ -5118,7 +5088,9 @@ namespace CalradiaForge.Mod
                 "3. Save Safety & Base IDs: Execute cf.audit_save to certify SaveableTypeDefiner base IDs >= 2,500,000 and 31KB chunking.",
                 "Troubleshooting: Save Game Desync / Assembly Load Exception 0x80131515",
                 "Remedy: Rule B prohibits SaveableTypeDefiner in mod behaviors. If custom structs must be saved, assign IDs >= 2.5M. For 0x80131515, unblock assemblies with Unblock-File or package script.",
-                "Master Security & Health Audit"),
+                "Master Security & Health Audit",
+                "Architectural Compliance Auditor: Enforces all 36 Bannerlord modding rules, GameModel decorator chains, diagnostic telemetry dumps, and save health.",
+                "1. GEMINI Rule A: 0 folders, namespaces, or classes named 'Campaign' or 'Localization'.\n2. GEMINI Rule B: 100% stateless campaign behaviors (0 SaveableTypeDefiner, empty SyncData).\n3. SaveableTypeDefiner base IDs must be >= 2,500,000.\n4. String serialization must never exceed 31KB limit (use ForgeSaveChunker)."),
             ["novice"] = (
                 "Playbook: Safe Scaffolding & Rapid Component Synthesis",
                 "1. Select Component: Choose Behavior, Troop XML, QuestBase, Item XML, or SubModule manifest.",
@@ -5126,7 +5098,9 @@ namespace CalradiaForge.Mod
                 "3. Generate & Copy: Click Generate or Run Novice to synthesize compliant, crash-guarded C# or XML code.",
                 "Troubleshooting: Silent Quest NPC or Unresponsive Dialogue",
                 "Remedy: In Bannerlord quests, you MUST call SetDialogs() in BOTH the constructor AND inside InitializeQuestOnGameLoad(). Omitting the second call mutes NPCs after reloading a saved game.",
-                "New Mod Boilerplate Scaffold"),
+                "New Mod Boilerplate Scaffold",
+                "Novice Modder Scaffold Hub: Interactive wizards for creating safe CampaignBehaviors, NPCCharacters.xml, QuestBase classes, Items.xml, and SubModule.xml.",
+                "1. Double SetDialogs() Rule: MUST invoke SetDialogs() in BOTH Quest constructor AND InitializeQuestOnGameLoad().\n2. CampaignBehaviors must subscribe with AddNonSerializedListener in RegisterEvents().\n3. Custom audio must use lowercase .ogg in ModuleSounds/ and map to valid engine mixer categories.\n4. Troop XML trees must avoid circular upgrade paths."),
             ["sdk"] = (
                 "Playbook: Advanced SDK Contracts & Cognitive Agent Architecture",
                 "1. Query Agent Memory: Run cf.agent_memory_stats to inspect semantic TTL and episodic event capacity.",
@@ -5134,7 +5108,9 @@ namespace CalradiaForge.Mod
                 "3. Browse SDK Surfaces: Run cf.sdk_catalog to review the current public contracts and helper behavior.",
                 "Troubleshooting: Thread Affinity Violation / Cross-Thread Exception",
                 "Remedy: All TaleWorlds campaign systems require single-thread game affinity. In Core/Sdk net8.0 mode, keep all data structures thread-safe (ConcurrentDictionary) and never call Campaign.Current directly.",
-                "Cognitive Memory Cycle & Export"),
+                "Cognitive Memory Cycle & Export",
+                "Advanced Developer SDK: Surface contracts for 110+ SDK tools, bounded NPC memory inspired by CoALA concepts, and decoupled engine API bridges.",
+                "1. Core SDK net8.0 mode must have zero hard dependencies on TaleWorlds assemblies.\n2. Shared registries must be thread-safe (ConcurrentDictionary).\n3. Agent memory facts must compute utility decay: U = 0.4*R + 0.3*F + 0.3*I.\n4. Decoupled API bridges must never retain transient engine entity pointers."),
         };
 
         string GetCategoryPlaybookTitle(string cat)
