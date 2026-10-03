@@ -75,3 +75,8 @@ La revisión de código señaló que rechazar IDs públicos que comenzaran con `
 - `cmd.exe /c "tools\Run-CalradiaForge-Python-Checks.bat --ledger --no-pause <nul"`: pasaron la cadena de integridad, playbooks, auditoría de code smells y comando de paridad documental; la auditoría informa 12 documentos antiguos solo en inglés sin contraparte española.
 - El BAT maestro de pruebas no estaba disponible porque ya aparecía eliminado en el árbol de trabajo antes de esta corrección; no se restauró ni se preparó ningún archivo eliminado.
 - La aplicación en vivo de la fixture de hooks propios del menú sigue pendiente a petición del usuario. Computer Use seleccionó el ID de ventana de Bannerlord, pero devolvió una captura de Rogue Command; no se enviaron teclas ni se aplicaron hooks con esa captura ambigua.
+
+## Aclaración sobre la fixture de hook en vivo — 2026-10-02
+
+- La inspección del repositorio no encontró un proveedor de hooks propios de Forge registrado dentro del juego por el producto o sus ejemplos. `tests/CalradiaForge.DetourFixture` es un host de prueba x64 aislado, no un módulo de Bannerlord, y no demuestra la integración con el menú.
+- Actualmente no hay una fixture propia desplegada en Bannerlord. Antes del smoke test del menú principal habrá que crear y cargar un módulo/proveedor de prueba dedicado para verificar aplicar, verificar y revertir dentro del juego. Sigue aplazado a petición del usuario; no se enviaron entradas ni se aplicaron hooks en el juego.

@@ -75,3 +75,8 @@ A code review caught a potential compatibility regression in rejecting public ho
 - `cmd.exe /c "tools\Run-CalradiaForge-Python-Checks.bat --ledger --no-pause <nul"`: ledger chain, playbooks, code-smell audit, and docs parity command passed; the audit reports 12 older English-only docs without Spanish counterparts.
 - The full master test BAT was unavailable because it was already deleted in the working tree before this correction; no deleted file was restored or staged.
 - Live application of the owned menu hook fixture remains pending at the user's request. Computer Use selected Bannerlord's window ID but returned a Rogue Command screenshot, so no game input or hook application was sent under that ambiguous capture.
+
+## Live hook fixture clarification — 2026-10-02
+
+- Repository inspection found no in-game Forge-owned hook provider registered by the product or examples. `tests/CalradiaForge.DetourFixture` is an isolated x64 test host, not a Bannerlord module, and cannot prove menu integration.
+- No owned hook fixture is currently deployed in Bannerlord. A dedicated test module/provider must be created and loaded before a main-menu smoke test can verify apply, verify, and revert in the game. This remains deferred at the user's request; no game input or in-game hook operation was performed.
