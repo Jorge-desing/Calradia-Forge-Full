@@ -1,6 +1,6 @@
 ---
 name: bannerlord-campaign-behavior
-description: Event subscription catalog, dialogue/menu injection, and anti-lag time-slicing patterns for CampaignBehaviorBase in Mount & Blade II Bannerlord. See bannerlord-shared-patterns for the full CampaignBehaviorBase skeleton.
+description: Event subscription catalog, dialogue/menu injection, and measured time-slicing patterns for deferrable CampaignBehaviorBase work in Mount & Blade II Bannerlord. See bannerlord-shared-patterns for the full CampaignBehaviorBase skeleton.
 ---
 
 # Bannerlord CampaignBehavior Skill
@@ -14,7 +14,7 @@ Use this skill when developing custom simulation logic, periodic economic or dip
 ## When to Use This Skill
 - Listening to campaign events (`HourlyTick`, `DailyTickParty`, `SettlementEntered`, `WarDeclared`, `HeroCreated`).
 - Persisting mod state safely in Bannerlord save files via `IDataStore.SyncData`.
-- Implementing anti-lag distributed updates for thousands of heroes/settlements.
+- Time-slicing entity work that can safely be deferred, while measuring full collection traversal and processing costs.
 - Registering conversation dialogues or game menus upon campaign session launch.
 
 ---
@@ -23,6 +23,7 @@ Use this skill when developing custom simulation logic, periodic economic or dip
 
 ```csharp
 using System.Collections.Generic;
+using CalradiaForge.Sdk;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Party;
@@ -59,20 +60,19 @@ namespace CalradiaForge.Core.CampaignBehaviors
 
         private void OnHourlyTick()
         {
-            // Anti-Lag Pattern: 24-hour modulo time-slicing
-            // Spreads processing across 24 hourly buckets — each tick processes ~1/24th of settlements
-            int currentHour = (int)CampaignTime.Now.ToHours % 24;
+            // Example only for work whose behavior permits deferral to another hour.
+            // ForgeTimeSlicer normalizes the hour and assigns a stable StringId bucket.
+            int currentHour = (int)CampaignTime.Now.ToHours;
 
             foreach (Settlement settlement in Settlement.All)
             {
                 if (!settlement.IsTown) continue;
 
-                // Each settlement maps to a deterministic hourly bucket via its StringId hash
-                int bucket = (settlement.StringId.GetHashCode() & 0x7FFFFFFF) % 24;
-                if (bucket != currentHour) continue;
+                if (!ForgeTimeSlicer.ShouldProcess(settlement.StringId, currentHour)) continue;
 
                 // Execute logic for this settlement's slot
             }
+            // This still traverses Settlement.All; time-slicing reduces selected work, not scan cost.
         }
 
         private void OnDailyTickParty(MobileParty party)

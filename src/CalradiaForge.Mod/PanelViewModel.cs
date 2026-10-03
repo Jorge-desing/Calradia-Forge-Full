@@ -98,23 +98,6 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string ActiveModderRoleColor => GetModderRoleColor(_activeModderRole);
         [DataSourceProperty] public string ActiveModderRoleBadgeText => GetModderRoleBadgeText(_activeModderRole);
         [DataSourceProperty]
-        public string CoALAMemoryStatusText
-        {
-            get
-            {
-                try
-                {
-                    int count = CalradiaForge.Sdk.ForgeAgentMemory.RegisteredAgentsCount;
-                    int max = CalradiaForge.Sdk.ForgeAgentMemory.MaximumAgents;
-                    return $"CoALA: {count}/{max} Agentes · Activa";
-                }
-                catch
-                {
-                    return "CoALA: 0/2048 Agentes · Activa";
-                }
-            }
-        }
-        [DataSourceProperty]
         public string ForgeWeaveStatusBadge
         {
             get
@@ -420,7 +403,7 @@ namespace CalradiaForge.Mod
             AddNavigationPaletteRoute("mod-settings", ModSettingsLabel, toolkitGroup, ModSettingsHint);
             AddNavigationPaletteRoute("framework", FrameworkLabel, weaveGroup, FrameworkHint);
             AddNavigationPaletteRoute("extensions", ExtensionsLabel, weaveGroup, ExtensionsHint);
-            AddNavigationPaletteRoute("harmony", HarmonyLabel, weaveGroup, HarmonyHint);
+            AddNavigationPaletteRoute("patch-diagnostics", PatchDiagnosticsLabel, weaveGroup, PatchDiagnosticsHint);
             AddNavigationPaletteRoute("patch-preflight", PreflightLabel, weaveGroup, PreflightHint);
             AddNavigationPaletteRoute("sim-diplomacy", SimDiplomacyLabel, simulateGroup, SimDiplomacyHint);
             AddNavigationPaletteRoute("sim-settlements", SimSettlementsLabel, simulateGroup, SimSettlementsHint);
@@ -488,7 +471,7 @@ namespace CalradiaForge.Mod
             {
                 case "project-wizard": case "summary": case "modules": case "dependencies": case "logs":
                 case "inspect": case "snapshots": case "metrics": case "console": case "tests": case "commands":
-                case "mod-settings": case "framework": case "extensions": case "harmony": case "patch-preflight":
+                case "mod-settings": case "framework": case "extensions": case "patch-diagnostics": case "patch-preflight":
                 case "sim-diplomacy": case "sim-settlements": case "sim-economy": case "sim-tactics": case "sim-progression":
                 case "sim-dynasty": case "sim-crime": case "sim-parties": case "sim-audio": case "sim-trade":
                 case "siege-tactics": case "casus-belli": case "rule-auditor": case "model-audit": case "dump-diagnostics":
@@ -828,7 +811,7 @@ namespace CalradiaForge.Mod
                 return;
 
             evidenceFocused = focused;
-            foreach (var name in new[] { nameof(ShowCommandDeck), nameof(IsPlaybookVisible), nameof(WorkspaceRightMargin), nameof(EvidenceTop), nameof(EvidenceHeight), nameof(EvidenceFontSize), nameof(FocusEvidenceLabel) }) OnPropertyChanged(name);
+            foreach (var name in new[] { nameof(ShowCommandDeck), nameof(IsHookWorkbenchVisible), nameof(IsHookSelectionDisabled), nameof(IsHookConfirmDisabled), nameof(IsPlaybookVisible), nameof(WorkspaceRightMargin), nameof(EvidenceTop), nameof(EvidenceHeight), nameof(EvidenceFontSize), nameof(FocusEvidenceLabel) }) OnPropertyChanged(name);
         }
 
         void ExpandEvidenceForOutputComparison()
@@ -884,7 +867,7 @@ namespace CalradiaForge.Mod
                     case "metrics": return s + "memory, cpu, serialization";
                     case "extensions": return s + "CalradiaForge, Native, SandBox";
                     case "patch-preflight": return s + "patch ID, owner, target type, callback reference";
-                    case "harmony": return s + "CalradiaForge, Native, SandBox";
+                    case "patch-diagnostics": return s + "Forge hooks, Forge patches, loaded patch runtimes";
                     case "sim-diplomacy": return s + "Empire, Sturgia, Aserai, Vlandia, Battania, Khuzait, all";
                     case "sim-settlements": return s + "town_ES1, town_S1, town_A1, town_V1, town_B1, all";
                     case "sim-economy": return s + "grain, iron, velvet, pottery, oil, linen, workshops";
@@ -945,7 +928,7 @@ namespace CalradiaForge.Mod
                     case "framework": return T("ForgeWeave Replay Lab: Inspect extension handlers. Enter a sequence ID and click [Replay] to safely re-simulate a past event.");
                     case "extensions": return T("Extensions: View all registered ForgeWeave handlers, SDK commands, and active diagnostics from loaded extensions.");
                     case "commands": return T("Commands: Browse available SDK commands registered by loaded extensions.");
-                    case "harmony": return T("Read-only inventory of active Harmony patches in already-loaded assemblies.");
+                    case "patch-diagnostics": return T("Read-only diagnostics for Forge hooks, Forge patches, and optional loaded patch runtimes.");
                     case "patch-preflight": return T("Patch Preflight: Read-only structural check of declared targets and callback references; it never applies patches or invokes callbacks.");
                     case "sim-diplomacy": return T("Diplomacy Lab: Evaluate kingdom power ratios, war viability scores, and tribute settlements using ForgeApi.Diplomacy.");
                     case "sim-settlements": return T("Settlement Audit: Calculate loyalty drift, militia equilibrium, food stocks, and rebellion hazards using ForgeApi.Settlements.");
@@ -1009,7 +992,7 @@ namespace CalradiaForge.Mod
                     case "console": return "Console";
                     case "commands": return "Commands";
                     case "extensions": return "Extensions";
-                    case "harmony": return "Harmony";
+                    case "patch-diagnostics": return T("Patch diagnostics");
                     case "patch-preflight": return "Patch preflight";
                     case "sim-diplomacy": return "Diplomacy Lab";
                     case "sim-settlements": return "Settlement Audit";
@@ -1096,7 +1079,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public bool IsFrameworkActive => current == "framework";
         [DataSourceProperty] public bool IsConsoleActive => current == "console";
         [DataSourceProperty] public bool IsExtensionsActive => current == "extensions";
-        [DataSourceProperty] public bool IsHarmonyActive => current == "harmony";
+        [DataSourceProperty] public bool IsPatchDiagnosticsActive => current == "patch-diagnostics";
         [DataSourceProperty] public bool IsPatchPreflightActive => current == "patch-preflight";
         [DataSourceProperty] public bool IsSimDiplomacyActive => current == "sim-diplomacy";
         [DataSourceProperty] public bool IsSimSettlementsActive => current == "sim-settlements";
@@ -1171,7 +1154,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string CategoryOverviewHint => T("Overview: Project Wizard, Summary, Modules, Dependencies, Logs.");
         [DataSourceProperty] public string CategoryInspectorHint => T("Inspector: Live Object Inspector, Snapshots, Metrics, Console.");
         [DataSourceProperty] public string CategoryToolkitHint => T("Toolkit: Integration Tests, Extension Commands, Mod Settings.");
-        [DataSourceProperty] public string CategoryWeaveHint => T("ForgeWeave: Event recording and sequence replay. Harmony Atlas is a separate read-only inventory; Patch Preflight checks blueprint declarations without applying patches.");
+        [DataSourceProperty] public string CategoryWeaveHint => T("ForgeWeave: Event recording and sequence replay. Patch diagnostics inspect Forge-owned hooks and patches; a compatible loaded runtime is observed read-only when available. Patch Preflight checks blueprint declarations without applying patches.");
         [DataSourceProperty] public string CategorySimulateHint => T("Simulate: Diplomacy, Settlements, Trade Economy, Combat Tactics, Progression.");
         [DataSourceProperty] public string CategoryAuditHint => T("Audit: Rule Compliance Auditor, GameModel Audit, System Diagnostics.");
         [DataSourceProperty] public string CategoryNoviceHint => T("Novice Hub: Behavior Scaffold, Troop XML, Quest Scaffold, Item XML, SubModule.xml, Mod Checklist, Event Explainer, Hint Forge.");
@@ -1209,7 +1192,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string SaveInspectorHint => T("Inspect 31KB chunking protection, SaveableTypeDefiner base IDs (>= 2.5M), and save health.");
         // ── NOVICE TOOL LABELS & HINTS ──────────────────────────────────────────────
         [DataSourceProperty] public string NoviceBehaviorLabel => T("🧱 Behavior");
-        [DataSourceProperty] public string NoviceBehaviorHint => T("Generate a CampaignBehaviorBase scaffold with events, SyncData, and time-slicing anti-lag patterns.");
+        [DataSourceProperty] public string NoviceBehaviorHint => T("Generate a CampaignBehaviorBase scaffold with events, SyncData, and stable-ID buckets for optional work; the full collection is still scanned.");
         [DataSourceProperty] public string NoviceTroopLabel => T("⚔ Troop XML");
         [DataSourceProperty] public string NoviceTroopHint => T("Generate a valid NPCCharacters.xml snippet for a custom troop with annotated slots and skills.");
         [DataSourceProperty] public string NoviceQuestLabel => T("📜 Quest");
@@ -1292,7 +1275,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string CommandsLabel => T("Commands");
         [DataSourceProperty] public string RefreshLabel => T("Refresh");
         [DataSourceProperty] public string ScanLabel => T("Scan modules");
-        [DataSourceProperty] public string HarmonyLabel => T("Harmony");
+        [DataSourceProperty] public string PatchDiagnosticsLabel => T("Patch diagnostics");
         [DataSourceProperty] public string FrameworkLabel => T("Framework");
         [DataSourceProperty] public string ExtensionsLabel => T("Extensions");
         [DataSourceProperty] public string PreflightLabel => T("Patch preflight");
@@ -1499,7 +1482,7 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public string ExportHint => T("Save the current session report to file.");
         [DataSourceProperty] public string RefreshHint => T("Refresh current section view.");
         [DataSourceProperty] public string ScanHint => T("Scan and validate XML and module settings.");
-        [DataSourceProperty] public string HarmonyHint => T("Read-only inventory of active Harmony patches in already-loaded assemblies.");
+        [DataSourceProperty] public string PatchDiagnosticsHint => T("Read-only diagnostics for Forge hooks, Forge patches, and optional loaded patch runtimes.");
         [DataSourceProperty] public string PreflightHint => T("Patch Preflight: Read-only structural check of declared targets and callback references; it never applies patches or invokes callbacks.");
         [DataSourceProperty] public string ReplayHint => T("Replay past event in isolated lab sandbox.");
         [DataSourceProperty] public string PinHint => T("Pin object to snapshots.");
@@ -1605,7 +1588,7 @@ namespace CalradiaForge.Mod
         {
             nameof(NavigationLabel), nameof(CurrentSectionLabel), nameof(SectionHelpLabel), nameof(InputLabel), nameof(IsSummaryActive), nameof(IsModulesActive),
             nameof(IsLogsActive), nameof(IsInspectorActive), nameof(IsTestsActive), nameof(IsMetricsActive),
-            nameof(IsFrameworkActive), nameof(IsExtensionsActive), nameof(IsCategoryOverviewActive),
+            nameof(IsFrameworkActive), nameof(IsExtensionsActive), nameof(IsPatchPreflightActive), nameof(IsHookWorkbenchVisible), nameof(IsHookSelectionDisabled), nameof(IsHookConfirmDisabled), nameof(IsCategoryOverviewActive),
             nameof(CategoryOverviewLabel), nameof(CategoryOverviewHint), nameof(IsCategoryInspectorActive),
             nameof(CategoryInspectorLabel), nameof(CategoryInspectorHint), nameof(IsCategoryToolkitActive),
             nameof(CategoryToolkitLabel), nameof(CategoryToolkitHint), nameof(IsCategoryWeaveActive), nameof(CategoryWeaveLabel),
@@ -1616,8 +1599,7 @@ namespace CalradiaForge.Mod
             nameof(SimDynastyLabel), nameof(SimDynastyHint), nameof(IsSimCrimeActive), nameof(SimCrimeLabel), nameof(SimCrimeHint),
             nameof(CategoryMissionDescription), nameof(CategoryEngineRules), nameof(ActiveModderRoleLabel),
             nameof(NoviceGauntletLabel), nameof(NoviceGauntletHint),
-            nameof(ActiveModderRoleColor), nameof(ActiveModderRoleBadgeText),
-            nameof(CoALAMemoryStatusText), nameof(ForgeWeaveStatusBadge),
+            nameof(ActiveModderRoleColor), nameof(ActiveModderRoleBadgeText), nameof(ForgeWeaveStatusBadge),
             nameof(ActiveModderRoleHint), nameof(HasPinnedCommands), nameof(CategorySuggestedCommands), nameof(PinnedCommands),
             nameof(SuggestedCommandsTitle), nameof(SuggestedCommandsHint), nameof(SuggestedCommandsLabel),
             nameof(PinCurrentCommandLabel), nameof(PinCurrentCommandHint),
@@ -1752,7 +1734,7 @@ namespace CalradiaForge.Mod
                     extensionLines.Add(T("Type a page ID in the argument field, then use Open extension page."));
                     extensionLines.Add(T("Use Context help for offline SDK guidance and the Assembly workbench."));
                     return string.Join("\n", extensionLines);
-                case "harmony": return FormatHarmony(Json.Deserialize<HarmonySnapshot>(data));
+                case "patch-diagnostics": return FormatPatchDiagnostics(Json.Deserialize<ForgePatchDiagnosticsSnapshot>(data));
                 case "framework": return FormatForgeWeave(Json.Deserialize<ForgeWeaveSnapshot>(data));
                 case "event-journal": return FormatEventJournal(Json.Deserialize<List<ForgeWeaveDispatchRecord>>(data));
                 case "replay": return FormatReplay(Json.Deserialize<ForgeReplayResult>(data));
@@ -1776,20 +1758,37 @@ namespace CalradiaForge.Mod
             if (!string.IsNullOrWhiteSpace(result.CleanupError)) lines.Add(T("Error") + " (cleanup): " + result.CleanupError);
             return string.Join("\n", lines);
         }
-        string FormatHarmony(HarmonySnapshot snapshot)
+        string FormatPatchDiagnostics(ForgePatchDiagnosticsSnapshot snapshot)
         {
-            if (snapshot == null) return T("Harmony patch atlas") + "\n" + T("Error");
-            var lines = new List<string> { T("Harmony patch atlas"), snapshot.Status ?? "" };
-            if (!string.IsNullOrWhiteSpace(snapshot.RuntimeAssembly)) lines.Add("Runtime: " + snapshot.RuntimeAssembly + " " + snapshot.RuntimeVersion);
+            if (snapshot == null) return T("Patch diagnostics") + "\n" + T("Error");
+            var lines = new List<string> { T("Patch diagnostics"), snapshot.Status ?? "" };
             if (!string.IsNullOrWhiteSpace(snapshot.CapturedAt)) lines.Add("Captured: " + snapshot.CapturedAt + (snapshot.IsStale ? " [stale]" : ""));
-            lines.Add("Targets: " + snapshot.DisplayedMethodCount + " / " + snapshot.DiscoveredMethodCount + "  |  Active: " + snapshot.ActiveMethodCount + "  |  No metadata: " + snapshot.EmptyMetadataMethodCount + "  |  Owners: " + snapshot.OwnerCount + "  |  Shared: " + snapshot.SharedMethodCount);
+            lines.Add("Forge hooks: " + snapshot.HookCount + "  |  Forge patches: " + snapshot.PatchCount + "  |  Forge conflict states: " + snapshot.ConflictCount + "  |  Failed: " + snapshot.FailedCount + (snapshot.Truncated ? "  |  Truncated" : ""));
             foreach (var note in snapshot.Notes ?? new List<string>()) lines.Add(note);
-            foreach (var method in snapshot.Methods ?? new List<HarmonyPatchedMethod>())
+            foreach (var hook in snapshot.Hooks ?? new List<ForgeOwnedHookRecord>())
             {
-                lines.Add("\n[" + (method.MetadataStatus ?? "Unknown") + "] " + (method.Assembly ?? "") + " · " + (method.DeclaringType ?? "") + "." + (method.Method ?? "") + (method.Signature ?? "") + (method.HasMultipleOwners ? "  [shared target]" : ""));
-                lines.Add("  Owners: " + string.Join(", ", method.Owners ?? new List<string>()));
-                foreach (var patch in method.Patches ?? new List<HarmonyPatchObservation>())
-                    lines.Add("  " + (patch.Kind ?? "") + " · " + (patch.Owner ?? "") + " · priority " + (patch.Priority?.ToString() ?? "unknown") + " · index " + (patch.Index?.ToString() ?? "unknown") + " · " + (patch.PatchType ?? "") + "." + (patch.PatchMethod ?? "") + (patch.PatchSignature ?? "") + "\n    Before: " + string.Join(", ", patch.Before ?? new List<string>()) + "\n    After: " + string.Join(", ", patch.After ?? new List<string>()));
+                lines.Add("\n[Forge hook · " + (hook.State ?? "Unknown") + "] " + (hook.Owner ?? "") + " · " + (hook.Id ?? "") + " · " + (hook.TargetMethod ?? ""));
+                lines.Add("  Callbacks: " + string.Join(", ", new[] { hook.HasPrefix ? "Prefix" : null, hook.HasPostfix ? "Postfix" : null, hook.HasFinalizer ? "Finalizer" : null, hook.HasTranspiler ? "Transpiler" : null }.Where(value => value != null)) + " · Priority " + hook.Priority + " · Before " + string.Join(", ", hook.Before ?? new List<string>()) + " · After " + string.Join(", ", hook.After ?? new List<string>()));
+                if (!string.IsNullOrWhiteSpace(hook.Detail)) lines.Add("  " + hook.Detail);
+            }
+            foreach (var patch in snapshot.Patches ?? new List<ForgeOwnedPatchRecord>())
+                lines.Add("\n[Forge patch · " + (patch.State ?? "Unknown") + (patch.IsIntact ? " · intact" : " · integrity review") + "] " + (patch.Owner ?? "") + " · " + (patch.PatchId ?? "") + "\n  " + (patch.TargetMethod ?? "") + " → " + (patch.ReplacementMethod ?? ""));
+
+            var external = snapshot.ExternalRuntime;
+            if (external != null)
+            {
+                lines.Add("\n" + T("Optional external runtime") + ": " + (external.Status ?? "NotLoaded"));
+                if (!string.IsNullOrWhiteSpace(external.RuntimeAssembly)) lines.Add("Runtime: " + external.RuntimeAssembly + " " + external.RuntimeVersion);
+                if (!string.IsNullOrWhiteSpace(external.Detail)) lines.Add(external.Detail);
+                lines.Add("Targets: " + external.DisplayedTargetCount + " / " + external.DiscoveredTargetCount + " · Active: " + external.ActiveTargetCount + " · Empty metadata: " + external.EmptyMetadataTargetCount + " · Owners: " + external.OwnerCount + " · Shared targets: " + external.SharedTargetCount + " · Skipped: " + external.SkippedTargetCount + (external.Truncated ? " · Truncated" : ""));
+                foreach (var note in external.Notes ?? new List<string>()) lines.Add(note);
+                foreach (var target in external.Targets ?? new List<ExternalPatchTarget>())
+                {
+                    lines.Add("\n[" + (target.MetadataStatus ?? "Unknown") + "] " + (target.Assembly ?? "") + " · " + (target.DeclaringType ?? "") + "." + (target.Method ?? "") + (target.Signature ?? "") + (target.HasMultipleOwners ? "  [shared target · review]" : ""));
+                    lines.Add("  Owners: " + string.Join(", ", target.Owners ?? new List<string>()));
+                    foreach (var observation in target.Patches ?? new List<ExternalPatchObservation>())
+                        lines.Add("  " + (observation.Kind ?? "") + " · " + (observation.Owner ?? "") + " · priority " + (observation.Priority?.ToString() ?? "unknown") + " · index " + (observation.Index?.ToString() ?? "unknown") + " · " + (observation.PatchType ?? "") + "." + (observation.PatchMethod ?? "") + (observation.PatchSignature ?? "") + "\n    Before: " + string.Join(", ", observation.Before ?? new List<string>()) + "\n    After: " + string.Join(", ", observation.After ?? new List<string>()));
+                }
             }
             return string.Join("\n", lines);
         }
@@ -2078,7 +2077,7 @@ namespace CalradiaForge.Mod
                     break;
                 case "framework":
                 case "extensions":
-                case "harmony":
+                case "patch-diagnostics":
                 case "patch-preflight":
                     currentCategory = "weave";
                     break;
@@ -2855,7 +2854,7 @@ namespace CalradiaForge.Mod
         public void ExecuteBatch() => Send("run-batch");
         public void ExecuteRefresh() => Send(current);
         public void ExecuteScan() => Send("scan");
-        public void ExecuteHarmony() => SelectSection("harmony");
+        public void ExecutePatchDiagnostics() => SelectSection("patch-diagnostics");
         public void ExecuteFramework() => SelectSection("framework");
         public void ExecutePatchPreflight() => SelectSection("patch-preflight");
         public void ExecuteSimDiplomacy() => SelectSection("sim-diplomacy");
@@ -2926,7 +2925,6 @@ namespace CalradiaForge.Mod
         {
             OnPropertyChanged(nameof(MemoryHealthText));
             OnPropertyChanged(nameof(ContextValue));
-            OnPropertyChanged(nameof(CoALAMemoryStatusText));
             OnPropertyChanged(nameof(ForgeWeaveStatusBadge));
             if (current == "metrics" || current == "summary")
             {
@@ -3690,7 +3688,7 @@ namespace CalradiaForge.Mod
             sb.AppendLine($"• Skill & Perk Events:    {progressionEvents:N0} (Level-Ups, Perks Opened, Traits)");
             sb.AppendLine($"• Clan & Dynastic Events: {clanEvents:N0} (Leader Change, Kingdom Defections)");
             sb.AppendLine($"• Courtship & Marriages:  {marriageEvents:N0} (Proposals, Marriages, Offspring)");
-            sb.AppendLine($"• Heartbeat Slices:       {periodicTicks:N0} (Modulo-24 Partitions, No Midnight Stutter)");
+            sb.AppendLine($"• Periodic Callback Entries: {periodicTicks:N0} (includes per-entity callbacks; not a workload or latency measurement)");
             sb.AppendLine();
 
             bool hasLiveClans = false;
@@ -4467,7 +4465,7 @@ namespace CalradiaForge.Mod
                 case "ForgeClear": ExecuteClearOutput(); break;
                 case "ForgeClearOutput": ExecuteClearOutput(); break;
                 case "ForgeScan": ExecuteScan(); break;
-                case "ForgeHarmony": ExecuteHarmony(); break;
+                case "ForgePatchDiagnostics": ExecutePatchDiagnostics(); break;
                 case "ForgeFramework": ExecuteFramework(); break;
                 case "ForgePatchPreflight": ExecutePatchPreflight(); break;
                 case "ForgeReplay": ExecuteReplay(); break;
@@ -4854,7 +4852,7 @@ namespace CalradiaForge.Mod
                 case ModderRole.CoreDevPerformanceAuditor:
                     AssignQuickSlot(1, "cf.audit", "AuditRules");
                     AssignQuickSlot(2, "cf.gc_profile", "GCProfile");
-                    AssignQuickSlot(3, "cf.harmony_summary", "HarmonySumm");
+                    AssignQuickSlot(3, "cf.patch_diagnostics", "PatchDiag");
                     break;
                 default:
                     AssignQuickSlot(1, "cf.quick_state", "QuickState");
@@ -4998,7 +4996,7 @@ namespace CalradiaForge.Mod
                 case "toolkit":
                     return T("Integration Testing & Extensibility: Non-destructive test harness, SDK extension commands, and configuration persistence without leaving the game session.");
                 case "weave":
-                    return T("ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools.");
+                    return T("ForgeWeave: Event recording and sequence replay. Patch diagnostics inspect Forge-owned hooks and patches; a compatible loaded runtime is observed read-only when available. Patch Preflight checks blueprint declarations without applying patches.");
                 case "simulate":
                     return T("Mathematical Balance Simulators: Offline mathematical models for kingdom war viability, settlement loyalty drift, supply/demand trade, and combat casualty math.");
                 case "audit":
@@ -5006,7 +5004,7 @@ namespace CalradiaForge.Mod
                 case "novice":
                     return T("Novice Modder Scaffold Hub: Interactive wizards for creating safe CampaignBehaviors, NPCCharacters.xml, QuestBase classes, Items.xml, and SubModule.xml.");
                 case "sdk":
-                    return T("Advanced Developer SDK: Surface contracts for all 110+ Advanced SDK tools, CoALA cognitive memory agents, and decoupled engine API bridges.");
+                    return T("Advanced Developer SDK: Surface contracts for 110+ SDK tools, bounded NPC memory inspired by CoALA concepts, and decoupled engine API bridges.");
                 default:
                     return T("Calradia Forge In-Game Workbench: Unified modding framework and developer tooling suite for Mount & Blade II: Bannerlord.");
             }
@@ -5019,13 +5017,13 @@ namespace CalradiaForge.Mod
                 case "overview":
                     return T("1. SubModule.xml <Id> MUST strictly match folder name in Modules/.\n2. Output DLLs must reside in bin/Win64_Shipping_Client/.\n3. Keep OnSubModuleLoad() lightweight; register campaign behaviors in OnGameStart().\n4. Never package raw TaleWorlds.*.dll assemblies or user save files in distributions.");
                 case "inspector":
-                    return T("1. Never mutate engine entities during render ticks.\n2. Never store raw Hero, Settlement, or MobileParty pointers in persistent fields; resolve by StringId via MBObjectManager.\n3. Inspection queries must be read-only and zero-allocation.\n4. CoALA memory inspector queries agent episodic and semantic facts without engine thread locks.");
+                    return T("1. Never mutate engine entities during render ticks.\n2. Never store raw Hero, Settlement, or MobileParty pointers in persistent fields; resolve by StringId via MBObjectManager.\n3. Inspection queries must be read-only; measure the complete query path before making performance claims.\n4. ForgeAgentMemory queries bounded NPC memory data; it is not a CoALA language-agent runtime.");
                 case "toolkit":
                     return T("1. State-changing integration tests require explicit testing mode and confirmed campaign copy.\n2. Maintain deterministic test seeds for reproducibility.\n3. ModSettings must serialize safely without corrupting global game configurations.\n4. Cognitive memory export dumps bounded JSON payloads without blocking render ticks.");
                 case "weave":
                     return T("1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener.");
                 case "simulate":
-                    return T("1. GameModel decorators must wrap _previousModel and apply ExplainedNumber deltas.\n2. Modulo-24 hero time-slicing (hero.Id.GetHashCode() % 24 == currentHour) is mandatory for periodic simulation.\n3. Simulation routines must be pure, thread-safe, and free of side effects.\n4. Tactical combat formulas must respect engine casualty pipelines.");
+                    return T("1. GameModel decorators must wrap _previousModel and apply ExplainedNumber deltas.\n2. For optional periodic hero work, use ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) for stable buckets. Defer only work that can wait up to 24 in-game hours, and measure before claiming a performance gain.\n3. Simulation routines must be pure, thread-safe, and free of side effects.\n4. Tactical combat formulas must respect engine casualty pipelines.");
                 case "audit":
                     return T("1. GEMINI Rule A: 0 folders, namespaces, or classes named 'Campaign' or 'Localization'.\n2. GEMINI Rule B: 100% stateless campaign behaviors (0 SaveableTypeDefiner, empty SyncData).\n3. SaveableTypeDefiner base IDs must be >= 2,500,000.\n4. String serialization must never exceed 31KB limit (use ForgeSaveChunker).");
                 case "novice":
@@ -5084,7 +5082,7 @@ namespace CalradiaForge.Mod
             ["inspector"] = (
                 "Playbook: Safe Runtime Entity & Cognitive Memory Inspection",
                 "1. Select Entity: Type Hero string ID (e.g. Hero_1) or settlement name in the search/argument field.",
-                "2. Query CoALA Memory: Execute cf.agent_memory_query to evaluate semantic beliefs and episodic experience streams.",
+                "2. Query ForgeAgentMemory: Execute cf.agent_memory_query to inspect semantic and episodic memory data.",
                 "3. Evaluate Salience: Execute cf.agent_memory_salience to inspect exponential decay and retrieval scores.",
                 "Troubleshooting: Memory Leak or Persistent Ghost References",
                 "Remedy: Never store Hero or Settlement pointers in static/class fields. Resolve transiently via StringId (MBObjectManager.GetObject<Hero>(id)) and purge expired semantic entries with cf.force_gc.",
@@ -5102,8 +5100,8 @@ namespace CalradiaForge.Mod
                 "1. Enumerate Handlers: Run cf.extensions to verify active event listeners and circuit breaker health.",
                 "2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in.",
                 "3. Deterministic Replay: Replay captured execution sequences in the isolated lab to reproduce anomalies.",
-                "Troubleshooting: Harmony Method Patch Collision / NullReferenceException",
-                "Remedy: Run cf.harmony_summary to inspect all mods hooking the same method. Prefer Postfixes/Transpilers over state-changing Prefixes, and never throw uncaught exceptions across engine boundaries.",
+                "Troubleshooting: Shared method hooks or patch replacement integrity warning",
+                "Remedy: Run cf.patch_diagnostics to review Forge-owned hook and patch records. A compatible external runtime is observed only when already loaded; shared targets are review signals, not proof of conflict. Never throw uncaught exceptions across engine boundaries.",
                 "Event Replay & Patch Diagnostics"),
             ["simulate"] = (
                 "Playbook: Tactical Combat, Settlement Equilibrium & Trade Balance",
@@ -5133,7 +5131,7 @@ namespace CalradiaForge.Mod
                 "Playbook: Advanced SDK Contracts & Cognitive Agent Architecture",
                 "1. Query Agent Memory: Run cf.agent_memory_stats to inspect semantic TTL and episodic event capacity.",
                 "2. Execute Decay Cycle: Run cf.agent_memory_decay to apply exponential utility decay U = 0.4*R + 0.3*F + 0.3*I.",
-                "3. Browse SDK Surfaces: Run cf.sdk_catalog to explore 110+ decoupled interfaces and zero-allocation helpers.",
+                "3. Browse SDK Surfaces: Run cf.sdk_catalog to review the current public contracts and helper behavior.",
                 "Troubleshooting: Thread Affinity Violation / Cross-Thread Exception",
                 "Remedy: All TaleWorlds campaign systems require single-thread game affinity. In Core/Sdk net8.0 mode, keep all data structures thread-safe (ConcurrentDictionary) and never call Campaign.Current directly.",
                 "Cognitive Memory Cycle & Export"),
@@ -5234,7 +5232,7 @@ namespace CalradiaForge.Mod
                 case "weave":
                     addCmd("cf.weave_replay 1", T("Replay sequence 1 deterministically through ForgeWeave"));
                     addCmd("cf.extensions", T("Enumerate registered ForgeWeave handlers and listeners"));
-                    addCmd("cf.harmony_summary", T("Inspect active Harmony prefixes, postfixes, and transpilers"));
+                    addCmd("cf.patch_diagnostics", T("Inspect Forge-owned hooks and patches plus any compatible runtime already loaded"));
                     addCmd("cf.patch_preflight", T("Dry-run conflict preflight on pending patch blueprints"));
                     addCmd("cf.dump_diagnostics", T("Snapshot live event pipeline and hook timings"));
                     break;
@@ -5261,7 +5259,7 @@ namespace CalradiaForge.Mod
                     addCmd("cf.dump_diagnostics", T("Generate comprehensive diagnostic telemetry dump"));
                     addCmd("cf.audit_save", T("Verify SaveableTypeDefiner base IDs and 31KB chunking"));
                     addCmd("cf.audit_localization", T("Check translation completeness, missing IDs, and UTF-8 BOM"));
-                    addCmd("cf.harmony_summary", T("Audit third-party Harmony patches for engine conflicts"));
+                    addCmd("cf.patch_diagnostics", T("Review Forge patch records and optionally observe a compatible loaded runtime"));
                     addCmd("cf.gc_profile", T("Detailed GC generation allocations and heap collection telemetry"));
                     break;
 
@@ -5269,7 +5267,7 @@ namespace CalradiaForge.Mod
                     if (_activeModderRole == ModderRole.NarrativeDialogues)
                     {
                         addCmd("cf.novice_scaffold quest EscortMerchant", T("Scaffold QuestBase enforcing double SetDialogs"));
-                        addCmd("cf.novice_scaffold behavior CustomStoryBehavior", T("Scaffold an anti-lag CampaignBehaviorBase"));
+                        addCmd("cf.novice_scaffold behavior CustomStoryBehavior", T("Scaffold a CampaignBehaviorBase with stable-ID batch scheduling"));
                     }
                     else if (_activeModderRole == ModderRole.TroopCombatArtisan)
                     {
@@ -5277,7 +5275,7 @@ namespace CalradiaForge.Mod
                         addCmd("cf.novice_scaffold item IronArmingSword", T("Generate valid Items.xml weapon definition"));
                         addCmd("cf.novice_scaffold armor PlateCuirass", T("Generate valid Items.xml body armor definition"));
                     }
-                    addCmd("cf.novice_scaffold behavior MyCustomBehavior", T("Scaffold an anti-lag CampaignBehaviorBase"));
+                    addCmd("cf.novice_scaffold behavior MyCustomBehavior", T("Scaffold a CampaignBehaviorBase with stable-ID batch scheduling"));
                     addCmd("cf.novice_scaffold quest MyDeliveryQuest", T("Scaffold QuestBase enforcing double SetDialogs"));
                     addCmd("cf.novice_scaffold troop ImperialLegionary", T("Generate valid NPCCharacters.xml troop loadout"));
                     addCmd("cf.novice_scaffold item IronArmingSword", T("Generate valid Items.xml weapon definition"));
@@ -5288,7 +5286,7 @@ namespace CalradiaForge.Mod
                     break;
 
                 case "sdk":
-                    addCmd("cf.agent_memory_stats", T("Query CoALA cognitive memory fact count and decay status"));
+                    addCmd("cf.agent_memory_stats", T("Query ForgeAgentMemory fact counts and decay status"));
                     addCmd("cf.agent_memory_decay", T("Run manual utility decay cycle on tracked agent memories"));
                     addCmd("cf.agent_memory_cluster", T("Cluster active episodic memories by semantic theme"));
                     addCmd("cf.agent_memory_export", T("Export cognitive memory graph to JSON diagnostic artifact"));

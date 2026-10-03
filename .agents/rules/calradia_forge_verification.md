@@ -402,7 +402,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Stateless behavior verification
-powershell -File tools/verify_stateless_behavior.ps1
+cmd.exe /c "tools\Verify-CalradiaForge-StatelessBehavior.bat <nul"
 if [ $? -ne 0 ]; then
     echo "Verification failed. Commit aborted."
     exit 1
@@ -596,11 +596,8 @@ public void TestMemoryAllocation()
 
 ## 12. Coverage Requirements
 
-### Minimum Coverage Targets
-- **Critical Paths**: 90%+ coverage
-- **Event Handlers**: 80%+ coverage
-- **Utility Methods**: 70%+ coverage
-- **Overall**: 75%+ coverage
+### Coverage Reporting
+Use the coverage output produced for the specific test target and run. Do not treat these legacy percentages as repository-wide acceptance thresholds without a current approved policy and reproducible measurement.
 
 ### Coverage Exclusions
 ```xml
@@ -710,7 +707,7 @@ Write-Host "All acceptance criteria passed." -ForegroundColor Cyan
 dotnet build CalradiaForge.sln -c Release
 
 # 3. Run verification
-powershell -File tools/verify_stateless_behavior.ps1
+cmd.exe /c "tools\Verify-CalradiaForge-StatelessBehavior.bat <nul"
 
 # 4. Run unit tests
 cmd.exe /c "tools\Run-CalradiaForge-Tests.bat --core-only --no-pause <nul"
@@ -726,7 +723,7 @@ git commit -m "Description"
 ```
 □ Release build compiles successfully
 □ verify_stateless_behavior.ps1 passes
-□ Unit tests pass (75%+ coverage)
+□ Relevant unit test launchers pass and report run-specific coverage, where enabled
 □ Integration tests pass
 □ Documentation is up to date
 □ SubModule.xml version updated
@@ -745,7 +742,7 @@ When batch files (`.bat`) or automation wrappers invoke PowerShell in background
 All `.bat` runners that invoke PowerShell scripts MUST specify `-NoProfile`, `-NonInteractive`, and redirect standard input from `NUL` via `<nul`:
 
 ```cmd
-powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%SCRIPT_DIR%tools\Run-CalradiaForge-Tests.ps1" %* <nul
+cmd.exe /c "tools\Run-CalradiaForge-Tests.bat %* <nul"
 ```
 
 ### Script Requirements
@@ -772,15 +769,15 @@ if (Test-Path $toolDir) {
 
 ## 18. Full Test Suite Battery & Runner Hierarchy
 
-Calradia Forge maintains four distinct test suites comprising 612 automated test cases. All suites run via dedicated batch wrappers that invoke PowerShell safely:
+Calradia Forge maintains separate Core, ForgeWeave, Desktop, and Desktop Render suites. Their test counts change with the source; take current counts and verdicts from the output of the launcher used for that run, and do not treat historical counts as fixed coverage guarantees.
 
-| Suite Name | Batch Launcher | Scope & Target | Count |
-| :--- | :--- | :--- | :--- |
-| **Core** | `tools/Run-CalradiaForge-Core-Tests.bat` | Framework lifecycle, time-slicing, campaign behaviors, and stateless checks | 250 tests |
-| **ForgeWeave** | `tools/Run-CalradiaForge-ForgeWeave-Tests.bat` | Event mesh, replay registry, execution budgets, quarantine isolation, Gauntlet UI discovery | 37 tests |
-| **Desktop** | `tools/Run-CalradiaForge-Desktop-Tests.bat` | Named pipe protocol, MVVM commands, input pickers, preferences, and static source contracts | 51 tests |
-| **Desktop Render** | `tools/Run-CalradiaForge-Desktop-Render-Tests.bat` | Live WPF visual tree instantiation, theme dictionaries, 13-language matrix, and layout scaling | 274 tests |
-| **Unified Runner** | `tools/Run-CalradiaForge-Tests.bat` | Executes all 4 suites sequentially with clean summary reporting | 612 tests |
+| Suite Name | Batch Launcher | Scope & Target |
+| :--- | :--- | :--- |
+| **Core** | `tools/Run-CalradiaForge-Core-Tests.bat` | Framework lifecycle, time-slicing, campaign behaviors, and stateless checks |
+| **ForgeWeave** | `tools/Run-CalradiaForge-ForgeWeave-Tests.bat` | Event mesh, replay registry, execution budgets, quarantine isolation, Gauntlet UI discovery |
+| **Desktop** | `tools/Run-CalradiaForge-Desktop-Tests.bat` | Named pipe protocol, MVVM commands, input pickers, preferences, and static source contracts |
+| **Desktop Render** | `tools/Run-CalradiaForge-Desktop-Render-Tests.bat` | WPF visual tree instantiation, theme dictionaries, localization, and layout scaling |
+| **Unified Runner** | `tools/Run-CalradiaForge-Tests.bat` | Executes the configured suites sequentially with a run-specific summary |
 
 ### CI/Batch Invocation
 To execute without interactive prompts in scripts or automated pipelines:
@@ -826,7 +823,7 @@ tools\Run-CalradiaForge-Tests.bat --skip-build --no-pause
 15. **Pre-Release Checklist**: Comprehensive verification before release
 16. **Headless Execution**: Use `-NoProfile -NonInteractive` and `<nul` redirection to prevent stdin deadlocks
 17. **Zone.Identifier Safety**: Unblock external assemblies before dynamic loading to avoid `0x80131515`
-18. **Four-Suite Battery**: Always verify all 612 tests (Core 250, ForgeWeave 37, Desktop 51, Render 274)
+18. **Current Suite Battery**: Select the relevant `.bat` launcher(s); report the counts and outcomes printed by that run, not an undated hard-coded total.
 19. **TPAC Structural Validation**: Use `-StructuralOnly` during release preflights to validate asset package headers safely
 20. **Static Source Contracts**: Preserve architectural inspection tokens verbatim in source code
 

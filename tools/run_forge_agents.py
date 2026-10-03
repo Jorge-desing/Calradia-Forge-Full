@@ -286,7 +286,7 @@ def main() -> int:
     common_parser.add_argument(
         "--offline",
         action="store_true",
-        help="Force offline deterministic simulation mode (does not require GEMINI_API_KEY).",
+        help="Force local offline tool execution (does not require GEMINI_API_KEY).",
     )
     common_parser.add_argument(
         "--verbose",
@@ -345,7 +345,11 @@ def main() -> int:
     subparsers.add_parser("bughunt", parents=[common_parser], help="Audit code smells, antipatterns, and concurrency hazards.")
 
     # compact subcommand
-    compact_parser = subparsers.add_parser("compact", parents=[common_parser], help="Benchmark and report token compaction across all 12 tools.")
+    compact_parser = subparsers.add_parser(
+        "compact",
+        parents=[common_parser],
+        help="Benchmark and report token compaction across registered repository tools.",
+    )
     compact_parser.add_argument(
         "--live",
         action="store_true",

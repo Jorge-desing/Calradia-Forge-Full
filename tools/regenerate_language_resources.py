@@ -19,6 +19,14 @@ LANGUAGES = {
 VERSION = __import__("re").search(r"<CalradiaForgeVersion>([^<]+)</CalradiaForgeVersion>", (ROOT / "Directory.Build.props").read_text(encoding="utf-8")).group(1)
 SOURCE_LOCALIZED_PANEL_KEYS = (
     "Evidence",
+    "Generate a CampaignBehaviorBase scaffold with events, SyncData, and stable-ID buckets for optional work; the full collection is still scanned.",
+    "Scaffold a CampaignBehaviorBase with stable-ID batch scheduling",
+    "Advanced Developer SDK: Surface contracts for 110+ SDK tools, bounded NPC memory inspired by CoALA concepts, and decoupled engine API bridges.",
+    "1. Never mutate engine entities during render ticks.\n2. Never store raw Hero, Settlement, or MobileParty pointers in persistent fields; resolve by StringId via MBObjectManager.\n3. Inspection queries must be read-only; measure the complete query path before making performance claims.\n4. ForgeAgentMemory queries bounded NPC memory data; it is not a CoALA language-agent runtime.",
+    "2. Query ForgeAgentMemory: Execute cf.agent_memory_query to inspect semantic and episodic memory data.",
+    "Query ForgeAgentMemory fact counts and decay status",
+    "ForgeWeave: Event recording and sequence replay. Patch diagnostics inspect Forge-owned hooks and patches; a compatible loaded runtime is observed read-only when available. Patch Preflight checks blueprint declarations without applying patches.",
+    "2. For optional periodic hero work, use ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) for stable buckets. Defer only work that can wait up to 24 in-game hours, and measure before claiming a performance gain.",
     "Filter current output without changing the tool argument.",
     "Filter output lines...",
     "Clear output filter.",
@@ -43,14 +51,29 @@ SOURCE_LOCALIZED_PANEL_KEYS = (
     "Return to the current output without removing the baseline.",
     "Clear the pinned output baseline.",
     "Output baseline cleared.",
-    "Read-only inventory of active Harmony patches in already-loaded assemblies.",
+    "Patch diagnostics",
+    "Read-only diagnostics for Forge hooks, Forge patches, and optional loaded patch runtimes.",
+    "Optional external runtime",
     "Patch Preflight: Read-only structural check of declared targets and callback references; it never applies patches or invokes callbacks.",
-    "ForgeWeave: Event recording and sequence replay. Harmony Atlas is a separate read-only inventory; Patch Preflight checks blueprint declarations without applying patches.",
+    "ForgeWeave: Event recording and sequence replay. Patch diagnostics inspect Forge-owned hooks and patches; a compatible loaded runtime is observed read-only when available. Patch Preflight checks blueprint declarations without applying patches.",
     "Event Replay & Patch Diagnostics",
     "2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in.",
-    "ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools.",
     "1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener.",
 )
+OBSOLETE_PANEL_KEYS = {
+    "Advanced Developer SDK: Surface contracts for all 110+ Advanced SDK tools, CoALA cognitive memory agents, and decoupled engine API bridges.",
+    "1. Never mutate engine entities during render ticks.\n2. Never store raw Hero, Settlement, or MobileParty pointers in persistent fields; resolve by StringId via MBObjectManager.\n3. Inspection queries must be read-only; measure the complete query path before making performance claims.\n4. CoALA memory inspector queries agent episodic and semantic facts without engine thread locks.",
+    "2. Query CoALA Memory: Execute cf.agent_memory_query to evaluate semantic beliefs and episodic experience streams.",
+    "Query CoALA cognitive memory fact count and decay status",
+    "Harmony",
+    "Harmony patch atlas",
+    "Optional read-only Harmony diagnostics. Shared targets are review candidates, not proven conflicts.",
+    "Read-only inventory of active Harmony patches in already-loaded assemblies.",
+    "ForgeWeave: Event recording and sequence replay. Harmony Atlas is a separate read-only inventory; Patch Preflight checks blueprint declarations without applying patches.",
+    "ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools.",
+    "ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Patch diagnostics inspect Forge-owned hooks and patches; optional external runtime observation is read-only. Patch Blueprint Preflight is a separate tool.",
+    "ForgeWeave: Event recording and sequence replay. Patch diagnostics inspect Forge-owned hooks and patches, with optional read-only observation of already-loaded compatible runtimes. Patch Preflight checks blueprint declarations without applying patches.",
+}
 
 
 def stable_id(text: str) -> str:
@@ -141,8 +164,14 @@ def main() -> None:
     missing_rule_texts = rule_required_texts.difference(campaign_rules).difference(gauntlet_composer).difference(navigation_palette)
     if missing_rule_texts:
         raise ValueError("Campaign Rule Builder UI text lacks source translations: " + ", ".join(sorted(missing_rule_texts)))
-    english_by_old_id = original["EN"]
-    english_texts = list(dict.fromkeys(list(english_by_old_id.values()) + sorted(literal_keys) + sorted(navigation_palette) + sorted(gauntlet_composer) + sorted(campaign_rules)))
+    # The generated EN resource is also an input so existing stable IDs survive. Filter
+    # the retired Atlas-only UI strings explicitly; otherwise the generator would keep
+    # shipping dead Harmony labels forever even after their source catalogs were cleaned.
+    english_by_old_id = {
+        old_id: text for old_id, text in original["EN"].items()
+        if text not in OBSOLETE_PANEL_KEYS
+    }
+    english_texts = list(dict.fromkeys(list(english_by_old_id.values()) + sorted(literal_keys) + list(SOURCE_LOCALIZED_PANEL_KEYS) + sorted(navigation_palette) + sorted(gauntlet_composer) + sorted(campaign_rules)))
     old_ids_by_text: dict[str, list[str]] = {}
     for old_id, text in english_by_old_id.items():
         old_ids_by_text.setdefault(text, []).append(old_id)

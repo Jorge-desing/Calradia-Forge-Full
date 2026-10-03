@@ -118,6 +118,82 @@ namespace CalradiaForge.Core
             }
         }
 
+        // Diagnostics must not construct a snapshot for every retained patch entry.
+        // Keep the public GetSnapshots behavior complete for explicit SDK consumers.
+        internal IReadOnlyList<ForgePatchSnapshot> GetDiagnosticSnapshots(int maximumRecords, int maximumIdentityLength, out bool truncated)
+        {
+            if (maximumRecords < 0) throw new ArgumentOutOfRangeException(nameof(maximumRecords));
+            if (maximumIdentityLength < 1) throw new ArgumentOutOfRangeException(nameof(maximumIdentityLength));
+
+            lock (gate)
+            {
+                truncated = false;
+                var snapshots = new List<ForgePatchSnapshot>(Math.Min(maximumRecords, entries.Count));
+                foreach (string id in applyOrder)
+                {
+                    PatchEntry entry;
+                    if (!entries.TryGetValue(id, out entry)) continue;
+                    if (snapshots.Count >= maximumRecords)
+                    {
+                        truncated = true;
+                        return snapshots;
+                    }
+
+                    Refresh(entry);
+                    snapshots.Add(DiagnosticSnapshot(entry, maximumIdentityLength, ref truncated));
+                }
+                return snapshots;
+            }
+        }
+
+        private ForgePatchSnapshot DiagnosticSnapshot(PatchEntry entry, int maximumIdentityLength, ref bool truncated)
+        {
+            var target = DiagnosticIdentity(entry.Target, maximumIdentityLength, ref truncated);
+            var replacement = DiagnosticIdentity(entry.Replacement, maximumIdentityLength, ref truncated);
+            return new ForgePatchSnapshot(entry.Id, entry.Owner, target, replacement, entry.State,
+                entry.State == ForgePatchState.Applied ? ForgeDetour.Verify(entry.Target, out _) :
+                    entry.State == ForgePatchState.Reverted && ForgeDetour.VerifyRestored(entry.Target, entry.OriginalBytes));
+        }
+
+        private static string DiagnosticIdentity(MethodInfo method, int maximumLength, ref bool truncated)
+        {
+            if (method == null) return string.Empty;
+            var builder = new System.Text.StringBuilder(maximumLength);
+            AppendDiagnosticText(builder, method.DeclaringType == null ? "?" : method.DeclaringType.FullName, maximumLength, ref truncated);
+            AppendDiagnosticText(builder, ".", maximumLength, ref truncated);
+            AppendDiagnosticText(builder, method.Name, maximumLength, ref truncated);
+            try
+            {
+                AppendDiagnosticText(builder, "#" + method.MetadataToken.ToString("X8", System.Globalization.CultureInfo.InvariantCulture), maximumLength, ref truncated);
+            }
+            catch
+            {
+                truncated = true;
+                AppendDiagnosticText(builder, "#?", maximumLength, ref truncated);
+            }
+            return builder.ToString();
+        }
+
+        private static void AppendDiagnosticText(System.Text.StringBuilder builder, string value, int maximumLength, ref bool truncated)
+        {
+            if (string.IsNullOrEmpty(value)) return;
+            if (builder.Length >= maximumLength)
+            {
+                truncated = true;
+                return;
+            }
+            var available = maximumLength - builder.Length;
+            if (value.Length <= available)
+            {
+                builder.Append(value);
+                return;
+            }
+            var copyCount = Math.Max(0, available - 1);
+            if (copyCount > 0) builder.Append(value, 0, copyCount);
+            builder.Append('…');
+            truncated = true;
+        }
+
         public ForgePatchVerification Verify(string patchId)
         {
             if (string.IsNullOrWhiteSpace(patchId)) throw new ArgumentException("A patch ID is required.", nameof(patchId));

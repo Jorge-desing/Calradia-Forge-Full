@@ -143,39 +143,50 @@ private void OnHeroCreated(Hero hero, bool isBornNaturally)
 
 ## Time-Slicing Architecture
 
-### Modulo-24 Hash Distribution
+### Stable-Bucket Scheduling for Deferrable Work
 
 ```csharp
-public static bool ShouldProcessInCurrentHour(string stringId)
+int currentHour = (int)CampaignTime.Now.ToHours;
+if (ForgeTimeSlicer.ShouldProcess(entity.StringId, currentHour))
 {
-    if (string.IsNullOrEmpty(stringId)) return false;
-    int entityHash = stringId.GetHashCode() & 0x7FFFFFFF;
-    int currentHour = (int)CampaignTime.Now.ToHours % 24;
-    return (entityHash % 24) == currentHour;
+    ProcessDeferrableEntityWork(entity);
 }
 ```
 
-### Application in Tick Handlers
+`ForgeTimeSlicer.ShouldProcess` delegates to a deterministic hash of the supplied identifier and normalizes the hour against the bucket count. Use it only when processing in a later slice preserves the feature's semantics. The bucket mapping is stable; it does not guarantee evenly sized workloads.
+
+### Optional Use in Hourly Tick Handlers
 
 ```csharp
-private void OnDailyTickHero(Hero hero)
+public override void RegisterEvents()
 {
-    if (hero == null || !hero.IsActive) return;
-    
-    // Only process this hero if it falls in current hour bucket
-    if (!ShouldProcessInCurrentHour(hero.StringId)) return;
-    
-    // Process daily logic for this hero
-    Interlocked.Increment(ref _periodicTicksProcessed);
+    CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
+}
+
+private void OnHourlyTick()
+{
+    int currentHour = (int)CampaignTime.Now.ToHours;
+    var heroes = Hero.AllAliveHeroes;
+    if (heroes == null) return;
+    int count = heroes.Count;
+    for (int i = 0; i < count; i++)
+    {
+        Hero hero = heroes[i];
+        if (hero == null || !hero.IsAlive) continue;
+        if (!ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour)) continue;
+
+        ProcessDeferrableHeroWork(hero);
+    }
 }
 ```
 
-### Performance Benefits
+Call this from an hourly event so the predicate is evaluated as the current hour advances through all buckets. Do not gate a once-daily per-hero callback with the hourly bucket: the callback does not promise to revisit the hero at its assigned hour, so work can be delayed beyond the advertised cadence or skipped repeatedly. Keep event-critical daily work in the daily callback without this filter.
 
-- **Even Distribution**: Entities spread across 24 hourly buckets
-- **Frame Budget**: Each tick processes ~1/24th of entities
-- **Deterministic**: Same entity always processes in same hour
-- **Stutter Prevention**: Eliminates "Midnight Freeze"
+### Performance Considerations
+
+- **Stable Mapping**: The same identifier maps to the same bucket; the resulting distribution may be uneven.
+- **Deferred Work**: Only entities in the selected bucket receive the deferred operation, but filtering a collection still scans the collection.
+- **Measurement Required**: Measure callback duration, allocation, and workload distribution on representative data. Time-slicing alone does not guarantee lower frame time or prevent stutter.
 
 ## State Synchronization Architecture
 
@@ -250,15 +261,16 @@ Hero hero = MBObjectManager.Instance.GetObject<Hero>(_trackedHeroId);
 Settlement settlement = MBObjectManager.Instance.GetObject<Settlement>(_homeSettlementId);
 ```
 
-## Anti-Lag Coding Patterns
+## Measured Performance Patterns
 
-### Pattern 1: Avoid LINQ in Ticks
+### Pattern 1: Measure LINQ and Iteration Costs
 
 ```csharp
-// ❌ WRONG - GC allocations in tick
+// This pipeline can allocate and add work; measure it in the target workload.
 var activeHeroes = Hero.AllAliveHeroes.Where(h => h.IsActive).ToList();
 
-// ✅ CORRECT - Manual iteration
+// If measurement shows the pipeline is a hot-path cost, compare a direct iteration.
+// A loop is not automatically allocation-free: enumerators and called code may allocate.
 foreach (var hero in Hero.AllAliveHeroes)
 {
     if (!hero.IsActive) continue;
@@ -403,14 +415,14 @@ AgentCognitiveMemoryBehavior (Stateless CampaignBehavior)
 │   │   ├── HeroGainedSkill → Records "SkillProgression" episode & updates "LastMasteredSkill"
 │   │   └── HeroRelationChanged → Records "DispositionShift" episode & updates "Relation_{targetId}"
 │   └── Periodic Maintenance & Decay
-│       ├── HourlyTickEvent → Anti-lag modulo-24 time-sliced semantic maintenance
+│       ├── HourlyTickEvent → Stable-bucket selection for eligible semantic maintenance; the alive-hero list is still scanned
 │       └── OnSessionLaunchedEvent → Resets session telemetry counters
 ├── Volatile State Contract
 │   ├── Fully decoupled from Bannerlord savegames (SyncData is completely empty)
 │   ├── All cognitive facts & episodes reside in thread-safe ForgeAgentMemory
 │   └── Deceased heroes are cleared automatically upon HeroKilledEvent
-└── Modulo-24 Hash Partitioning
-    └── ((hero.Id.GetHashCode() & 0x7FFFFFFF) % 24) == currentHour ensures 0 GC spikes
+└── Stable-Bucket Scheduling (ForgeTimeSlicer)
+    └── ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) selects eligible deferred work; it does not guarantee even buckets or allocation-free execution
 ```
 
 ## Behavior Discovery Flow
@@ -626,7 +638,7 @@ Same 4 checks as PowerShell, cross-platform compatible
 /// 
 /// Performance:
 /// - [Time-slicing strategy]
-/// - [Anti-lag measures]
+/// - [Time-slicing notes]
 /// </summary>
 ```
 
@@ -634,7 +646,7 @@ Same 4 checks as PowerShell, cross-platform compatible
 
 ### Architectural Overview
 
-`AgentCognitiveMemoryBehavior` implements a zero savegame footprint cognitive architecture based on the CoALA framework (`ForgeAgentMemory`), providing NPCs with dynamic semantic and episodic memories and real-time reactive dialogue behaviors.
+`AgentCognitiveMemoryBehavior` uses the CoALA framework (`ForgeAgentMemory`) without serializing its own memory state to savegames. It provides NPCs with dynamic semantic and episodic memories and real-time reactive dialogue behaviors.
 
 ```
 Campaign Events (HeroPrisonerTaken, HeroKilled, HeroRelationChanged, etc.)
@@ -643,7 +655,7 @@ ForgeAgentMemory (Volatile, Bounded FIFO Quotas, StringId Indexed)
     ├── Episodic Memory (Experiences, Battles, Captivity, Feuds, Training)
     └── Semantic Memory (Absolute Relations Relation_<Id>, Deltas LastRelationDelta_<Id>, Total Kills, TTL)
     ↓
-Modulo-24 Time-Slicing (HourlyTick: 1/24th of active heroes per hour)
+Stable-bucket maintenance for eligible work (HourlyTick: selected bucket; still scans alive heroes)
     ↓
 Universal Cognitive Dialogue Flows
     ├── Lord Greetings (start -> lord_start, Priority 115/112/110)
@@ -690,19 +702,19 @@ DataBehavior (Registered in SubModule.OnGameStart)
 ```
 
 ### Invariant Guarantees
-1. **Zero Savegame Bloat**: Empty `SyncData` ensures no serialization footprint or save corruption risks across versions.
+1. **No Behavior-Owned Save Data**: Empty `SyncData` means this behavior does not serialize its own state; it is not a general guarantee about save size or corruption from other sources.
 2. **Deterministic Lifecycle**: Clears transient variables upon new game creation and game loading, preventing stale state leakage across different campaign sessions.
 
 ## Key Architectural Rules Summary
 
 1. **Always AddNonSerializedListener** - Never serialize event subscriptions
 2. **Zero Entity Access in Constructors** - Defer to session launch
-3. **Modulo-24 Time Slicing** - Required for bulk entity processing
+3. **Stable-Bucket Scheduling** - Optional for bulk work that is safe to defer; measure bucket balance and scan cost
 4. **StringId for Entity References** - Never serialize Hero/Settlement directly
 5. **Interlocked for Telemetry** - Thread-safe counter increments
-6. **No LINQ in Ticks** - Manual iteration to prevent GC
+6. **Measure Tick Allocations** - Prefer a simpler iteration strategy only when profiling confirms it helps; no syntax guarantees zero allocation
 7. **Defensive Null Guards** - Check all entity references
 8. **Main Thread Only** - Campaign APIs are single-threaded
-9. **Empty SyncData for Stateless** - Zero save footprint
+9. **Empty SyncData for Stateless** - Do not serialize behavior-owned state
 10. **[AutoRegisterBehavior] for Discovery** - Automatic behavior registration
 

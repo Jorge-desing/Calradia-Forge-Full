@@ -73,8 +73,7 @@ Register all XML files in `SubModule.xml`:
       <skill id="Athletics" value="70" />
     </skills>
     <Equipments>
-      <!-- Battle Equipment 1 -->
-      <EquipmentSet>
+      <EquipmentRoster>
         <equipment slot="Item0" id="Item.battania_axe_1_t2" />
         <equipment slot="Item1" id="Item.battania_throwing_axes_1_t2" />
         <equipment slot="Item2" id="Item.battania_shield_t2" />
@@ -82,22 +81,20 @@ Register all XML files in `SubModule.xml`:
         <equipment slot="Body"  id="Item.rough_bearskin" />
         <equipment slot="Gloves" id="Item.rough_tied_bracers" />
         <equipment slot="Leg"   id="Item.wrapped_shoes" />
-      </EquipmentSet>
-      <!-- Battle Equipment Variation 2 -->
-      <EquipmentSet>
+      </EquipmentRoster>
+      <EquipmentRoster>
         <equipment slot="Item0" id="Item.battania_axe_1_t2" />
         <equipment slot="Item1" id="Item.battania_javelins_1_t2" />
         <equipment slot="Item2" id="Item.battania_shield_t2" />
         <equipment slot="Head"  id="Item.woodland_hood" />
         <equipment slot="Body"  id="Item.rough_bearskin" />
         <equipment slot="Leg"   id="Item.wrapped_shoes" />
-      </EquipmentSet>
-      <!-- Civilian Equipment Set (REQUIRED for settlement entry) -->
-      <EquipmentSet civilian="true">
+      </EquipmentRoster>
+      <EquipmentRoster civilian="true">
         <equipment slot="Item0" id="Item.battania_dagger" />
         <equipment slot="Body"  id="Item.battania_civilian_tunic" />
         <equipment slot="Leg"   id="Item.wrapped_shoes" />
-      </EquipmentSet>
+      </EquipmentRoster>
     </Equipments>
     <upgrade_targets>
       <upgrade_target id="NPCCharacter.mymod_battanian_harasser" />
@@ -106,6 +103,12 @@ Register all XML files in `SubModule.xml`:
   </NPCCharacter>
 </NPCCharacters>
 ```
+
+### Inline Equipment Rosters and Schema Versions
+
+`ForgeTroopBuilder` writes inline NPC troop loadouts as `<EquipmentRoster>` elements inside `<Equipments>`; inline `<equipment slot="..." id="Item.item_id" />` entries belong inside that roster. Do not use `<EquipmentSet>` as an inline wrapper. Preserve an `<EquipmentSet>` reference variant only when the `NPCCharacters.xsd` for the target Bannerlord version explicitly defines that reference shape; do not globally replace schema-specific references with inline rosters.
+
+Validate generated XML against `XmlSchemas/NPCCharacters.xsd` from the exact game version being targeted. Passing XSD validation establishes structural validity for that schema only; it does not prove runtime loading, equipment selection, or in-game behavior. Re-check these forms when changing the supported game version.
 
 ### Equipment Slots Reference
 
@@ -124,8 +127,8 @@ Register all XML files in `SubModule.xml`:
 
 1. **Integer Age Rule:** `age="25"` ✅ — `age="25.0"` or `age="25.5"` cause an immediate crash on startup.
 2. **Upgrade Target prefix:** Always use `NPCCharacter.` prefix on `<upgrade_target id>`.
-3. **Civilian Equipment Sets are required** for any troop that enters settlements.
-4. **No inline XML comments inside `<Equipments>`** tags — the parser crashes.
+3. For an inline civilian loadout, use the `<EquipmentRoster civilian="true">` form when supported by the target-version schema; verify whether the troop's use case requires it.
+4. Avoid inline XML comments inside `<Equipments>` and between `<EquipmentRoster>` entries when the target parser is sensitive to them; validate parser behavior separately from XSD structure.
 
 ---
 

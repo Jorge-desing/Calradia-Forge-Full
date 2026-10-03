@@ -1,14 +1,15 @@
 ---
 name: multi-agent-orchestration
-description: Multi-agent coordination and orchestration architecture using Google Antigravity SDK and OpenAI Codex CLI for Calradia Forge. Hierarchical delegation, semantic token compaction with lossless failure telemetry, CoALA memory integration, and background execution without polling loops.
-risk: safe
-source: Calradia Forge Agent Ecosystem (Apache 2.0)
-date_added: 2026-09-28
+description: "Multi-agent coordination for Calradia Forge using Google Antigravity SDK and OpenAI Codex CLI. Covers task contracts, tool-specific output summaries, raw-log review, CoALA memory integration, and host-specific task waiting without busy polling."
+metadata:
+  risk: safe
+  source: Calradia Forge Agent Ecosystem (Apache 2.0)
+  date_added: "2026-09-28"
 ---
 
-# Multi-Agent Orchestration: Autonomous Coordination & Token Compaction
+# Multi-Agent Orchestration: Autonomous Coordination & Output Summaries
 
-Building complex software frameworks like Calradia Forge requires coordinated expertise: C# compiler and TaleWorlds engine architecture, WPF MVVM desktop engineering, save game safety auditing, DocFX bilingual documentation, and empirical release packaging. Relying on a single monolithic agent context causes context window pollution and attention degradation. A master multi-agent architect deploys a **Hierarchical Multi-Agent Squadron** powered by the **Google Antigravity SDK** (`google.antigravity`) and compatible with **OpenAI Codex CLI**, governed by semantic **Token Compaction** with **Lossless Failure Telemetry**.
+Building complex software frameworks like Calradia Forge requires coordinated expertise: C# compiler and TaleWorlds engine architecture, WPF MVVM desktop engineering, save game safety auditing, DocFX bilingual documentation, and empirical release packaging. Relying on a single monolithic agent context can cause context window pollution and attention degradation. A multi-agent orchestrator decomposes tasks into bounded contracts and may use the repository's Google Antigravity SDK (`google.antigravity`) or Codex agent facilities. The output compactor provides heuristic token estimates and tool-specific summaries; it is not a universal lossless telemetry guarantee.
 
 ---
 
@@ -16,31 +17,38 @@ Building complex software frameworks like Calradia Forge requires coordinated ex
 
 1. **Hierarchical Squadron Delegation**:
    - `ForgeMasterAgent` acts as orchestrator, decomposing macro goals into discrete task contracts.
-   - Delegates work to specialized agents:
+   - The repository configures five specialist roles; local offline tool execution calls repository tools sequentially and does not create Antigravity SDK workers. Only describe workers as spawned when the selected online runtime reports that execution.
+   - The specialist roster is:
      - **`ForgeArchitectAgent`**: C# architecture, target frameworks (`net472` vs `net8.0`), and GEMINI Rule A (anti-shadowing).
      - **`StatelessBehaviorAuditor`**: Save safety, empty `SyncData`, and zero `SaveableTypeDefiner` (Rule B).
      - **`DesktopWpfSpecialist`**: WPF MVVM, vector telemetry controls, 980x680 DIP minimum surface contract, and Windows UI Automation.
      - **`DocLedgerAgent`**: Strict English/Spanish documentation parity and append-only SHA-256 ledger integrity.
-2. **Semantic Token Compaction with Lossless Failure Telemetry**:
-   - The token compaction engine (`ForgeTokenCompactor`) achieves 80–99% token reduction on verbose command outputs (such as thousand-line build outputs or passing test reports).
-   - **MANDATORY INVARIANT**: 100% preservation of failure telemetry. Compiler error codes (`CSxxxx`), test assertion failures, and stack traces must never be compressed away or summarized into lossy generalizations. Full uncompressed logs are archived to `artifacts/agent-runs/`.
-3. **Reactive Wakeup (Zero Polling Loops)**:
-   - When spawning background tasks or subagents, the runtime resumes execution reactively when work completes.
-   - **NEVER** write polling loops: `while (!task.IsDone) { manage_task('status'); sleep(5); }`. Launch the task or subagent and stop calling tools to yield your turn.
-4. **CoALA Cognitive Memory Architecture**:
-   - Equip agents with structured memory tiers (`ForgeAgentMemory`):
+     - **`BugHunterAgent`**: C# code-smell and concurrency-hazard audits.
+2. **Bounded Output Summaries with Raw-Log Review**:
+   - `ForgeTokenCompactor` selects a distiller by tool name and extracts recognized diagnostics and summary metrics. Its token counts use a character/word heuristic, not the target model's tokenizer.
+   - Evidence is fixture-specific. `test_distill_dotnet_build_success` checks greater than 70% estimated reduction for one synthetic 40-project output. `test_distill_dotnet_build_preserves_compiler_errors` checks two sample compiler diagnostics. These tests do not establish a general compression range or preservation of every diagnostic format.
+   - `test_distill_solution_tests_failure_preserves_stack_traces` checks the failure status, a `FAIL` line, and an assertion line; despite its name, it does not assert that the stack-frame line is present in the compacted text. Do not claim universal preservation of assertions, compiler messages, stack traces, or other failure telemetry.
+   - Raw output is written to `artifacts/agent-runs/` when `save_raw=True` and the write succeeds; callers can disable it. For an incident requiring complete details, use raw mode/`force_raw=True` or inspect the returned forensic log when available. A compact summary or `has_errors` flag is not a substitute for reviewing the raw evidence.
+3. **Host-Specific Event-Driven Waiting (No Polling Loops)**:
+   - For Codex subagent tasks, use the collaboration mailbox/wait facilities; that host signals new messages and task completion. This does not establish an equivalent wake-up or yield API for Google Antigravity. Verify the installed SDK's versioned documentation before describing its task lifecycle.
+   - Codex collaboration agents are managed by the Codex host; they are separate from the repository's `tools/Run-CalradiaForge-Agents.bat` runner. That runner selects the Antigravity SDK path only when its prerequisites are present, otherwise it executes repository tools locally. A Codex agent being active does not prove an Antigravity worker was created, and local offline tool execution is not subagent delegation.
+   - **NEVER** write active polling loops such as `while (!task.IsDone) { manage_task('status'); sleep(5); }`. Use the task and messaging facilities supported by the selected host, and report the execution route that actually ran.
+4. **CoALA-inspired project memory model**:
+   - Python agent orchestration uses the project-specific `CoALAAgentMemory` (`agents/memory.py`) with bounded, structured memory tiers; this is conceptually inspired by CoALA and does not claim full framework conformance:
      - **Working Memory**: Active goal, current tool call, and scratchpad state.
      - **Episodic Memory**: Bounded execution log with timestamps, tool names, and outcomes.
-     - **Semantic Memory**: Immutable repository rules (Rule A, Rule B, Rule C, Rule D) and domain facts.
+     - **Semantic Memory**: Immutable tuple of repository rules (Rule A, Rule B, Rule C, Rule D) and domain facts, injected only on paths that request the rendered memory context.
+   - `ForgeAgentMemory` is a separate C# Bannerlord/SDK runtime service; do not conflate it with the Python orchestrator's CoALA memory.
+   - Do not attach a previous tool's `last_stats` to a later raw-tool result. Use stats returned for that invocation or record the verdict without compaction savings.
 
 ---
 
 ## 2. Capabilities & Scope
 
 ### Capabilities
-- `squadron-orchestration`: Launches and manages specialized subagents concurrently using `invoke_subagent`.
-- `token-compaction`: Distills verbose tool outputs into concise markdown tables with uncompressed log links.
-- `lossless-error-retention`: Automatically extracts and highlights compiler errors (`CSxxxx`) and test failures.
+- `squadron-orchestration`: Configures specialist roles for the optional online Antigravity integration; local offline tool execution calls repository tools and must be reported separately from online agent execution.
+- `tool-output-summarization`: Produces heuristic token statistics and summaries for recognized tool formats.
+- `failure-triage`: Uses extracted error indicators to prioritize review; extraction is tool-specific and must not be described as complete or lossless.
 - `coala-memory-management`: Injects structured episodic and semantic memory into autonomous agent prompts.
 - `codex-antigravity-interop`: Maintains parity between Google Antigravity (`GEMINI.md`) and OpenAI Codex CLI (`AGENTS.md`, `CODEX.md`).
 
@@ -52,11 +60,11 @@ Building complex software frameworks like Calradia Forge requires coordinated ex
 
 ## 3. Concrete Orchestration Patterns
 
-### Pattern 1: Subagent Invocation Without Polling
-Launch a specialized subagent and yield control cleanly.
+### Pattern 1: External SDK API Sketch (Unverified; Not Repository Code)
+The following is conceptual pseudocode for an external SDK shape only. `AgentContext`, `SubagentRunner`, `invoke_subagent`, and `yield_turn` are not verified against the repository's pinned optional dependency and are not used by `agents/orchestrator.py`. Do not copy this block as executable code or cite it as evidence of current SDK behavior. Check the installed package's versioned documentation before using any corresponding API.
 
-```python
-# CORRECT: Launching specialist subagent in Python / Antigravity SDK
+```text
+# EXTERNAL PSEUDOCODE ONLY — API symbols are unverified.
 from google.antigravity import AgentContext, SubagentRunner
 
 def run_architectural_audit(context: AgentContext):
@@ -66,34 +74,34 @@ def run_architectural_audit(context: AgentContext):
         role="C# Architectural Invariant Auditor",
         prompt="Audit src/CalradiaForge.Mod for GEMINI Rule A anti-shadowing and TaleWorlds thread affinity."
     )
-    # Stop execution cleanly; system reactively wakes up on subagent message
+    # This external SDK yield/wake-up behavior is unverified; do not rely on it.
     return context.yield_turn()
 ```
 
-### Pattern 2: Token Compaction with Lossless Failure Telemetry
-Compact verbose build outputs while guaranteeing complete error fidelity.
+The current local implementation is observable in `agents/orchestrator.py`: it chooses an online `Agent` path only when the SDK, credentials, and non-offline configuration are all present. Otherwise it runs repository tool functions locally; this fallback is not an SDK subagent dispatch.
+
+### Pattern 2: Tool-Specific Summary and Raw Evidence
+Compact only when a concise view is useful, and preserve a route to raw evidence. Summaries must not be treated as complete diagnostic records.
 
 ```python
-import re
+from agents.compactor import ForgeTokenCompactor
 
-def compact_dotnet_build_output(raw_output: str, log_path: str) -> str:
-    # 1. Check for compiler errors (CSxxxx) or warnings
-    error_lines = [line for line in raw_output.splitlines() if "error CS" in line or ": error " in line]
-    
-    if error_lines:
-        # LOSSLESS RETENTION: Retain all exact compiler errors verbatim
-        formatted_errors = "\n".join(error_lines[:15])
-        return (
-            f"**BUILD FAILED**: {len(error_lines)} compiler error(s) detected.\n\n"
-            f"```text\n{formatted_errors}\n```\n"
-            f"Full raw output: `{log_path}`"
-        )
-    
-    # 2. On success, compact hundreds of lines into a concise summary
-    elapsed_match = re.search(r"Tiempo transcurrido ([0-9:]+)", raw_output)
-    elapsed = elapsed_match.group(1) if elapsed_match else "N/A"
-    return f"**BUILD SUCCESS**: 0 errors, 0 warnings. (Compiled in {elapsed}) [Log: `{log_path}`]"
+def inspect_build_output(raw_output: str) -> str:
+    raw_text, stats = ForgeTokenCompactor.distill(
+        "run_dotnet_build",
+        raw_output,
+        save_raw=True,
+        force_raw=True,
+    )
+    # In raw mode, inspect raw_text directly. Do not infer failure state from
+    # stats.has_errors: the bypass returns original text without classifying it.
+    assert raw_text == raw_output
+    if stats.log_file:
+        print(f"Forensic copy: {stats.log_file}")
+    return raw_text
 ```
+
+For compacted operation, call `distill` without `force_raw`, treat the result as a summary, and inspect raw output whenever diagnostic completeness matters. A returned log path is available only when saving was requested and the write succeeded.
 
 ---
 
@@ -101,15 +109,15 @@ def compact_dotnet_build_output(raw_output: str, log_path: str) -> str:
 
 ### Edge 1: Polling Task or Subagent Status in a Loop
 - **Severity**: CRITICAL
-- **Symptom**: Exhausts API token limits, burns tool call quotas, and delays task completion.
-- **Root Cause**: Calling `manage_task(Action='status')` or checking subagents in an active loop.
-- **Fix**: Never poll. Launch the task or subagent, inform the user, and conclude your turn. The messaging system will wake you up upon completion.
+- **Symptom**: Repeated status checks can consume tool calls and add coordination overhead without advancing the task.
+- **Root Cause**: The orchestration assumes every host provides the same asynchronous wait or wake-up behavior.
+- **Fix**: In Codex, use its collaboration mailbox and wait facilities; those can surface messages or task completion while the caller is waiting. This guarantee is specific to the Codex runtime. Do not claim Google Antigravity automatically resumes an agent on completion unless the installed, versioned SDK documentation confirms that behavior. For Antigravity, follow only the lifecycle and waiting mechanisms documented for the installed SDK; report unsupported or unverified behavior explicitly.
 
-### Edge 2: Compacting Away Compiler Errors or Stack Traces
+### Edge 2: Treating a Summary as a Complete Failure Record
 - **Severity**: CRITICAL
-- **Symptom**: The agent reports "Build failed with errors" but cannot see what failed, entering a hallucination loop attempting random fixes.
-- **Root Cause**: Token compactor truncating error outputs to save tokens.
-- **Fix**: Enforce the Lossless Failure Invariant: Always preserve 100% of compiler errors (`CSxxxx`), test assertions, and stack traces verbatim in the compacted context.
+- **Symptom**: An agent acts on an incomplete diagnostic excerpt or cannot see the failing stack frame.
+- **Root Cause**: A tool-specific distiller recognizes only selected line formats and may cap or omit details; fixture success does not prove coverage of other output shapes.
+- **Fix**: Review raw output or its forensic log for diagnosis-critical failures. Use raw mode when complete text is required, and add a fixture for any newly supported output format before documenting its behavior.
 
 ### Edge 3: Spawning Subagents for Trivial Single-File Lookups
 - **Severity**: MEDIUM
@@ -121,8 +129,10 @@ def compact_dotnet_build_output(raw_output: str, log_path: str) -> str:
 
 ## 5. Validation Rules & Verification Checklist
 
-1. [ ] **Lossless Failure Telemetry**: Compaction tests in `test_forge_agents.py` confirm 100% error preservation.
-2. [ ] **Zero Polling Loops**: No code or agent prompts contain active polling loops.
-3. [ ] **CoALA Memory Separation**: Working, episodic, and semantic memory layers are cleanly separated.
-4. [ ] **Subagent Tool Isolation**: Subagents receive only the tools and permissions necessary for their specialized role.
-5. [ ] **Dual-Platform Parity**: Agent definitions maintain parity across `AGENTS.md` and `GEMINI.md`.
+1. [ ] **Fixture-Bounded Evidence**: State exactly which sample formats and assertions are covered; do not generalize fixture results into universal guarantees.
+2. [ ] **Raw Failure Path**: Confirm how the caller obtains original output (`force_raw`/raw mode or a successfully returned `log_file`) before relying on compacted diagnostics.
+3. [ ] **Estimated Metrics**: Label token counts/reduction as heuristic estimates, not model-tokenizer measurements.
+4. [ ] **Zero Polling Loops**: No code or agent prompts contain active polling loops.
+5. [ ] **CoALA Memory Separation**: Working, episodic, and semantic memory layers are cleanly separated.
+6. [ ] **Execution Route & Authority**: Report the route actually taken. The current SDK configuration sets `enable_sandbox=False`, so do not claim command sandboxing or tool isolation without a separate verified authority boundary.
+7. [ ] **Dual-Platform Parity**: Agent definitions maintain parity across `AGENTS.md` and `GEMINI.md`.

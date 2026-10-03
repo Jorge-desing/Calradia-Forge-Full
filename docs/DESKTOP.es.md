@@ -10,6 +10,9 @@ La ruta `ApiDeprecationChecker` se conserva en el catálogo de Desktop para mant
 ### Evidencia de diagnóstico y análisis de ForgeWeave
 Las heurísticas de código fuente de Core enmascaran comentarios y literales de C# antes de comprobar reglas basadas en texto; siguen siendo un análisis textual acotado, no diagnósticos del compilador. La cancelación se respeta al procesar cada archivo de código o localización. Un archivo ilegible o demasiado grande produce un hallazgo localizado y no impide analizar los archivos posteriores. El ledger de Desktop muestra el ID de regla, la ubicación de origen, la evidencia y la recomendación; la exportación conserva esos campos en el valor heredado de detalle. Una respuesta de transporte ForgeWeave recibida correctamente se marca `Unparsed` si la carga falta, está vacía o malformada, o carece de los metadatos obligatorios del snapshot. El transporte permanece como `Received`, el motivo se limita a 240 caracteres y la carga queda disponible para revisión. `Received` y `Unparsed` no significan que la operación se completó ni que el resultado se verificó.
 
+### Diagnósticos de parches
+El cliente Desktop usa la acción de protocolo `patch-diagnostics` para mostrar un `ForgePatchDiagnosticsSnapshot` acotado de hooks y parches de reemplazo propiedad de Forge. Su observador externo opcional comprueba la superficie pública estática de consulta esperada `HarmonyLib.Harmony.GetAllPatchedMethods()` y `GetPatchInfo(MethodBase)` en un ensamblado ya cargado llamado `0Harmony`; es una señal diagnóstica acotada del runtime, no una prueba de compatibilidad con una versión o combinación de mods. Forge no carga Harmony ni incorpora su ensamblado como referencia de compilación o distribución. La consulta se ejecuta sincrónicamente dentro del proceso: Forge limita la enumeración de ensamblados y destinos y la salida copiada, pero no puede limitar el tiempo de CPU ni las asignaciones que realicen internamente los métodos de consulta o getters de Harmony. No es un sandbox ni un verificador de autenticidad. El observador es de solo lectura y no detecta otros backends de parches. El alias actual de consola dentro del juego es `cf.patch_diagnostics`; el alias anterior `cf.harmony_summary` quedó retirado.
+
 ### Auditor Avanzado de Ensamblados y Guardado (AsmResolver)
 Las rutas `SaveTypeDefinerAuditor` y `CampaignNamespaceGuard` admiten binarios `.dll` o `.exe` compilados además de carpetas de código fuente. Mediante AsmResolver, el auditor estático inspecciona los metadatos administrados sin cargar ni ejecutar el ensamblado:
 - **GEMINI.md Regla A (Anti-Shadowing):** Comprueba que ningún tipo ni espacio de nombres oculte `TaleWorlds.CampaignSystem.Campaign` o `TaleWorlds.Localization`.
@@ -103,13 +106,13 @@ El banco de trabajo eleva la diferenciación visual desde botones contextuales h
   3. *Atajos de Teclado del Banco de Trabajo:* Referencia directa de combinaciones de teclas (Ctrl+Enter, Ctrl+D, Ctrl+P, Ctrl+E, Esc, Ctrl+F).
   4. *Invocación CLI sin Cabezal:* Sintaxis exacta de línea de comandos para scripting y CI/CD (CalradiaForge.Desktop.exe --tool <Id>).
 
-### Optimización Medida del Banco de Trabajo WPF y Reducción GC (Rev034)
+### Cambios de Código WPF y Mediciones del Arnés de Render (Rev034)
 - **Colecciones Reactivas sin Asignaciones:** `BatchObservableCollection<T>.ReplaceAll` incorpora una sobrecarga especializada para `IReadOnlyList<T>` que ejecuta comparación de igualdad de elementos en el lugar (`EqualityComparer<T>.Default.Equals`), eliminando asignaciones intermedias de matrices cuando los estados de filtrado o navegación permanecen inalterados.
 - **Filtrado Directo de Búsqueda y Paleta:** `DesktopShellViewModel.FilterPaletteTools` y `RefreshVisibleTools` sustituyeron cadenas LINQ `.Where(...)` y `.Select(...)` por bucles basados en índices predimensionados, eliminando asignaciones de iteradores y cierres (closures) durante pulsaciones rápidas de teclado en la búsqueda.
 - **Predimensionado de Riel Operacional:** `RefreshOperationalRailEntries` precalcula la capacidad exacta de la colección en función de los grupos visibles y el conteo de herramientas activas, evitando ciclos de redimensionado de matrices al poblar las entradas del riel.
 - **Eliminación de Boxing en Convertidores:** `PinnedGlyphConverter` evalúa `IList<ToolDefinition>` e `IReadOnlyList<ToolDefinition>` mediante acceso directo por índice, eliminando el boxing de la interfaz `IEnumerator` en las 194 rutas de herramientas en cada pase de renderizado.
 - **Predimensionado de Búferes de Simulación:** Los informes de `DesktopSimulationService` (árboles de tropas, memoria de agentes CoALA, formas de onda de audio y modelos económicos a 30 días) inicializan los búferes de `StringBuilder` con 2.048 caracteres, evitando reasignaciones dinámicas en el montículo (heap).
-- **Referencia Empírica de Rendimiento de Layout:** El tiempo síncrono de llamadas de layout en el renderizado WPF se redujo de 1.711,5 ms a 1.647,4 ms (-64,1 ms) a través de los 275 casos de prueba, acelerando el arranque de la aplicación y el primer renderizado de 1.488,6 ms a 1.391,4 ms (-97,2 ms).
+- **Referencia del Arnés de Render fuera de Pantalla:** El tiempo síncrono de llamadas de layout del arnés de DIP fijo cambió de 1.711,5 ms a 1.647,4 ms (-64,1 ms) en 275 casos. La fase de inicialización/primer renderizado del arnés cambió de 1.488,6 ms a 1.391,4 ms (-97,2 ms). Son mediciones del arnés, no del inicio de la aplicación observado por el usuario ni de la latencia interactiva.
 
 ### Optimización Multicapa y Precomputación de Metadatos (Rev035)
 - **Precomputación de Metadatos en Catálogo de Herramientas (`ToolCatalog` y `ToolDefinition`):**
@@ -138,12 +141,12 @@ El banco de trabajo eleva la diferenciación visual desde botones contextuales h
   - `KingdomDiplomacyDashboardViewModel`: Precomputación de `FactionStanceViewModel.TensionText` y `BarWidth` en el constructor, junto con matrices estáticas `ScenarioStances`.
   - `ComponentGeneratorDashboardViewModel`: Preasignación de `ScenarioBlueprints` en los 3 escenarios de planos XML.
 - **Precomputación en el Motor de Simulación (`DesktopSimulationService`):**
-  - Precomputación de `CanonicalTroopReport`, `CanonicalTroopEvidence`, `CanonicalAudioReport`, `CanonicalAudioEvidence`, `CanonicalEconomyReport` y `CanonicalEconomyEvidence` como campos estáticos de solo lectura. Las ejecuciones por defecto retornan instancias preasignadas con cero asignación en el heap.
-  - Tabla de búsqueda precalculada `BarCache` para barras de capacidad de 24 caracteres, eliminando asignaciones de cadenas en el renderizado de medidores.
+  - Precomputación de `CanonicalTroopReport`, `CanonicalTroopEvidence`, `CanonicalAudioReport`, `CanonicalAudioEvidence`, `CanonicalEconomyReport` y `CanonicalEconomyEvidence` como campos estáticos de solo lectura. Las ramas síncronas predeterminadas reutilizan esas instancias de informe y evidencia. La ruta completa del workspace WPF también programa una tarea, crea un `WorkspaceExecutionResult` y materializa la evidencia devuelta; no se ha establecido una afirmación de cero asignaciones de extremo a extremo.
+  - `BarCache` reutiliza la cadena del medidor cuando `RenderBar` recibe ancho 24. No elimina asignaciones del formato del informe circundante ni de la ruta asíncrona del workspace.
   - Reemplazo de consultas LINQ y matrices temporales en `InspectAgentMemory` por vectores preasignados (`SampleLordAgents`, `EpisodicTypes`) y bucles indexados.
 - **Referencia Empírica de Rendimiento y Renderizado WPF:**
   - Pruebas no visuales y contratos acelerados de 812,42 ms a **691,69 ms** (-15 %).
-  - Arranque y primer renderizado de la aplicación acelerados de 1.594,45 ms a **1.460,39 ms** (-8,4 %).
+  - La fase de inicialización/primer renderizado del arnés fuera de pantalla cambió de 1.594,45 ms a **1.460,39 ms** (-8,4 %); no mide el inicio de la aplicación observado por el usuario.
   - Navegación entre rutas y filtrado acelerados de 1.853,48 ms a **1.593,84 ms** (-14 %).
   - Tiempo total de la suite de renderizado WPF reducido a **9.792 ms** en los 275 casos de prueba con 100 % de éxito.
 
@@ -164,7 +167,7 @@ El banco de trabajo eleva la diferenciación visual desde botones contextuales h
 - **Precomputación en Modelos de Grupo de Riel (`WorkbenchViewModels`):**
   - Precomputación de `GroupIconKey = IconForGroup(Name)` en el constructor de `ToolGroupViewModel`, aligerando la carga y alternancia del riel de navegación.
 - **Referencia Empírica de Rendimiento y Renderizado WPF:**
-  - Arranque y primer renderizado de la aplicación acelerados de 1.751,0 ms a **1.385,7 ms** (**~21 % de reducción** en latencia inicial).
+  - La fase de inicialización/primer renderizado del arnés fuera de pantalla cambió de 1.751,0 ms a **1.385,7 ms**; no mide la latencia inicial observada por el usuario.
   - Pruebas no visuales y contratos acelerados a **764,6 ms**.
   - La suite de renderizado WPF completa (275 casos de prueba) finalizó en **9.883 ms** con 100 % de casos aprobados (0 fallos).
   - Nodos visuales recorridos reducidos en los snapshots del árbol visual.
@@ -173,7 +176,7 @@ El banco de trabajo eleva la diferenciación visual desde botones contextuales h
 - **Puntuación de Utilidad Compuesta y Decaimiento Temporal MIRIX (`agent-memory-systems`):**
   - Implementación de la fórmula cognitiva MIRIX en `MemoryFactItem`:
     $$Utility = 0.4 \cdot Recency + 0.3 \cdot Frequency + 0.3 \cdot Importance$$
-  - Precomputación de `UtilityScore`, `UtilityBadge` (`[U: 0.88]`) y color semántico `UtilityBrushKey` (`VerdigrisBrush` para $U \ge 0.70$, `BrassBrush` para $0.40 \le U < 0.70$, `EmberBrush` para $U < 0.40$) en el constructor, con cero asignaciones dinámicas en el bucle de renderizado.
+  - Precomputación de `UtilityScore`, `UtilityBadge` (`[U: 0.88]`) y color semántico `UtilityBrushKey` (`VerdigrisBrush` para $U \ge 0.70$, `BrassBrush` para $0.40 \le U < 0.70$, `EmberBrush` para $U < 0.40$) en el constructor. Son valores precalculados del modelo; no se midieron asignaciones de la interacción WPF completa.
   - Enriquecimiento de `AgentProfileViewModel` con contadores atómicos precalculados (`FactCount`, `EpisodicCount`, `ProceduralCount`), estado de decaimiento (`DecayState`) y distintivo textual consolidado `SummaryBadge`.
 - **Preasignación de Escenarios de Decaimiento Cognitivo (`ScenarioAgentSets`):**
   - `AgentMemoryDashboardViewModel`: Preasigna tres matrices estáticas inmutables que representan las etapas temporales de los agentes:
@@ -196,8 +199,8 @@ El banco de trabajo eleva la diferenciación visual desde botones contextuales h
 - **Hardware BitmapCache en Grupos Vectoriales Estáticos (`MainWindow.xaml`):**
   - Equipamiento de grupos decorativos vectoriales complejos (rejilla `WorkbenchCartographicBoardDecoration` y decoración interna de `HeaderSealButton`) con `<BitmapCache EnableClearType="False" RenderAtScale="1.0" SnapsToDevicePixels="True"/>`.
   - Convierte la rasterización de geometrías complejas en muestreo de texturas GPU durante pasadas de diseño, cambios de tamaño y alternancias de tema.
-- **Salience de Memoria CoALA y Métricas Dinámicas de Consolidación:**
-  - `AgentProfileViewModel`: Bucle de evaluación con cero asignaciones en el constructor calculando `TopSalientFact`, `ClusterSummary` y `ConsolidationIndex`.
+- **Muestra de Memoria de Agentes y Métricas de Salience:**
+  - La ruta WPF presenta perfiles ilustrativos; no es un registro vivo de Bannerlord ni un runtime directo de CoALA. El ciclo de selección evita colecciones temporales, pero la interpolación de resúmenes y la creación de arreglos circundantes sí asignan memoria. No se afirma que toda la ruta de ViewModel/informe tenga cero asignaciones.
   - `AgentMemoryDashboardViewModel`: Exposición de `ActiveClusterOverview` y `ActiveConsolidationRate` enlazados directamente a la tarjeta de cabecera con notificaciones reactivas al seleccionar agentes y alternar escenarios.
 - **Verificación Ampliada con Windows UI Automation (`calradia-forge-ui-automation`):**
   - Ampliación de `tools/Test-CalradiaForge-Desktop-Uia.ps1` a 29 comprobaciones en más de 24 nodos de interfaz.
@@ -386,3 +389,7 @@ cmd.exe /d /c "tools\Run-CalradiaForge-Tests.bat --desktop-only --no-pause --ren
 Después de añadir ajuste de línea a las estadísticas traducidas y a los indicadores compactos de las tarjetas estrechas, la ejecución final del BAT volvió a pasar las mismas 63 pruebas Desktop y 289 casos de render con 182 pases de layout. `artifacts/desktop-robustness-after-20260927-final-wrap.json` registra 10.939 ms totales del arnés y 3.120,8 ms en llamadas de layout; siguen siendo tiempos del arnés, no latencia de la aplicación. El BAT de UIA de solo lectura también se volvió a ejecutar y pasó 23/23 controles, incluidos los dos botones para copiar del dossier, con ForegroundUnchanged=true.
 
 Rev071 es el contador de documentación fuente; su anexo protegido del Registro de Mejoras es Rev051. La versión sigue en 25.2.0; no cambiaron API pública, rutas, comandos, permisos, protocolo, dependencias ni ZIPs.
+
+### Aclaración de evidencia — muestra de memoria y asignaciones (02-10-2026)
+
+El inspector de memoria de Desktop usa perfiles de demostración integrados y debe etiquetarlos como muestras, no como telemetría verificada del juego. Los límites mostrados del SDK coinciden con el código de `ForgeAgentMemory`. El ciclo de selección histórico evita colecciones temporales, pero el formato de resúmenes y los arreglos del trabajo de vista/informe circundante sí asignan memoria; ni la inspección del código ni la nota anterior midieron las asignaciones de una interacción WPF completa.

@@ -154,10 +154,10 @@ namespace CalradiaForge.Desktop.Services
 
             CanonicalMemoryEvidence =
             [
-                new("Agent Memory / Global Registry", "Verified", $"6/{ForgeAgentMemory.MaximumAgents} global slots utilized; bounded agent slot isolation active."),
-                new("Agent Memory / Semantic Decay", "Verified", "Lazy TTL expiration verified; stale facts removed on access."),
-                new("Agent Memory / Episodic FIFO", "Verified", "Per-agent 512 cap and per-type 128 cap verified without unbounded heap growth."),
-                new("Agent Memory / Procedural Health", "Verified", "Task rules validated without circular reentrancy.")
+                new("Agent Memory / Global Registry", "Sample", $"6/{ForgeAgentMemory.MaximumAgents} sample profiles shown; this route does not report the live registry."),
+                new("Agent Memory / Semantic Decay", "Sample", "Example semantic facts illustrate the optional TTL tier."),
+                new("Agent Memory / Episodic FIFO", "Sample", "Example events illustrate the bounded episodic tier."),
+                new("Agent Memory / Procedural Health", "Sample", "Example procedures illustrate caller-defined stored routines.")
             ];
         }
 
@@ -330,8 +330,8 @@ namespace CalradiaForge.Desktop.Services
             SeedAgentMemoryDemoProfiles();
 
             var report = new StringBuilder(2048);
-            report.AppendLine("=== COALA AGENT COGNITIVE MEMORY AUDIT (SDK v8) ===");
-            report.AppendLine($"Architecture Model : CoALA Cognitive Architecture for Bannerlord NPCs");
+            report.AppendLine("=== AGENT MEMORY SAMPLE ===");
+            report.AppendLine("Architecture Model : Bounded tiered memory inspired by CoALA concepts; not a CoALA language-agent runtime");
             report.AppendLine($"Global Capacity    : {ForgeAgentMemory.MaximumAgents} Maximum Agents Slots");
             report.AppendLine($"Agent Quotas       : 128 Semantic Facts | 512 Episodes (128/type) | 128 Procedural Tasks");
             report.AppendLine();
@@ -342,7 +342,8 @@ namespace CalradiaForge.Desktop.Services
             int maxAgents = ForgeAgentMemory.MaximumAgents;
             double pct = (double)registered / maxAgents * 100.0;
             string bar = RenderBar(pct, 24);
-            report.AppendLine($"Capacity: [{bar}] {pct:F2}% ({registered} / {maxAgents} slots utilized)");
+            report.AppendLine("Sample data below illustrates the memory tiers; it is not a live registry snapshot.");
+            report.AppendLine($"Capacity: [{bar}] {pct:F2}% ({registered} / {maxAgents} sample slots shown)");
             report.AppendLine();
 
             report.AppendLine("[TIER 1: SEMANTIC MEMORY (Beliefs, Preferences & TTL Facts)]");

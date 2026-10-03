@@ -77,8 +77,8 @@ Use this skill for `src/CalradiaForge.Desktop/`, its WPF presentation, and its d
   - Hierarchical node trees (e.g. troop progression trees, module dependency graphs) must be instantiated in static constructors and shared across ViewModel instances.
 - **Derived Format Precomputation in List Items:**
   - Properties in secondary item models formatting text (`StatSummary`, `TensionText`) or layout dimensions (`BarWidth`) must be precalculated in constructors and exposed via `{ get; }` to eliminate string interpolation and floating-point math during continuous WPF binding passes.
-- **Frozen Converters & Zero-Allocation Caching:**
-  - Geometry and brush converters must cache resolved instances in static dictionaries and freeze Freezables (`geom.Freeze()`) to enable thread-independent hardware acceleration in the WPF render compositor. Invalidate caches atomically upon theme changes.
+- **Measured Converter Caching:**
+  - Reuse cached geometry or brush resources only where repeated binding work is measured and the resource remains valid for the active theme. Freeze a `Freezable` only when it is safe to share as immutable. Invalidate theme-dependent entries when the palette changes and verify that cached values follow the selected theme. Converter caching and `Freezable.Freeze()` can reduce repeated lookup or mutation work, but they do not guarantee zero allocations for a binding, layout, render, or complete user interaction; measure that full path before making performance claims.
 
 ## Command Lifecycle & Module DAG Topology Conventions (Rev071+)
 

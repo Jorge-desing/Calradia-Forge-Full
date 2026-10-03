@@ -54,5 +54,5 @@ public class CustomCharacterDevelopmentModel : CharacterDevelopmentModel
 - Register via `campaignStarter.AddModel(new CustomCharacterDevelopmentModel(existingModel))`.
 
 ## 5. Performance & Save System Rules
-- **Zero Allocations in Hot Paths**: `CalculateLearningRate` is queried frequently; never allocate LINQ or heap collections inside it. Guard `TextObject` explanations behind `if (explainer != null)`.
+- **Allocation-Conscious Hot Path**: `CalculateLearningRate` is queried frequently; avoid LINQ and unnecessary heap collections in this path, and guard `TextObject` explanations behind `if (explainer != null)`. Claim zero allocations only when a measurement covers the complete synchronous call path.
 - **Anti-Shadowing Constraint (`GEMINI.md`)**: Never name a folder, namespace, or class `Campaign`. Use `CharacterProgression` or `CampaignBehaviors`.

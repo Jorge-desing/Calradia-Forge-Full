@@ -16,12 +16,12 @@ namespace CalradiaForge.Core
             var r=ReportWorkspace.Normalize(report);
             var b=new StringBuilder("<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Calradia Forge — Session report</title><style>body{margin:0;background:#172722;color:#f3e6c5;font:16px system-ui}main{max-width:1150px;margin:auto;padding:40px}h1,h2{font-family:Georgia}h1{font-size:38px;border-bottom:2px solid #d8b56c;padding-bottom:18px}h2{margin-top:36px}table{width:100%;border-collapse:collapse;background:#fff7e3;color:#29251c}th,td{text-align:left;padding:10px;border-bottom:1px solid #d6c7a5;vertical-align:top;overflow-wrap:anywhere}th{background:#e7d6ab}td{max-width:400px;white-space:pre-wrap}a{color:#efd393}.scroll{overflow:auto}.meta{line-height:1.8}.empty{color:#dfd4b9}@media print{body{background:white;color:black}main{padding:0}a{color:black}}</style><main><h1>Calradia Forge</h1>");
             b.Append("<p class='meta'>Session: ").Append(E(r.Session)).Append("<br>Captured: ").Append(E(r.Date)).Append("<br>Game: ").Append(E(r.GameVersion)).Append("<br>Suite: ").Append(E(r.SuiteVersion)).Append("</p>");
-            b.Append("<nav><a href='#modules'>Modules</a> · <a href='#findings'>Diagnostics</a> · <a href='#forgeweave'>ForgeWeave</a> · <a href='#forgeweave-replay'>Replay Lab</a> · <a href='#patch-preflight'>Patch preflight</a> · <a href='#harmony'>Harmony atlas</a> · <a href='#tests'>Tests</a> · <a href='#snapshots'>Snapshots</a> · <a href='#metrics'>Metrics</a> · <a href='#logs'>Logs</a></nav>");
+            b.Append("<nav><a href='#modules'>Modules</a> · <a href='#findings'>Diagnostics</a> · <a href='#forgeweave'>ForgeWeave</a> · <a href='#forgeweave-replay'>Replay Lab</a> · <a href='#patch-preflight'>Patch preflight</a> · <a href='#patch-diagnostics'>Patch diagnostics</a> · <a href='#tests'>Tests</a> · <a href='#snapshots'>Snapshots</a> · <a href='#metrics'>Metrics</a> · <a href='#logs'>Logs</a></nav>");
             Table(b,"modules","Modules",new[]{"ID","Version","Required dependencies"},r.ModuleDiagnostics.Modules.Select(m=>new[]{m.Id,m.Version,string.Join(", ",m.Dependencies??new List<string>())}));
             Table(b,"findings","Diagnostics",new[]{"Severity / code","Module","Evidence","Suggestion"},r.ModuleDiagnostics.Findings.Select(f=>new[]{f.Level+" / "+f.Code,f.Module,f.Message+"\n"+f.File,f.Suggestion}));
             ForgeWeave(b,r.ForgeWeave);
             PatchPreflight(b,r.PatchPreflight);
-            Harmony(b,r.Harmony);
+            PatchDiagnostics(b,r.PatchDiagnostics);
             Table(b,"tests","Tests",new[]{"Test","Result","Seed / duration","Steps and errors"},r.Tests.Select(t=>new[]{t.Id,t.Status,t.Seed+" / "+t.Milliseconds.ToString("F2",CultureInfo.InvariantCulture)+" ms",string.Join("\n",t.Steps??new List<string>())+"\n"+t.Error+"\n"+t.CleanupError}));
             Table(b,"snapshots","Snapshots",new[]{"Type / ID","Name","Properties"},r.Snapshots.Select(s=>new[]{s.Type+" / "+s.Id,s.Name,string.Join("\n",(s.Properties??new Dictionary<string,string>()).Select(p=>p.Key+" = "+p.Value))}));
             Table(b,"metrics","Metrics",new[]{"Measurement","Value"},r.Metrics.Select(p=>new[]{p.Key,p.Value.ToString("G6",CultureInfo.InvariantCulture)}));
@@ -36,19 +36,29 @@ namespace CalradiaForge.Core
             b.Append("<div class='scroll'><table><thead><tr>");foreach(var h in headers)b.Append("<th scope='col'>").Append(E(h)).Append("</th>");b.Append("</tr></thead><tbody>");
             foreach(var row in items){b.Append("<tr>");foreach(var cell in row)b.Append("<td>").Append(E(cell)).Append("</td>");b.Append("</tr>");}b.Append("</tbody></table></div>");
         }
-        static void Harmony(StringBuilder b,HarmonySnapshot harmony)
+        static void PatchDiagnostics(StringBuilder b,ForgePatchDiagnosticsSnapshot snapshot)
         {
-            harmony=harmony??new HarmonySnapshot {Status="Not captured."};
-            b.Append("<h2 id='harmony'>Harmony patch atlas <small>(").Append(harmony.DisplayedMethodCount).Append(")</small></h2>");
-            b.Append("<p class='meta'>").Append(E(harmony.Status)).Append("<br>Captured: ").Append(E(harmony.CapturedAt)).Append(harmony.IsStale?" (stale)":"").Append("<br>Runtime: ").Append(E(harmony.RuntimeAssembly)).Append(" ").Append(E(harmony.RuntimeVersion)).Append("<br>Active targets: ").Append(harmony.ActiveMethodCount).Append(" · No metadata: ").Append(harmony.EmptyMetadataMethodCount).Append(" · Owners: ").Append(harmony.OwnerCount).Append(" · Shared targets: ").Append(harmony.SharedMethodCount).Append("</p>");
-            if((harmony.Notes??new List<string>()).Count>0)b.Append("<p class='empty'>").Append(E(string.Join("\n",harmony.Notes))).Append("</p>");
-            var rows=(harmony.Methods??new List<HarmonyPatchedMethod>()).SelectMany(method=>(method.Patches??new List<HarmonyPatchObservation>()).DefaultIfEmpty(),(method,patch)=>new[]{
-                (method.MetadataStatus??"Unknown")+"\n"+(method.Assembly??"")+" · "+(method.DeclaringType??"")+"."+(method.Method??"")+(method.Signature??""),
-                string.Join(", ",method.Owners??new List<string>()),
+            snapshot=snapshot??new ForgePatchDiagnosticsSnapshot {Status="Not captured."};
+            b.Append("<h2 id='patch-diagnostics'>Forge patch diagnostics <small>(").Append(snapshot.HookCount+snapshot.PatchCount).Append(")</small></h2>");
+            b.Append("<p class='meta'>").Append(E(snapshot.Status)).Append("<br>Captured: ").Append(E(snapshot.CapturedAt)).Append(snapshot.IsStale?" (stale)":"").Append("<br>Forge hooks: ").Append(snapshot.HookCount).Append(" · Forge replacement patches: ").Append(snapshot.PatchCount).Append(" · Recorded conflicts: ").Append(snapshot.ConflictCount).Append(" · Failures: ").Append(snapshot.FailedCount).Append(snapshot.Truncated?" · Truncated":"").Append("</p>");
+            if((snapshot.Notes??new List<string>()).Count>0)b.Append("<p class='empty'>").Append(E(string.Join("\n",snapshot.Notes))).Append("</p>");
+            Table(b,"forge-owned-hooks","Forge-owned hooks",new[]{"ID / owner","Target","Lifecycle","Callbacks / order","Detail"},(snapshot.Hooks??new List<ForgeOwnedHookRecord>()).Select(hook=>new[]{
+                (hook.Id??"")+"\n"+(hook.Owner??""),hook.TargetMethod??"",hook.State??"",
+                "Prefix: "+hook.HasPrefix+" · Postfix: "+hook.HasPostfix+" · Finalizer: "+hook.HasFinalizer+" · Transpiler: "+hook.HasTranspiler+"\nPriority: "+(hook.Priority?.ToString()??"default")+"\nBefore: "+string.Join(", ",hook.Before??new List<string>())+"\nAfter: "+string.Join(", ",hook.After??new List<string>()),hook.Detail??""
+            }));
+            Table(b,"forge-owned-patches","Forge-owned replacement patches",new[]{"ID / owner","Target","Replacement","Lifecycle","Integrity"},(snapshot.Patches??new List<ForgeOwnedPatchRecord>()).Select(patch=>new[]{
+                (patch.PatchId??"")+"\n"+(patch.Owner??""),patch.TargetMethod??"",patch.ReplacementMethod??"",patch.State??"",patch.IsIntact?"Intact":"Not confirmed"
+            }));
+            var external=snapshot.ExternalRuntime??new ExternalPatchRuntimeSnapshot {Status="NotLoaded",Detail="No external runtime snapshot was captured."};
+            b.Append("<h3>Optional external-runtime observation</h3><p class='meta'>").Append(E(external.Status)).Append(" · ").Append(E(external.Detail)).Append("<br>Runtime: ").Append(E(external.RuntimeAssembly)).Append(" ").Append(E(external.RuntimeVersion)).Append("<br>Targets: ").Append(external.DisplayedTargetCount).Append(" displayed / ").Append(external.DiscoveredTargetCount).Append(" discovered · Active metadata: ").Append(external.ActiveTargetCount).Append(" · Incomplete metadata: ").Append(external.EmptyMetadataTargetCount).Append(" · Shared targets for review: ").Append(external.SharedTargetCount).Append(external.Truncated?" · Truncated":"").Append("</p>");
+            if((external.Notes??new List<string>()).Count>0)b.Append("<p class='empty'>").Append(E(string.Join("\n",external.Notes))).Append("</p>");
+            var rows=(external.Targets??new List<ExternalPatchTarget>()).SelectMany(target=>(target.Patches??new List<ExternalPatchObservation>()).DefaultIfEmpty(),(target,patch)=>new[]{
+                (target.MetadataStatus??"Unknown")+"\n"+(target.Assembly??"")+" · "+(target.DeclaringType??"")+"."+(target.Method??"")+(target.Signature??""),
+                string.Join(", ",target.Owners??new List<string>()),
                 patch==null?"No patch metadata":(patch.Kind??"")+" · "+(patch.Owner??"")+" · priority "+(patch.Priority?.ToString()??"unknown"),
                 patch==null?"":(patch.PatchAssembly??"")+" · "+(patch.PatchType??"")+"."+(patch.PatchMethod??"")+(patch.PatchSignature??"")+"\nBefore: "+string.Join(", ",patch.Before??new List<string>())+"\nAfter: "+string.Join(", ",patch.After??new List<string>())
             });
-            Table(b,"harmony-table","Harmony targets",new[]{"Patched target","Owners","Patch","Patch method / order"},rows);
+            Table(b,"external-patch-targets","Optional external patch targets",new[]{"Target","Owners","Patch observation","Patch method / order"},rows);
         }
         static void ForgeWeave(StringBuilder b,ForgeWeaveSnapshot weave)
         {

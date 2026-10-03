@@ -20,7 +20,7 @@
             <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Margin="22,3,0,0" Text="{Binding TroopTreeDashboard.ArchetypeSummary}"/>
             <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="22,4,0,0" Text="{Binding TroopTreeDashboard.StudioCaveat}" TextWrapping="Wrap"/>
            <StackPanel Orientation="Horizontal" Margin="22,3,0,0">
-            <Button Command="{Binding TroopTreeDashboard.FilterArchetypeCommand}" CommandParameter="All" Content="All" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
+            <Button Command="{Binding TroopTreeDashboard.FilterArchetypeCommand}" CommandParameter="All" Content="{DynamicResource Viz.Memory.FilterAll}" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
             <Button Command="{Binding TroopTreeDashboard.FilterArchetypeCommand}" CommandParameter="Infantry" Content="Inf" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
             <Button Command="{Binding TroopTreeDashboard.FilterArchetypeCommand}" CommandParameter="Ranged" Content="Rng" FontSize="7.5" Padding="4,1" Margin="0,0,2,0"/>
             <Button Command="{Binding TroopTreeDashboard.FilterArchetypeCommand}" CommandParameter="Cavalry" Content="Cav" FontSize="7.5" Padding="4,1" Margin="0,0,4,0"/>
@@ -679,18 +679,22 @@
             <Path Data="{StaticResource GameIcon.scroll_unfurled}" Fill="{DynamicResource BrassBrush}" Height="16" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" Width="16"/>
             <TextBlock FontFamily="Georgia" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Memory.Title}" VerticalAlignment="Center"/>
            </StackPanel>
-           <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0" Text="{Binding AgentMemoryDashboard.CapacitySummary}"/>
-            <TextBlock FontSize="9" Foreground="{DynamicResource VerdigrisBrush}" Margin="22,3,0,0" Text="{Binding AgentMemoryDashboard.ActiveClusterOverview}"/>
-            <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="22,4,0,0" Text="{Binding AgentMemoryDashboard.StudioCaveat}" TextWrapping="Wrap"/>
+            <TextBlock FontSize="10" Foreground="{DynamicResource PaperBrush}" Margin="22,2,0,0">
+             <Run Text="{Binding AgentMemoryDashboard.CapacitySummary, Mode=OneWay}"/><Run Text=" "/><Run Text="{DynamicResource Viz.Memory.AgentProfilesShown}"/><Run Text=" · "/><Run Text="{Binding AgentMemoryDashboard.MemoryUtilizationSummary, Mode=OneWay}"/><Run Text=" "/><Run Text="{DynamicResource Viz.Memory.SimulatedMemoryUtilization}"/>
+            </TextBlock>
+             <TextBlock FontSize="9" Foreground="{DynamicResource VerdigrisBrush}" Margin="22,3,0,0">
+              <Run Text="{Binding AgentMemoryDashboard.SelectedAgent.ClusterSummary, Mode=OneWay}"/><Run Text=" · "/><Run Text="{DynamicResource Viz.Memory.Salience}"/><Run Text=": "/><Run Text="{Binding AgentMemoryDashboard.SelectedAgent.ConsolidationIndex, Mode=OneWay}"/>
+             </TextBlock>
+             <TextBlock FontSize="9" Foreground="{DynamicResource EmberBrush}" Margin="22,4,0,0" Text="{DynamicResource Viz.Memory.SampleOnly}" TextWrapping="Wrap"/>
            <StackPanel Orientation="Horizontal" Margin="22,3,0,0">
-            <TextBox Text="{Binding AgentMemoryDashboard.SearchQuery, UpdateSourceTrigger=PropertyChanged}" Width="80" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
-            <Button Command="{Binding AgentMemoryDashboard.FilterCategoryCommand}" CommandParameter="All" Content="All" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
-            <Button Command="{Binding AgentMemoryDashboard.FilterCategoryCommand}" CommandParameter="Belief" Content="Belief" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
-            <Button Command="{Binding AgentMemoryDashboard.FilterCategoryCommand}" CommandParameter="Stance" Content="Stance" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
-            <Button Command="{Binding AgentMemoryDashboard.FilterCategoryCommand}" CommandParameter="Goal" Content="Goal" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
-            <Button Command="{Binding AgentMemoryDashboard.SimulateMemoryDecayCommand}" Content="⏳ Decay" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
-            <Button Command="{Binding AgentMemoryDashboard.ConsolidateMemoriesCommand}" Content="💤 Sleep" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
-            <Button Command="{Binding AgentMemoryDashboard.InjectSimulatedEpisodeCommand}" Content="⚡ +Ep" FontSize="7.5" Padding="3,1" Margin="0,0,4,0"/>
+             <TextBox Text="{Binding AgentMemoryDashboard.SearchQuery, UpdateSourceTrigger=PropertyChanged}" Width="80" FontSize="7.5" Padding="3,1" Margin="0,0,2,0" ToolTip="{DynamicResource Viz.Memory.Search}" AutomationProperties.Name="{DynamicResource Viz.Memory.Search}"/>
+             <Button Command="{Binding AgentMemoryDashboard.FilterCategoryCommand}" CommandParameter="All" Content="{DynamicResource Viz.Memory.FilterAll}" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
+             <Button Command="{Binding AgentMemoryDashboard.FilterCategoryCommand}" CommandParameter="Belief" Content="{DynamicResource Viz.Memory.FilterBelief}" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
+             <Button Command="{Binding AgentMemoryDashboard.FilterCategoryCommand}" CommandParameter="Stance" Content="{DynamicResource Viz.Memory.FilterStance}" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
+             <Button Command="{Binding AgentMemoryDashboard.FilterCategoryCommand}" CommandParameter="Goal" Content="{DynamicResource Viz.Memory.FilterGoal}" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
+             <Button Command="{Binding AgentMemoryDashboard.SimulateMemoryDecayCommand}" Content="{DynamicResource Viz.Memory.ActionDecay}" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
+             <Button Command="{Binding AgentMemoryDashboard.ConsolidateMemoriesCommand}" Content="{DynamicResource Viz.Memory.ActionConsolidate}" FontSize="7.5" Padding="3,1" Margin="0,0,2,0"/>
+             <Button Command="{Binding AgentMemoryDashboard.InjectSimulatedEpisodeCommand}" Content="{DynamicResource Viz.Memory.ActionAddEpisode}" FontSize="7.5" Padding="3,1" Margin="0,0,4,0"/>
             <TextBlock FontSize="8" Foreground="{DynamicResource BrassBrush}" VerticalAlignment="Center">
              <Run Text="{Binding AgentMemoryDashboard.FilteredFactsSummary, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding AgentMemoryDashboard.ConsolidationFeedback, Mode=OneWay}"/>
             </TextBlock>
@@ -699,26 +703,26 @@
           </StackPanel>
           <!-- Cognitive Slot Telemetry & Agent Switcher -->
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-           <!-- Imperial Authenticated CoALA Cognitive Mind Medallion (Rev093) -->
-           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,6,0" Padding="2" Width="40" Height="40" ToolTip="CoALA Cognitive Architecture &amp; Memory Matrix Authenticated">
+           <!-- Decorative medallion for the simulated CoALA-inspired sample dashboard -->
+            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,6,0" Padding="2" Width="40" Height="40" ToolTip="{DynamicResource Viz.Memory.SampleOnly}">
             <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-mind-medallion-rev093.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
            </Border>
            <!-- Memory Slot Gauge -->
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,0,6,0" Padding="4,2">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
              <presentation:ForgeRingGauge
-                 Value="{Binding AgentMemoryDashboard.MemorySlotUtilizationGaugeValue}"
-                 Maximum="100"
+                  Value="{Binding AgentMemoryDashboard.MemorySlotUtilizationGaugeValue}"
+                  Maximum="{Binding AgentMemoryDashboard.MaximumAgentSlots}"
                  Threshold="85"
-                 CenterText="6%"
-                 SubText="SLOTS"
+                  CenterText="{Binding AgentMemoryDashboard.MemorySlotUtilizationLabel}"
+                  SubText="{DynamicResource Viz.Memory.GaugeSlots}"
                  AccentBrush="{DynamicResource VerdigrisBrush}"
                  BackgroundBrush="{DynamicResource CoalBrush}"
                  ThresholdBrush="{DynamicResource EmberBrush}"
                  TextBrush="{DynamicResource PaperBrush}"
                  Height="40" Width="40" VerticalAlignment="Center"/>
              <StackPanel Margin="5,0,2,0" VerticalAlignment="Center">
-              <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="U(t) DECAY"/>
+               <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Memory.GaugeUtilityDecay}"/>
               <presentation:ForgeSparkline
                   DataPoints="{Binding AgentMemoryDashboard.MemoryDecayTrajectory}"
                   Stroke="{DynamicResource BrassBrush}"
@@ -822,9 +826,9 @@
               <ColumnDefinition Width="*"/>
               <ColumnDefinition Width="Auto"/>
              </Grid.ColumnDefinitions>
-             <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="POLICY WEIGHT PROFILE"/>
+              <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Viz.Memory.PolicyProfile}"/>
              <Border Grid.Column="1" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Padding="3,0">
-              <TextBlock FontSize="7" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="ACTIVE vs REALM"/>
+               <TextBlock FontSize="7" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="{DynamicResource Viz.Memory.PolicyComparison}"/>
              </Border>
             </Grid>
            </Border>

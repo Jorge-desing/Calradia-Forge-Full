@@ -160,4 +160,4 @@ ForgeWeave expone comandos nativos en la consola del juego (`ALT + ~`):
 
 El botón **Marco / Framework** del panel y la sección **Marco / Framework** de escritorio muestran esa información. Los informes exportados capturan una instantánea de memoria actual sin reflexión ni recorrido de objetos del juego.
 
-ForgeWeave acepta hasta 256 manejadores y 32 referencias de orden por manejador. Los filtros son una ampliación aditiva del SDK v3; los consumidores existentes de pruebas, comandos, diagnósticos, bibliotecas compartidas y Patch Blueprint siguen siendo compatibles. No depende de Harmony, MCM, ButterLib ni otro mod externo.
+ForgeWeave acepta hasta 256 manejadores y 32 referencias de orden por manejador. Los filtros son una ampliación aditiva del SDK v3; los consumidores existentes de pruebas, comandos, diagnósticos, bibliotecas compartidas y Patch Blueprint siguen siendo compatibles. No depende de frameworks externos de mods.

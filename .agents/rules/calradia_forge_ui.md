@@ -6,12 +6,17 @@ trigger: always_on
 
 # Calradia Forge UI Guidelines
 
+## Scope and precedence
+
+Gauntlet and WPF are separate UI systems with different widget, resource, input, and test contracts. Apply only the subsection for the technology being changed. The historical examples below are not universal product requirements: do not add a graphical dashboard, prepopulate every route, display a dossier or Latin motto, or emphasize Split Deck unless the task and existing route call for it. Selecting a route must never run work automatically. Preserve existing commands, bindings, permissions, and accessibility IDs unless behavior changes are explicitly requested.
+
 When modifying or creating new UI components for Calradia Forge (both WPF Desktop and Gauntlet XML), you must adhere to the **Tactical War Theme**.
 
 ## General Aesthetic
 - **Vibe:** Dark leather, worn gold, tactical parchment, command deck.
-- **Backgrounds:** Deep, dark muted greens and charcoal (e.g., `#0B0F0D`, `#101512`, `#15201A`). NEVER use bright parchment or white backgrounds for large content areas.
-- **Borders & Accents:** Worn brass/gold (`#C7A45A`) and verdigris/tempered steel (`#486151`, `#1A2921`).
+- **WPF War Table default:** Deep, dark muted greens and charcoal (e.g., `#0B0F0D`, `#101512`, `#15201A`) with brass/verdigris accents. Respect the separate Parchment and High Contrast themes; do not apply the War Table background rule to them.
+- **Gauntlet:** Use the module's registered brushes and assets, verified against its current resource setup. Do not mechanically copy WPF hex colors or theme assumptions into Gauntlet.
+- **Borders & Accents:** Keep borders and accents coherent with the active UI palette; WPF and Gauntlet resource names are separate.
 - **Typography:**
   - Headers and decorative text: `Georgia` (emulating classic/medieval serif).
   - Data and logs: `Consolas` or standard monospaced.
@@ -23,8 +28,8 @@ When modifying or creating new UI components for Calradia Forge (both WPF Deskto
 - **Buttons:** Use solid dark backgrounds (e.g., `#1A2921` or `#17251E`) with `BrassBrush` borders and text.
 
 ## Gauntlet (CalradiaForge.xml)
-- Translate the WPF hex codes into Gauntlet's `Color="#RRGGBBAA"` format (usually appending `FF`).
-- Use dark panels (`#0A0D0BFF`, `#0F1311FF`) instead of legacy bright greens.
+- Use independently verified registered Gauntlet brush tokens. Explicit `Color="#RRGGBBAA"` values are appropriate only when the affected prefab already uses and validates them; do not translate WPF theme hex values mechanically.
+- Keep tactical contrast and hierarchy coherent with the selected game UI, and inspect the registered brush palette before changing panel colors.
 - Use `CalradiaForge.Gold` brush for headings and `CalradiaForge.Text`/`Muted` for body.
 
 ## Scaling & Implicit Controls (Added from Learning)
@@ -33,7 +38,7 @@ When modifying or creating new UI components for Calradia Forge (both WPF Deskto
  F"). To prevent this, always set WidthSizePolicy="CoverChildren" on the TextWidget or ensure the font size is small enough to fit.
 - **Watermarks:** Always add DoNotAcceptEvents="true" and DoNotPassEventsToChildren="true" to watermark widgets so they do not block mouse interactions with underlying buttons.
 
-- **UI Scaling:** Never hardcode manual FontSize multiplications in C# code-behind for zooming/scaling. Always use a global LayoutTransform with a ScaleTransform attached to the root container to scale the entire interface proportionally without breaking hardcoded XAML FontSizes.
+- **WPF-only UI Scaling:** Never hardcode manual FontSize multiplications in C# code-behind for zooming/scaling. Validate the existing WPF scaling strategy; do not add a global `LayoutTransform` unless the affected view and input geometry have been checked.
 - **System Controls:** Always define implicit styles in App.xaml for ScrollBar, ToolTip, ContextMenu, and ComboBoxItem. Otherwise, WPF will render them using the default bright Windows system themes, breaking the dark Tactical War Theme immersion.
 - **ComboBox Templates:** A simple Background setter will not override the Windows Aero theme for ComboBox. You MUST define a full ControlTemplate for both ComboBox (including its ToggleButton and Popup) and ComboBoxItem to enforce the dark theme, otherwise dropdowns will render bright white and hide light text.
 
@@ -45,7 +50,7 @@ When modifying or creating new UI components for Calradia Forge (both WPF Deskto
 - **Core Predefined Widgets:**
   - `Widget` (base class, often used as an empty container or layout anchor)
   - `ButtonWidget`, `TextWidget`, `RichTextWidget`, `ImageWidget`
-  - `ListPanel`, `ScrollablePanel`, `ScrollBarWidget`
+  - `ListPanel`, `ScrollablePanel`, `ScrollbarWidget` (case-sensitive engine widget name)
   - `TooltipWidget`
 - **Common Attributes:**
   - **Layout:** `SuggestedWidth` / `SuggestedHeight`, `WidthSizePolicy` / `HeightSizePolicy`, `MarginLeft` / `MarginRight` / `MarginTop` / `MarginBottom`, `HorizontalAlignment` / `VerticalAlignment`
@@ -77,22 +82,21 @@ When modifying or creating new UI components for Calradia Forge (both WPF Deskto
   - Use target-typed `new()` for commands and observable collections.
   - Convert verbose requirement checks and filter mappers to switch expressions.
 - **Render Pass & Visual Tree Allocation Elimination:**
-  - The 274 WPF render test suite exercises live visual tree layout passes, scale transformations, and theme dictionary merges.
   - Avoid LINQ queries (`.Select().ToList()`, `.Where()`) on hot visual routes or navigation trees (e.g., `RefreshVisibleTools()`). Instead, project directly over source collections or use pre-allocated buffers.
-  - Avoiding intermediate allocations during visual state updates significantly reduces layout pass durations (improving render test runtimes by ~25-30%).
+  - Treat allocation reduction as a hypothesis until the affected interaction is profiled. Compare repeated runs on the same machine and record the revision, launcher, and output artifact; harness time is not application latency.
 - **Preservation of Static Source Contracts:**
   - Automated desktop contract tests (`tests/CalradiaForge.Desktop.Tests/Program.cs`) verify architectural rules via static source analysis (`File.ReadAllText`).
   - Never remove or rewrite required contract tokens, phrases, or field names (`!service.Contains("System.Windows")`, `"State-changing execution is unavailable from this guarded desktop route."`, `"Editable Calradia Forge starting point"`, `MaximumMeasurements = 64`, `Take(128)`, `File.Move(temporary, path, true)`, `"desktop-preferences.json"`, etc.) during code refactoring.
 
-## First-Class Graphical Visualizers vs Headless Text (Learned from User Feedback)
-- **Zero Headless Fallback for Visual Workbench Tools:** When implementing features requested as "mejoras a la app wpf", visualizers, analyzers, or simulators, NEVER stop at mere backend/headless text or ASCII generation dumped into a generic monospace `TextBox`. Users expect first-class, dedicated, interactive graphical controls and visual canvases rendered in XAML.
-- **Adaptive Canvas Composition:** Tools with visual capabilities (`HasVisualDashboard`) must render specialized graphical layouts:
+## Graphical Visualizers (Use When They Fit the Requested Workflow)
+- When the requested change is a visual analysis or simulator workflow, prefer a dedicated graphical view over placing every result in a generic monospace `TextBox`. A text report remains appropriate for technical output and routes whose contract is textual.
+- **Adaptive Canvas Composition:** Where a route already exposes a visual dashboard, use layouts appropriate to its content. Examples include:
   - **Troop Progression:** Hierarchical DAG node trees with tier badges (T1-T6), combat stats, role icons, and upgrade arrows.
   - **Audio Studio:** Multi-band graphic equalizer spectrum bars, time-domain waveform oscilloscope bars, and dual stereo VU peak meters.
   - **Economy Simulator:** Proportional comparative horizontal bar charts for workshop profitability, ROI metrics, and civic equilibrium gauges.
   - **Cognitive Memory:** Multi-tier architectural dashboards (Working Memory, Episodic FIFO timeline, Semantic Facts with TTL expiration bars, and capacity meters).
-- **Instant Pre-population on Route Selection:** Never force the user to hunt for local files or manually click "Run work order" just to inspect how a visual tool looks. On route navigation, visual tools must automatically initialize canonical default demo models and render live graphics immediately.
-- **Split Deck Visual Prominence:** Multi-deck or comparative inspection tools must feature prominent command deck triggers (e.g. `[ ⊞ SPLIT DECK [Ctrl+D] ]`) with live glowing active badges (`ACTIVE`), clear status borders, and docked comparative canvases.
+- **Demo Data:** A route may offer clearly labeled sample data when useful. Do not label sample output as verified runtime evidence, and do not execute work, browse files, or mutate state automatically on route selection.
+- **Split Deck:** Preserve and present existing comparison controls where the workflow uses them; this is not a required feature or visual motif for every route.
 
 ## Opening and Reviewing the In-Game Panel
 - The Calradia Forge overlay opens on a singleplayer screen with `Settings.Hotkey` (`F10` by default); the same key closes it. In multiplayer, the module closes the panel.
@@ -104,24 +108,24 @@ When modifying or creating new UI components for Calradia Forge (both WPF Deskto
 - **Texture pixel evidence:** For the Calradia Forge Gauntlet atlas, inspect `modules/CalradiaForge/AssetSources/GauntletUI/ui_calradiaforge_1.png` to view the authored pixels (currently observed 4096×512 RGBA; see [Rev085](../../docs/append/Rev085-Gauntlet-resource-browser-reimport-2026-09-28.md)). Use Resource Browser's Texture Editor Preview Window to inspect a compiled texture; metadata, hashes, or file presence alone do not establish a successful pixel preview or in-game render. A TpacTool Max “no pixel data” message is a reader/resource observation, not proof of TPAC corruption. The community GraniteTextureReader documents `.gts` extraction for GTS v6 only; Bannerlord/version-specific support and direct TPAC or standalone `.gtex` extraction remain unverified. See [bannerlord-resource-browser](../skills/bannerlord-resource-browser/SKILL.md).
 - Record rendering and interaction only after observing the actual panel. A source audit or Resource Browser import alone does not establish live UI behavior.
 
-## Contextual Operational Buttons & Aesthetic Differentiation (Rev031+)
-- **Prohibition of Monotonous Generic Action Bars:** In the WPF Desktop workbench, operational buttons must not be visually identical or share the same generic label ("Run work order") across all 194 tool routes.
+## Optional WPF Operation-Level Styling Examples (Rev031+)
+- The following WPF examples may guide task-specific styling. They do not require distinct action verbs, icons, or accent colors on every route; retain the established command and accessible name contracts.
 - **Domain & Category Differentiation:**
   - **Simulations (Verdigris):** Active simulation verbs (e.g., *"⚡ Simular Progresión"*, *"🔬 Analizar Espectro"*, *"📊 Simular Economía"*, *"🧠 Auditar Memoria"*), `VerdigrisBrush` accent border, and thematic icon.
   - **Audits, Diagnostics & Security (Worn Brass / Tempered):** Specific inspection verbs (e.g., *"🛡️ Auditar Ensamblado"*, *"🔍 Verificar Anti-Shadowing"*, *"📋 Validar Manifiesto"*), `BrassBrush` accent border, and shield/magnifier iconography.
   - **Generators & Scaffolding (Pine Felt / Worn Gold):** Generative verbs (e.g., *"⚙️ Generar Andamiaje"*, *"📜 Sintetizar XML"*, *"🔨 Forjar Componente"*), `DeepPineBrush` accent border, and gear/scroll iconography.
   - **Live Sessions & IPC Telemetry (Ember / Azure):** Query or dispatch verbs (e.g., *"📡 Consultar Telemetría"*, *"⚡ Despachar Evento"*), `EmberBrush` accent border, and radar/pulse iconography.
-- **Dedicated Secondary Quick-Actions:** Operational input decks must provide domain-specific secondary quick-actions (such as `PresetActionButton` with `LoadPresetCommand` to cycle canonical scenarios/branches and `ClearInputButton` with `ClearInputCommand` when input parameters are populated).
+- **Secondary Quick-Actions:** Add a quick action such as preset loading or input clearing only when the route has a defined, safe behavior for it.
 - **Contract & AutomationId Invariants:** Contextual personalization MUST preserve all underlying standard command bindings (`RunCommand`, `CancelCommand`, `ExportCommand`, `BrowseFileCommand`, `BrowseFolderCommand`) and their static accessibility identifiers (`AutomationProperties.AutomationId`) to avoid breaking static contract analysis or WPF render verification suites.
 
-## Operation-Level Aesthetic Customization & Domain Visualizers (Rev032+)
-- **Distinct Operation Identity Surfaces:** Every tool route in the WPF Desktop workbench incorporates a distinct visual identity composed of:
+## Optional WPF Identity and Visualizer Examples (Rev032+)
+- Where useful, a WPF route can use a distinct visual identity. The examples below are optional and must not create unsupported claims or crowd technical content:
   - **Category Banner:** Tactical military department banner (e.g. `[DIAGNOSTICS & SYSTEM SAFETY RADAR]`, `[HIGH SENATE & DIPLOMATIC CORPS]`, `[GAUNTLET UI & SHADER FORGE]`).
-  - **Latin Military Doctrine Motto:** Classical Latin motto reflecting domain purpose (e.g. *"Ad unum omnes ad astra"*, *"Virtus in armis, ordo in acie"*, *"Consilio et concordia regna florent"*).
+  - **Optional Motto:** Use decorative copy only when it improves orientation; never require Latin text on each route.
   - **Category Accent Brush (`Tool.CategoryAccentBrushKey`):** Dynamically bound border accents, icon glyph backgrounds, and title kicker typography (`BrassBrush`, `VerdigrisBrush`, `EmberBrush`, `DeepPineBrush`).
   - **Input Domain Badge (`Tool.InputDomainBadge`):** Clear input classification pill (e.g. `[TARGET ASSEMBLY / PE BINARY / MANIFEST]`, `[TARGET FACTION / SENATE POLICY / CLAN]`).
   - **Security Scope Pill (`Tool.SecurityPillText`):** Explicit operational safety boundaries (`[ STRICT BOUNDED ROUTE · ZERO IN-GAME SIDE EFFECTS · THREAD ISOLATED ]`).
-- **Domain Visual Dashboards (`HasVisualDashboard`):** Dedicated graphical interactive studios render rich XAML visualizers:
+- **Domain Visual Dashboards (`HasVisualDashboard`):** When the task calls for a graphical studio and the data supports it, possible XAML visualizations include:
   1. **PE Assembly Security & CLR Invariant Radar:** Visual risk score gauge, four architectural compliance cards (Rule A, Rule B, Rule C, Rule D), and CLR metadata stream telemetry.
   2. **Module Topology & Pipeline DAG:** Horizontal directed acyclic graph stages showing load order sequencing, dependency counts, and SubModule.xml schema verification.
   3. **Geopolitical Diplomacy & Senate Chamber:** Regional tension barometers, dynastic succession heir scores, and multi-faction stance cards with border conflict probability progress meters.
@@ -132,8 +136,8 @@ When modifying or creating new UI components for Calradia Forge (both WPF Deskto
 - **Ocultación Dinámica de Barra de Entrada:**
   - En herramientas y estudios donde `Tool.RequiresInput == false`, la caja de texto `ActiveToolInput` (y la tarjeta de entrada si no hay parámetros) debe ocultarse automáticamente (`Visibility.Collapsed`), preservando el espacio para los lienzos interactivos y las botoneras operativas pertinentes.
   - La preservación de contratos MVVM exige que la propiedad `Input` y la lógica interna de validación permanezcan intactas en el ViewModel aunque el control visual esté colapsado.
-- **Dossier Informativo y Referencia de Comandos Obligatoria:**
-  - Cada sección y ruta de herramienta debe exponer una tarjeta táctica dedicada (`CommandReferenceCard` o `SectionDossierCard`) que detalle:
+- **Dossier informativo opcional:**
+  - Una tarjeta de referencia (`CommandReferenceCard` o `SectionDossierCard`) puede ayudar cuando los comandos documentados estén confirmados. No inventes comandos ni añadas este panel a cada ruta por defecto. Si se incluye, puede detallar:
     1. **Contexto Operativo:** Propósito técnico, ámbito en Bannerlord y garantías de seguridad (Stateless, Thread-Isolated, Sandbox).
     2. **Comandos de Consola del Motor:** Comandos in-game asociados (`cf.*`, `campaign.*`, etc.) con badges distintivos y botón de copiado rápido.
     3. **Atajos de Teclado del Banco de Trabajo:** Hotkeys aplicables (`Ctrl+Enter` para ejecutar, `Ctrl+D` para Split Deck, `Ctrl+P` para alternar presets, `Ctrl+E` para exportar).

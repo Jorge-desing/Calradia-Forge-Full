@@ -23,15 +23,24 @@ namespace CalradiaForge.Core
             if(report==null)throw new ArgumentNullException(nameof(report));
             report.Logs=report.Logs??new List<LogEntry>();report.Tests=report.Tests??new List<TestResult>();
             report.Snapshots=report.Snapshots??new List<ObjectSnapshot>();report.Metrics=report.Metrics??new Dictionary<string,double>();
-            report.Harmony=report.Harmony??new HarmonySnapshot {Status="Not captured."};
-            report.Harmony.Notes=report.Harmony.Notes??new List<string>();
-            report.Harmony.Methods=report.Harmony.Methods??new List<HarmonyPatchedMethod>();
-            foreach(var method in report.Harmony.Methods.Where(method=>method!=null))
+            report.PatchDiagnostics=report.PatchDiagnostics??new ForgePatchDiagnosticsSnapshot {Status="Not captured."};
+            report.PatchDiagnostics.Notes=report.PatchDiagnostics.Notes??new List<string>();
+            report.PatchDiagnostics.Hooks=report.PatchDiagnostics.Hooks??new List<ForgeOwnedHookRecord>();
+            report.PatchDiagnostics.Patches=report.PatchDiagnostics.Patches??new List<ForgeOwnedPatchRecord>();
+            foreach(var hook in report.PatchDiagnostics.Hooks.Where(hook=>hook!=null))
             {
-                method.Owners=method.Owners??new List<string>();
-                method.Patches=method.Patches??new List<HarmonyPatchObservation>();
-                foreach(var patch in method.Patches.Where(patch=>patch!=null)) {patch.Before=patch.Before??new List<string>();patch.After=patch.After??new List<string>();}
-                if(string.IsNullOrWhiteSpace(method.MetadataStatus))method.MetadataStatus=method.Owners.Count>0||method.Patches.Count>0?"Active":"No metadata";
+                hook.Before=hook.Before??new List<string>();
+                hook.After=hook.After??new List<string>();
+            }
+            report.PatchDiagnostics.ExternalRuntime=report.PatchDiagnostics.ExternalRuntime??new ExternalPatchRuntimeSnapshot {Status="NotCaptured",Detail="No external runtime snapshot was captured."};
+            report.PatchDiagnostics.ExternalRuntime.Notes=report.PatchDiagnostics.ExternalRuntime.Notes??new List<string>();
+            report.PatchDiagnostics.ExternalRuntime.Targets=report.PatchDiagnostics.ExternalRuntime.Targets??new List<ExternalPatchTarget>();
+            foreach(var target in report.PatchDiagnostics.ExternalRuntime.Targets.Where(target=>target!=null))
+            {
+                target.Owners=target.Owners??new List<string>();
+                target.Patches=target.Patches??new List<ExternalPatchObservation>();
+                foreach(var patch in target.Patches.Where(patch=>patch!=null)) {patch.Before=patch.Before??new List<string>();patch.After=patch.After??new List<string>();}
+                if(string.IsNullOrWhiteSpace(target.MetadataStatus))target.MetadataStatus=target.Owners.Count>0||target.Patches.Count>0?"Active":"No metadata";
             }
             report.PatchPreflight=report.PatchPreflight??new PatchPreflightSnapshot {Status="Not captured."};
             report.PatchPreflight.Notes=report.PatchPreflight.Notes??new List<string>();
@@ -72,7 +81,7 @@ namespace CalradiaForge.Core
             report.ModuleDiagnostics=report.ModuleDiagnostics??new ModuleDiagnostics();
             report.ModuleDiagnostics.Modules=report.ModuleDiagnostics.Modules??new List<Module>();
             report.ModuleDiagnostics.Findings=report.ModuleDiagnostics.Findings??new List<Sdk.Finding>();
-            if(report.Logs.Any(x=>x==null)||report.Tests.Any(x=>x==null)||report.Snapshots.Any(x=>x==null)||report.Harmony.Methods.Any(x=>x==null)||report.Harmony.Methods.Any(method=>method.Patches.Any(patch=>patch==null))||report.PatchPreflight.Findings.Any(x=>x==null)||report.PatchPreflight.Outcomes.Any(x=>x==null)||report.ForgeWeave.Findings.Any(x=>x==null)||report.ForgeWeave.Handlers.Any(x=>x==null)||report.ForgeWeave.Events.Any(x=>x==null)||report.ForgeWeave.RecentDispatches.Any(x=>x==null)||report.ForgeWeave.ReplayRecords.Any(x=>x==null)||report.ForgeWeave.RecentReplays.Any(x=>x==null)||report.ModuleDiagnostics.Modules.Any(x=>x==null)||report.ModuleDiagnostics.Findings.Any(x=>x==null))
+            if(report.Logs.Any(x=>x==null)||report.Tests.Any(x=>x==null)||report.Snapshots.Any(x=>x==null)||report.PatchDiagnostics.Hooks.Any(x=>x==null)||report.PatchDiagnostics.Patches.Any(x=>x==null)||report.PatchDiagnostics.ExternalRuntime.Targets.Any(x=>x==null)||report.PatchDiagnostics.ExternalRuntime.Targets.Any(target=>target.Patches.Any(patch=>patch==null))||report.PatchPreflight.Findings.Any(x=>x==null)||report.PatchPreflight.Outcomes.Any(x=>x==null)||report.ForgeWeave.Findings.Any(x=>x==null)||report.ForgeWeave.Handlers.Any(x=>x==null)||report.ForgeWeave.Events.Any(x=>x==null)||report.ForgeWeave.RecentDispatches.Any(x=>x==null)||report.ForgeWeave.ReplayRecords.Any(x=>x==null)||report.ForgeWeave.RecentReplays.Any(x=>x==null)||report.ModuleDiagnostics.Modules.Any(x=>x==null)||report.ModuleDiagnostics.Findings.Any(x=>x==null))
                 throw new ArgumentException("Invalid report: record arrays must not contain null entries.");
             return report;
         }
@@ -86,7 +95,7 @@ namespace CalradiaForge.Core
                 case "inspect":case "snapshots":return Json.Serialize(Report.Snapshots.Where(o=>Matches(o.Type+"|"+o.Id+" "+o.Name,filter)).ToList());
                 case "tests":return Json.Serialize(Report.Tests.Where(t=>Matches(t.Id+" "+t.Status,filter)).ToList());
                 case "metrics":return Json.Serialize(Report.Metrics);
-                case "harmony":return Json.Serialize(Report.Harmony);
+                case "patch-diagnostics":return Json.Serialize(Report.PatchDiagnostics);
                 case "framework":return Json.Serialize(Report.ForgeWeave);
                 case "event-journal":return Json.Serialize(Report.ForgeWeave.RecentDispatches);
                 case "patch-preflight":return Json.Serialize(Report.PatchPreflight);

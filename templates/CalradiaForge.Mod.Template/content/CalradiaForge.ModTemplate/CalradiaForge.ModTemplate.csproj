@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>CalradiaForge.ModTemplate</RootNamespace>
+    <AssemblyName>CalradiaForge.ModTemplate</AssemblyName>
+    <CalradiaForgeSdkVersion>__FORGE_SDK_VERSION__</CalradiaForgeSdkVersion>
+    <GamePath Condition="'$(GamePath)' == '' and '$(BANNERLORD_GAME_PATH)' != ''">$(BANNERLORD_GAME_PATH)</GamePath>
+    <GameBin>$(GamePath)\bin\Win64_Shipping_Client</GameBin>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CalradiaForge.Sdk" Version="$(CalradiaForgeSdkVersion)" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="TaleWorlds.MountAndBlade">
+      <HintPath>$(GameBin)\TaleWorlds.MountAndBlade.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Core">
+      <HintPath>$(GameBin)\TaleWorlds.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Library">
+      <HintPath>$(GameBin)\TaleWorlds.Library.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="ValidateBannerlordGameBin" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(GamePath)' == ''" Text="Bannerlord GamePath is required to compile this module. Set BANNERLORD_GAME_PATH or pass -p:GamePath=&lt;Bannerlord root&gt;. The template can still be generated without the game installed." />
+    <Error Condition="!Exists('$(GameBin)\TaleWorlds.MountAndBlade.dll')" Text="TaleWorlds.MountAndBlade.dll was not found in '$(GameBin)'. Point GamePath at the Bannerlord installation containing bin\Win64_Shipping_Client." />
+    <Error Condition="!Exists('$(GameBin)\TaleWorlds.Core.dll')" Text="TaleWorlds.Core.dll was not found in '$(GameBin)'. Verify the selected Bannerlord GamePath." />
+    <Error Condition="!Exists('$(GameBin)\TaleWorlds.Library.dll')" Text="TaleWorlds.Library.dll was not found in '$(GameBin)'. Verify the selected Bannerlord GamePath." />
+  </Target>
+</Project>

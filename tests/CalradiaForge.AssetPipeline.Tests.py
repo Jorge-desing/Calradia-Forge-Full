@@ -26,6 +26,29 @@ decorative_validator = importlib.util.module_from_spec(_decorative_validator_spe
 sys.modules[_decorative_validator_spec.name] = decorative_validator
 _decorative_validator_spec.loader.exec_module(decorative_validator)
 
+SOURCE_TEMPLATE_MANIFEST_PATH = (
+    "Source/templates/CalradiaForge.Mod.Template/content/"
+    "CalradiaForge.ModTemplate/SubModule.xml"
+)
+SOURCE_TEMPLATE_MANIFEST = """<Module>
+  <Name value="__MODULE_ID__" />
+  <Id value="__MODULE_ID__" />
+  <Version value="v1.0.0" />
+  <DependedModules>
+    <DependedModule Id="Native" />
+    <DependedModule Id="SandBoxCore" />
+    <DependedModule Id="CalradiaForge" />
+  </DependedModules>
+  <SubModules>
+    <SubModule>
+      <Name value="__MODULE_ID__" />
+      <DLLName value="CalradiaForge.ModTemplate.dll" />
+      <SubModuleClassType value="CalradiaForge.ModTemplate.SubModule" />
+    </SubModule>
+  </SubModules>
+</Module>
+"""
+
 
 class AssetPipelineTests(unittest.TestCase):
     def test_png_ihdr_dimensions_are_read_from_bounded_header(self):
@@ -137,6 +160,103 @@ class AssetPipelineTests(unittest.TestCase):
                     archive_path,
                     expected_roots={"Source"},
                     required={"Source/README.md"},
+                    version="25.2.0",
+                    desktop=False,
+                )
+
+    def test_zip_archive_audit_rejects_a_bundled_harmony_runtime(self):
+        with tempfile.TemporaryDirectory(prefix="CalradiaForge-HarmonyDependency-") as temporary:
+            archive_path = Path(temporary) / "fixture.zip"
+            with ZipFile(archive_path, "w") as archive:
+                archive.writestr("CalradiaForge/README.md", "The runtime is optional.")
+                archive.writestr("CalradiaForge/bin/Win64_Shipping_Client/0Harmony.dll", b"fixture")
+
+            with self.assertRaisesRegex(ValueError, "Harmony runtime must remain optional"):
+                audit_archive(
+                    archive_path,
+                    expected_roots={"CalradiaForge"},
+                    required={"CalradiaForge/README.md"},
+                    version="25.2.0",
+                    desktop=False,
+                )
+
+    def test_product_projects_do_not_reference_a_harmony_package_or_assembly(self):
+        project_roots = (ROOT / "src", ROOT / "modules", ROOT / "templates")
+        projects = [
+            path
+            for project_root in project_roots
+            if project_root.exists()
+            for path in project_root.rglob("*.csproj")
+            if "bin" not in path.parts and "obj" not in path.parts
+        ]
+        self.assertTrue(projects, "Expected to inspect maintained product project manifests.")
+        for project in projects:
+            root = ElementTree.parse(project).getroot()
+            for node in root.iter():
+                if node.tag.rsplit("}", 1)[-1] not in {"PackageReference", "Reference"}:
+                    continue
+                identity = node.attrib.get("Include", "") + " " + node.attrib.get("Update", "")
+                self.assertNotIn("harmony", identity.casefold(), f"Harmony dependency found in {project}: {identity}")
+
+    def test_source_archive_accepts_starter_template_version_and_current_module_version(self):
+        module_manifest_path = "Source/modules/Example/SubModule.xml"
+        module_manifest = (
+            '<Module><Version value="v25.2.0" /></Module>'
+        )
+        with tempfile.TemporaryDirectory(prefix="CalradiaForge-TemplateManifest-") as temporary:
+            archive_path = Path(temporary) / "source.zip"
+            with ZipFile(archive_path, "w") as archive:
+                archive.writestr("Source/README.md", "fixture")
+                archive.writestr(SOURCE_TEMPLATE_MANIFEST_PATH, SOURCE_TEMPLATE_MANIFEST)
+                archive.writestr(module_manifest_path, module_manifest)
+
+            result = audit_archive(
+                archive_path,
+                expected_roots={"Source"},
+                required={"Source/README.md", SOURCE_TEMPLATE_MANIFEST_PATH, module_manifest_path},
+                version="25.2.0",
+                desktop=False,
+            )
+            self.assertEqual("25.2.0", result["manifestVersion"])
+            self.assertEqual(2, result["xmlEntries"])
+
+    def test_source_template_manifest_requires_its_version_placeholders_and_forge_dependency(self):
+        invalid_templates = (
+            SOURCE_TEMPLATE_MANIFEST.replace('Version value="v1.0.0"', 'Version value="v25.2.0"'),
+            SOURCE_TEMPLATE_MANIFEST.replace('Id value="__MODULE_ID__"', 'Id value="ExampleMod"', 1),
+            SOURCE_TEMPLATE_MANIFEST.replace('    <DependedModule Id="CalradiaForge" />\n', ""),
+        )
+        for template in invalid_templates:
+            with self.subTest(template=template), tempfile.TemporaryDirectory(
+                prefix="CalradiaForge-TemplateManifest-invalid-"
+            ) as temporary:
+                archive_path = Path(temporary) / "source.zip"
+                with ZipFile(archive_path, "w") as archive:
+                    archive.writestr("Source/README.md", "fixture")
+                    archive.writestr(SOURCE_TEMPLATE_MANIFEST_PATH, template)
+
+                with self.assertRaisesRegex(ValueError, "Invalid source template manifest"):
+                    audit_archive(
+                        archive_path,
+                        expected_roots={"Source"},
+                        required={"Source/README.md", SOURCE_TEMPLATE_MANIFEST_PATH},
+                        version="25.2.0",
+                        desktop=False,
+                    )
+
+    def test_non_template_manifests_still_require_the_current_product_version(self):
+        manifest_path = "Source/modules/Example/SubModule.xml"
+        with tempfile.TemporaryDirectory(prefix="CalradiaForge-ModuleManifest-version-") as temporary:
+            archive_path = Path(temporary) / "source.zip"
+            with ZipFile(archive_path, "w") as archive:
+                archive.writestr("Source/README.md", "fixture")
+                archive.writestr(manifest_path, '<Module><Version value="v1.0.0" /></Module>')
+
+            with self.assertRaisesRegex(ValueError, "Manifest version mismatch"):
+                audit_archive(
+                    archive_path,
+                    expected_roots={"Source"},
+                    required={"Source/README.md", manifest_path},
                     version="25.2.0",
                     desktop=False,
                 )

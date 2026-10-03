@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CalradiaForge.Desktop.Presentation;
 using CalradiaForge.Desktop.Services;
+using CalradiaForge.Sdk;
 
 internal static class DesktopSimulationServiceTests
 {
@@ -16,8 +17,10 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation renders canonical troop tree DAG and stat curves");
         TroopXmlDiff();
         Console.WriteLine("PASS Desktop simulation performs semantic XML diff for troop definitions");
-        AgentMemoryAudit();
-        Console.WriteLine("PASS Desktop simulation audits CoALA agent cognitive memory tiers and quotas");
+        AgentMemorySampleReport();
+        Console.WriteLine("PASS Desktop simulation reports CoALA-inspired sample memory tiers and quotas");
+        AgentMemorySamplePresentation();
+        Console.WriteLine("PASS Desktop agent-memory dashboard and catalog disclose simulated CoALA-inspired sample data");
         AudioWaveformAudit();
         Console.WriteLine("PASS Desktop simulation inspects acoustic waveforms and frequency spectrum");
         EconomyAndCampaignSimulation();
@@ -166,12 +169,14 @@ internal static class DesktopSimulationServiceTests
         }
     }
 
-    static void AgentMemoryAudit()
+    static void AgentMemorySampleReport()
     {
         var service = new DesktopSimulationService();
         var (report, evidence) = service.InspectAgentMemory(string.Empty, CancellationToken.None);
 
-        Check(report.Contains("COALA AGENT COGNITIVE MEMORY AUDIT"), "Report must identify CoALA architecture model.");
+        Check(report.Contains("AGENT MEMORY SAMPLE"), "Report must identify itself as a sample, not a live audit.");
+        Check(report.Contains("Bounded tiered memory inspired by CoALA concepts; not a CoALA language-agent runtime"), "Report must describe the CoALA relationship without claiming a full CoALA runtime.");
+        Check(report.Contains("not a live registry snapshot"), "Report must disclose that registry capacity is sample data.");
         Check(report.Contains("GLOBAL CAPACITY METER"), "Report must include global slot utilization meter.");
         Check(report.Contains("TIER 1: SEMANTIC MEMORY"), "Report must audit Tier 1 Semantic Memory.");
         Check(report.Contains("TIER 2: EPISODIC MEMORY"), "Report must audit Tier 2 Episodic Memory.");
@@ -179,9 +184,58 @@ internal static class DesktopSimulationServiceTests
         Check(report.Contains("hero_rhagaea"), "Report must include seeded Lord profile data.");
 
         Check(evidence.Count >= 4, "Agent memory audit must produce comprehensive evidence items.");
-        Check(evidence.Any(e => e.Source.Contains("Global Registry") && e.Status == "Verified"), "Global registry slot isolation must be verified.");
-        Check(evidence.Any(e => e.Source.Contains("Semantic Decay") && e.Status == "Verified"), "Semantic TTL decay must be verified.");
-        Check(evidence.Any(e => e.Source.Contains("Episodic FIFO") && e.Status == "Verified"), "Episodic FIFO caps must be verified.");
+        Check(evidence.All(e => e.Status == "Sample"), "Sample-memory evidence must not claim live verification.");
+        Check(evidence.Any(e => e.Source.Contains("Global Registry") && e.Status == "Sample"), "Global registry evidence must be labeled as sample data.");
+        Check(evidence.Any(e => e.Source.Contains("Semantic Decay") && e.Status == "Sample"), "Semantic TTL evidence must be labeled as sample data.");
+        Check(evidence.Any(e => e.Source.Contains("Episodic FIFO") && e.Status == "Sample"), "Episodic FIFO evidence must be labeled as sample data.");
+    }
+
+    static void AgentMemorySamplePresentation()
+    {
+        var dashboard = new AgentMemoryDashboardViewModel();
+        Check(dashboard.Architecture.Contains("simulated", StringComparison.OrdinalIgnoreCase) &&
+              dashboard.Architecture.Contains("inspired by CoALA", StringComparison.OrdinalIgnoreCase) &&
+              dashboard.Architecture.Contains("not a live registry", StringComparison.OrdinalIgnoreCase),
+            "Dashboard description must identify illustrative memory data as simulated, CoALA-inspired, and not live.");
+        Check(dashboard.StudioDocumentation.Contains("simulated sample data", StringComparison.OrdinalIgnoreCase) &&
+              dashboard.StudioDocumentation.Contains("not a CoALA runtime", StringComparison.OrdinalIgnoreCase),
+            "Dashboard documentation must not claim a CoALA runtime.");
+        Check(dashboard.StudioCaveat.Contains("simulated sample only", StringComparison.OrdinalIgnoreCase),
+            "Visible dashboard caveat must disclose the sample-only status.");
+        Check(dashboard.MaximumAgentSlots == ForgeAgentMemory.MaximumAgents && dashboard.MaximumAgentSlots == 2048,
+            "Dashboard capacity must use the SDK's 2,048-agent limit.");
+        Check(dashboard.MemorySlotUtilizationGaugeValue == 3 &&
+              Math.Abs(dashboard.MemorySlotUtilizationPercentage - (3.0 / ForgeAgentMemory.MaximumAgents * 100.0)) < 0.0001,
+            "Dashboard slot gauge must show its three visible sample profiles against the SDK capacity.");
+        Check(dashboard.CapacitySummary.EndsWith(ForgeAgentMemory.MaximumAgents.ToString("N0", System.Globalization.CultureInfo.CurrentCulture), StringComparison.Ordinal),
+            "Dashboard capacity summary must report the SDK maximum.");
+        dashboard.ApplyLiveIpcTelemetry(1024, 0, 0, 0);
+        Check(dashboard.CapacityPercentage == 50.0,
+            "Dashboard telemetry must calculate utilization from the SDK agent limit.");
+
+        string xamlPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "CalradiaForge.Desktop", "Resources", "Views", "ToolPageTemplates.xaml");
+        string templates = File.ReadAllText(xamlPath);
+        int memoryStart = templates.IndexOf("x:Key=\"AgentMemoryInspectorDashboardTemplate\"", StringComparison.Ordinal);
+        int memoryEnd = templates.IndexOf("x:Key=\"CodeSecurityAuditorDashboardTemplate\"", memoryStart, StringComparison.Ordinal);
+        Check(memoryStart >= 0 && memoryEnd > memoryStart, "Memory dashboard XAML template must remain discoverable for its capacity contract.");
+        string memoryTemplate = templates.Substring(memoryStart, memoryEnd - memoryStart);
+        Check(memoryTemplate.Contains("Maximum=\"{Binding AgentMemoryDashboard.MaximumAgentSlots}\"", StringComparison.Ordinal) &&
+              memoryTemplate.Contains("CenterText=\"{Binding AgentMemoryDashboard.MemorySlotUtilizationLabel}\"", StringComparison.Ordinal) &&
+              !memoryTemplate.Contains("Maximum=\"100\"", StringComparison.Ordinal),
+            "Memory dashboard gauge must bind the SDK capacity instead of a hard-coded 100-slot maximum.");
+
+        var tool = new ToolCatalog().Find("SaveInspector");
+        Check(tool != null && tool.KindLabel == "SIMULATED SAMPLE" &&
+              tool.Purpose.Contains("simulated agent-memory sample", StringComparison.OrdinalIgnoreCase) &&
+              tool.Purpose.Contains("not a live registry or CoALA runtime", StringComparison.OrdinalIgnoreCase),
+            "Catalog wording must describe the memory route as a simulated sample, not a live CoALA runtime.");
+        Check(tool.AvailabilityReason.Contains("Sample-only", StringComparison.OrdinalIgnoreCase) &&
+              tool.AvailabilityReason.Contains("does not query a live Forge memory registry", StringComparison.OrdinalIgnoreCase),
+            "Catalog availability must not imply that the memory sample reads live session data.");
+        Check(tool.SectionInformation.Contains("muestra simulada", StringComparison.OrdinalIgnoreCase) &&
+              tool.SectionInformation.Contains("no inspecciona un registro en vivo", StringComparison.OrdinalIgnoreCase),
+            "Catalog details must disclose the simulated memory sample.");
     }
 
     static void AudioWaveformAudit()
@@ -271,7 +325,8 @@ internal static class DesktopSimulationServiceTests
         var saveTool = catalog.Tools.First(t => t.Id == "SaveInspector");
         var saveResult = await workspace.ExecuteAsync(saveTool, "agent_memory", CancellationToken.None);
         Check(saveResult.Status == "Simulated", "SaveInspector with agent_memory query must return Simulated status.");
-        Check(saveResult.RawResult.Contains("COALA AGENT COGNITIVE MEMORY AUDIT"), "Agent memory result must contain CoALA memory tiers.");
+        Check(saveResult.RawResult.Contains("AGENT MEMORY SAMPLE")
+            && saveResult.RawResult.Contains("not a live registry snapshot"), "Agent memory result must retain its sample-only qualification.");
     }
 
     static void SplitDeckLifecycle()
@@ -441,7 +496,7 @@ internal static class DesktopSimulationServiceTests
         // 4. CoALA Agent Memory Decay Sparkline & Slot Utilization Gauge
         var memVm = new AgentMemoryDashboardViewModel();
         Check(memVm.MemoryDecayTrajectory != null && memVm.MemoryDecayTrajectory.Count == 24, "Memory decay trajectory must expose 24 hourly intervals.");
-        Check(memVm.MemorySlotUtilizationGaugeValue >= 0.0 && memVm.MemorySlotUtilizationGaugeValue <= 100.0, "Memory slot utilization gauge must be bounded in [0, 100].");
+        Check(memVm.MemorySlotUtilizationGaugeValue >= 0.0 && memVm.MemorySlotUtilizationGaugeValue <= memVm.MaximumAgentSlots, "Memory slot utilization gauge must be bounded by the SDK agent capacity.");
         Check(memVm.MemoryDecayTrajectory[0] > memVm.MemoryDecayTrajectory[23], "Memory utility trajectory must exhibit decay over time.");
 
         // 5. Generic Operation IPC Latency Sparkline & Buffer Gauge

@@ -5,27 +5,36 @@
 ### Builder Hierarchy
 
 ```
-ForgeNoviceHub (Education System)
-├── AddLesson(string id, string content)
-├── AddChallenge(string id, string description)
-└── Build() → EducationModule
+ForgeNoviceHub (XML generators using these builders)
+├── GenerateTroopXml(string id = "mymod_soldier", string name = "Forge Soldier",
+│                    string culture = "Culture.empire", int tier = 2) → string
+└── GenerateItemXml(string id = "mymod_iron_sword", string name = "Forge Iron Sword",
+                    string culture = "Culture.empire", string itemType = "OneHandedWeapon") → string
 
-ForgeTroopBuilder (Troop/Character System)
-├── SetId(string id)
-├── SetCulture(string culture)
-├── SetLevel(int level)
-├── SetSkills(Dictionary<SkillObject, int> skills)
-├── SetEquipment(Equipment equipment)
-└── Build() → TroopTemplate
+ForgeTroopBuilder (NPCCharacters.xml)
+├── ForgeTroopBuilder(string id) / static Create(string id) → ForgeTroopBuilder
+├── WithName(string name) / WithAge(int age) / WithLevel(int level) → ForgeTroopBuilder
+├── WithOccupation(string occupation) / WithCulture(string culture) → ForgeTroopBuilder
+├── WithDefaultGroup(string group) / WithFaceKeyTemplate(string template) → ForgeTroopBuilder
+├── SetHero(bool isHero) / SetFemale(bool isFemale) → ForgeTroopBuilder
+├── AddSkill(string skillId, int value) → ForgeTroopBuilder
+├── AddBattleEquipment(string slot, string itemId, int variationIndex = 0) → ForgeTroopBuilder
+├── AddCivilianEquipment(string slot, string itemId) / AddUpgradeTarget(string targetId) → ForgeTroopBuilder
+├── BuildElement() → XElement
+└── BuildXml() → string (wraps NPCCharacter in NPCCharacters)
 
-ForgeItemBuilder (Item/Crafting System)
-├── SetId(string id)
-├── SetName(TextObject name)
-├── SetItemType(ItemType type)
-├── SetDamage(float damage)
-├── SetWeight(float weight)
-├── SetCraftingPiece(string pieceId)
-└── Build() → ItemTemplate
+ForgeItemBuilder (Items.xml)
+├── ForgeItemBuilder(string id) / static Create(string id) → ForgeItemBuilder
+├── WithName(string name) / WithMesh(string mesh) / WithCulture(string culture) → ForgeItemBuilder
+├── WithWeight(double weight) / WithValue(int value) / WithType(string itemType) → ForgeItemBuilder
+├── AsWeapon(string weaponClass, int thrustSpeed, int speedRating, int thrustDmg,
+│            string thrustType, int swingDmg, string swingType, string itemUsage = null) → ForgeItemBuilder
+├── AsArmor(int bodyArmor, int legArmor = 0, int armArmor = 0, int headArmor = 0,
+│           bool hasGenderVariations = true) → ForgeItemBuilder
+├── AsHorse(int speed, int maneuver, int chargeDamage, int extraHealth = 20,
+│           string monster = "Monster.horse") → ForgeItemBuilder
+├── BuildElement() → XElement
+└── BuildXml() → string (wraps Item in Items)
 
 ForgeQuestBuilder (Quest System)
 ├── SetId(string id)
@@ -63,6 +72,10 @@ ForgeHintBuilder (UI Hint System)
 ├── SetPriority(HintPriority priority)
 └── Build() → HintDefinition
 ```
+
+These helpers generate editable C# scaffolds or native-shaped XML; they do not register or live-load game objects. `GenerateTroopXml` clamps `tier` to 1–6 and derives its level and skills from that value. Its equipment IDs are examples that must resolve to items supplied by the game or mod, and its veteran upgrade target must be defined separately. `GenerateItemXml` accepts `OneHandedWeapon`, `TwoHandedWeapon`, `Polearm`, `Bow`, `Crossbow`, `Thrown`, `Shield`, `Horse`, `HeadArmor`, `BodyArmor`, `LegArmor`, `HandArmor`, `Cape`, `HorseHarness`, `Goods`, or `Banner`; any other type throws `ArgumentException`. Its mesh/body values are demonstration placeholders to replace with assets shipped by the mod.
+
+`ForgeTroopBuilder` writes native `<EquipmentRoster>` elements inside `<Equipments>` (civilian equipment uses `civilian="true"`), not an `EquipmentSet` element. It prefixes item and upgrade IDs with `Item.` and `NPCCharacter.` when missing, validates equipment slots and formation groups, and permits at most two distinct upgrade targets. `ForgeItemBuilder` emits an `<Item>` and adds `<ItemComponent>` only after `AsWeapon`, `AsArmor`, or `AsHorse`; it validates item types and weapon damage types but cannot verify that a referenced mesh or game object exists.
 
 ## SDK Service Architecture
 
@@ -146,10 +159,10 @@ ForgeDetour (Experimental native method replacement)
 ├── UnpatchAll()
 ├── GetTrackedSnapshots(string owner = null)
 ├── Verify(MethodInfo method, out string status)
-└─ Scope: one-for-one executable method replacement; no Harmony hook integration
+└─ Scope: one-for-one executable method replacement; no external hook-framework integration
 ```
 
-`ForgeApi.Patches.ApplyMethodReplacement(string patchId, string owner, MethodInfo target, MethodInfo replacement)` and `ForgePatcher.ApplyAll(Assembly assembly)` are separate explicit application routes. The low-level writer is experimental and does not coordinate other threads executing the target. Blueprint hook kinds remain inert declarations. The optional runtime `ForgeHookService` implements Prefix/Postfix/Finalizer separately; its `net472` Core-only `RegisterTranspiler` adapter uses MonoMod `ILHook`, without adding MonoMod types to the SDK. ForgeDetour does not expose HarmonyMethod overloads. See [runtime hook policies](PATCH_BLUEPRINTS.md#explicit-runtime-hooks-and-il-transpilers) for exception handling, IL-body lifetime, host gates and rebuild limits.
+`ForgeApi.Patches.ApplyMethodReplacement(string patchId, string owner, MethodInfo target, MethodInfo replacement)` and `ForgePatcher.ApplyAll(Assembly assembly)` are separate explicit application routes. The low-level writer is experimental and does not coordinate other threads executing the target. Blueprint hook kinds remain inert declarations. The optional runtime `ForgeHookService` implements Prefix/Postfix/Finalizer separately; its `net472` Core-only `RegisterTranspiler` adapter uses MonoMod `ILHook`, without adding MonoMod types to the SDK. ForgeDetour does not expose third-party runtime-specific hook overloads. Patch diagnostics are a separate read-only reporting path, not an adapter for applying external hooks. See [runtime hook policies](PATCH_BLUEPRINTS.md#explicit-runtime-hooks-and-il-transpilers) for exception handling, IL-body lifetime, host gates and rebuild limits.
 
 ## GameModel Decorator Pattern
 
@@ -403,19 +416,35 @@ public class Runtime : ITestServices
 ### Troop Builder
 
 ```csharp
-var troop = new ForgeTroopBuilder()
-    .SetId("custom_infantry_tier_5")
-    .SetCulture("empire")
-    .SetLevel(25)
-    .SetSkills(new Dictionary<SkillObject, int>
-    {
-        { SkillObject.OneHanded, 150 },
-        { SkillObject.TwoHanded, 100 },
-        { SkillObject.Athletics, 120 }
-    })
-    .SetEquipment(customEquipment)
-    .Build();
+string troopXml = ForgeTroopBuilder.Create("custom_infantry_tier_5")
+    .WithName("Custom Infantry")
+    .WithCulture("empire")
+    .WithLevel(25)
+    .AddSkill("OneHanded", 150)
+    .AddSkill("Athletics", 120)
+    .AddBattleEquipment("Item0", "custom_iron_sword")
+    .AddCivilianEquipment("Item0", "custom_iron_sword")
+    .AddUpgradeTarget("custom_infantry_tier_6")
+    .BuildXml();
 ```
+
+The generated troop XML uses `<NPCCharacters><NPCCharacter>...<Equipments><EquipmentRoster>...`; define the referenced item and upgrade target in the module's data. `WithAge` accepts 0–128, `WithLevel` clamps to at least 1, and `AddSkill` clamps negative values to 0.
+
+### Item Builder
+
+```csharp
+string itemXml = ForgeItemBuilder.Create("custom_iron_sword")
+    .WithName("Custom Iron Sword")
+    .WithMesh("custom_iron_sword")
+    .WithCulture("empire")
+    .WithType("OneHandedWeapon")
+    .WithWeight(1.5)
+    .WithValue(500)
+    .AsWeapon("OneHandedSword", 90, 88, 18, "Pierce", 28, "Cut")
+    .BuildXml();
+```
+
+The builder wraps the native-shaped `<Item>` in `<Items>`. Armor and mount components use `AsArmor(...)` and `AsHorse(...)`; choosing an item type alone does not create a component. The generated mesh name must refer to an asset supplied by the game or mod.
 
 ### Quest Builder
 
@@ -609,13 +638,16 @@ public static T GetValue<T>(string key, T defaultValue)
 [Test]
 public void TestTroopBuilder()
 {
-    var troop = new ForgeTroopBuilder()
-        .SetId("test_troop")
-        .SetLevel(10)
-        .Build();
-    
-    Assert.AreEqual("test_troop", troop.Id);
-    Assert.AreEqual(10, troop.Level);
+    XElement troop = ForgeTroopBuilder.Create("test_troop")
+        .WithLevel(10)
+        .AddBattleEquipment("Item0", "test_sword")
+        .BuildElement();
+
+    Assert.AreEqual("test_troop", (string)troop.Attribute("id"));
+    Assert.AreEqual("10", (string)troop.Attribute("level"));
+    Assert.AreEqual("Item.test_sword", (string)troop
+        .Element("Equipments").Element("EquipmentRoster")
+        .Element("equipment").Attribute("id"));
 }
 ```
 

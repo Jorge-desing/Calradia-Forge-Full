@@ -207,6 +207,20 @@ function Test-ZipEntries {
     } finally { $archive.Dispose() }
 }
 
+function Get-ArchiveSha256Hex {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $algorithm = [System.Security.Cryptography.SHA256]::Create()
+    $stream = $null
+    try {
+        $stream = [System.IO.File]::OpenRead($Path)
+        $digest = $algorithm.ComputeHash($stream)
+        return [System.BitConverter]::ToString($digest).Replace('-', '')
+    } finally {
+        if ($null -ne $stream) { $stream.Dispose() }
+        $algorithm.Dispose()
+    }
+}
+
 Push-Location $workspace
 $stages = @()
 $completed = $false
@@ -236,6 +250,9 @@ try {
 
     dotnet build CalradiaForge.sln -c Release --no-restore -v:minimal
     if ($LASTEXITCODE -ne 0) { throw 'Release build failed.' }
+
+    & tools/Test-CalradiaForge-ContentShowcase.bat --no-pause
+    if ($LASTEXITCODE -ne 0) { throw 'Content showcase generation, schema verification or module build failed.' }
 
     $needDocs = -not ($Quick -and (Test-Path (Join-Path $workspace 'artifacts/docfx-site/index.html')))
     if ($needDocs) {
@@ -283,7 +300,7 @@ try {
     $stages += $moduleStage, $sourceStage, $desktopStage
     New-Item -ItemType Directory -Force $moduleStage, $sourceStage, $desktopStage | Out-Null
 
-    foreach ($module in @('CalradiaForge', 'CalradiaForgeExamples', 'CalradiaForgePriceProvider', 'CalradiaForgePriceConsumer')) {
+    foreach ($module in @('CalradiaForge', 'CalradiaForgeExamples', 'CalradiaForgePriceProvider', 'CalradiaForgePriceConsumer', 'CalradiaForgeContentShowcase')) {
         $srcMod = Join-Path $workspace "modules/$module"
         $dstMod = Join-Path $moduleStage $module
         [FastPackageEngine]::CopyModuleDirectory($srcMod, $dstMod)
@@ -294,7 +311,9 @@ try {
     $examplesBin = Join-Path $moduleStage 'CalradiaForgeExamples/bin/Win64_Shipping_Client'
     $providerBin = Join-Path $moduleStage 'CalradiaForgePriceProvider/bin/Win64_Shipping_Client'
     $consumerBin = Join-Path $moduleStage 'CalradiaForgePriceConsumer/bin/Win64_Shipping_Client'
-    New-Item -ItemType Directory -Force $forgeBin, $examplesBin, $providerBin, $consumerBin | Out-Null
+    $showcaseBin = Join-Path $moduleStage 'CalradiaForgeContentShowcase/bin/Win64_Shipping_Client'
+    New-Item -ItemType Directory -Force $forgeBin, $examplesBin, $providerBin, $consumerBin, $showcaseBin | Out-Null
+    Copy-Item -LiteralPath 'modules/CalradiaForgeContentShowcase/bin/Win64_Shipping_Client/CalradiaForge.ContentShowcase.dll' -Destination $showcaseBin -Force
     foreach ($assembly in @('CalradiaForge.Sdk', 'CalradiaForge.Core', 'CalradiaForge.Mod')) {
         Copy-Item -LiteralPath "src/$assembly/bin/Release/net472/$assembly.dll" -Destination $forgeBin -Force
     }
@@ -314,7 +333,7 @@ try {
 
     $sourceRoot = Join-Path $sourceStage 'Source'
     New-Item -ItemType Directory -Force $sourceRoot | Out-Null
-    $sourceFolders = @('src','examples','tests','tools','modules','localization','assets','docs','docs-site','.config') |
+    $sourceFolders = @('src','examples','tests','tools','modules','templates','localization','assets','docs','docs-site','.config') |
         ForEach-Object { Join-Path $workspace $_ }
     [FastPackageEngine]::FastTreeCopy($sourceFolders, $sourceRoot, $workspace)
 
@@ -354,8 +373,11 @@ try {
     Test-ZipEntries $desktopZip -AllowDesktopLauncher
     & $pythonPath tools/audit_package.py --version $Version
     if ($LASTEXITCODE -ne 0) { throw 'Package audit failed.' }
-    $hashLines = @(Get-FileHash -LiteralPath $modulesZip, $sourceZip, $desktopZip -Algorithm SHA256 |
-        ForEach-Object { "$($_.Hash) *$([IO.Path]::GetFileName($_.Path))" })
+    $hashLines = @()
+    foreach ($archivePath in @($modulesZip, $sourceZip, $desktopZip)) {
+        $digest = Get-ArchiveSha256Hex -Path $archivePath
+        $hashLines += "$digest *$([IO.Path]::GetFileName($archivePath))"
+    }
     Set-Content -LiteralPath (Join-Path $artifacts "package-sha256-$($Version.Replace('.', '')).txt") -Value $hashLines -Encoding utf8
     Remove-Item -LiteralPath (Join-Path $artifacts "CalradiaForge-$Version.zip") -Force -ErrorAction SilentlyContinue
     $completed = $true

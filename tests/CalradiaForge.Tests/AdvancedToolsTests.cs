@@ -358,7 +358,7 @@ namespace CalradiaForge.Tests
             test("Custom Audio Synthesizer validates module_sounds.xml mixer buses", TestSoundXmlSynthesizer);
             test("Troop & Character XML Validator verifies integer age, slots, and upgrade tree", TestTroopCharacterXmlValidator);
             test("Item & Smithing Crafting Validator validates damage types, components, and cross-references", TestItemCraftingValidator);
-            test("ForgeTroopBuilder validates integer age, slots, and upgrade targets", TestForgeTroopBuilder);
+            test("ForgeTroopBuilder validates age, slots, sparse variations, and upgrade targets", TestForgeTroopBuilder);
             test("ForgeItemBuilder validates damage types and component structures", TestForgeItemBuilder);
             test("ForgeAudioBuilder validates categories and file extensions", TestForgeAudioBuilder);
             test("ForgeQuestBuilder scaffolds double SetDialogs and SaveableTypeDefiner >= 2.5M", TestForgeQuestBuilder);
@@ -560,19 +560,19 @@ namespace MyCustomMod.QuestBehaviors
 <NPCCharacters>
   <NPCCharacter id=""custom_vlandia_veteran"" name=""{=custom_vet}Vlandian Veteran"" age=""28"" level=""21"" occupation=""Soldier"" culture=""Culture.vlandia"" default_group=""Infantry"" is_hero=""false"">
     <Equipments>
-      <EquipmentSet>
+      <EquipmentRoster>
         <equipment slot=""Item0"" id=""Item.vlandic_sword"" />
         <equipment slot=""Item1"" id=""Item.vlandic_shield"" />
         <equipment slot=""Head"" id=""Item.iron_helmet"" />
         <equipment slot=""Body"" id=""Item.hauberk"" />
         <equipment slot=""Gloves"" id=""Item.mail_gauntlets"" />
         <equipment slot=""Leg"" id=""Item.iron_greaves"" />
-      </EquipmentSet>
-      <EquipmentSet civilian=""true"">
+      </EquipmentRoster>
+      <EquipmentRoster civilian=""true"">
         <equipment slot=""Item0"" id=""Item.vlandic_dagger"" />
         <equipment slot=""Body"" id=""Item.civilian_tunic"" />
         <equipment slot=""Leg"" id=""Item.leather_shoes"" />
-      </EquipmentSet>
+      </EquipmentRoster>
     </Equipments>
     <upgrade_targets>
       <upgrade_target id=""NPCCharacter.custom_vlandia_knight"" />
@@ -604,7 +604,7 @@ namespace MyCustomMod.QuestBehaviors
             }
 
             // Civilian set check
-            var hasCivilian = character.Descendants("EquipmentSet").Any(s => (string)s.Attribute("civilian") == "true");
+            var hasCivilian = character.Descendants("EquipmentRoster").Any(s => (string)s.Attribute("civilian") == "true");
             if (!hasCivilian) throw new Exception("Troop definition missing civilian equipment set.");
 
             // Upgrade targets check
@@ -679,8 +679,48 @@ namespace MyCustomMod.QuestBehaviors
             if (targets.Count != 1 || (string)targets[0].Attribute("id") != "NPCCharacter.test_vlandia_veteran")
                 throw new Exception("Upgrade target did not have NPCCharacter. prefix.");
 
-            // Verify exception on invalid age
+            var equipment = elem.Element("Equipments");
+            var rosters = equipment?.Elements("EquipmentRoster").ToList();
+            if (rosters == null || rosters.Count != 2 || rosters.Any(roster => !roster.Elements("equipment").Any()))
+                throw new Exception("Inline battle and civilian equipment must be emitted as non-empty EquipmentRoster elements.");
+            if (equipment.Elements("EquipmentSet").Any())
+                throw new Exception("Inline equipment must not use EquipmentSet, which requires a referenced roster ID.");
+            if ((string)rosters[1].Attribute("civilian") != "true")
+                throw new Exception("The second inline equipment roster must be marked civilian.");
+
+            var sparseVariations = ForgeTroopBuilder.Create("sparse_variations")
+                .AddBattleEquipment("Item0", "late_variation_item", int.MaxValue)
+                .AddBattleEquipment("Item1", "first_variation_item", 0)
+                .BuildElement()
+                .Element("Equipments")
+                ?.Elements("EquipmentRoster")
+                .Where(roster => (string)roster.Attribute("civilian") != "true")
+                .ToList();
+            if (sparseVariations == null || sparseVariations.Count != 2 ||
+                (string)sparseVariations[0].Elements("equipment").Single().Attribute("id") != "Item.first_variation_item" ||
+                (string)sparseVariations[1].Elements("equipment").Single().Attribute("id") != "Item.late_variation_item")
+                throw new Exception("Sparse variation indices must allocate only declared variations and emit them in ascending index order.");
+
             bool threw = false;
+            try { ForgeTroopBuilder.Create("negative_variation").AddBattleEquipment("Item0", "item_1", -1); }
+            catch (ArgumentOutOfRangeException) { threw = true; }
+            if (!threw) throw new Exception("Negative battle equipment variation indices must be rejected explicitly.");
+
+            var branchedTroop = ForgeTroopBuilder.Create("branching_troop")
+                .AddUpgradeTarget("branch_a")
+                .AddUpgradeTarget("branch_b")
+                .AddUpgradeTarget("branch_b")
+                .BuildElement();
+            if (branchedTroop.Descendants("upgrade_target").Count() != 2)
+                throw new Exception("Repeating an existing upgrade target at the branch limit must remain idempotent.");
+
+            bool thirdBranchRejected = false;
+            try { ForgeTroopBuilder.Create("branching_troop").AddUpgradeTarget("branch_a").AddUpgradeTarget("branch_b").AddUpgradeTarget("branch_c"); }
+            catch (InvalidOperationException) { thirdBranchRejected = true; }
+            if (!thirdBranchRejected) throw new Exception("A third distinct upgrade target must still be rejected.");
+
+            // Verify exception on invalid age
+            threw = false;
             try { ForgeTroopBuilder.Create("bad_troop").WithAge(-5); } catch { threw = true; }
             if (!threw) throw new Exception("Expected exception for negative age.");
 
@@ -702,6 +742,22 @@ namespace MyCustomMod.QuestBehaviors
 
             if (weapon.Descendants("Weapon").FirstOrDefault() == null)
                 throw new Exception("Weapon component missing.");
+
+            var fractionalWeight = ForgeItemBuilder.Create("test_fractional_weight")
+                .WithWeight(0.15)
+                .AsWeapon("OneHandedSword", 90, 90, 30, "Pierce", 60, "Cut")
+                .BuildElement();
+            if ((string)fractionalWeight.Attribute("weight") != "0.15")
+                throw new Exception("ForgeItemBuilder must preserve fractional weights in the XML decimal representation.");
+
+            foreach (double invalidWeight in new[] { double.NaN, double.PositiveInfinity, double.NegativeInfinity })
+            {
+                bool invalidWeightRejected = false;
+                try { ForgeItemBuilder.Create("invalid_weight").WithWeight(invalidWeight); }
+                catch (ArgumentOutOfRangeException) { invalidWeightRejected = true; }
+                if (!invalidWeightRejected)
+                    throw new Exception("ForgeItemBuilder must reject non-finite weights that cannot be represented as XML decimals.");
+            }
 
             // Verify invalid damage type rejected
             bool threw = false;
@@ -1446,6 +1502,12 @@ namespace MyCustomMod.QuestBehaviors
 
             if (ForgeTimeSlicer.ShouldProcess("settlement_town_A1", (bucket1 + 1) % 24, 24))
                 throw new Exception("ForgeTimeSlicer.ShouldProcess returned true for non-matching bucket.");
+
+            if (ForgeTimeSlicer.GetBucket("a", 24) != 18)
+                throw new Exception("ForgeTimeSlicer.GetBucket changed its stable StringId bucket vector.");
+
+            if (!ForgeTimeSlicer.ShouldProcess("a", -6, 24) || !ForgeTimeSlicer.ShouldProcess("a", 42, 24))
+                throw new Exception("ForgeTimeSlicer.ShouldProcess must normalize negative and out-of-range hours.");
 
             var testEntities = new List<string> { "hero_1", "hero_2", "hero_3", "hero_4", "hero_5" };
             int batchProcessed = ForgeTimeSlicer.ProcessBatch(testEntities, id => id, entity => { }, bucket1, 24);
@@ -2686,8 +2748,14 @@ namespace MyCustomMod.QuestBehaviors
                 throw new Exception("GenerateBehaviorScaffold missing RegisterEvents.");
             if (!behavior.Contains("SyncData"))
                 throw new Exception("GenerateBehaviorScaffold missing SyncData.");
+            if (!behavior.Contains("using CalradiaForge.Sdk;"))
+                throw new Exception("GenerateBehaviorScaffold must import the SDK time-slicing helper it demonstrates.");
             if (!behavior.Contains("AddNonSerializedListener"))
                 throw new Exception("GenerateBehaviorScaffold missing AddNonSerializedListener (anti-lag rule).");
+            if (!behavior.Contains("ForgeTimeSlicer.ShouldProcess(s.StringId, currentHour)"))
+                throw new Exception("GenerateBehaviorScaffold must use ForgeTimeSlicer's stable hourly scheduling helper.");
+            if (behavior.IndexOf("StringId.GetHashCode()", StringComparison.Ordinal) >= 0)
+                throw new Exception("GenerateBehaviorScaffold must not teach process-dependent StringId.GetHashCode() bucketing.");
             if (behavior.Contains("Campaign") && !behavior.Contains("CampaignBehaviorBase") && !behavior.Contains("CampaignEvents") && !behavior.Contains("CampaignTime"))
                 throw new Exception("GenerateBehaviorScaffold contains forbidden 'Campaign' class name (GEMINI.md rule).");
 
@@ -2721,12 +2789,199 @@ namespace MyCustomMod.QuestBehaviors
                 throw new Exception("GenerateItemXml missing <Item element.");
             if (!itemXml.Contains("value="))
                 throw new Exception("GenerateItemXml missing value attribute (price).");
-            if (!itemXml.Contains("<Weapons>"))
-                throw new Exception("GenerateItemXml for weapon missing <Weapons> element.");
+            var generatedWeapon = XDocument.Parse(itemXml).Root?.Element("Item");
+            if (generatedWeapon?.Element("ItemComponent")?.Element("Weapon") == null)
+                throw new Exception("GenerateItemXml for weapon must use the schema's ItemComponent/Weapon shape.");
 
             string armorXml = ForgeNoviceHub.GenerateItemXml("test_helm", "Test Helm", "Culture.empire", "HeadArmor");
-            if (!armorXml.Contains("<Armor"))
-                throw new Exception("GenerateItemXml for armor missing <Armor element.");
+            var generatedArmor = XDocument.Parse(armorXml).Root?.Element("Item");
+            if (generatedArmor?.Element("ItemComponent")?.Element("Armor") == null)
+                throw new Exception("GenerateItemXml for armor must use the schema's ItemComponent/Armor shape.");
+
+            var weaponTypes = new[]
+            {
+                "OneHandedWeapon", "TwoHandedWeapon", "Polearm", "Bow", "Crossbow", "Thrown", "Shield"
+            };
+            foreach (string supportedType in new[]
+            {
+                "OneHandedWeapon", "TwoHandedWeapon", "Polearm", "Bow", "Crossbow", "Thrown", "Shield",
+                "HeadArmor", "BodyArmor", "LegArmor", "HandArmor", "Cape", "Horse", "HorseHarness", "Goods"
+            })
+            {
+                var generated = XDocument.Parse(ForgeNoviceHub.GenerateItemXml("test_" + supportedType, "Test Item", "Culture.empire", supportedType));
+                var generatedItem = generated.Root?.Element("Item");
+                if ((string)generatedItem?.Attribute("Type") != supportedType)
+                    throw new Exception("GenerateItemXml did not preserve the supported item type " + supportedType + ".");
+
+                var expectedWeapon = weaponTypes.Contains(supportedType, StringComparer.OrdinalIgnoreCase);
+                var hasWeaponComponent = generatedItem?.Element("ItemComponent")?.Element("Weapon") != null;
+                var hasBodyMesh = generatedItem?.Attribute("body_name") != null;
+                var hasHolsterReference = generatedItem?.Attribute("holster_mesh") != null || generatedItem?.Attribute("item_holsters") != null;
+                if (hasWeaponComponent != expectedWeapon || hasBodyMesh != expectedWeapon || hasHolsterReference != expectedWeapon)
+                    throw new Exception("GenerateItemXml must emit weapon mesh attributes only with weapon components for " + supportedType + ".");
+            }
+
+            var bowItem = XDocument.Parse(ForgeNoviceHub.GenerateItemXml("test_bow", "Test Bow", "Culture.empire", "Bow")).Root?.Element("Item");
+            var bowWeapon = bowItem?.Element("ItemComponent")?.Element("Weapon");
+            var bowFlags = bowItem?.Element("Flags");
+            if ((string)bowItem?.Attribute("mesh") != "shortbow_b" ||
+                (string)bowItem?.Attribute("body_name") != "bo_shortbow_b" ||
+                (string)bowItem?.Attribute("weight") != "0.3" ||
+                (string)bowItem?.Attribute("value") != "500" ||
+                (string)bowItem?.Attribute("holster_mesh") != "shortbow_b_holster" ||
+                (string)bowItem?.Attribute("holster_mesh_with_weapon") != "shortbow_b_holster_weapon" ||
+                (string)bowItem?.Attribute("item_holsters") != "bow_hip:bow_hip_2" ||
+                (string)bowWeapon?.Attribute("weapon_class") != "Bow" ||
+                (string)bowWeapon?.Attribute("ammo_class") != "Arrow" ||
+                (string)bowWeapon?.Attribute("ammo_limit") != "1" ||
+                (string)bowWeapon?.Attribute("missile_speed") != "84" ||
+                (string)bowWeapon?.Attribute("accuracy") != "99" ||
+                bowWeapon?.Attribute("swing_damage") != null ||
+                (string)bowFlags?.Attribute("Stealth") != "true" ||
+                (string)bowFlags?.Attribute("ForceAttachOffHandPrimaryItemBone") != "true" ||
+                (string)bowWeapon?.Element("WeaponFlags")?.Attribute("RangedWeapon") != "true")
+                throw new Exception("Bow XML must match the Native shortbow mesh, ranged component, item flags, ammo, holsters, and weapon flags.");
+
+            var crossbowItem = XDocument.Parse(ForgeNoviceHub.GenerateItemXml("test_crossbow", "Test Crossbow", "Culture.empire", "Crossbow")).Root?.Element("Item");
+            var crossbowWeapon = crossbowItem?.Element("ItemComponent")?.Element("Weapon");
+            var crossbowFlags = crossbowItem?.Element("Flags");
+            if ((string)crossbowItem?.Attribute("mesh") != "crossbow_a" ||
+                (string)crossbowItem?.Attribute("body_name") != "bo_cross_bow_heavy" ||
+                (string)crossbowItem?.Attribute("weight") != "1.0" ||
+                (string)crossbowItem?.Attribute("value") != "500" ||
+                (string)crossbowItem?.Attribute("AmmoOffset") != "0.0, 0.02131, 0.24650" ||
+                (string)crossbowItem?.Attribute("item_holsters") != "crossbow_back:bow_hip:mace_right_hip:bow_hip_2" ||
+                (string)crossbowItem?.Attribute("holster_position_shift") != "0.02,0,-0.4" ||
+                (string)crossbowWeapon?.Attribute("weapon_class") != "Crossbow" ||
+                (string)crossbowWeapon?.Attribute("ammo_class") != "Bolt" ||
+                (string)crossbowWeapon?.Attribute("missile_speed") != "77" ||
+                (string)crossbowWeapon?.Attribute("reload_phase_count") != "2" ||
+                crossbowWeapon?.Attribute("swing_damage") != null ||
+                (string)crossbowFlags?.Attribute("Stealth") != "true" ||
+                (string)crossbowWeapon?.Element("WeaponFlags")?.Attribute("RangedWeapon") != "true")
+                throw new Exception("Crossbow XML must match the Native crossbow mesh, bolt component, item flags, offset, holster, reload, and weapon flags.");
+
+            var shieldItem = XDocument.Parse(ForgeNoviceHub.GenerateItemXml("test_shield", "Test Shield", "Culture.empire", "Shield")).Root?.Element("Item");
+            var shieldWeapon = shieldItem?.Element("ItemComponent")?.Element("Weapon");
+            var shieldFlags = shieldItem?.Element("Flags");
+            if ((string)shieldItem?.Attribute("mesh") != "sturgia_shield_a" ||
+                (string)shieldItem?.Attribute("body_name") != "bo_cap_sturgia_shield_a" ||
+                (string)shieldItem?.Attribute("shield_body_name") != "bo_sturgia_shield_a" ||
+                (string)shieldItem?.Attribute("weight") != "4.7" ||
+                (string)shieldItem?.Attribute("value") != "200" ||
+                (string)shieldItem?.Attribute("recalculate_body") != "false" ||
+                (string)shieldItem?.Attribute("using_tableau") != "true" ||
+                (string)shieldItem?.Attribute("item_holsters") != "shield_round:shield_4" ||
+                (string)shieldItem?.Attribute("has_lower_holster_priority") != "true" ||
+                (string)shieldItem?.Attribute("holster_position_shift") != "0,0,0" ||
+                (string)shieldWeapon?.Attribute("weapon_class") != "LargeShield" ||
+                (string)shieldWeapon?.Attribute("body_armor") != "9" ||
+                (string)shieldWeapon?.Attribute("hit_points") != "500" ||
+                shieldWeapon?.Attribute("swing_damage") != null ||
+                (string)shieldFlags?.Attribute("WoodenParry") != "true" ||
+                (string)shieldFlags?.Attribute("ForceAttachOffHandPrimaryItemBone") != "true" ||
+                (string)shieldFlags?.Attribute("HeldInOffHand") != "true" ||
+                (string)shieldWeapon?.Element("WeaponFlags")?.Attribute("CanBlockRanged") != "true")
+                throw new Exception("Shield XML must use its Native mesh/body references, item flags, and shield-specific component fields.");
+
+            var headArmorItem = XDocument.Parse(ForgeNoviceHub.GenerateItemXml("test_head", "Test Head Armor", "Culture.empire", "HeadArmor")).Root?.Element("Item");
+            var headArmor = headArmorItem?.Element("ItemComponent")?.Element("Armor");
+            var headArmorFlags = headArmorItem?.Element("Flags");
+            if ((string)headArmorItem?.Attribute("mesh") != "headscarf_d" ||
+                (string)headArmorItem?.Attribute("weight") != "0.5" || (string)headArmorItem?.Attribute("value") != "75" ||
+                (string)headArmor?.Attribute("head_armor") != "3" ||
+                headArmor?.Attribute("body_armor") != null || headArmor?.Attribute("leg_armor") != null || headArmor?.Attribute("arm_armor") != null ||
+                (string)headArmor?.Attribute("has_gender_variations") != "false" ||
+                (string)headArmor?.Attribute("hair_cover_type") != "all" || (string)headArmor?.Attribute("beard_cover_type") != "type3" ||
+                (string)headArmorFlags?.Attribute("Stealth") != "true" ||
+                (string)headArmorFlags?.Attribute("Civilian") != "true" ||
+                (string)headArmorFlags?.Attribute("UseTeamColor") != "true")
+                throw new Exception("HeadArmor must preserve the Native head mesh, zone protection, and item-level flags.");
+
+            var bodyArmorItem = XDocument.Parse(ForgeNoviceHub.GenerateItemXml("test_body", "Test Body Armor", "Culture.empire", "BodyArmor")).Root?.Element("Item");
+            var bodyArmor = bodyArmorItem?.Element("ItemComponent")?.Element("Armor");
+            var bodyArmorFlags = bodyArmorItem?.Element("Flags");
+            if ((string)bodyArmorItem?.Attribute("mesh") != "aserai_tunic_long" ||
+                (string)bodyArmorItem?.Attribute("weight") != "1.6" || (string)bodyArmorItem?.Attribute("value") != "200" ||
+                (string)bodyArmor?.Attribute("body_armor") != "2" ||
+                (string)bodyArmor?.Attribute("leg_armor") != "2" ||
+                (string)bodyArmor?.Attribute("arm_armor") != "1" || bodyArmor?.Attribute("head_armor") != null ||
+                (string)bodyArmor?.Attribute("has_gender_variations") != "true" ||
+                (string)bodyArmor?.Attribute("covers_body") != "true" ||
+                (string)bodyArmorFlags?.Attribute("UseTeamColor") != "true" ||
+                (string)bodyArmorFlags?.Attribute("Civilian") != "true")
+                throw new Exception("BodyArmor must preserve the Native torso mesh, coverage values, and item-level flags.");
+
+            var legArmorItem = XDocument.Parse(ForgeNoviceHub.GenerateItemXml("test_legs", "Test Leg Armor", "Culture.empire", "LegArmor")).Root?.Element("Item");
+            var legArmor = legArmorItem?.Element("ItemComponent")?.Element("Armor");
+            var legArmorFlags = legArmorItem?.Element("Flags");
+            if ((string)legArmorItem?.Attribute("mesh") != "aserai_female_costume_shoe" ||
+                (string)legArmorItem?.Attribute("weight") != "0.5" || (string)legArmorItem?.Attribute("value") != "50" ||
+                (string)legArmor?.Attribute("leg_armor") != "2" ||
+                legArmor?.Attribute("body_armor") != null || legArmor?.Attribute("head_armor") != null || legArmor?.Attribute("arm_armor") != null ||
+                (string)legArmor?.Attribute("covers_legs") != "false" ||
+                (string)legArmorFlags?.Attribute("Civilian") != "true")
+                throw new Exception("LegArmor must preserve the Native footwear mesh, leg-zone protection, and item-level flag.");
+
+            var handArmorItem = XDocument.Parse(ForgeNoviceHub.GenerateItemXml("test_hands", "Test Hand Armor", "Culture.empire", "HandArmor")).Root?.Element("Item");
+            var handArmor = handArmorItem?.Element("ItemComponent")?.Element("Armor");
+            var handArmorFlags = handArmorItem?.Element("Flags");
+            if ((string)handArmorItem?.Attribute("mesh") != "padded_vambrace_a_handguard" ||
+                (string)handArmorItem?.Attribute("weight") != "0.6" || (string)handArmorItem?.Attribute("value") != "100" ||
+                (string)handArmor?.Attribute("arm_armor") != "9" ||
+                handArmor?.Attribute("body_armor") != null || handArmor?.Attribute("head_armor") != null || handArmor?.Attribute("leg_armor") != null ||
+                (string)handArmor?.Attribute("stealth_factor") != "10" ||
+                (string)handArmorFlags?.Attribute("Stealth") != "true" ||
+                (string)handArmorFlags?.Attribute("Civilian") != "true")
+                throw new Exception("HandArmor must preserve the Native vambrace mesh, arm-zone protection, and item-level flags.");
+
+            var capeItem = XDocument.Parse(ForgeNoviceHub.GenerateItemXml("test_cape", "Test Cape", "Culture.empire", "Cape")).Root?.Element("Item");
+            var capeArmor = capeItem?.Element("ItemComponent")?.Element("Armor");
+            var capeFlags = capeItem?.Element("Flags");
+            if ((string)capeItem?.Attribute("mesh") != "aserai_female_costume_cloak" ||
+                (string)capeItem?.Attribute("weight") != "0.2" || (string)capeItem?.Attribute("value") != "50" ||
+                (string)capeArmor?.Attribute("body_armor") != "2" ||
+                capeArmor?.Attribute("head_armor") != null || capeArmor?.Attribute("leg_armor") != null || capeArmor?.Attribute("arm_armor") != null ||
+                (string)capeFlags?.Attribute("Civilian") != "true" ||
+                (string)capeFlags?.Attribute("UseTeamColor") != "true")
+                throw new Exception("Cape must preserve the Native cloak mesh, armor zone, and item-level flags.");
+
+            var horseHarnessItem = XDocument.Parse(ForgeNoviceHub.GenerateItemXml("test_harness", "Test Horse Harness", "Culture.empire", "HorseHarness")).Root?.Element("Item");
+            var horseHarnessArmor = horseHarnessItem?.Element("ItemComponent")?.Element("Armor");
+            var horseHarnessFlags = horseHarnessItem?.Element("Flags");
+            if ((string)horseHarnessItem?.Attribute("mesh") != "bandit_saddle_desert" ||
+                (string)horseHarnessItem?.Attribute("weight") != "21.0" || (string)horseHarnessItem?.Attribute("value") != "500" ||
+                (string)horseHarnessItem?.Attribute("subtype") != "body_armor" ||
+                (string)horseHarnessArmor?.Attribute("body_armor") != "9" ||
+                horseHarnessArmor?.Attribute("head_armor") != null || horseHarnessArmor?.Attribute("leg_armor") != null || horseHarnessArmor?.Attribute("arm_armor") != null ||
+                (string)horseHarnessArmor?.Attribute("reins_mesh") != "bandit_saddle_desert_rein" ||
+                (string)horseHarnessArmor?.Attribute("mane_cover_type") != "none" ||
+                (string)horseHarnessArmor?.Attribute("family_type") != "1" ||
+                (string)horseHarnessArmor?.Attribute("material_type") != "Cloth" ||
+                (string)horseHarnessFlags?.Attribute("Civilian") != "true")
+                throw new Exception("HorseHarness must preserve the Native saddle mesh, armor component, and item-level flag.");
+
+            try
+            {
+                ForgeItemBuilder.Create("test_banner").WithType("Banner");
+                throw new Exception("ForgeItemBuilder must reject Banner until its Native component schema is verified.");
+            }
+            catch (NotSupportedException error)
+            {
+                if (!error.Message.Contains("version-specific Native Items component schema", StringComparison.Ordinal))
+                    throw new Exception("Banner rejection must explain the missing schema verification.", error);
+            }
+
+            try
+            {
+                ForgeNoviceHub.GenerateItemXml("test_banner", "Test Banner", "Culture.empire", "Banner");
+                throw new Exception("GenerateItemXml must reject Banner until its Native component schema is verified.");
+            }
+            catch (NotSupportedException error)
+            {
+                if (!error.Message.Contains("version-specific Native Items component schema", StringComparison.Ordinal))
+                    throw new Exception("GenerateItemXml Banner rejection must explain the missing schema verification.", error);
+            }
 
             // ── 5. ForgeNoviceHub.GenerateSubModuleXml ─────────────────────────────
             string submod = ForgeNoviceHub.GenerateSubModuleXml("TestMod", "TestMod", "1.0.0", "TestMod.SubModule");
@@ -2764,6 +3019,9 @@ namespace MyCustomMod.QuestBehaviors
                 throw new Exception("ExplainCampaignEvent specific lookup missing plain-language description.");
             if (!specific.Contains("AddNonSerializedListener"))
                 throw new Exception("ExplainCampaignEvent subscription pattern missing AddNonSerializedListener.");
+            if (specific.IndexOf("ForgeTimeSlicer.ShouldProcess(settlement.StringId, currentHour)", StringComparison.Ordinal) < 0 ||
+                specific.IndexOf("StringId.GetHashCode()", StringComparison.Ordinal) >= 0)
+                throw new Exception("ExplainCampaignEvent must recommend the stable ForgeTimeSlicer helper, not StringId.GetHashCode().");
 
             string fuzzy = ForgeNoviceHub.ExplainCampaignEvent("HourlyTick"); // partial match
             if (fuzzy.Contains("not found in the catalog") && !fuzzy.Contains("Did you mean"))
@@ -3155,7 +3413,7 @@ namespace MyCustomMod.QuestBehaviors
             var itemElement = docWeapon.Root.Element("Item");
             if (itemElement == null || (string)itemElement.Attribute("id") != "mymod_champions_blade")
                 throw new Exception("GenerateItemXml (weapon) missing <Item id=\"mymod_champions_blade\">.");
-            var weaponElement = itemElement.Element("Weapons")?.Element("Weapon");
+            var weaponElement = itemElement.Element("ItemComponent")?.Element("Weapon");
             if (weaponElement == null || (string)weaponElement.Attribute("thrust_damage") != "18")
                 throw new Exception("GenerateItemXml (weapon) missing <Weapon> with damage attributes.");
 
@@ -3170,8 +3428,8 @@ namespace MyCustomMod.QuestBehaviors
             {
                 throw new Exception("GenerateItemXml (armor) generated invalid XML: " + ex.Message);
             }
-            if (docArmor.Root?.Element("Item")?.Element("Armor") == null)
-                throw new Exception("GenerateItemXml (armor) missing <Armor> element.");
+            if (docArmor.Root?.Element("Item")?.Element("ItemComponent")?.Element("Armor") == null)
+                throw new Exception("GenerateItemXml (armor) missing the schema's ItemComponent/Armor element.");
 
             // 3. Validate GenerateTroopXml produces 100% valid XML
             string troopXml = ForgeNoviceHub.GenerateTroopXml("mymod_vanguard", "Mod Vanguard", "Culture.empire", 3);
@@ -3323,11 +3581,61 @@ namespace MyCustomMod.QuestBehaviors
                 throw new Exception("GenerateSettlementBuildingScaffold missing Decorator pattern with ExplainedNumber.");
 
             // 3d. Combat AI Component Scaffold
-            string combatScaffold = ForgeNoviceHub.GenerateCombatAiComponentScaffold("BattleShoutAgentComponent", "BattleShoutMissionLogic", "MyMod.Combat");
+            string combatScaffold = ForgeNoviceHub.GenerateCombatAiComponentScaffold("BattleShoutAgentComponent", "BattleShoutMissionLogic", "test_battle_cry");
             if (!combatScaffold.Contains("AgentComponent") || !combatScaffold.Contains("MissionLogic"))
                 throw new Exception("GenerateCombatAiComponentScaffold missing AgentComponent or MissionLogic.");
             if (!combatScaffold.Contains("_initialized"))
                 throw new Exception("GenerateCombatAiComponentScaffold missing deferred _initialized pattern for mission lifecycle safety.");
+
+            string escapedCombatScaffold = ForgeNoviceHub.GenerateCombatAiComponentScaffold(
+                "SafeComponent", "SafeMissionLogic", "quote\" slash\\ nul\0 bell\a backspace\b formfeed\f verticaltab\v control\u0001 line\u2028 para\u2029 high\uD800 low\uDC00");
+            const string escapedSoundCall = "SoundEvent.PlaySound2D(\"quote\\\" slash\\\\ nul\\0 bell\\a backspace\\b formfeed\\f verticaltab\\v control\\u0001 line\\u2028 para\\u2029 high\\uD800 low\\uDC00\");";
+            if (!escapedCombatScaffold.Contains(escapedSoundCall))
+                throw new Exception("GenerateCombatAiComponentScaffold did not escape all tested controls and Unicode code units in the generated C# sound string literal.");
+
+            bool invalidComponentNameRejected = false;
+            try
+            {
+                ForgeNoviceHub.GenerateCombatAiComponentScaffold("Invalid.Component", "SafeMissionLogic", "sound");
+            }
+            catch (ArgumentException exception)
+            {
+                invalidComponentNameRejected = exception.ParamName == "componentName";
+            }
+
+            if (!invalidComponentNameRejected)
+                throw new Exception("GenerateCombatAiComponentScaffold must reject invalid generated C# type names.");
+
+            bool reservedMissionNameRejected = false;
+            try
+            {
+                ForgeNoviceHub.GenerateCombatAiComponentScaffold("SafeComponent", "class", "sound");
+            }
+            catch (ArgumentException exception)
+            {
+                reservedMissionNameRejected = exception.ParamName == "missionLogicName";
+            }
+
+            if (!reservedMissionNameRejected)
+                throw new Exception("GenerateCombatAiComponentScaffold must reject reserved C# keywords as generated type names.");
+
+            string normalizedUnicodeNameScaffold = ForgeNoviceHub.GenerateCombatAiComponentScaffold(
+                "SafeComponent", "ÅngstromMission", "sound");
+            if (!normalizedUnicodeNameScaffold.Contains("public class ÅngstromMission : MissionLogic"))
+                throw new Exception("GenerateCombatAiComponentScaffold should retain normalized Unicode letters in valid generated type names.");
+
+            bool nonNormalizedMissionNameRejected = false;
+            try
+            {
+                ForgeNoviceHub.GenerateCombatAiComponentScaffold("SafeComponent", "\u212BngstromMission", "sound");
+            }
+            catch (ArgumentException exception)
+            {
+                nonNormalizedMissionNameRejected = exception.ParamName == "missionLogicName";
+            }
+
+            if (!nonNormalizedMissionNameRejected)
+                throw new Exception("GenerateCombatAiComponentScaffold must reject non-Form-C identifiers rather than emit unstable C# source.");
 
             // 4. Validate Advanced Engines
             // 4a. ForgeTradeSimulator

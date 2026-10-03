@@ -53,18 +53,27 @@ namespace CalradiaForge.Mod
             {
                 try
                 {
-                    var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    var dump = "{\n" +
-                               $"  \"Timestamp\": \"{DateTime.Now:O}\",\n" +
-                               $"  \"IsTerminating\": {(e.IsTerminating ? "true" : "false")},\n" +
-                               $"  \"Exception\": \"{ex.ToString().Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "")}\"\n" +
-                               "}";
+                    var occurredAt = DateTime.Now;
+                    var timestamp = occurredAt.ToString("yyyyMMdd_HHmmss");
+                    var dump = BuildCrashReport(occurredAt, e.IsTerminating, ex.ToString());
                     var path = System.IO.Path.Combine(TaleWorlds.Engine.Utilities.GetBasePath(), "Modules", "CalradiaForge", $"crash_{timestamp}.cfcrash");
                     System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
                     System.IO.File.WriteAllText(path, dump);
                 }
                 catch { }
             }
+        }
+
+        private static string BuildCrashReport(DateTime timestamp, bool isTerminating, string exceptionText)
+        {
+            var report = new
+            {
+                Timestamp = timestamp.ToString("O"),
+                IsTerminating = isTerminating,
+                Exception = exceptionText
+            };
+
+            return Newtonsoft.Json.JsonConvert.SerializeObject(report, Newtonsoft.Json.Formatting.Indented);
         }
 
         protected override void OnBeforeInitialModuleScreenSetAsRoot(){runtime?.NotifyInitialScreenReady();}

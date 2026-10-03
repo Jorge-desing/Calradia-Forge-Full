@@ -1,5 +1,41 @@
 # Changelog
 
+## Final SDK evolution validation and evidence boundaries — 2026-10-02 (Registry Rev129)
+
+- Revalidated the complete local suite through `tools\Run-CalradiaForge-Tests.bat`: clean `net472`, `net8.0`, and Desktop builds with zero warnings/errors; Core 416/416, ForgeWeave 73/73, Desktop 65/65, and 295 WPF render cases with 320 layout/render passes. The 19,288 ms figure is harness time, not observed application latency.
+- The onboarding BAT isolated-packed and installed the SDK/template, generated and restored a consumer module, and built it for `net472` against local licensed GameBin references with zero warnings. The content-showcase BAT passed deterministic static generation, schemas/references, and module-build checks. No proprietary TaleWorlds DLLs are included in those packages.
+- Python `--ci`, the 4/4 stateless acceptance BAT, the onboarding-knowledge audit, and validation of all 29 modified skills passed. The optional `--agents` profile remains unavailable: its explicit setup failed with pip `InvalidChunkLength`; the base tool environment remains healthy.
+- The Harmony observer remains optional: it inspects only an already-loaded `0Harmony` assembly through the expected public query surface. It is neither a Harmony dependency nor proof of third-party coexistence or a sandbox. No Bannerlord session, TPAC deep parse, public NuGet publication, or IDE marketplace integration was verified. Product version remains 25.2.0 and `ForgeApi.Version` remains 13.
+
+## Validation evidence reconciliation and showcase contracts — 2026-10-02 (Registry Rev128)
+
+- Adds an append-only evidence clarification for Rev127. The latest retained integrated log verifies Core 410/410, Patch Diagnostics 28/28, ForgeWeave 73/73, Desktop 65/65, and 295 WPF render cases with 308 layout/render passes; its render duration is 24,476 ms of harness time. The higher totals and 20,903 ms cited by Rev127 remain reported but cannot be independently reproduced from a retained matching log. This records an evidence-retention gap, not a failed run.
+- Hardens the content-showcase verifier: language resource paths must be exact, remain inside their locale directory, and resolve to an existing file; the close button must be focusable and expose its localized label binding. Negative fixtures cover invalid paths, missing files, focus, and label regressions.
+- Keeps the synthetic `ForgeTimeSlicer.ProcessBatch` benchmark separate from campaign callback and live-game performance claims. No live Bannerlord behavior is inferred.
+
+## Evidence-based SDK onboarding and project knowledge consolidation — 2026-10-02 (Registry Rev127)
+
+- Completes the local developer-start path with the versioned SDK package, a `dotnet new` module template, and a deterministic static troop/item showcase. The generated `net472` module restored and compiled against local licensed GameBin references with zero warnings; no TaleWorlds assemblies are shipped in the package.
+- Records bounded, read-only patch diagnostics and a static Gauntlet prototype with explicit evidence limits. Harmony remains optional observation of an already-loaded runtime; this does not prove compatibility with real Harmony-using mods. Time-slicing guidance states that stable-ID selection still traverses the input collection and makes no unmeasured performance claim.
+- Consolidates verified lessons in project rules, specialist skills and the three root agent guides. The final integrated BAT passed clean builds, Core 415/415, Patch Diagnostics 30/30, ForgeWeave 73/73, Desktop 65/65, and 295 WPF render cases with 320 layout/render passes. The 20,903 ms duration belongs to the harness, not the open application.
+- Product remains 25.2.0 and `ForgeApi.Version` 13. No live Bannerlord load/render, public NuGet publication, or Visual Studio/Rider marketplace integration is claimed.
+
+## Diagnostic status, accepted-write telemetry, and evidence alignment — 2026-10-02 (Registry Rev126)
+
+- External patch inspection now distinguishes incomplete collection from genuinely truncated output; failures and skipped assemblies no longer imply output clipping. Cognitive-memory telemetry increments only when bounded SDK writes are accepted. Regression coverage includes empty/null time-slicer identifiers mapping to bucket zero and documents the need for stable, non-empty IDs. The Desktop memory-inspector test now reflects its actual CoALA-inspired sample-only status instead of expecting a live runtime snapshot. Full BAT validation passed: Core 415/415, Patch Diagnostics 28/28, ForgeWeave 73/73, Desktop 65/65, and 295 WPF render cases with 308 layout/render passes; builds reported zero warnings and errors. These are harness/source results, not live Bannerlord behavior.
+
+## Diagnostic and simulation evidence corrections — 2026-10-02 (Registry Rev125)
+
+- `.cfcrash` reporting now serializes exception text as valid JSON, with regression coverage for Windows paths and control characters. The Core launcher now runs the F10 edge and report-serialization tests. Corrected agent tool bindings and non-pausing command guidance; clarified the limited crash-analysis behavior. Historical performance reports remain intact, with the current SDK evolution guide explicitly bounding the old anti-lag and zero-allocation wording to the evidence actually measured. No live Bannerlord behavior is claimed.
+
+## Verified knowledge and showcase contract coverage — 2026-10-02 (Registry Rev124)
+
+- The content-showcase verifier now checks prefab binding annotations and referenced localization keys in both supported showcase catalogs, with negative regressions. Debugging guidance now matches the `.cfcrash` JSON envelope, stateless `SyncData` rule and actual 64-entry ForgeWeave retention; dispatcher scope is explicit. Root guides route to all six specialist skills, and simulation guidance marks unsupported workload claims as unverified. The showcase BAT passed its contract checks, a clean `net472` module build, Core 411/411 and ForgeWeave 73/73; no live Bannerlord rendering is claimed.
+
+## SDK builder safety, guide parity, and local template validation — 2026-10-02 (Registry Rev123)
+
+- Sparse troop equipment variations now store only declared indices in ascending order, so an extreme positive index cannot allocate all intervening rosters; negative indices are rejected. Re-adding an existing upgrade target is idempotent at the two-branch limit, while a third distinct target remains invalid. Regressions passed through the Core BAT. Aligned the root anti-shadowing rule across AGENTS.md, CODEX.md, and GEMINI.md for both `Campaign` and `Localization`, and extended the SDK evolution guide's evidence references through Rev123. The onboarding BAT also compiled a generated consumer module against local Bannerlord GameBin references with zero warnings; no game process was started.
+
 ## Current patch management audits — 2026-10-01 (Registry Rev103)
 
 - Agent audits follow current receipt synchronization and tracked detour verification instead of obsolete names, with five regressions rejecting missing protections. Hosted agent stateless verification uses the portable BAT gateway. Local Python checks pass; remote optional-agent validation is pending. Static management evidence does not prove concurrent-target safety.
@@ -1027,3 +1063,50 @@ Live main-menu hook application remains unverified because native-window control
 - Closing Hook Workbench reconciles the remembered route with active rail filters; when no route is visible it clears the unreachable selection, and clearing the filter restores an accessible route.
 - Fixes the clipped Connect action in the compact session header and replaces the generic Spanish-only diagnostic action label with the existing localized work-order resource. The render checks verify the complete localized Connect label and keyboard target, plus Hook Workbench layout, localized route status, and hit testing across all locales and themes at minimum and normal viewports.
 - BAT validation: clean build with zero warnings/errors, Desktop 65/65, 295 WPF render cases and 308 layout/render passes. The harness uses fixed WPF DPI and does not emulate Windows display scaling; native keyboard input and live WPF interaction remain unverified. Product version remains 25.2.0; no game session, campaign, or battle was started.
+
+# Rev117 — SDK onboarding, content showcase, and Harmony-independent patch diagnostics — 2026-10-01
+
+This changelog entry consolidates protected ledger revisions 115 (developer onboarding and content showcase) and 116 (Harmony-independent patch diagnostics and knowledge updates).
+
+- Adds a local `CalradiaForge.Sdk` package workflow, a `.NET new` starter template for `net472` modules with local TaleWorlds references, and a deterministic installable showcase for generated troop/item content and a read-only Gauntlet page. This adds no public SDK API and does not distribute proprietary game assemblies.
+- Replaces the retired Harmony snapshot/report route with Forge-owned patch diagnostics. Optional compatibility observes only an already-loaded `0Harmony` assembly by reflection when requested; Forge has no Harmony package/reference, does not load or mutate Harmony, and does not claim runtime coexistence.
+- Keeps the product at `25.2.0`, `ForgeApi.Version` at 13, and the request envelope at 1; the changed diagnostic protocol surface is version 2. Updates project skills and agent guidance to use the verified stable time-slicing helper and to qualify performance/allocation claims by measurement.
+- BAT validation: clean `net472`/`net8.0` build with zero warnings/errors; Core 403/403, ForgeWeave 73/73, Desktop 65/65, 295 WPF render cases and 308 layout/render passes, plus 25 asset-pipeline checks. The onboarding/template and content-showcase BAT smoke checks also passed. Render timings are harness measurements, not application latency. The optional TPAC deep parser was skipped because its local TpacTool fixture was unavailable.
+- IDE marketplace integration, public package publication, runtime coexistence with Harmony, and live Bannerlord rendering/loading remain unverified.
+
+# Rev118 — Time-slicing edge cases and onboarding validation — 2026-10-02
+
+- Makes SDK time-slice hour normalization overflow-safe for positive bucket counts up to `int.MaxValue`; regressions cover `ShouldProcess` and both `ProcessBatch` overloads. This helper still traverses and hashes each input ID, does not promise even bucket loads, and only fits work that can safely be deferred.
+- Ensures generated Gauntlet editable fields show their existing localized `Label`. The native-panel help string remains validated through source catalogs and generated language resources; a test no longer incorrectly requires general help text to be a native-menu control key.
+- Corrects resource generation for standalone localized panel strings and represents an absent external diagnostic snapshot as `NotCaptured`, not as a confirmed absent runtime. Skill and root-agent guidance now qualify allocation, time-slicing, Harmony-observation, and onboarding claims against their actual evidence.
+- BAT validation: clean full build; Core 404/404, ForgeWeave 73/73, Desktop 65/65, WPF render 295 cases and 308 layout/render passes (16,098 ms harness time); patch-diagnostics fixture 28/28; stateless acceptance passed; developer-onboarding and content-showcase smokes passed; Python base tooling/Ruff, 25 asset fixtures, five image fixtures, and offline agent utility checks passed. No in-game performance or render claim is made.
+- The latest onboarding report is `artifacts/sdk-evolution/onboarding/20261002T033001Z-00c3d2e2/source-package-report.json`; local SDK/template package hashes are recorded in `docs/SDK_EVOLUTION.md` and `.es.md`. Optional Antigravity dependency installation remains unverified because pip ended with `InvalidChunkLength`. TPAC deep parsing and live Bannerlord rendering/loading remain unverified.
+
+# Rev119 — Enforced documentation parity and corrected guide aliases — 2026-10-02
+
+- Corrects the bilingual documentation audit so English `SYSTEM_DESIGN.md` is no longer misclassified as the Spanish counterpart of `ARCHITECTURE.md`; both now require their own `.es.md` files.
+- Makes missing Spanish counterparts fail the ledger-audit runner and adds regressions for alias matching, English-document classification, and the failing gate. Preserves the established `DESKTOP.md` and versioned `VALIDATION-<VERSION>.md` aliases.
+- BAT validation: Python/Ruff checks passed, including 25 asset tests, five image tests, ten agent-tool audit regressions, and documentation parity at 42/42 with zero missing counterparts. Protected revision 118 and its SHA-256 chain are verified separately after append.
+
+# Rev120 — Evidence-based developer onboarding, diagnostics, and agent knowledge — 2026-10-02
+
+- Consolidates the locally packable SDK, `.NET new` starter template, deterministic troop/item content showcase, and a static Gauntlet example into a source-verified onboarding path. Local package/template installation and generated `net472` module restore/build pass; this does not publish to an IDE marketplace or NuGet feed.
+- Replaces the retired Harmony snapshot surface with Forge-owned diagnostics. Optional observation uses reflection over an exact compatible `0Harmony` assembly only when it is already loaded and a diagnostic request asks for it. Forge does not add a Harmony reference/package, load or mutate Harmony, or claim real-mod coexistence.
+- Aligns the stable-ID time-slicer guidance across SDK help, tests, maps, skills, and root agent guides: bucket populations can differ and filtering still traverses the source collection (O(N)); no general latency or load-balancing gain is claimed.
+- Final BAT validation: clean builds with 0 warnings/errors; Core 410/410, ForgeWeave 73/73, Desktop 65/65, WPF render 295 cases and 308 render/layout passes; stateless acceptance 4/4; Python/Ruff and asset checks passed; onboarding/template and content-showcase BATs passed; 26 modified skill directories passed `quick_validate.py`. WPF timing is harness-only.
+- Product remains 25.2.0, `ForgeApi.Version` 13, request envelope v1 and patch-diagnostics protocol v2. No live Bannerlord session, campaign, battle, real Harmony runtime/coexistence, public package publication, or IDE marketplace integration was validated.
+
+# Rev121 — Precise content generation and evidence-based agent validation — 2026-10-02
+
+- Preserves fractional item weights as invariant XML decimals instead of rounding them to one decimal place, retains the established `.0` form for integral values, and rejects `NaN`/infinity. Banner output is explicitly unsupported until its version-specific Native Items component schema is verified.
+- Updates release-validation and agent guidance to use maintained BAT launchers, report per-run counts, distinguish local tool execution from simulation, and keep harness evidence separate from live game behavior.
+- BAT validation: full suite passed with clean `net472`, `net8.0` and Desktop builds; Core 411/411, ForgeWeave 73/73, Desktop 65/65, and WPF 295 cases/308 layout-render passes. The 16,366 ms render figure is harness time only. Content showcase deterministic generation, local XSD checks and `net472` build passed; portable SDK/template onboarding and stateless checks passed.
+- Static Harmony review found no product dependency or Harmony loading path; it does not establish compatibility/coexistence with Harmony-using mods. No live Bannerlord session, campaign or battle was started; in-game rendering and public NuGet/IDE publication remain unverified.
+- Product remains 25.2.0 and `ForgeApi.Version` remains 13.
+
+# Rev122 — Repair Spanish SDK catalog parity and portable archive hashing — 2026-10-02
+
+- Repairs two Spanish SDK catalog entries whose source keys had been translated instead of matching the English keys; their Spanish values remain unchanged. Native UI generation now accepts the bilingual catalog again.
+- Replaces package hashing through command lookup with streaming .NET SHA-256 computation and deterministic resource disposal, so the canonical packaging script works in the current Windows PowerShell host.
+- BAT validation: package pipeline passed with clean builds, Core 411/411, ForgeWeave 73/73, Desktop 65/65, WPF 295 cases/308 layout-render passes, content-showcase generation and XSD checks, and DocFX. All three 25.2.0 archives passed the audit; independent SHA-256 calculations matched the generated manifest. Harness timing is not app latency.
+- Product version, public SDK contract and package dependencies remain unchanged. No live Bannerlord session or publication was performed.

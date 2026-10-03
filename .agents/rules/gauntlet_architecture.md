@@ -165,7 +165,7 @@ Never use WPF property element syntax (`<ScrollablePanel.InnerPanel>`). Gauntlet
         <ListPanel Id="Inner" />
       </Children>
     </Widget>
-    <ScrollBarWidget Id="ScrollBar" />
+    <ScrollbarWidget Id="ScrollBar" />
   </Children>
 </ScrollablePanel>
 ```
@@ -178,7 +178,5 @@ By default, `EditableTextWidget` only updates its bound property when the user h
 When a bound string property is empty (`""`), Gauntlet still renders the container's brush background, borders, and margins, creating orphaned visual boxes.
 - **Prevention:** Bind container visibility to a boolean flag: `IsVisible="@HasContent"`.
 
-### F. Hot Reloading:
-Enable live Gauntlet XML editing while the game is running by pressing `Ctrl + ~` and executing:
-`ui.toggle_debug_mode`
-Reloading prefabs in real-time allows immediate visual debugging without restarting the game.
+### F. Reported Hot-Reload Workflow (Unverified)
+Some development notes report enabling a UI debug mode with `Ctrl + ~` and `ui.toggle_debug_mode` before editing Gauntlet XML. Availability and behavior depend on the installed Bannerlord version and have not been verified for this project baseline. Treat this as an optional research lead, not a supported Forge workflow or validation gate; confirm it in the target game's documentation or a controlled live session before relying on it.

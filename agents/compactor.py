@@ -3,15 +3,16 @@ Token Compaction & Semantic Output Distillation Engine for Calradia Forge Agents
 
 Provides high-efficiency context window optimization for LLM agents powered by
 the Google Antigravity SDK:
-1. Lossless Error & Telemetry Preservation:
-   - Preserves 100% of compiler errors (CSxxxx), stack traces, failing test assertions,
-     missing UIA nodes, C# AST violations, and broken ledger hash chains.
-2. High-Density Semantic Distillation:
-   - Cuts noise by 80-98% for passing tool runs by extracting key empirical metrics,
-     timings, pass counts, and exit codes.
-3. Forensic Raw Output Logging:
-   - Full uncompressed outputs are saved to artifacts/agent-runs/<timestamp>_<tool>.log
-     with traceable links embedded in the LLM context.
+1. Pattern-based diagnostic retention:
+   - Tool-specific distillers retain selected compiler, test, and audit lines that match
+     their current patterns. Regression fixtures cover representative formats; this is
+     not a completeness or lossless-preservation guarantee.
+2. Semantic output distillation:
+   - Supported tool outputs may become shorter. Token counts use a project heuristic,
+     so the reported reduction varies with the input and is not a universal target.
+3. Optional raw output logging:
+   - When requested, non-empty output is saved to artifacts/agent-runs/<timestamp>_<tool>.log
+     if the file write succeeds; callers must not assume the log always exists.
 4. Token Estimation & Telemetry:
    - Computes raw tokens, compacted tokens, tokens saved, and compression ratio.
 5. Adaptive Context Presets:
@@ -84,11 +85,12 @@ class CompactionStats:
     has_errors: bool = False
     error_count: int = 0
     warning_count: int = 0
+    status: Optional[str] = None
 
     def summary_line(self) -> str:
         """Formatted single-line summary of compaction telemetry."""
         ratio_pct = f"{self.compression_ratio * 100:.1f}%"
-        status = "FAIL" if self.has_errors else "OK"
+        status = self.status or ("FAIL" if self.has_errors else "OK")
         return (
             f"[{self.tool_name}] {status}: {self.raw_tokens} -> {self.compacted_tokens} tokens "
             f"({self.tokens_saved} saved, {ratio_pct} reduction)"
@@ -100,7 +102,7 @@ class CompactionStats:
 # ==============================================================================
 
 def _distill_dotnet_build(raw: str) -> Tuple[str, bool, int, int]:
-    """Distills MSBuild output while preserving 100% of compiler errors and warnings."""
+    """Summarizes MSBuild output and includes diagnostic lines matching known patterns."""
     lines = raw.splitlines()
 
     # Detect errors and warnings (supports both English and Spanish MSBuild output)
@@ -168,7 +170,7 @@ def _distill_dotnet_build(raw: str) -> Tuple[str, bool, int, int]:
                 out_lines.append(f"    ... and {warn_count - 15} more warnings (see forensic log).")
             return "\n".join(out_lines), False, 0, warn_count
 
-    # Build failed - preserve all compiler errors
+    # Build failed - include every diagnostic line recognized by the current patterns.
     out_lines = [
         f"Build FAILED for {target} [{config}]{duration_str} ({err_count} errors, {warn_count} warnings):",
         f"  Compiler & Build Errors ({err_count}):",
@@ -197,25 +199,45 @@ def _distill_solution_tests(raw: str) -> Tuple[str, bool, int, int]:
 
     # Extract suite numbers
     assets_match = re.search(r"Ran (\d+) tests.*OK", raw)
-    assets_count = assets_match.group(1) if assets_match else "8"
+    assets_count = assets_match.group(1) if assets_match else None
 
     core_match = re.search(r"CalradiaForge\.Tests:\s*(\d+)\s*passed", raw)
-    core_count = core_match.group(1) if core_match else "239"
+    core_count = core_match.group(1) if core_match else None
 
-    weave_match = re.search(r"RESULT:\s*(\d+)\s*passed,\s*(\d+)\s*failed", raw)
-    weave_passed = weave_match.group(1) if weave_match else "71"
-    weave_failed = int(weave_match.group(2)) if weave_match else 0
+    # RESULT lines are emitted independently by Core, ForgeWeave, and Desktop.
+    # Bind each line to the most recent launcher section instead of relying on
+    # position: selected runs may omit a suite or a suite may emit no summary.
+    suite_headers = {
+        "Core": re.compile(r"^\[Core\]\s+Running\b", re.IGNORECASE),
+        "ForgeWeave": re.compile(r"^\[ForgeWeave\]\s+Running\b", re.IGNORECASE),
+        "Desktop": re.compile(r"^\[Desktop\]\s+Running\b", re.IGNORECASE),
+    }
+    result_pattern = re.compile(r"^\s*RESULT:\s*(\d+)\s*passed,\s*(\d+)\s*failed", re.IGNORECASE)
+    suite_results: Dict[str, Tuple[str, int]] = {}
+    total_reported_failures = 0
+    active_suite: Optional[str] = None
+    for line in raw.splitlines():
+        for suite_name, header_pattern in suite_headers.items():
+            if header_pattern.search(line.strip()):
+                active_suite = suite_name
+                break
 
-    desktop_matches = list(re.finditer(r"RESULT:\s*(\d+)\s*passed,\s*(\d+)\s*failed", raw))
-    if len(desktop_matches) >= 2:
-        desktop_passed = desktop_matches[1].group(1)
-        desktop_failed = int(desktop_matches[1].group(2))
-    else:
-        desktop_passed = "54"
-        desktop_failed = 0
+        result_match = result_pattern.search(line)
+        if result_match is None:
+            continue
+
+        passed_count = result_match.group(1)
+        failed_count = int(result_match.group(2))
+        total_reported_failures += failed_count
+        if active_suite is not None:
+            suite_results[active_suite] = (passed_count, failed_count)
+
+    core_result = suite_results.get("Core")
+    weave_result = suite_results.get("ForgeWeave")
+    desktop_result = suite_results.get("Desktop")
 
     render_match = re.search(r"PASS\s+(\d+)\s+WPF render cases;\s*(\d+)\s*ms", raw)
-    render_count = render_match.group(1) if render_match else "275"
+    render_count = render_match.group(1) if render_match else None
     render_ms = render_match.group(2) if render_match else ""
 
     perf_match = re.search(
@@ -223,19 +245,37 @@ def _distill_solution_tests(raw: str) -> Tuple[str, bool, int, int]:
         raw,
     )
 
-    err_count = weave_failed + desktop_failed
+    err_count = total_reported_failures
     if has_failed:
         err_count = max(1, err_count)
 
-    if not has_failed and err_count == 0:
+    overall_success_marker = any(
+        line.strip() == "All selected Calradia Forge test suites passed."
+        for line in raw.splitlines()
+    )
+
+    if not has_failed and err_count == 0 and overall_success_marker:
         lines = [
-            "Solution Test Suite PASSED (100% success across all suites):",
-            f"  - Assets Pipeline: {assets_count}/{assets_count} passed",
-            f"  - Core Systems: {core_count}/{core_count} passed",
-            f"  - ForgeWeave: {weave_passed}/{weave_passed} passed (0 failed)",
-            f"  - Desktop MVVM: {desktop_passed}/{desktop_passed} passed (0 failed)",
-            f"  - Desktop Render: {render_count}/{render_count} passed ({render_ms}ms total run)",
+            "Solution Test Suite PASSED for the suites selected by the launcher:",
         ]
+        if assets_count is not None:
+            lines.append(f"  - Asset Pipeline: {assets_count} tests passed")
+        if core_result is not None:
+            lines.append(
+                f"  - Core Systems: {core_result[0]} passed ({core_result[1]} failed)"
+            )
+        elif core_count is not None:
+            lines.append(f"  - Core Systems: {core_count} tests passed")
+        if weave_result is not None:
+            lines.append(
+                f"  - ForgeWeave: {weave_result[0]} passed ({weave_result[1]} failed)"
+            )
+        if desktop_result is not None:
+            lines.append(
+                f"  - Desktop MVVM: {desktop_result[0]} passed ({desktop_result[1]} failed)"
+            )
+        if render_count is not None:
+            lines.append(f"  - Desktop Render: {render_count} cases passed ({render_ms} ms harness time)")
         if perf_match:
             passes = perf_match.group(1)
             layout_ms = perf_match.group(2)
@@ -243,8 +283,16 @@ def _distill_solution_tests(raw: str) -> Tuple[str, bool, int, int]:
             lines.append(
                 f"  - Layout Performance: {passes} layout passes, {layout_ms} ms in layout, {nodes:,} nodes visited"
             )
-        lines.append("  - Overall: All selected Calradia Forge test suites passed.")
         return "\n".join(lines), False, 0, 0
+
+    if not has_failed and err_count == 0:
+        return (
+            "Solution Test Suite INDETERMINATE: no recognized overall success marker was present; "
+            "verify the complete launcher output before reporting a pass.",
+            True,
+            0,
+            0,
+        )
 
     # Tests failed - extract failing assertions and tests
     failure_lines: List[str] = []
@@ -273,39 +321,64 @@ def _distill_solution_tests(raw: str) -> Tuple[str, bool, int, int]:
 
 def _distill_ui_automation(raw: str) -> Tuple[str, bool, int, int]:
     """Distills Windows UI Automation smoke test report."""
-    has_failed = "FAILED" in raw or "Failed: 0" not in raw and "Failed:" in raw
-
-    checks_match = re.search(r"Passed:\s*(\d+).*Failed:\s*(\d+)", raw)
-    if not checks_match:
-        checks_match = re.search(r"TotalChecks:\s*(\d+)", raw)
-
-    passed_checks = "29"
-    failed_checks = "0"
-    if checks_match:
-        if checks_match.lastindex and checks_match.lastindex >= 2:
-            passed_checks = checks_match.group(1)
-            failed_checks = checks_match.group(2)
+    has_failed = bool(
+        re.search(r"\bFAILED\b|\bStatus:\s*(?:Failed|TimedOut|NotRun)\b", raw, re.IGNORECASE)
+    )
+    count_match = re.search(
+        r"Read-only UIA inspection passed:\s*(\d+)\s*/\s*(\d+)\s+observed records",
+        raw,
+        re.IGNORECASE,
+    )
+    if count_match:
+        passed_checks = int(count_match.group(1))
+        total_checks = int(count_match.group(2))
+        failed_checks = max(0, total_checks - passed_checks)
+        has_failed = has_failed or passed_checks != total_checks
+    else:
+        checks_match = re.search(r"Passed:\s*(\d+).*Failed:\s*(\d+)", raw, re.IGNORECASE)
+        if checks_match:
+            passed_checks = int(checks_match.group(1))
+            failed_checks = int(checks_match.group(2))
+            total_checks = passed_checks + failed_checks
+            has_failed = has_failed or failed_checks > 0
         else:
-            passed_checks = checks_match.group(1)
+            passed_checks = None
+            failed_checks = 0
+            total_checks = None
 
-    duration_match = re.search(r"Duration:\s*([0-9.]+)\s*s|Duration:\s*(\d+)\s*ms", raw)
+    explicit_success = bool(
+        re.search(
+            r"Windows UI Automation Smoke Test \[PASSED\]|Read-only UIA inspection passed|\bStatus:\s*Passed\b",
+            raw,
+            re.IGNORECASE,
+        )
+    )
+    duration_match = re.search(r"Duration:\s*([0-9.]+)\s*s|Duration:\s*(\d+)\s*ms", raw, re.IGNORECASE)
     duration_str = ""
     if duration_match:
         duration_str = f" in {duration_match.group(1) or duration_match.group(2)}"
 
-    err_count = int(failed_checks) if failed_checks.isdigit() else (1 if has_failed else 0)
+    err_count = failed_checks if isinstance(failed_checks, int) and failed_checks > 0 else (1 if has_failed else 0)
 
-    if not has_failed and err_count == 0:
-        summary = (
-            f"Windows UI Automation Smoke PASSED: {passed_checks}/{passed_checks} checks passed "
-            f"(0 failures){duration_str}.\n"
-            f"  Verified: Shell Window, Operation Rail, Command Palette, Evidence Ledger, "
-            f"Dynamic Tab Navigation, and SplitDeck Toggle."
-        )
+    if not has_failed and err_count == 0 and explicit_success:
+        if passed_checks is not None and total_checks is not None:
+            result = f"{passed_checks}/{total_checks} checks passed (0 failures)"
+        else:
+            result = "passed; check count was not reported"
+        summary = f"Windows UI Automation Smoke PASSED: {result}{duration_str}."
         return summary, False, 0, 0
 
+    if not has_failed and err_count == 0:
+        return (
+            "Windows UI Automation Smoke INDETERMINATE: no recognized successful process status was present; "
+            "verify the complete UIA runner output before reporting a pass.",
+            True,
+            0,
+            0,
+        )
+
     # Failures detected
-    err_lines = [l.strip() for l in raw.splitlines() if "FAIL" in l or "Missing" in l or "Error" in l]
+    err_lines = [l.strip() for l in raw.splitlines() if re.search(r"FAIL|Missing|Error|TimedOut|NotRun", l, re.IGNORECASE)]
     summary_lines = [
         f"Windows UI Automation Smoke FAILED ({err_count} checks failed):",
     ]
@@ -641,13 +714,14 @@ class ForgeTokenCompactor:
         force_raw: bool = False,
         repo_root: Optional[Path] = None,
     ) -> Tuple[str, CompactionStats]:
-        """Distills raw tool output into high-density semantic text while persisting full log.
+        """Distills raw tool output using a best-effort, tool-specific summary.
 
-        Guarantees:
-        1. Lossless Error Preservation: Any compiler error, failed test, or invariant violation
-           is preserved with file, line, and code details.
-        2. Forensic Persistence: Raw output is saved to artifacts/agent-runs/ before distillation.
-        3. Measurable Savings: Returns CompactionStats with raw/compact token counts and ratio.
+        Limits:
+        1. Only diagnostics that match a distiller's current patterns are included; output
+           formats can change and unrecognized details may be omitted.
+        2. Raw output is saved only when requested, non-empty, and the write succeeds.
+        3. Token counts and reduction ratios are heuristic measurements of this input, not
+           guarantees of semantic completeness or savings for other outputs.
 
         Args:
             tool_name: Name of the repository tool.
@@ -676,7 +750,11 @@ class ForgeTokenCompactor:
                 tokens_saved=0,
                 compression_ratio=0.0,
                 log_file=log_path_str,
-                has_errors=False,
+                # Raw mode intentionally skips result classification. Keep the
+                # payload untouched, but don't report an unverified result as
+                # OK or let CoALA prune it as an ordinary successful trace.
+                has_errors=True,
+                status="INDETERMINATE",
             )
             return raw_output, stats
 
@@ -693,11 +771,18 @@ class ForgeTokenCompactor:
             err_count = 1
             warn_count = 0
 
+        is_indeterminate = distilled_body.startswith((
+            "Solution Test Suite INDETERMINATE:",
+            "Windows UI Automation Smoke INDETERMINATE:",
+        ))
+
         # Append forensic log reference footer
         footer_lines = []
         if log_path_str:
-            if has_errors:
-                footer_lines.append(f"\n[Forensic Log ({raw_tokens} tokens, errors preserved): {log_path_str}]")
+            if is_indeterminate:
+                footer_lines.append(f"\n[Forensic Log ({raw_tokens} tokens, run status needs review): {log_path_str}]")
+            elif has_errors:
+                footer_lines.append(f"\n[Forensic Log ({raw_tokens} tokens, recognized diagnostics included): {log_path_str}]")
             elif raw_tokens > 120:
                 footer_lines.append(f"\n[Forensic Log ({raw_tokens} tokens archived): {log_path_str}]")
 
@@ -713,9 +798,12 @@ class ForgeTokenCompactor:
             tokens_saved=tokens_saved,
             compression_ratio=ratio,
             log_file=log_path_str,
-            has_errors=has_errors,
+            # CoALA currently retains attention-worthy traces through this flag.
+            # Preserve indeterminate runs instead of classifying them as routine OK.
+            has_errors=has_errors or is_indeterminate,
             error_count=err_count,
             warning_count=warn_count,
+            status="INDETERMINATE" if is_indeterminate else None,
         )
 
         cls.last_stats = stats

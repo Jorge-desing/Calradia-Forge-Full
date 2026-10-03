@@ -203,11 +203,11 @@ namespace CalradiaForge.Desktop.Presentation
             {
                 AgentMemoryDashboard = new AgentMemoryDashboardViewModel();
                 status = "Simulation Ready";
-                rawResult = "=== COALA AGENT COGNITIVE MEMORY AUDIT (SDK v8) ===\nArchitecture Model : CoALA Cognitive Architecture for Bannerlord NPCs\nGlobal Capacity    : 100 Maximum Agents Slots\nAgent Quotas       : 128 Semantic Facts | 512 Episodes (128/type) | 128 Procedural Tasks\n\n[GLOBAL CAPACITY METER]\nCapacity: [█░░░░░░░░░░░░░░░░░░░░░░░] 6.00% (6 / 100 slots utilized)\n\n[TIER 1: SEMANTIC MEMORY (Beliefs, Preferences & TTL Facts)]\nAgent: hero_rhagaea\n   • preference_culture     = Empire\n   • war_stance_khuzait     = Hostile\n   • player_disposition     = Allied (Relation: +64)\n\n[TIER 2: EPISODIC MEMORY (Experiences & FIFO Bounded Events)]\nAgent: hero_rhagaea (Total Episodes: 4/512)\n   [combat] Defended Onira against Khuzait siege vanguard\n   [diplomacy] Signed trade truce with Western Empire senate\n   [dynasty] Arranged marriage treaty for Ira\n\n[TIER 3: PROCEDURAL MEMORY (Skills & Tactical Routines)]\nAgent: hero_rhagaea (Tasks: 2/128)\n   • formation_defense    : Palatine archers on high ground, cataphracts in counter-charge flank";
-                Evidence.Add(new("Agent Memory / Global Registry", "Verified", "6/100 global slots utilized; bounded agent slot isolation active."));
-                Evidence.Add(new("Agent Memory / Semantic Decay", "Verified", "Lazy TTL expiration verified; stale facts removed on access."));
-                Evidence.Add(new("Agent Memory / Episodic FIFO", "Verified", "Per-agent 512 cap and per-type 128 cap verified without unbounded heap growth."));
-                Evidence.Add(new("Agent Memory / Procedural Health", "Verified", "Task rules validated without circular reentrancy."));
+                rawResult = "=== AGENT MEMORY SAMPLE ===\nArchitecture Model : Bounded tiered memory inspired by CoALA concepts; not a CoALA language-agent runtime\nGlobal Capacity    : 2048 Maximum Agent IDs\nAgent Quotas       : 128 Semantic Facts | 512 Episodes (128/type) | 128 Procedural Tasks\n\n[ILLUSTRATIVE SAMPLE — NOT A LIVE REGISTRY SNAPSHOT]\nCapacity: [█░░░░░░░░░░░░░░░░░░░░░░░] 0.29% (6 / 2048 slots shown)\n\n[TIER 1: SEMANTIC MEMORY (Beliefs, Preferences & TTL Facts)]\nAgent: hero_rhagaea\n   • preference_culture     = Empire\n   • war_stance_khuzait     = Hostile\n   • player_disposition     = Allied (Relation: +64)\n\n[TIER 2: EPISODIC MEMORY (Experiences & FIFO Bounded Events)]\nAgent: hero_rhagaea (Total Episodes: 4/512)\n   [combat] Defended Onira against Khuzait siege vanguard\n   [diplomacy] Signed trade truce with Western Empire senate\n   [dynasty] Arranged marriage treaty for Ira\n\n[TIER 3: PROCEDURAL MEMORY (Skills & Tactical Routines)]\nAgent: hero_rhagaea (Tasks: 2/128)\n   • formation_defense    : Palatine archers on high ground, cataphracts in counter-charge flank";
+                Evidence.Add(new("Agent Memory / Global Registry", "Sample", "Illustrative 6/2048 sample; this route does not report the live SDK registry."));
+                Evidence.Add(new("Agent Memory / Semantic Decay", "Sample", "Example semantic facts demonstrate the optional TTL tier."));
+                Evidence.Add(new("Agent Memory / Episodic FIFO", "Sample", "Example events illustrate the bounded episodic tier."));
+                Evidence.Add(new("Agent Memory / Procedural Health", "Sample", "Example procedures illustrate caller-defined stored routines."));
             }
             else if (IsCodeSecurityAuditor)
             {
@@ -399,7 +399,7 @@ namespace CalradiaForge.Desktop.Presentation
             "SoundXmlSynthesizer" => "🎵 Sintetizar Definición de Sonido",
             "WorkshopEnterpriseSimulator" => "📊 Simular Economía 30 Días",
             "SettlementCalculator" => "🏛️ Calcular Equilibrio Asentamiento",
-            "SaveInspector" or "ForgeAgentMemoryInspector" or "AgentMemoryInspector" => "🧠 Inspeccionar Memoria CoALA",
+            "SaveInspector" or "ForgeAgentMemoryInspector" or "AgentMemoryInspector" => "🧠 Revisar muestra simulada de memoria",
             "SaveTypeDefinerAuditor" => "🛡️ Auditar SaveableTypeDefiner",
             "CampaignNamespaceGuard" => "🛡️ Verificar Anti-Shadowing",
             "ModRuleAuditor" => "📜 Auditar Reglas C#",
@@ -467,7 +467,7 @@ namespace CalradiaForge.Desktop.Presentation
             "TroopTreeVisualizer" => "Ejecuta la simulación completa del árbol DAG de tropas imperiales y calcula métricas de combate.",
             "AudioFmodMixerInspector" => "Analiza la forma de onda acústica, calcula el espectro en 5 bandas y verifica el margen dinámico.",
             "WorkshopEnterpriseSimulator" => "Simula 30 días de operación económica entre 7 empresas de talleres y modela el riesgo de rebelión.",
-            "SaveInspector" or "ForgeAgentMemoryInspector" or "AgentMemoryInspector" => "Inspecciona la arquitectura de memoria CoALA de 3 niveles y calcula la cuota global de agentes.",
+            "SaveInspector" or "ForgeAgentMemoryInspector" or "AgentMemoryInspector" => "Revisa datos de muestra simulados e inspirados en CoALA; no consulta un registro en vivo ni ejecuta un runtime CoALA.",
             "SaveTypeDefinerAuditor" => "Desensambla el IL del constructor del binario PE y audita que el base ID sea >= 2.500.000.",
             "CampaignNamespaceGuard" => "Inspecciona los metadatos del binario para garantizar que ningún tipo o espacio de nombres oculte TaleWorlds.CampaignSystem.",
             "LiveConsole" => "Despacha acciones interactivas a través del named pipe hacia el bus de eventos ForgeWeave en el juego.",

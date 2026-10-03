@@ -204,7 +204,7 @@ namespace MyMod.QuestBehaviors
 ---
 
 ## 5. Golden Rules for Quests
-> **Universal rules** (no Campaign namespace, no Harmony, no entity serialization) are in `bannerlord-shared-patterns`.
+> **Universal rules** are in `bannerlord-shared-patterns`: do not create a `Campaign` namespace, add a Harmony dependency, use Harmony patches/detours to implement this feature, or serialize engine entities. The only Forge-side Harmony path is the optional read-only observer described there; it does not load or modify Harmony.
 
 1. **Never omit `SetDialogs()` from `InitializeQuestOnGameLoad()`**: This is the #1 cause of broken quest conversations on loaded saves.
 2. **Never store raw `Agent` references in quest fields**: Agents are transient 3D entities destroyed when scenes end. Always store `Hero` or `Hero.StringId`.

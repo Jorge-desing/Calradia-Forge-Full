@@ -316,6 +316,132 @@ namespace CalradiaForge.Core
             }
         }
 
+        // The IPC diagnostics path must not materialize an arbitrarily large registry or
+        // every ordering token. The public GetSnapshots contract intentionally remains
+        // complete and unchanged for callers that explicitly request it.
+        internal IReadOnlyList<ForgeHookSnapshot> GetDiagnosticSnapshots(int maximumRecords, int maximumOrderingIds, int maximumTotalOrderingIds, out bool truncated)
+        {
+            if (maximumRecords < 0) throw new ArgumentOutOfRangeException(nameof(maximumRecords));
+            if (maximumOrderingIds < 0) throw new ArgumentOutOfRangeException(nameof(maximumOrderingIds));
+            if (maximumTotalOrderingIds < 0) throw new ArgumentOutOfRangeException(nameof(maximumTotalOrderingIds));
+
+            lock (gate)
+            {
+                truncated = false;
+                var remainingOrderingIds = maximumTotalOrderingIds;
+                var maximumInspectedEntries = Math.Max(64, maximumRecords * 4 + 64);
+                var inspectedEntries = 0;
+                var snapshots = new List<ForgeHookSnapshot>(Math.Min(maximumRecords, entries.Count));
+                var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (string id in applyOrder)
+                {
+                    if (++inspectedEntries > maximumInspectedEntries)
+                    {
+                        truncated = true;
+                        return snapshots;
+                    }
+                    Entry entry;
+                    if (!seen.Add(id) || !entries.TryGetValue(id, out entry)) continue;
+                    if (snapshots.Count >= maximumRecords)
+                    {
+                        truncated = true;
+                        return snapshots;
+                    }
+                    snapshots.Add(DiagnosticSnapshot(entry, maximumOrderingIds, ref remainingOrderingIds, ref truncated));
+                }
+
+                foreach (Entry entry in entries.Values)
+                {
+                    if (++inspectedEntries > maximumInspectedEntries)
+                    {
+                        truncated = true;
+                        return snapshots;
+                    }
+                    if (!seen.Add(entry.Id)) continue;
+                    if (snapshots.Count >= maximumRecords)
+                    {
+                        truncated = true;
+                        return snapshots;
+                    }
+                    snapshots.Add(DiagnosticSnapshot(entry, maximumOrderingIds, ref remainingOrderingIds, ref truncated));
+                }
+
+                return snapshots;
+            }
+        }
+
+        ForgeHookSnapshot DiagnosticSnapshot(Entry entry, int maximumOrderingIds, ref int remainingOrderingIds, ref bool truncated)
+        {
+            var before = BoundedOrder(entry.Before, maximumOrderingIds, ref remainingOrderingIds, ref truncated);
+            var after = BoundedOrder(entry.After, maximumOrderingIds, ref remainingOrderingIds, ref truncated);
+            var target = DiagnosticIdentity(entry.Target, ref truncated);
+            return new ForgeHookSnapshot(entry.Id, entry.Owner, target,
+                entry.Prefix != null, entry.Postfix != null, entry.Priority, before, after,
+                entry.State, entry.Detail, entry.Finalizer != null,
+#if NETFRAMEWORK
+                entry.Transpiler != null
+#else
+                false
+#endif
+                );
+        }
+
+        static string[] BoundedOrder(string[] values, int maximum, ref int remaining, ref bool truncated)
+        {
+            if (values == null || values.Length == 0) return Array.Empty<string>();
+            var count = Math.Min(values.Length, Math.Min(maximum, remaining));
+            if (values.Length > count) truncated = true;
+            if (count == 0) return Array.Empty<string>();
+            var bounded = new string[count];
+            Array.Copy(values, bounded, count);
+            remaining -= count;
+            return bounded;
+        }
+
+        static string DiagnosticIdentity(MethodInfo method, ref bool truncated)
+        {
+            if (method == null) return string.Empty;
+            const int maximumLength = 256;
+            var builder = new System.Text.StringBuilder(maximumLength);
+            // Metadata tokens disambiguate overloads without calling GetParameters(), which
+            // allocates a complete ParameterInfo array before a caller-side cap can apply.
+            var typeName = method.DeclaringType?.FullName ?? "?";
+            AppendDiagnosticText(builder, typeName, maximumLength, ref truncated);
+            AppendDiagnosticText(builder, ".", maximumLength, ref truncated);
+            AppendDiagnosticText(builder, method.Name, maximumLength, ref truncated);
+            try
+            {
+                AppendDiagnosticText(builder, "#" + method.MetadataToken.ToString("X8", System.Globalization.CultureInfo.InvariantCulture), maximumLength, ref truncated);
+            }
+            catch
+            {
+                truncated = true;
+                AppendDiagnosticText(builder, "#?", maximumLength, ref truncated);
+            }
+            return builder.ToString();
+        }
+
+        static void AppendDiagnosticText(System.Text.StringBuilder builder, string value, int maximumLength, ref bool truncated)
+        {
+            if (string.IsNullOrEmpty(value)) return;
+            if (builder.Length >= maximumLength)
+            {
+                truncated = true;
+                return;
+            }
+            var available = maximumLength - builder.Length;
+            if (value.Length <= available)
+            {
+                builder.Append(value);
+                return;
+            }
+            var copyCount = Math.Max(0, available - 1);
+            if (copyCount > 0) builder.Append(value, 0, copyCount);
+            builder.Append('…');
+            truncated = true;
+        }
+
         public ForgeHookOperationResult Apply(string hookId)
         {
             if (string.IsNullOrWhiteSpace(hookId)) throw new ArgumentException("A hook ID is required.", nameof(hookId));

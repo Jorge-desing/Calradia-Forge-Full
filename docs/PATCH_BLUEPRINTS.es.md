@@ -1,6 +1,6 @@
 # Prevalidación de blueprints de parche
 
-La Prevalidación de blueprints de parche permite describir y revisar un parche propuesto antes de aplicar nada. Es una herramienta original e independiente de Forge: no requiere Harmony, MCM, ButterLib ni otro mod para compilarse o distribuirse. El vocabulario de hooks (`Prefix`, `Postfix`, `Transpiler`, `Finalizer`) es metadato descriptivo; no significa que Forge implemente todos esos tipos de hook.
+La Prevalidación de blueprints de parche permite describir y revisar un parche propuesto antes de aplicar nada. Es una herramienta original e independiente de Forge: no requiere frameworks externos de mods para compilarse o distribuirse. El vocabulario de hooks (`Prefix`, `Postfix`, `Transpiler`, `Finalizer`) es metadato descriptivo; no significa que Forge implemente todos esos tipos de hook.
 
 La prevalidación es solo de lectura. Invoca el método `Describe` de un proveedor registrado únicamente para una captura explícita, pero nunca carga ensamblados, aplica o elimina un parche ni invoca el callback de parche declarado. Que un destino se resuelva solo demuestra que la declaración coincide con un método de un ensamblado ya cargado en la sesión actual. No demuestra que se pueda instalar un desvío ejecutable ni que el comportamiento del juego sea compatible.
 

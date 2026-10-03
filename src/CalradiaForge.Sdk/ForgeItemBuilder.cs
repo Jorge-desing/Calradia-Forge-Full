@@ -19,7 +19,7 @@ namespace CalradiaForge.Sdk
         private static readonly HashSet<string> ValidItemTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "OneHandedWeapon", "TwoHandedWeapon", "Polearm", "Bow", "Crossbow", "Thrown", "Shield",
-            "HeadArmor", "BodyArmor", "LegArmor", "HandArmor", "Cape", "Horse", "HorseHarness", "Goods", "Banner"
+            "HeadArmor", "BodyArmor", "LegArmor", "HandArmor", "Cape", "Horse", "HorseHarness", "Goods"
         };
 
         public string Id { get; private set; }
@@ -92,6 +92,9 @@ namespace CalradiaForge.Sdk
 
         public ForgeItemBuilder WithWeight(double weight)
         {
+            if (double.IsNaN(weight) || double.IsInfinity(weight))
+                throw new ArgumentOutOfRangeException(nameof(weight), "Weight must be a finite XML decimal value.");
+
             Weight = Math.Max(0.1, weight);
             return this;
         }
@@ -104,6 +107,8 @@ namespace CalradiaForge.Sdk
 
         public ForgeItemBuilder WithType(string itemType)
         {
+            if (string.Equals(itemType, "Banner", StringComparison.OrdinalIgnoreCase))
+                throw new NotSupportedException("Banner item generation is not supported until its version-specific Native Items component schema is verified.");
             if (!ValidItemTypes.Contains(itemType))
                 throw new ArgumentException($"Invalid item Type '{itemType}'.");
             Type = itemType;
@@ -163,7 +168,10 @@ namespace CalradiaForge.Sdk
                 new XAttribute("name", Name),
                 new XAttribute("mesh", Mesh),
                 new XAttribute("culture", Culture),
-                new XAttribute("weight", Weight.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)),
+                // Items.xsd declares weight as xs:decimal. Avoid both one-decimal
+                // truncation and scientific notation so the XML keeps the supplied
+                // value while remaining valid against that schema type.
+                new XAttribute("weight", Weight.ToString("0.0#############################", System.Globalization.CultureInfo.InvariantCulture)),
                 new XAttribute("appearance", Appearance),
                 new XAttribute("Type", Type),
                 new XAttribute("value", Value));

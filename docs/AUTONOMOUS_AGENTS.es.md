@@ -1,6 +1,6 @@
 # Arquitectura de Agentes de IA Autónomos en Calradia Forge
 
-Este documento define la arquitectura, la jerarquía de subagentes, las herramientas del repositorio y los canales de ejecución para los agentes de IA autónomos en Calradia Forge, impulsados por el **SDK de Google Antigravity** (`google.antigravity`).
+Este documento define la arquitectura, la jerarquía de subagentes, las herramientas del repositorio y los canales de ejecución de la integración opcional con Google Antigravity en Calradia Forge. El SDK es una herramienta de desarrollo opcional, no una dependencia de ejecución de Forge o Bannerlord.
 
 ---
 
@@ -11,7 +11,7 @@ Calradia Forge implementa una arquitectura multi-agente especializada diseñada 
 - **`src/CalradiaForge.Desktop`** (banco de trabajo WPF independiente, `net8.0-windows`).
 - **`src/CalradiaForge.Core` / `Sdk`** (sistemas centrales compartidos, `net472;net8.0`).
 
-El sistema se integra directamente con las 45 habilidades de dominio en `.agents/skills/`, aplica estrictamente las reglas invariantes del repositorio (Reglas A, B, C y D), y admite tanto la ejecución en la nube mediante Gemini Developer API / Vertex AI como la simulación determinista fuera de línea para integración continua (CI).
+El sistema descubre las habilidades del proyecto disponibles en `.agents/skills/`, aplica las reglas invariantes del repositorio (Reglas A, B, C y D), y admite la ejecución online mediante el SDK opcional de Antigravity o la ejecución local offline de herramientas seleccionadas del repositorio. El conjunto de habilidades cambia con el repositorio; no se presupone una cantidad fija.
 
 ```
                       ┌────────────────────────────┐
@@ -28,20 +28,22 @@ El sistema se integra directamente con las 45 habilidades de dominio en `.agents
 └──────────────────┘ └──────────────┘ └──────────────────┘ └──────────────┘
 ```
 
+La tabla siguiente es el roster vigente: un coordinador y cinco roles especialistas configurados, incluido `BugHunterAgent`. El diagrama es ilustrativo y no enumera a todos los especialistas.
+
 ---
 
 ## 2. Jerarquía Multi-Agente y Roles
 
-El sistema se organiza en 6 agentes especializados:
+El roster configurado consta de un coordinador y cinco roles especialistas:
 
 | Nombre del Agente | Dominio Primario | Invariantes Aplicadas | Herramientas Vinculadas |
 | :--- | :--- | :--- | :--- |
-| **`ForgeMasterAgent`** | Orquestador Raíz | Descomposición de tareas, compuertas de seguridad, síntesis | Todas las herramientas y delegación (`START_SUBAGENT`) |
+| **`ForgeMasterAgent`** | Orquestador Raíz | Descomposición de tareas, compuertas de seguridad, síntesis | Online: herramientas del repositorio configuradas y especialistas configurados mediante el SDK de Antigravity; offline: herramientas locales seleccionadas (no hay herramienta local `START_SUBAGENT`) |
 | **`ForgeArchitectAgent`** | C# y Motor de Bannerlord | Regla A Anti-Shadowing (`GEMINI.md`), límites TFM, decoradores GameModel | `run_dotnet_build`, `inspect_csharp_source` |
 | **`StatelessBehaviorAuditor`** | Persistencia y Seguridad | Regla B Comportamientos sin estado, cero `SaveableTypeDefiner`, `SyncData` limpio | `verify_stateless_behavior`, `inspect_csharp_source` |
 | **`DesktopWpfSpecialist`** | Workbench WPF e Interfaz | Regla C Contratos estáticos, reciclado de contenedores, bordes Aliased DirectX, UIA | `audit_desktop_contracts`, `run_ui_automation_smoke`, `run_solution_tests` |
 | **`DocLedgerAgent`** | Docs e Integridad de Release | Regla D Seguridad, paridad bilingüe, cadena criptográfica SHA-256 del ledger | `audit_documentation_parity`, `audit_ledger_integrity`, `run_package_workflow` |
-| **`BugHunterAgent`** | Code Smells y Concurrencia | Interpolación FormattableString, bloqueos CAS, guardas SyncRoot, despacho a hilo principal | `audit_code_smells`, `audit_concurrency_hazards`, `audit_section_playbooks` |
+| **`BugHunterAgent`** | Code Smells y Concurrencia | Interpolación FormattableString, bloqueos CAS, guardas SyncRoot, despacho a hilo principal | `audit_code_smells`, `audit_concurrency_hazards`, `inspect_csharp_source` |
 
 ### 2.1 ForgeMasterAgent (Orquestador Raíz)
 - **Rol:** Planificador estratégico de alto nivel y coordinador.
@@ -55,7 +57,7 @@ El sistema se organiza en 6 agentes especializados:
   - Hace cumplir el patrón Decorador en GameModels envolviendo `_previousModel` con bonificaciones mediante `ExplainedNumber`.
 
 ### 2.3 StatelessBehaviorAuditor (Seguridad de Guardado y CampaignBehavior)
-- **Rol:** Auditor de persistencia y simulación de campañas.
+- **Rol:** Auditor de persistencia y comportamiento de campaña.
 - **Invariantes:**
   - Aplica la **Regla B (Comportamiento de Campaña sin Estado)**: Los comportamientos del mod deben permanecer completamente sin estado respecto a los archivos de guardado.
   - Cero herencia de `SaveableTypeDefiner` en `src/CalradiaForge.Mod`.
@@ -68,7 +70,7 @@ El sistema se organiza en 6 agentes especializados:
   - Virtualización gráfica pura: `VirtualizingPanel.ScrollUnit="Pixel"`, `VirtualizationMode="Recycling"`, `CacheLength="1,1"`.
   - Bordes rectos Aliased DirectX: `RenderOptions.EdgeMode="Aliased"` y `SnapsToDevicePixels="True"` en separadores de 1px.
   - Aplica la **Regla C (Contratos Estáticos de Desktop)**: Valida los tokens estáticos exigidos por `tests/CalradiaForge.Desktop.Tests/Program.cs`.
-  - Comprobaciones externas de accesibilidad mediante Windows UI Automation con `tools/Test-CalradiaForge-Desktop-Uia.ps1`.
+  - Comprobaciones externas de accesibilidad mediante Windows UI Automation con `tools/Test-CalradiaForge-Desktop-Uia.bat`.
 
 ### 2.5 DocLedgerAgent (Documentación Bilingüe e Integridad de Ledger)
 - **Rol:** Redactor técnico, auditor de ledger y guardián de entregas.
@@ -81,7 +83,7 @@ El sistema se organiza en 6 agentes especializados:
 - **Rol:** Inspector estático de antipatrones, auditor de seguridad de hilos y validador de playbooks procedimentales.
 - **Invariantes:**
   - Valida invariantes de sustitución de cadenas `FormattableString` en Gauntlet y Desktop.
-  - Audita `ConcurrentDictionary` y bloqueos CAS en `ForgeData`, `SyncRoot` en `ForgeAgentMemory` y `SemaphoreSlim` en `PipeClient`.
+  - Audita `ConcurrentDictionary` y bloqueos CAS en `ForgeData`, `SyncRoot` en `ForgeAgentMemory` del SDK C# y `SemaphoreSlim` en `PipeClient`. Esta memoria del juego es distinta de `CoALAAgentMemory`, usada por el orquestador Python en `agents/memory.py`.
   - Hace cumplir el enrutamiento al hilo principal de TaleWorlds mediante `GameThreadActionDispatch`.
   - Audita los 8 playbooks de Gauntlet, 8 árboles de remedio en Desktop y enlaces de prefabs.
 
@@ -89,7 +91,7 @@ El sistema se organiza en 6 agentes especializados:
 
 ## 3. Integración con el SDK de Google Antigravity
 
-La suite de agentes autónomos está construida directamente sobre `google.antigravity`:
+Cuando está instalado el perfil opcional `google-antigravity`, la integración de agentes usa `google.antigravity`:
 
 ### 3.1 Configuración con LocalAgentConfig
 ```python
@@ -127,21 +129,23 @@ config = LocalAgentConfig(
 )
 ```
 
+Esta configuración establece `enable_sandbox=False`; no habilita el sandbox de comandos de Antigravity ni demuestra aislamiento de procesos o herramientas. No se debe afirmar que hay aislamiento salvo que se haya verificado un límite de autoridad separado a nivel del sistema operativo.
+
 ### 3.2 Auto-Descubrimiento de Habilidades del Repositorio
-El agente importa automáticamente las 45 habilidades especializadas ubicadas en `.agents/skills/` mediante `skills_paths=[".agents/skills"]`, permitiendo a los agentes consultar patrones de `bannerlord-dotnet-artisan`, `calradia-forge-modding`, `agent-memory-systems` y `calradia-forge-desktop`.
+Cuando existe el directorio `.agents/skills/`, el agente lo expone mediante `skills_paths=[".agents/skills"]`. Las habilidades disponibles pueden cambiar independientemente del paquete de agentes; algunos ejemplos son `bannerlord-dotnet-artisan`, `calradia-forge-modding`, `agent-memory-systems` y `calradia-forge-desktop`.
 
 ---
 
 ## 4. Herramientas de Dominio del Repositorio
 
-Los agentes disponen de 12 herramientas en Python que interactúan con los scripts del repositorio, compiladores MSBuild y verificadores de arquitectura:
+El repositorio expone herramientas Python que interactúan con sus scripts, compilaciones MSBuild y verificadores de arquitectura; las funciones actuales se enumeran a continuación:
 
 | Función de Herramienta | Descripción | Invariante / Regla Comprobada |
 | :--- | :--- | :--- |
 | `run_dotnet_build` | Compila `CalradiaForge.sln` o proyectos con `dotnet build` | Compilación C#, 0 advertencias, 0 errores |
-| `verify_stateless_behavior` | Ejecuta `tools/verify_stateless_behavior.ps1` | Regla B: Cero SaveableTypeDefiner, SyncData sin estado |
+| `verify_stateless_behavior` | Ejecuta `tools/Verify-CalradiaForge-StatelessBehavior.bat` | Regla B: Cero SaveableTypeDefiner, SyncData sin estado |
 | `run_solution_tests` | Ejecuta `tools/Run-CalradiaForge-Tests.bat` | Pruebas Core, ForgeWeave, Desktop MVVM y Render |
-| `run_ui_automation_smoke` | Ejecuta `tools/Test-CalradiaForge-Desktop-Uia.ps1` | 29 comprobaciones de accesibilidad en ventana WPF |
+| `run_ui_automation_smoke` | Ejecuta `tools/Test-CalradiaForge-Desktop-Uia.bat` | Comprobaciones de UI Automation en la ventana WPF |
 | `audit_documentation_parity` | Verifica correspondencia inglés/español en `docs/` | Paridad conceptual en pares `.md` y `.es.md` |
 | `audit_ledger_integrity` | Valida la cadena SHA-256 en `.integrity.jsonl` | Integridad criptográfica inmutable del ledger |
 | `inspect_csharp_source` | Escaneo estático AST en `src/` | Regla A: Anti-shadowing; Regla B: Statelessness |
@@ -153,75 +157,76 @@ Los agentes disponen de 12 herramientas en Python que interactúan con los scrip
 
 ---
 
-## 5. Ejecutor Unificado CLI (`tools/run_forge_agents.py`)
+## 5. Ejecutor Unificado CLI (`tools/Run-CalradiaForge-Agents.bat`)
 
-Un script CLI unificado facilita la ejecución para desarrolladores, pipelines de CI/CD y flujos de trabajo autónomos:
+Un launcher mantenido ejecuta `tools/run_forge_agents.py` con el intérprete del `.venv` del repositorio. Si falta el entorno, muestra instrucciones para prepararlo y no recurre a un Python global. El CLI facilita la ejecución para desarrolladores, pipelines de CI/CD y flujos de trabajo autónomos:
 
 ### Invocaciones Básicas
-```bash
-# Benchmark exhaustivo de compactación de tokens en las 12 herramientas
-py -3.12 tools/run_forge_agents.py compact
+```bat
+REM Benchmark de compactación de tokens en las herramientas registradas actualmente
+tools\Run-CalradiaForge-Agents.bat compact
 
-# Auditoría arquitectónica y de seguridad completa
-py -3.12 tools/run_forge_agents.py audit
+REM Auditoría arquitectónica y de seguridad completa
+tools\Run-CalradiaForge-Agents.bat audit
 
-# Auditoría de code smells, antipatrones y riesgos de concurrencia
-py -3.12 tools/run_forge_agents.py bughunt
+REM Auditoría de code smells, antipatrones y riesgos de concurrencia
+tools\Run-CalradiaForge-Agents.bat bughunt
 
-# Auditoría de section playbooks, árboles de remedio y macros
-py -3.12 tools/run_forge_agents.py playbooks
+REM Auditoría de section playbooks, árboles de remedio y macros
+tools\Run-CalradiaForge-Agents.bat playbooks
 
-# Auditoría de paridad documental bilingüe e integridad SHA-256 del ledger
-py -3.12 tools/run_forge_agents.py docs
+REM Auditoría de paridad documental bilingüe e integridad SHA-256 del ledger
+tools\Run-CalradiaForge-Agents.bat docs
 
-# Compilar solución e inspeccionar reglas en código fuente C#
-py -3.12 tools/run_forge_agents.py architect
+REM Compilar solución e inspeccionar reglas en código fuente C#
+tools\Run-CalradiaForge-Agents.bat architect
 
-# Ejecutar suite de pruebas y comprobación UI Automation en Windows
-py -3.12 tools/run_forge_agents.py verify
+REM Ejecutar suite de pruebas y comprobación UI Automation en Windows
+tools\Run-CalradiaForge-Agents.bat verify
 
-# Ejecutar una tarea autónoma arbitraria
-py -3.12 tools/run_forge_agents.py run "Auditar persistencia sin estado y verificar paridad documental"
+REM Ejecutar una tarea autónoma arbitraria
+tools\Run-CalradiaForge-Agents.bat run "Auditar persistencia sin estado y verificar paridad documental"
 ```
 
 ### Opciones de Línea de Comandos
-- `--offline`: Fuerza el modo de simulación determinista fuera de línea (no requiere clave de API).
-- `--verbose` / `-v`: Habilita la salida detallada y la transmisión de pensamientos en tiempo real.
+- `--offline`: Fuerza la ejecución local offline de herramientas (no requiere clave de API).
+- `--verbose` / `-v`: Habilita la transmisión detallada de la salida del asistente.
 - `--model <nombre>`: Modifica el identificador del modelo (por defecto: `gemini-3.8-flash`).
-- `--compaction-preset [ultra|balanced|deep]`: Configura el umbral de tokens de la ventana de contexto (`ultra`: 8k, `balanced`: 16k, `deep`: 32k, por defecto: `deep`).
+- `--compaction-preset [ultra|balanced|deep]`: Configura el umbral de tokens (`ultra`: 8k, `balanced`: 16k, `deep`: 32k; por defecto: `deep`).
 - `--raw-tools`: Omite la destilación y envía registros sin procesar directamente al contexto del LLM.
 - `--live`: (Usado con `compact`) Ejecuta todas las herramientas en vivo, incluyendo compilador, pruebas y empaquetado.
 
+El paquete SDK opcional no se necesita para importar el CLI ni para la ejecución local offline de herramientas. La ruta online de Antigravity requiere que el SDK se pueda importar, que haya credenciales y que `offline_mode=False`; el perfil opcional `--agents` sí necesita el paquete porque prueba la configuración del SDK. Instálalo en el entorno aislado con `tools\Setup-CalradiaForge-Python.bat --agents --no-pause` y ejecuta `tools\Run-CalradiaForge-Python-Checks.bat --ci --agents --no-pause`. El modo offline evita la ejecución en la nube; no la valida.
+
 ---
 
-## 6. Modo de Simulación Determinista Fuera de Línea
+## 6. Ejecución Local Offline de Herramientas
 
-Para garantizar pruebas reproducibles y validación en CI/CD sin requerir credenciales de API en la nube:
-- Cuando `GEMINI_API_KEY` no está configurada o se pasa `--offline`, `ForgeAgentOrchestrator` se ejecuta automáticamente en **Modo de Simulación Determinista Fuera de Línea**.
-- El orquestador analiza la intención de la tarea, delega el trabajo a los subagentes registrados, ejecuta las herramientas de dominio requeridas, valida los invariantes y produce un informe de ejecución estructurado y completo.
-- Cuando `GEMINI_API_KEY` está presente, el orquestador se conecta a la API de Gemini usando `google.antigravity.Agent` para razonamiento autónomo y delegación multi-agente en vivo.
+La ejecución local offline de herramientas llama funciones seleccionadas del repositorio sin credenciales de API en la nube. `ForgeAgentOrchestrator` solo elige la ruta online cuando el SDK opcional se puede importar, hay credenciales y el modo offline está desactivado; en caso contrario, informa que ejecutó herramientas locales del repositorio en modo offline e indica el motivo de esa ruta.
+- La ejecución local offline de herramientas llama a las funciones seleccionadas del repositorio; no inicia workers de subagentes del SDK. El informe clasifica cada resultado como `PASS`, `FAIL` o `INDETERMINATE` según marcadores explícitos. Solo informa `COMPLETE` cuando todas las llamadas seleccionadas devolvieron un informe y todos los veredictos son positivos explícitos; no implica que se ejecutaran comprobaciones no seleccionadas.
+- Con SDK importable, credenciales presentes y modo offline desactivado, el orquestador usa `google.antigravity.Agent` para la ejecución online.
 
 ---
 
 ## 7. Verificación y Pruebas Automatizadas
 
 El sistema de agentes autónomos se valida mediante pruebas unitarias en `tests/test_forge_agents.py`:
-```bash
-py -3.12 -m unittest tests/test_forge_agents.py
+```bat
+tools\Run-CalradiaForge-Python-Checks.bat --ci --agents --no-pause
 ```
 Cobertura de la suite de pruebas:
 - Fábrica de configuración, ajustes de compactación y creación de instancias de Google Antigravity SDK.
 - Validación de esquema de subagentes, instrucciones de sistema y vinculación de herramientas.
 - Ejecución de herramientas de dominio y destilación semántica de salidas.
-- Estimación de tokens de `ForgeTokenCompactor`, retención sin pérdidas de errores de compilador y registro de artefactos forenses.
-- Canal de orquestación multi-agente y simulación fuera de línea.
+- Estimaciones heurísticas de tokens de `ForgeTokenCompactor`, retención de diagnósticos según patrones con cobertura de fixtures representativos y registro opcional de artefactos.
+- Canal de orquestación multi-agente y ejecución local offline de herramientas.
 - Procesamiento y despacho de argumentos de CLI.
 
 ---
 
 ## 8. Motor de Compactación de Tokens y Optimización de Contexto (`ForgeTokenCompactor`)
 
-Para evitar el desbordamiento o la saturación de la ventana de contexto durante flujos de trabajo multi-agente complejos, Calradia Forge incorpora un motor de compactación de tokens de alta eficiencia y sin pérdida semántica implementado en `agents/compactor.py`:
+Para reducir el volumen de contexto durante flujos de trabajo multi-agente complejos, Calradia Forge utiliza un motor heurístico de destilación semántica implementado en `agents/compactor.py`. La destilación es deliberadamente resumida y con pérdida; el texto compacto no sustituye la salida original.
 
 ```
                Salida Cruda de Herramientas (Consola, MSBuild, Pruebas, UIA)
@@ -237,12 +242,12 @@ Para evitar el desbordamiento o la saturación de la ventana de contexto durante
                      + Enlace de Referencia Forense para el LLM
 ```
 
-### 8.1 Preservación de la Inteligencia de los Agentes (Telemetría de Errores sin Pérdidas)
-El compactador de tokens está regido por una garantía estricta de cero pérdida de información diagnóstica:
-1. **Errores de Compilador Sin Pérdidas**: Si `dotnet build` falla, todos los códigos `error CSxxxx`, `error MSBxxxx`, rutas de archivo, coordenadas de línea/columna y descripciones de error se preservan al 100%. Solo se eliminan los mensajes irrelevantes de restauración de paquetes.
-2. **Fallos de Pruebas Sin Pérdidas**: Si fallan pruebas unitarias o de renderizado, se extraen y preservan textualmente los nombres de pruebas fallidas, tipos de excepción, diferencias de aserción (`Assert.AreEqual`) y trazas de pila (`stack traces`).
-3. **Diagnósticos de Invariantes Sin Pérdidas**: Las violaciones en escaneos AST de C# (Regla A), comprobaciones de persistencia (Regla B) o contratos de desktop (Regla C) conservan todas las coordenadas de archivo y línea.
-4. **Trazabilidad Forense Completa**: Cada invocación de herramienta guarda su salida completa sin comprimir en `artifacts/agent-runs/<timestamp>_<tool>.log`. La respuesta destilada incrusta la ruta del archivo, permitiendo que cualquier agente o desarrollador inspeccione el registro íntegro si requiere mayor detalle.
+### 8.1 Retención de diagnósticos y límites de la evidencia
+Los destiladores intentan conservar líneas diagnósticas reconocidas en los resúmenes, pero no garantizan cero pérdidas ni cobertura completa. Los formatos que no coincidan con sus patrones, las listas de fallos acotadas y las salidas inesperadas pueden omitirse del texto compacto.
+1. **Diagnósticos de compilación**: El destilador de MSBuild reconoce patrones compatibles de errores de compilación y construcción e incluye las líneas coincidentes. Hay regresiones para casos representativos; eso no demuestra que se capture cada diagnóstico de todos los compiladores, versiones de MSBuild, idiomas o herramientas personalizadas.
+2. **Fallos de pruebas**: El destilador extrae algunos marcadores de fallo y líneas de aserción o error, con una salida acotada. No reproduce de forma fiable todos los nombres de pruebas, diferencias de aserción ni trazas completas.
+3. **Diagnósticos de invariantes**: Los resúmenes de auditoría dependen del formato y de los patrones que reconoce cada destilador. Consulta la salida original para verificar todas las rutas y coordenadas de archivo y línea.
+4. **Registro forense opcional**: Si el guardado de la salida cruda está habilitado, la salida no está vacía y la escritura concluye correctamente, el compactador conserva el texto sin comprimir en `artifacts/agent-runs/<timestamp>_<tool>.log` e incorpora su ruta al resumen. El registro es la evidencia más completa; no se garantiza si se deshabilita el guardado o falla la escritura.
 
 ### 8.2 Perfiles Adaptativos de Compactación (`CompactionConfig`)
 La compactación de la ventana de contexto se controla dinámicamente mediante perfiles:
@@ -250,25 +255,15 @@ La compactación de la ventana de contexto se controla dinámicamente mediante p
 - **`balanced` (16.000 tokens)**: Equilibrio operativo recomendado entre historial conversacional y consumo de contexto eficiente.
 - **`deep` (32.000 tokens, por defecto)**: Ventana de contexto expandida para razonamiento profundo, refactorizaciones multi-agente complejas y revisiones de múltiples archivos.
 
-### 8.3 Métricas Empíricas de Reducción de Tokens
+### 8.3 Comparaciones reproducibles de estimaciones de tokens
 
-| Operación de Herramienta | Caracteres de Salida Cruda | Tokens Crudos | Tokens Compactados | Ahorro Neto | Ratio de Compresión |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **`run_dotnet_build`** (Release Limpio) | 2.366 car. | ~622 tokens | ~56 tokens | 566 tokens | **87,5% - 91,0%** |
-| **`run_solution_tests`** (726 Pruebas) | 53.222 car. | ~14.005 tokens | ~134 tokens | 13.871 tokens | **99,0%** |
-| **`verify_stateless_behavior`** | 3.353 car. | ~882 tokens | ~146 tokens | 702 tokens | **82,8%** |
-| **`run_ui_automation_smoke`** (29 Nodos) | 6.840 car. | ~1.800 tokens | ~78 tokens | 1.722 tokens | **95,7%** |
-| **`run_package_workflow`** | 3.120 car. | ~183 tokens | ~83 tokens | 100 tokens | **54,6%** |
-| **`audit_code_smells`** | 380 car. | ~94 tokens | ~40 tokens | 54 tokens | **57,4%** |
-| **`audit_concurrency_hazards`** | 412 car. | ~103 tokens | ~48 tokens | 55 tokens | **53,4%** |
-| **`audit_section_playbooks`** | 365 car. | ~91 tokens | ~42 tokens | 49 tokens | **53,8%** |
-| **Suite Multi-Agente 12 Herramientas (`compact`)** | ~8.000 car. | 2.005 tokens | 880 tokens | 1.152 tokens | **57,5% de reducción** |
+Esta guía no publica líneas base fijas de ahorro de tokens ni recuentos de pruebas. Las estimaciones de `ForgeTokenCompactor` son heurísticas y dependen de la entrada exacta y de la versión del destilador. Para comparar, registra la revisión del repositorio, las versiones de Python y paquetes, el nombre de la herramienta, el fixture o hash exacto de la salida, los textos crudo y compactado y ambas estimaciones de cada ejecución. Trata esos valores como evidencia de esa entrada, no como umbrales universales ni garantías de rendimiento.
 
 ---
 
 ## 9. Arquitectura de Memoria Cognitiva CoALA (`agents/memory.py`)
 
-Calradia Forge adopta el estándar de **Arquitecturas Cognitivas para Agentes de Lenguaje (CoALA)** para estructurar el contexto del agente a lo largo de tres niveles cognitivos:
+El ejecutor de agentes del repositorio usa un modelo de memoria propio y acotado, inspirado en conceptos de **Arquitecturas Cognitivas para Agentes de Lenguaje (CoALA)**. Esto no afirma conformidad con un estándar formal CoALA ni garantiza que cada invocación reciba el mismo contexto semántico:
 
 ```
                ┌────────────────────────────────────────────────┐
@@ -285,14 +280,14 @@ Calradia Forge adopta el estándar de **Arquitecturas Cognitivas para Agentes de
 ```
 
 ### 9.1 Memoria Semántica (`SemanticRepositoryMemory`)
-- **Naturaleza:** Conocimiento inmutable y sin decaimiento de las reglas del repositorio inyectado en todo contexto de agente.
+- **Naturaleza:** Reglas inmutables del repositorio incluidas al generar el contexto semántico; no garantiza que todas las ejecuciones de agentes reciban exactamente el mismo contexto.
 - **Contenidos:**
   - **Regla A (Anti-Shadowing)**: Cero carpetas, espacios de nombres o clases llamadas `Campaign` o `Localization`.
   - **Regla B (Statelessness)**: Cero `SaveableTypeDefiner` y `SyncData` limpio en `src/CalradiaForge.Mod`.
   - **Regla C (Contratos Estáticos de Desktop)**: Tokens estáticos obligatorios preservados en `src/CalradiaForge.Desktop`.
   - **Regla D (Seguridad de Distribución)**: Exclusión de binarios del motor, partidas y scripts en paquetes de release.
   - **Afinidad de Hilo del Motor**: Las llamadas a entidades de TaleWorlds deben ejecutarse en el hilo principal del juego.
-  - **Anti-Lag Time-Slicing**: Distribución de héroes mediante módulo 24 y cero consultas LINQ en ticks de simulación.
+  - **División temporal opcional**: Usa `ForgeTimeSlicer.ShouldProcess` solo para trabajo cuya semántica permita aplazarlo. La distribución de buckets puede ser desigual, el filtrado sigue recorriendo la colección y las afirmaciones sobre asignaciones o duración requieren medir el callback correspondiente.
 
 ### 9.2 Memoria de Trabajo (`WorkingAgentMemory`)
 - **Naturaleza:** Marco de ejecución a corto plazo que refleja el estado de la tarea inmediata.
@@ -301,5 +296,5 @@ Calradia Forge adopta el estándar de **Arquitecturas Cognitivas para Agentes de
 ### 9.3 Memoria Episódica (`EpisodicTrace`)
 - **Naturaleza:** Historial cronológico acotado de acciones ejecutadas y observaciones empíricas.
 - **Registro de Traza:** Identificador de paso, nombre del agente, acción, resumen denso, tokens crudos, tokens compactados, tokens netos ahorrados, ratio de compresión, presencia de errores y enlace al registro forense.
-- **Poda FIFO con Preservación de Errores:** Cuando el número de trazas supera la capacidad de la cola (`max_episodic_traces = 32`), las trazas ordinarias se descartan por orden FIFO. Sin embargo, cualquier traza con `has_errors == True` queda **estrictamente protegida frente a la poda**, garantizando que los fallos previos y diagnósticos críticos nunca sean olvidados durante el razonamiento en múltiples pasos.
+- **Poda FIFO con preferencia por errores:** El valor predeterminado de `max_episodic_traces` es 32 y puede configurarse. Al superar el límite, se prefiere eliminar la traza sin errores más antigua entre las entradas antiguas elegibles; si no hay una disponible, se elimina la más antigua. Por tanto, se da preferencia a las trazas de error durante la poda, pero no se garantiza que permanezcan indefinidamente; el resumen también puede omitir detalles que solo estén en un registro forense opcional.
 

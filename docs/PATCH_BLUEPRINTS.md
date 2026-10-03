@@ -1,6 +1,6 @@
 # Patch Blueprint Preflight
 
-Patch Blueprint Preflight is a Forge SDK tool for describing and reviewing a proposed method patch before applying anything. It is original Forge functionality and has no build-time or package dependency on Harmony, MCM, ButterLib, or another mod. The declared hook vocabulary (`Prefix`, `Postfix`, `Transpiler`, `Finalizer`) is descriptive metadata; it does not mean Forge implements every hook kind.
+Patch Blueprint Preflight is a Forge SDK tool for describing and reviewing a proposed method patch before applying anything. It is original Forge functionality and has no build-time or package dependency on third-party mod frameworks. The declared hook vocabulary (`Prefix`, `Postfix`, `Transpiler`, `Finalizer`) is descriptive metadata; it does not mean Forge implements every hook kind.
 
 Preflight is read-only. It invokes a registered provider's `Describe` method only for an explicit capture, but never loads an assembly, applies or removes a patch, or invokes the declared patch callback. A resolved target proves only that the declaration matches a method in an assembly already loaded in the current game session. It does not prove that an executable detour can be installed or that the game behavior will remain compatible.
 

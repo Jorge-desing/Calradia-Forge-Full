@@ -10,7 +10,7 @@ metadata:
 
 Use this skill when auditing, updating, or generating the canonical architecture and behavior codemaps in `docs/`:
 - `docs/CODEMAP_ARCHITECTURE.md`: High-level system structure, assembly dependencies, Core components, and SubModule lifecycle.
-- `docs/CODEMAP_CAMPAIGN_BEHAVIORS.md`: CampaignBehaviorBase lifecycle, complete event catalog, anti-lag time slicing, and save system safety.
+- `docs/CODEMAP_CAMPAIGN_BEHAVIORS.md`: CampaignBehaviorBase lifecycle, complete event catalog, stable-ID time-slice notes, and save system safety.
 - `docs/CODEMAP_SDK_GAMEMODELS.md`: SDK public service contracts, decorator pattern implementations, and ExplainedNumber conventions.
 
 ---
@@ -21,7 +21,7 @@ Trigger this skill whenever:
 1. A new class, interface, behavior, or service is added or refactored in `src/`.
 2. A new `CampaignEvents` subscription is introduced in `src/CalradiaForge.Mod/CampaignBehaviors/`.
 3. A new `GameModel` decorator is added or modified in `src/CalradiaForge.Sdk/`.
-4. A new Harmony patch, bootstrap hook, or ForgeWeave event mesh handler is registered.
+4. The Forge-owned optional, read-only Harmony observer or another patch-diagnostics surface changes. This trigger covers observation and documentation only; it does not authorize a Harmony dependency or Harmony patch registration/application. Also trigger for a Forge bootstrap hook or ForgeWeave event mesh handler.
 5. Updating dependency relationships across `CalradiaForge.Core`, `CalradiaForge.Mod`, `CalradiaForge.Sdk`, and `CalradiaForge.Desktop`.
 
 ---
@@ -50,9 +50,9 @@ Trigger this skill whenever:
 - **Dual-Registration Contract**:
   - `OnGameStart`: Register auto-discovered `[AutoRegisterBehavior]` and lightweight simulation listeners.
   - `OnCampaignStart`: Register state-heavy listeners requiring active campaign world data.
-- **Anti-Lag Time-Slicing (Modulo-24)**:
-  - Document hourly and daily time-slicing formulas (`hero.Id.GetHashCode() % 24 == currentHour`).
-  - Enforce zero GC heap allocations in tick handlers (no LINQ, pre-sized buffers, no closure captures).
+- **Time Slicing and Performance Evidence**:
+  - Document uses of `ForgeTimeSlicer.ShouldProcess` / `GetBucket` for stable `StringId` scheduling, and state that filtering a collection still traverses it.
+  - Time-slice only behavior that can be deferred without changing event semantics. Record allocation and duration claims only when measured across the relevant callback; do not prescribe a universal zero-allocation target.
 - **Save System & Statelessness Contract**:
   - Ensure zero `SaveableTypeDefiner` inheritance and empty `SyncData` in stateless behaviors.
   - If stateful behaviors are documented, allocate a unique `SaveableTypeDefiner` base ID $\ge 2,500,000$.

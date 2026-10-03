@@ -172,6 +172,16 @@ namespace CalradiaForge.Mod.Commands
             return response.Success ? response.Data : response.Error;
         }
 
+        [CommandLineFunctionality.CommandLineArgumentFunction("patch_diagnostics", "cf")]
+        public static string PatchDiagnostics(List<string> args)
+        {
+            if (args != null && args.Count != 0) return "Usage: cf.patch_diagnostics";
+            var runtime = SubModule.CurrentRuntime;
+            if (runtime == null) return "Forge runtime is unavailable.";
+            var response = runtime.Handle(new Request { Action = "patch-diagnostics" }, CancellationToken.None);
+            return response.Success ? response.Data : response.Error;
+        }
+
         [CommandLineFunctionality.CommandLineArgumentFunction("hook_fixture", "cf")]
         public static string HookFixture(List<string> args)
         {

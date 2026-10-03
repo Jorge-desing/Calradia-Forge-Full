@@ -42,7 +42,7 @@ calradia-forge-codemaps  calradia-forge-        calradia-forge-          calradi
 | Task Type | Specialist Skill | Target Artifacts | Validation Command |
 | :--- | :--- | :--- | :--- |
 | **System Codemaps** | `calradia-forge-codemaps` | `docs/CODEMAP_*.md` | Consistency review against C# types and lifecycle. |
-| **Bilingual Guides** | `/calradia-forge-docs` (Direct) | `docs/<TOPIC>.md` & `.es.md` | Verification of synchronous bilingual parity. |
+| **Bilingual Guides** | `/calradia-forge-docs` (Direct) | `docs/<TOPIC>.md` & Spanish counterpart | Verification of synchronous bilingual parity, including established legacy aliases. |
 | **Append-Only Ledger** | `calradia-forge-registro-mejoras` | `docs/append/RevXXX-*.md`<br>`docs/CalradiaForge-Registro-Mejoras-Rev*.docx` | `python tools/append_detailed_changelog_revision.py docs/append/RevXXX-*.md` |
 | **API Docs & Help** | `calradia-forge-docfx-pipeline` | `docs-site/generated-site`<br>`Modules/CalradiaForge/ModuleData/Languages/` | `powershell -File tools/build_docs.ps1`<br>`python tools/generate_in_game_help.py` |
 | **Release Validation** | `calradia-forge-release-validation` | `docs/VALIDATION-<VERSION>.md`<br>`docs/VALIDACION-<VERSION>.es.md` | Test metrics extraction (Core, ForgeWeave, Desktop MVVM, RenderTests layout ms). |
@@ -52,9 +52,10 @@ calradia-forge-codemaps  calradia-forge-        calradia-forge-          calradi
 ## 3. Mandatory Documentation Invariants
 
 ### Invariant A: Strict Bilingual Parity (EN / ES)
-- Every technical markdown guide in `docs/` MUST exist as an English canonical document (`docs/<TOPIC>.md`) and an identical Spanish translation (`docs/<TOPIC>.es.md`).
+- Every technical markdown guide in `docs/` MUST exist as an English canonical document and a Spanish counterpart recognized by `agents.tools.audit_documentation_parity`. Standard pairs use `docs/<TOPIC>.md` and `docs/<TOPIC>.es.md`; established aliases are `DESKTOP.md` ↔ `ASSEMBLY_WORKBENCH.es.md` and `VALIDATION-<VERSION>.md` ↔ `VALIDACION-<VERSION>.es.md`. Architecture and system-design guides use their own `.es.md` counterparts. Preserve the aliases rather than renaming historical files to fit the default pattern.
 - Both files MUST be modified within the same changeset. Never create or edit one without updating the other.
 - **Untranslated Elements**: Code symbols, method names, CLI flags, JSON keys, file paths, and benchmark numbers must remain verbatim.
+- The parity audit is a required gate, not informational output: `tools/Run-CalradiaForge-Python-Checks.bat --ledger --no-pause` must return nonzero when a counterpart is missing.
 
 ### Invariant B: Ledger Immutability & Cryptographic Integrity
 - Historical revisions in `docs/CalradiaForge-Registro-Mejoras-Rev*.docx` and `docs/CalradiaForge-Registro-Mejoras.integrity.jsonl` are write-once, read-only append-only.
@@ -82,7 +83,7 @@ When `/calradia-forge-docs` is invoked:
    - If user-facing features or system design changed → update `docs/<TOPIC>.md` and `docs/<TOPIC>.es.md`.
    - If a significant batch of improvements or milestone was completed → draft `docs/append/RevXXX-*.md` and run the append tool.
    - If public APIs or in-game commands were modified → verify XML docstrings and run `build_docs.ps1` / `generate_in_game_help.py`.
-   - If concluding a release → create `docs/VALIDATION-<VERSION>.md` and `.es.md`.
+   - If concluding a release → create `docs/VALIDATION-<VERSION>.md` and `docs/VALIDACION-<VERSION>.es.md`.
 2. **Perform Updates in Synchronous Changeset**:
    - Apply edits ensuring bilingual parity.
 3. **Audit & Validate**:

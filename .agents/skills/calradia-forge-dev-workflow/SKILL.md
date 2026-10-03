@@ -17,6 +17,11 @@ This isolated project skill contains Calradia Forge's required lifecycle and ver
 
 For persistence, failure assertions, CI and distribution changes, read [verified recent-commit lessons](references/recent-commit-lessons.md). Recheck current source and distinguish committed evidence from pending work.
 
+For SDK/template/content delivery, follow the [developer onboarding rule](../../rules/developer_onboarding.md)
+and the [.NET onboarding reference](../calradia-forge-dotnet/references/sdk-onboarding.md).
+Consolidate supported lessons only after validation; link detailed procedures from
+gateways and mirror shared instructions in AGENTS.md, CODEX.md and GEMINI.md.
+
 ## Before starting complex work
 
 - Re-read the current user request and applicable workspace rules, including after context compaction; direct user instructions take precedence.
@@ -40,7 +45,7 @@ For persistence, failure assertions, CI and distribution changes, read [verified
 
 ### Stage 2: Architecture & Gateway Routing
 - Route every C# / .NET task through [`calradia-forge-dotnet`](../calradia-forge-dotnet/SKILL.md) to evaluate Target Framework boundaries (`net472` for game module vs `net8.0-windows` for Desktop).
-- Route simulation logic through [`bannerlord-dotnet-artisan`](../bannerlord-dotnet-artisan/SKILL.md) to enforce single-threaded execution, modulo-24 time-slicing, and zero GC allocations in tick loops.
+- Route engine-facing simulation logic through [`bannerlord-dotnet-artisan`](../bannerlord-dotnet-artisan/SKILL.md) to preserve game-thread affinity and evaluate measured performance. Use `ForgeTimeSlicer` only for work whose behavior permits deferral; measure the full traversal and callback before setting budgets or claiming allocation reductions.
 - Check GEMINI anti-shadowing rules (zero folders, namespaces, or types named `Campaign` or `Localization`).
 
 ### Stage 3: Safe, Minimal Implementation

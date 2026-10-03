@@ -21,8 +21,12 @@ def main() -> int:
     checks = (
         ("Ledger integrity", audit_ledger_integrity(raw=True), "PASSED"),
         ("Section playbooks", audit_section_playbooks(raw=True), "PASSED"),
-        ("Code smells", audit_code_smells(raw=True), "PASSED"),
-        ("Documentation parity", audit_documentation_parity(raw=True), None),
+        ("Code smells (static source checks)", audit_code_smells(raw=True), "PASSED"),
+        (
+            "Documentation parity",
+            audit_documentation_parity(raw=True),
+            "All English technical documents have synchronized Spanish counterparts!",
+        ),
     )
     failed = False
     for name, report, required_marker in checks:

@@ -41,6 +41,7 @@ class Program
             ClanCharacterProgressionTests.Run(Test);
             AgentCognitiveMemoryTests.Run(Test);
             NativeEvidencePanelTests.Run(Test);
+            F10InputEdgeGateTests.Run(Test);
             GameThreadActionQueueTests.Run(Test);
             AssemblyWorkbenchTests.Run(Test, temp);
             

@@ -28,9 +28,9 @@ Start with [calradia-forge-dotnet](../calradia-forge-dotnet/SKILL.md), then use 
 
 When translating .NET concepts into Bannerlord C#, you MUST enforce these non-negotiable engine rules:
 
-### A. Anti-Lag & Tick Allocations
-- **Zero Allocations in Ticks:** Never allocate memory or use LINQ (`.Where()`, `.Select()`, closures) inside `OnApplicationTick`, `HourlyTick`, or mission frame handlers. LINQ triggers aggressive GC stalls in large battles and map simulations.
-- **Modulo-24 Time Slicing:** When processing bulk entities (clans, parties, settlements), divide work across 24 hours (`(entity.Id.GetHashCode() & 0x7FFFFFFF) % 24 == currentHour`).
+### A. Tick Cost and Allocation Measurement
+- **Tick Allocation Budget:** Measure the full hot path before claiming zero allocations. Prefer reusable buffers and explicit loops; avoid repeated LINQ/materialization in measured frame-critical work. Not every hourly callback has the same budget.
+- **Modulo-24 Time Slicing:** Use `ForgeTimeSlicer.ShouldProcess(entity.StringId, currentHour)` for stable identity scheduling. Measure collection traversal separately: filtering one bucket still scans the source. Do not delay event-critical actions merely to fit a cadence.
 - **Distance Calculations:** Use `DistanceSquared()` instead of `Math.Sqrt()` or `Distance()` to avoid expensive floating-point square root operations.
 
 ### B. Anti-Shadowing Namespace Discipline (`GEMINI.md`)

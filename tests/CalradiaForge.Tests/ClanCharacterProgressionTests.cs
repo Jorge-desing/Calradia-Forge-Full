@@ -23,7 +23,7 @@ namespace CalradiaForge.Tests
             test("ClanProgression: SubModule.OnGameStart registers behavior via AddBehavior()", TestSubModuleRegistration);
             test("ClanProgression: Hooks into 35+ verified TaleWorlds CampaignEvents", TestCampaignEventsCoverage);
             test("ClanProgression: Engine crash guard - declarative RegisterEvents without early queries", TestEngineInitializationCrashGuard);
-            test("ClanProgression: Modulo-24 time-slicing prevents UI stutter in periodic ticks", TestModulo24TimeSlicing);
+            test("ClanProgression: periodic time-slicing uses the stable SDK helper", TestModulo24TimeSlicing);
             test("ClanProgression: Defensive null and boundary guards for game edge cases", TestDefensiveNullGuards);
             test("ClanProgression: Empirical Bytecode Challenge - SyncData IL contains zero method calls", TestEmpiricalSyncDataILBytecode);
             test("ClanProgression: Empirical Reflection Challenge - Zero SaveableField and SaveableProperty in assembly", TestEmpiricalAssemblyWideZeroSaveableAttributes);
@@ -374,9 +374,10 @@ namespace CalradiaForge.Tests
             string filePath = GetBehaviorFilePath();
             string content = File.ReadAllText(filePath);
 
-            // Check for hash modulo-24 pattern: "% 24"
-            if (!content.Contains("% 24"))
-                throw new Exception("ClanCharacterProgressionBehavior missing modulo-24 time-slicing logic (% 24) to eliminate Midnight Freeze stutter.");
+            if (!content.Contains("ForgeTimeSlicer.ShouldProcess(stringId, currentHour)") ||
+                !content.Contains("ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour)") ||
+                content.Contains("GetHashCode()"))
+                throw new Exception("ClanCharacterProgressionBehavior must route periodic party and hero scheduling through ForgeTimeSlicer and avoid process-dependent GetHashCode bucketing.");
         }
 
         private static void TestDefensiveNullGuards()

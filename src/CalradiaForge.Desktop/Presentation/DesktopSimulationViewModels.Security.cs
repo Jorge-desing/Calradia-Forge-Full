@@ -213,7 +213,7 @@ internal sealed class SecurityRuleCheckViewModel
             new("cf.model_audit", "Audit active GameModels and decorator chain integrity.", "Diagnostics"),
             new("cf.audit_save", "Verify SaveableTypeDefiner base IDs and 31KB chunking.", "Diagnostics"),
             new("cf.audit_localization", "Check translation completeness, missing IDs, and UTF-8 BOM.", "Diagnostics"),
-            new("cf.harmony_summary", "Audit active Harmony prefixes, postfixes, and transpilers.", "Diagnostics"),
+            new("cf.patch_diagnostics", "Inspect registered Forge hook and patch diagnostics without applying changes.", "Diagnostics"),
             new("cf.patch_preflight", "Dry-run conflict preflight on pending patch blueprints.", "Diagnostics")
         ];
         public string PlaybookTitle => "Playbook: Architectural Rule Audit & Preflight Gate";

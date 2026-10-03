@@ -254,4 +254,4 @@ The native Modules area exposes **Framework** and the desktop companion has a de
 
 ForgeWeave accepts at most 256 handlers and at most 32 ordering references per handler. It limits ordering IDs and error text before exposing them to UI or reports. Handler code remains synchronous and should be brief; Forge can isolate failures but cannot safely terminate arbitrary C# code mid-execution.
 
-ForgeWeave Replay Lab and declarative filters are SDK v3 additive surfaces. Existing test, command, diagnostic, shared-library and Patch Blueprint consumers remain source-compatible. It requires no Harmony, MCM, ButterLib or other third-party mod dependency.
+ForgeWeave Replay Lab and declarative filters are SDK v3 additive surfaces. Existing test, command, diagnostic, shared-library and Patch Blueprint consumers remain source-compatible. It requires no third-party mod-framework dependency.

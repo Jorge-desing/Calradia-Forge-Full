@@ -1,6 +1,6 @@
 # Calradia Forge Autonomous AI Agents Architecture
 
-This document defines the architecture, subagent hierarchy, tool surfaces, and execution pipelines for autonomous AI agents in Calradia Forge, powered by the **Google Antigravity SDK** (`google.antigravity`).
+This document defines the architecture, subagent hierarchy, tool surfaces, and execution pipelines for the optional Google Antigravity integration in Calradia Forge. The SDK is a developer-tooling extra, not a Forge or Bannerlord runtime dependency.
 
 ---
 
@@ -11,7 +11,7 @@ Calradia Forge employs a specialized multi-agent architecture designed to autono
 - **`src/CalradiaForge.Desktop`** (`net8.0-windows` standalone WPF workbench).
 - **`src/CalradiaForge.Core` / `Sdk`** (`net472;net8.0` shared core systems).
 
-The system integrates directly with the 45 domain skills in `.agents/skills/`, enforces repository invariants (Rules A, B, C, and D), and supports both cloud execution via the Gemini Developer API / Vertex AI and deterministic offline simulation for continuous integration.
+The system discovers the project skills available under `.agents/skills/`, enforces repository invariants (Rules A, B, C, and D), and supports online execution through the optional Antigravity SDK or local offline tool execution that invokes selected repository tools. The discovered skill set changes as the repository evolves; no fixed count is assumed.
 
 ```
                       ┌────────────────────────────┐
@@ -28,20 +28,22 @@ The system integrates directly with the 45 domain skills in `.agents/skills/`, e
 └──────────────────┘ └──────────────┘ └──────────────────┘ └──────────────┘
 ```
 
+The table below is the current role roster: one coordinator and five configured specialist roles, including `BugHunterAgent`. The diagram is illustrative and does not enumerate every specialist.
+
 ---
 
 ## 2. Multi-Agent Hierarchy & Roles
 
-The system is organized into 6 specialized agents:
+The configured roster has one coordinator and five specialist roles:
 
 | Agent Name | Primary Domain | Core Invariants Enforced | Bound Tools |
 | :--- | :--- | :--- | :--- |
-| **`ForgeMasterAgent`** | Root Orchestrator | Task decomposition, safety gates, synthesis | All tools & subagent delegation (`START_SUBAGENT`) |
+| **`ForgeMasterAgent`** | Root Orchestrator | Task decomposition, safety gates, synthesis | Online: configured repository tools and SDK-configured specialists; offline: selected local repository tools (no local `START_SUBAGENT` tool) |
 | **`ForgeArchitectAgent`** | C# & Bannerlord Engine | Rule A Anti-Shadowing (`GEMINI.md`), TFM boundaries, GameModel decorators | `run_dotnet_build`, `inspect_csharp_source` |
 | **`StatelessBehaviorAuditor`** | Persistence & Safety | Rule B Statelessness, zero `SaveableTypeDefiner`, stateless `SyncData` | `verify_stateless_behavior`, `inspect_csharp_source` |
 | **`DesktopWpfSpecialist`** | WPF Workbench & UI | Rule C Desktop Contracts, container recycling, DirectX aliased edges, UIA | `audit_desktop_contracts`, `run_ui_automation_smoke`, `run_solution_tests` |
 | **`DocLedgerAgent`** | Docs & Release Integrity | Rule D Safety, bilingual parity, SHA-256 ledger integrity chain | `audit_documentation_parity`, `audit_ledger_integrity`, `run_package_workflow` |
-| **`BugHunterAgent`** | Code Smells & Concurrency | FormattableString interpolation, CAS locks, SyncRoot guards, thread dispatch | `audit_code_smells`, `audit_concurrency_hazards`, `audit_section_playbooks` |
+| **`BugHunterAgent`** | Code Smells & Concurrency | FormattableString interpolation, CAS locks, SyncRoot guards, thread dispatch | `audit_code_smells`, `audit_concurrency_hazards`, `inspect_csharp_source` |
 
 ### 2.1 ForgeMasterAgent (Root Orchestrator)
 - **Role:** High-level strategic planner and coordinator.
@@ -55,7 +57,7 @@ The system is organized into 6 specialized agents:
   - Enforces Decorator GameModel patterns wrapping `_previousModel` with `ExplainedNumber`.
 
 ### 2.3 StatelessBehaviorAuditor (Save Safety & CampaignBehavior)
-- **Role:** Mod persistence and simulation auditor.
+- **Role:** Mod persistence and campaign behavior auditor.
 - **Invariants:**
   - Enforces **Rule B (Stateless Campaign Behavior)**: Mod behaviors must remain completely stateless with regard to save games.
   - Zero inheritance from `SaveableTypeDefiner` in `src/CalradiaForge.Mod`.
@@ -68,7 +70,7 @@ The system is organized into 6 specialized agents:
   - Pure graphic virtualization: `VirtualizingPanel.ScrollUnit="Pixel"`, `VirtualizationMode="Recycling"`, `CacheLength="1,1"`.
   - DirectX aliased edges: `RenderOptions.EdgeMode="Aliased"` and `SnapsToDevicePixels="True"` on 1px dividers.
   - Enforces **Rule C (Desktop Static Contracts)**: Validates static tokens asserted by `tests/CalradiaForge.Desktop.Tests/Program.cs`.
-  - Windows UI Automation smoke checks via `tools/Test-CalradiaForge-Desktop-Uia.ps1`.
+  - Windows UI Automation smoke checks via `tools/Test-CalradiaForge-Desktop-Uia.bat`.
 
 ### 2.5 DocLedgerAgent (Bilingual Docs & Ledger Integrity)
 - **Role:** Technical writer, ledger auditor, and release gatekeeper.
@@ -81,7 +83,7 @@ The system is organized into 6 specialized agents:
 - **Role:** Static code smell inspector, thread-safety auditor, and procedural playbook validator.
 - **Invariants:**
   - Validates `FormattableString` string substitution invariants in Gauntlet and Desktop.
-  - Audits `ConcurrentDictionary` and CAS locks in `ForgeData`, `SyncRoot` in `ForgeAgentMemory`, and `SemaphoreSlim` in `PipeClient`.
+  - Audits `ConcurrentDictionary` and CAS locks in `ForgeData`, `SyncRoot` in the C# SDK's `ForgeAgentMemory`, and `SemaphoreSlim` in `PipeClient`. This game-runtime memory is distinct from Python's `CoALAAgentMemory` in `agents/memory.py`.
   - Enforces TaleWorlds main-thread marshaling via `GameThreadActionDispatch`.
   - Audits all 8 Gauntlet section playbooks, 8 Desktop remedy trees, and prefab bindings.
 
@@ -89,7 +91,7 @@ The system is organized into 6 specialized agents:
 
 ## 3. Google Antigravity SDK Integration
 
-The autonomous agent suite is built directly on top of `google.antigravity`:
+When the optional `google-antigravity` profile is installed, the autonomous agent integration uses `google.antigravity`:
 
 ### 3.1 LocalAgentConfig Configuration
 ```python
@@ -127,21 +129,23 @@ config = LocalAgentConfig(
 )
 ```
 
+This configuration sets `enable_sandbox=False`; it does not enable Antigravity command sandboxing or establish process/tool isolation. Do not claim isolation unless a separate OS-level authority boundary has been verified.
+
 ### 3.2 Repository Skills Auto-Discovery
-The agent automatically imports the 45 specialized skills located in `.agents/skills/` via `skills_paths=[".agents/skills"]`, allowing agents to reference patterns from `bannerlord-dotnet-artisan`, `calradia-forge-modding`, `agent-memory-systems`, and `calradia-forge-desktop`.
+The agent exposes the skills directory at `.agents/skills/` through `skills_paths=[".agents/skills"]` when that directory exists. The available skills can change independently of the agent package; examples include `bannerlord-dotnet-artisan`, `calradia-forge-modding`, `agent-memory-systems`, and `calradia-forge-desktop`.
 
 ---
 
 ## 4. Custom Repository Domain Tools
 
-The agents are equipped with 12 custom Python tools wrapping repository scripts, MSBuild workflows, and architectural checkers:
+The repository exposes Python tools wrapping scripts, MSBuild workflows, and architectural checkers; the current functions are listed below:
 
 | Tool Function | Description | Safety / Invariant Checked |
 | :--- | :--- | :--- |
 | `run_dotnet_build` | Compiles `CalradiaForge.sln` or projects via `dotnet build` | C# compilation, 0 warnings, 0 errors |
-| `verify_stateless_behavior` | Executes `tools/verify_stateless_behavior.ps1` | Rule B: Zero SaveableTypeDefiner, stateless SyncData |
+| `verify_stateless_behavior` | Executes `tools/Verify-CalradiaForge-StatelessBehavior.bat` | Rule B: Zero SaveableTypeDefiner, stateless SyncData |
 | `run_solution_tests` | Executes `tools/Run-CalradiaForge-Tests.bat` | Core, ForgeWeave, Desktop MVVM, and Render tests |
-| `run_ui_automation_smoke` | Executes `tools/Test-CalradiaForge-Desktop-Uia.ps1` | 29 accessibility checks on live WPF window |
+| `run_ui_automation_smoke` | Executes `tools/Test-CalradiaForge-Desktop-Uia.bat` | Windows UI Automation smoke checks against the WPF window |
 | `audit_documentation_parity` | Verifies matching English/Spanish files in `docs/` | Conceptual parity across `.md` and `.es.md` |
 | `audit_ledger_integrity` | Validates SHA-256 chain in `.integrity.jsonl` | Tamper-evident immutable ledger integrity |
 | `inspect_csharp_source` | Static AST scan across `src/` | Rule A: Anti-shadowing; Rule B: Statelessness |
@@ -153,75 +157,77 @@ The agents are equipped with 12 custom Python tools wrapping repository scripts,
 
 ---
 
-## 5. Unified CLI Runner (`tools/run_forge_agents.py`)
+## 5. Unified CLI Runner (`tools/Run-CalradiaForge-Agents.bat`)
 
-A unified CLI runner provides easy execution for developers, CI/CD pipelines, and autonomous workflows:
+A maintained launcher runs `tools/run_forge_agents.py` with the repository `.venv` interpreter. It fails with setup instructions if the environment is missing and does not fall back to a global Python. The CLI supports developers, CI/CD pipelines, and autonomous workflows:
 
 ### Basic Invocations
-```bash
-# Comprehensive token compaction benchmark across all 12 tools
-py -3.12 tools/run_forge_agents.py compact
+```bat
+REM Token compaction benchmark across the currently registered tools
+tools\Run-CalradiaForge-Agents.bat compact
 
-# Full architectural and safety audit
-py -3.12 tools/run_forge_agents.py audit
+REM Full architectural and safety audit
+tools\Run-CalradiaForge-Agents.bat audit
 
-# Code smells, antipatterns, and concurrency hazards audit
-py -3.12 tools/run_forge_agents.py bughunt
+REM Code smells, antipatterns, and concurrency hazards audit
+tools\Run-CalradiaForge-Agents.bat bughunt
 
-# Section playbooks, troubleshooting trees, and macro audit
-py -3.12 tools/run_forge_agents.py playbooks
+REM Section playbooks, troubleshooting trees, and macro audit
+tools\Run-CalradiaForge-Agents.bat playbooks
 
-# Bilingual docs parity and SHA-256 ledger integrity audit
-py -3.12 tools/run_forge_agents.py docs
+REM Bilingual docs parity and SHA-256 ledger integrity audit
+tools\Run-CalradiaForge-Agents.bat docs
 
-# Compile solution and inspect C# source rules
-py -3.12 tools/run_forge_agents.py architect
+REM Compile solution and inspect C# source rules
+tools\Run-CalradiaForge-Agents.bat architect
 
-# Solution tests and Windows UI Automation smoke check
-py -3.12 tools/run_forge_agents.py verify
+REM Solution tests and Windows UI Automation smoke check
+tools\Run-CalradiaForge-Agents.bat verify
 
-# Execute arbitrary autonomous task prompt
-py -3.12 tools/run_forge_agents.py run "Audit persistence safety and verify docs parity"
+REM Execute arbitrary autonomous task prompt
+tools\Run-CalradiaForge-Agents.bat run "Audit persistence safety and verify docs parity"
 ```
 
 ### CLI Flags
-- `--offline`: Forces deterministic offline simulation mode (no API key required).
-- `--verbose` / `-v`: Enables real-time output and thought streaming.
+- `--offline`: Forces local offline tool execution (no API key required).
+- `--verbose` / `-v`: Enables verbose assistant-output streaming.
 - `--model <name>`: Overrides model identifier (defaults to `gemini-3.8-flash`).
-- `--compaction-preset [ultra|balanced|deep]`: Configures context window token threshold (`ultra`: 8k, `balanced`: 16k, `deep`: 32k, default: `deep`).
+- `--compaction-preset [ultra|balanced|deep]`: Configures the token threshold (`ultra`: 8k, `balanced`: 16k, `deep`: 32k; default: `deep`).
 - `--raw-tools`: Bypasses distillation and outputs uncompressed raw tool logs to the LLM context.
 - `--live`: (Used with `compact`) Executes all tools live, including heavy compiler, test, and packaging runs.
 
+The optional SDK package is not required to import the CLI or run local offline tool execution. The online Antigravity route requires the SDK to be importable, credentials to be present, and `offline_mode=False`; the optional `--agents` test profile separately requires the SDK because it tests SDK configuration. Install that profile into the isolated project environment with `tools\Setup-CalradiaForge-Python.bat --agents --no-pause`, then run `tools\Run-CalradiaForge-Python-Checks.bat --ci --agents --no-pause`. Offline mode bypasses cloud execution; it does not prove cloud behavior.
+
 ---
 
-## 6. Deterministic Offline Simulation Mode
+## 6. Local Offline Tool Execution
 
-To ensure reproducible testing and CI/CD validation without requiring cloud API credentials:
-- When `GEMINI_API_KEY` is not present or `--offline` is specified, `ForgeAgentOrchestrator` automatically runs in **Deterministic Offline Simulation Mode**.
-- The orchestrator analyzes the task intent, dispatches work to the registered subagents, executes the required repository domain tools, validates invariants, and produces a complete structured execution report.
-- When `GEMINI_API_KEY` is present, the orchestrator connects to the Gemini API using `google.antigravity.Agent` for full autonomous reasoning and subagent delegation.
+Local offline tool execution runs selected repository functions without cloud API credentials:
+- `ForgeAgentOrchestrator` selects its online route only when the optional SDK is importable, credentials are present, and offline mode is disabled. Otherwise it reports local offline tool execution and the reason that route was selected.
+- Local offline tool execution calls selected repository tool functions; it does not spawn SDK subagent workers. Its report marks each tool result `PASS`, `FAIL`, or `INDETERMINATE` from explicit output markers. `COMPLETE` is emitted only when every selected tool call returned a report and all verdicts are explicit passes; it is not a claim that unselected checks ran.
+- With the SDK importable, credentials present, and offline mode disabled, the orchestrator uses `google.antigravity.Agent` for online execution.
 
 ---
 
 ## 7. Verification & Automated Testing
 
 The autonomous agent system is verified via automated tests in `tests/test_forge_agents.py`:
-```bash
-py -3.12 -m unittest tests/test_forge_agents.py
+```bat
+tools\Run-CalradiaForge-Python-Checks.bat --ci --agents --no-pause
 ```
 Test suite coverage:
 - Configuration factory, compaction presets, and Google Antigravity SDK config creation.
 - Subagent schema validation, system instructions, and tool bindings.
 - Repository domain tools execution and semantic output distillation.
-- `ForgeTokenCompactor` token estimation, lossless compiler error retention, and forensic artifact logging.
-- Orchestrator multi-agent delegation pipeline and offline simulation.
+- `ForgeTokenCompactor` heuristic token estimates, pattern-based diagnostic retention with representative fixture coverage, and optional artifact logging.
+- Orchestrator multi-agent delegation pipeline and local offline tool execution.
 - CLI argument parsing and dispatch.
 
 ---
 
 ## 8. Token Compaction & Context Optimization Engine (`ForgeTokenCompactor`)
 
-To prevent runaway context window bloat during complex multi-agent workflows, Calradia Forge incorporates an aggressive, lossless token compaction engine implemented in `agents/compactor.py`:
+To reduce context volume during complex multi-agent workflows, Calradia Forge uses a heuristic semantic distillation engine implemented in `agents/compactor.py`. Distillation is lossy by design; the compact text is a summary, not a substitute for the original output.
 
 ```
                Raw Tool Output (Console, MSBuild, Test Suites, UIA)
@@ -237,12 +243,12 @@ To prevent runaway context window bloat during complex multi-agent workflows, Ca
                      + Forensic Reference Link for LLM
 ```
 
-### 8.1 Preserving Agent Intelligence (Lossless Failure Telemetry)
-The token compactor is built on a strict zero-loss guarantee for diagnostic information:
-1. **Lossless Compiler Errors**: When `dotnet build` fails, all `error CSxxxx`, `error MSBxxxx`, file paths, line/column coordinates, and error descriptions are 100% preserved. No project restoration noise is passed.
-2. **Lossless Test Failures**: When unit or render tests fail, failed test names, exception types, assertion diffs, and stack traces are extracted and preserved verbatim.
-3. **Lossless Invariant Diagnostics**: Violations in C# AST scans (Rule A), persistence checks (Rule B), or desktop contracts (Rule C) retain full file and line coordinates.
-4. **Forensic Traceability**: Every tool run writes its full uncompressed raw console output to `artifacts/agent-runs/<timestamp>_<tool>.log`. The compacted output embeds the path, allowing any agent or human to inspect the full trace if deeper context is required.
+### 8.1 Diagnostic Retention and Evidence Limits
+The distillers are designed to retain recognized diagnostic lines in compact summaries, but they do not provide a zero-loss or completeness guarantee. Output formats that do not match a distiller's patterns, capped failure lists, and unexpected tool output can be omitted from the compact text.
+1. **Build Diagnostics**: The MSBuild distiller recognizes supported compiler/build error patterns and includes matching lines. This has regression coverage for representative cases; it does not prove that every compiler, MSBuild, locale, or custom-tool diagnostic is captured.
+2. **Test Failures**: The test distiller extracts selected failure markers and assertion/error lines, with bounded output. It does not reliably reproduce complete test names, every assertion diff, or full stack traces.
+3. **Invariant Diagnostics**: Audit summaries depend on the output format and patterns recognized by each distiller. Use the original tool output to verify full file and line coordinates.
+4. **Optional Forensic Logging**: When raw saving is enabled, the output is non-empty, and writing succeeds, the compactor stores the uncompressed text in `artifacts/agent-runs/<timestamp>_<tool>.log` and adds the log path to its summary. The log is the more complete evidence source; its availability is not guaranteed if saving is disabled or a write fails.
 
 ### 8.2 Compaction Presets (`CompactionConfig`)
 Context window pruning is dynamically controlled via presets:
@@ -250,25 +256,15 @@ Context window pruning is dynamically controlled via presets:
 - **`balanced` (16,000 tokens)**: Recommended operational balance between conversational history and lean context consumption.
 - **`deep` (32,000 tokens, default)**: Expanded deep reasoning context window for intricate multi-agent refactoring sessions and multi-file code reviews.
 
-### 8.3 Empirical Token Reduction Benchmarks
+### 8.3 Reproducible Token-Estimate Comparisons
 
-| Tool Operation | Raw Output Characters | Raw Tokens | Compacted Tokens | Net Savings | Compression Ratio |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **`run_dotnet_build`** (Clean Release) | 2,366 chars | ~622 tokens | ~56 tokens | 566 tokens | **87.5% - 91.0%** |
-| **`run_solution_tests`** (726 Tests) | 53,222 chars | ~14,005 tokens | ~134 tokens | 13,871 tokens | **99.0%** |
-| **`verify_stateless_behavior`** | 3,353 chars | ~882 tokens | ~146 tokens | 702 tokens | **82.8%** |
-| **`run_ui_automation_smoke`** (29 Nodes) | 6,840 chars | ~1,800 tokens | ~78 tokens | 1,722 tokens | **95.7%** |
-| **`run_package_workflow`** | 3,120 chars | ~183 tokens | ~83 tokens | 100 tokens | **54.6%** |
-| **`audit_code_smells`** | 380 chars | ~94 tokens | ~40 tokens | 54 tokens | **57.4%** |
-| **`audit_concurrency_hazards`** | 412 chars | ~103 tokens | ~48 tokens | 55 tokens | **53.4%** |
-| **`audit_section_playbooks`** | 365 chars | ~91 tokens | ~42 tokens | 49 tokens | **53.8%** |
-| **Multi-Agent 12-Tool Suite (`compact`)** | ~8,000 chars | 2,005 tokens | 880 tokens | 1,152 tokens | **57.5% reduction** |
+This guide does not publish fixed token-saving or test-count baselines. `ForgeTokenCompactor` estimates are heuristic and depend on the exact input and distiller version. For a useful comparison, record the repository revision, Python and package versions, tool name, exact fixture or output hash, raw/compacted strings, and both estimates for each run. Treat such values as evidence for that input only, not as universal thresholds or performance guarantees.
 
 ---
 
 ## 9. CoALA Cognitive Memory Architecture (`agents/memory.py`)
 
-Calradia Forge implements the **Cognitive Architectures for Language Agents (CoALA)** standard to organize agent cognition across three distinct tiers:
+The repository agent runner uses a project-specific, bounded memory model inspired by concepts from **Cognitive Architectures for Language Agents (CoALA)**. This does not claim conformance to a formal CoALA standard or mean that every invocation receives the same semantic context:
 
 ```
                ┌────────────────────────────────────────────────┐
@@ -285,14 +281,14 @@ Calradia Forge implements the **Cognitive Architectures for Language Agents (CoA
 ```
 
 ### 9.1 Semantic Memory (`SemanticRepositoryMemory`)
-- **Nature:** Immutable, zero-decay repository knowledge injected into all agent contexts.
+- **Nature:** Immutable repository rules included when the semantic context is rendered; this is not a guarantee that every agent execution consumes the same context.
 - **Contents:**
   - **Rule A (Anti-Shadowing)**: Zero folders, namespaces, or classes named `Campaign` or `Localization`.
   - **Rule B (Statelessness)**: Zero `SaveableTypeDefiner` and clean `SyncData` in `src/CalradiaForge.Mod`.
   - **Rule C (Desktop Contracts)**: Mandatory static source tokens preserved in `src/CalradiaForge.Desktop`.
   - **Rule D (Distribution Safety)**: Exclude engine binaries, user saves, and scripts from release archives.
   - **Engine Thread Affinity**: TaleWorlds entity APIs must be marshaled to the game thread.
-  - **Anti-Lag Time-Slicing**: Modulo-24 hero distribution and zero LINQ queries in simulation ticks.
+  - **Optional Time-Slicing**: Use `ForgeTimeSlicer.ShouldProcess` only for work whose semantics permit deferral. Bucket distribution can be uneven, filtering still scans the input collection, and allocation or duration claims require measurement of the relevant callback.
 
 ### 9.2 Working Memory (`WorkingAgentMemory`)
 - **Nature:** Short-term execution frame reflecting the immediate task status.
@@ -301,5 +297,5 @@ Calradia Forge implements the **Cognitive Architectures for Language Agents (CoA
 ### 9.3 Episodic Memory (`EpisodicTrace`)
 - **Nature:** Bounded chronological history of executed actions and empirical observations.
 - **Trace Record:** Step ID, agent name, action, dense summary, raw tokens, compacted tokens, net tokens saved, compression ratio, error status, and forensic log reference.
-- **Error-Preservation FIFO Pruning:** When trace counts exceed the bounded queue size (`max_episodic_traces = 32`), normal execution traces are evicted via FIFO. However, any trace with `has_errors == True` is **strictly protected against eviction**, ensuring that past failures and diagnostic details are never forgotten during multi-step reasoning.
+- **Error-Aware FIFO Pruning:** The default `max_episodic_traces` value is 32 and can be configured. When the limit is exceeded, pruning prefers the oldest non-error trace among eligible older entries; if none is available, it removes the oldest entry. Error traces are therefore preferred during pruning but are not guaranteed to remain indefinitely, and the compact summary may omit details retained only in an optional forensic log.
 

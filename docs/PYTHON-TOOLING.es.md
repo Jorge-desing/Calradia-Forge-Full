@@ -28,6 +28,7 @@ tools\Setup-CalradiaForge-Python.bat --agents
 
 La opción `--agents` es explícita; la preparación normal no instala el runtime Antigravity. Mantén sus paquetes en `agents/requirements.txt` en vez de incorporarlos al perfil general de herramientas.
 
+
 ## Validación de metadatos de skills
 
 Pasa el directorio de la skill al launcher del repositorio para validar el frontmatter de `SKILL.md` con el validador de Codex Skill Creator y el entorno del proyecto:

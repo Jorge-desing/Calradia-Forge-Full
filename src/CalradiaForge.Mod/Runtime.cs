@@ -50,7 +50,7 @@ namespace CalradiaForge.Mod
         System.Reflection.MethodInfo _cachedConsoleMethod;
         Task<ModuleDiagnostics> scan; ModuleDiagnostics diagnostics = new ModuleDiagnostics(); Task persistence;
         float elapsed; int framesSeen; double seconds, weavePulseElapsed; Campaign contextCampaign; Mission contextMission; Context previousContext = Context.Any; bool contextInitialized, sdkConnected, sdkFailureLogged, initialScreenReadyPending, campaignStartedPending, gameLoadedPending;
-        HarmonySnapshot harmonyCache = new HarmonySnapshot { Status = "Not captured. Use Harmony to capture the optional atlas." };
+        ForgePatchDiagnosticsSnapshot patchDiagnosticsCache = new ForgePatchDiagnosticsSnapshot { Status = "Not captured. Use Patch diagnostics to inspect Forge hooks and optional loaded patch runtimes." };
         PatchPreflightSnapshot patchPreflightCache = new PatchPreflightSnapshot { Status = "Not captured. Run Patch preflight to validate registered author declarations." };
         public Settings Config { get; private set; } = new Settings { Language = "en" };
         public Action OpenPanel { get; set; }
@@ -264,7 +264,7 @@ namespace CalradiaForge.Mod
             try
             {
                 if (s == null) throw new ArgumentNullException(nameof(s));
-                if (s.Version != ForgeProtocol.Version) throw new InvalidOperationException("Protocol version mismatch: expected " + ForgeProtocol.Version);
+                if (!IsSupportedEnvelopeVersion(s)) throw new InvalidOperationException("Request envelope version mismatch: expected " + ForgeProtocol.EnvelopeVersion);
                 if (GameNetwork.IsMultiplayer) throw new InvalidOperationException("Single-player only");
                 token.ThrowIfCancellationRequested(); string data;
                 switch (s.Action)
@@ -375,6 +375,7 @@ namespace CalradiaForge.Mod
                         }
                     case "patch-blueprints": data = Json.Serialize(TestEngine.PatchBlueprintProviders.ToList()); break;
                     case "patch-preflight": patchPreflightCache = PatchPreflightEngine.Inspect(TestEngine.CapturePatchBlueprints(this, token), AppDomain.CurrentDomain.GetAssemblies(), CurrentContext.ToString()); data = Json.Serialize(patchPreflightCache); break;
+                    case "patch-diagnostics": patchDiagnosticsCache = ForgePatchDiagnostics.Capture(ForgeApi.Hooks, ForgeApi.Patches, AppDomain.CurrentDomain.GetAssemblies()); data = Json.Serialize(patchDiagnosticsCache); break;
                     case "hook-snapshots": data = Json.Serialize(CaptureHookStatus()); break;
                     case "hook-verify": data = VerifyHookSelection(s.Argument, token); break;
                     case "hook-apply-plan": data = CreateHookPlan("apply", s.Argument, token); break;
@@ -510,6 +511,8 @@ namespace CalradiaForge.Mod
             catch (Exception e) { Register("CalradiaForge", "Error", e.Message); return new Response { Id = s.Id, Error = e.Message }; }
             finally { stopwatch.Stop(); events["operation.last.ms"] = stopwatch.Elapsed.TotalMilliseconds; }
         }
+
+        internal static bool IsSupportedEnvelopeVersion(Request request) => request != null && request.Version == ForgeProtocol.EnvelopeVersion;
 
         HookIpcStatus CaptureHookStatus()
         {
@@ -938,10 +941,10 @@ namespace CalradiaForge.Mod
         }
         void MarkEvidenceStale()
         {
-            if (!string.IsNullOrWhiteSpace(harmonyCache?.CapturedAt))
+            if (!string.IsNullOrWhiteSpace(patchDiagnosticsCache?.CapturedAt))
             {
-                harmonyCache.IsStale = true;
-                if (!harmonyCache.Notes.Contains("The game context changed after this atlas capture.")) harmonyCache.Notes.Add("The game context changed after this atlas capture.");
+                patchDiagnosticsCache.IsStale = true;
+                if (!patchDiagnosticsCache.Notes.Contains("The game context changed after this diagnostics capture.")) patchDiagnosticsCache.Notes.Add("The game context changed after this diagnostics capture.");
             }
             if (!string.IsNullOrWhiteSpace(patchPreflightCache?.CapturedAt))
             {
@@ -949,9 +952,9 @@ namespace CalradiaForge.Mod
                 if (!patchPreflightCache.Notes.Contains("The game context changed after this preflight capture.")) patchPreflightCache.Notes.Add("The game context changed after this preflight capture.");
             }
         }
-        // Export uses explicit cached Harmony evidence. ForgeWeave's in-memory health snapshot has
+        // Export uses explicitly captured patch evidence. ForgeWeave's in-memory health snapshot has
         // no reflection or game traversal, so reports capture it directly at export time.
-        SessionReport Report() => new SessionReport { GameVersion = diagnostics.Modules.FirstOrDefault(m => m.Id == "Native")?.Version ?? "1.4.8 (target; scan to verify)", Session = Log.Id, ModuleDiagnostics = diagnostics, Logs = Log.Deserialize(), Tests = results.ToList(), Snapshots = pins.Values.ToList(), Metrics = Metrics(), Harmony = harmonyCache, ForgeWeave = TestEngine.CaptureForgeWeave(), PatchPreflight = patchPreflightCache };
+        SessionReport Report() => new SessionReport { GameVersion = diagnostics.Modules.FirstOrDefault(m => m.Id == "Native")?.Version ?? "1.4.8 (target; scan to verify)", Session = Log.Id, ModuleDiagnostics = diagnostics, Logs = Log.Deserialize(), Tests = results.ToList(), Snapshots = pins.Values.ToList(), Metrics = Metrics(), PatchDiagnostics = patchDiagnosticsCache, ForgeWeave = TestEngine.CaptureForgeWeave(), PatchPreflight = patchPreflightCache };
         sealed class QueuedForgeEvent
         {
             public ForgeEventKind Kind;

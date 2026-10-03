@@ -15,6 +15,12 @@ Use this dedicated workspace skill whenever creating, updating, or maintaining t
 
 This isolated project skill set contains the current documentation policy and workflow; its linked specialists own the detailed procedures. It does not depend on an upstream generator skill being installed or remaining unchanged. The protected local [`docs-generator`](../docs-generator/SKILL.md) snapshot remains as a backup of source knowledge, while this hub and its specialists are the active project source of truth.
 
+For capability matrices and knowledge handoff, follow the [developer onboarding rule](../../rules/developer_onboarding.md).
+Record current-source/commit provenance, actual BAT evidence and pending live gates.
+Do not turn a historical test count, fixture result or SDK worktree declaration into
+a universal threshold or verified release claim. Specialized procedures belong in
+existing skill references; synchronize shared rules across the three root guides.
+
 ---
 
 ## 1. Subsystem Delegation Architecture
@@ -26,7 +32,7 @@ The documentation ecosystem is organized into four specialized domain skills coo
 | **Codemaps** | [`calradia-forge-codemaps`](../calradia-forge-codemaps/SKILL.md) | Synchronizes `docs/CODEMAP_ARCHITECTURE.md`, `CODEMAP_CAMPAIGN_BEHAVIORS.md`, and `CODEMAP_SDK_GAMEMODELS.md` against source code. |
 | **Registro de Mejoras** | [`calradia-forge-registro-mejoras`](../calradia-forge-registro-mejoras/SKILL.md) | Drafts `docs/append/RevXXX-*.md` annexes, compiles protected DOCX revisions, and appends SHA-256 blocks to `docs/CalradiaForge-Registro-Mejoras.integrity.jsonl`. |
 | **DocFX & In-Game Help** | [`calradia-forge-docfx-pipeline`](../calradia-forge-docfx-pipeline/SKILL.md) | Enforces standardized C# XML docstrings, compiles `tools/build_docs.ps1`, and generates runtime help via `tools/generate_in_game_help.py`. |
-| **Release Validation** | [`calradia-forge-release-validation`](../calradia-forge-release-validation/SKILL.md) | Generates `docs/VALIDATION-<VERSION>.md` and `.es.md` with test pass counts, WPF render layout metrics, boundaries of evidence, and archive hashes. |
+| **Release Validation** | [`calradia-forge-release-validation`](../calradia-forge-release-validation/SKILL.md) | Generates `docs/VALIDATION-<VERSION>.md` and `docs/VALIDACION-<VERSION>.es.md` with test pass counts, WPF render layout metrics, boundaries of evidence, and archive hashes. |
 
 ---
 
@@ -36,13 +42,14 @@ The documentation ecosystem is organized into four specialized domain skills coo
 *Delegates to [`calradia-forge-codemaps`](../calradia-forge-codemaps/SKILL.md)*
 1. **Identify Affected Subsystems**:
    - `CODEMAP_ARCHITECTURE.md`: Assembly hierarchy, SubModule lifecycle, Core components, static rules.
-   - `CODEMAP_CAMPAIGN_BEHAVIORS.md`: CampaignBehaviorBase lifecycle, dual-registration (`OnGameStart`/`OnCampaignStart`), event catalog, anti-lag time-slicing (modulo-24), zero-allocation loops.
+   - `CODEMAP_CAMPAIGN_BEHAVIORS.md`: CampaignBehaviorBase lifecycle, dual-registration (`OnGameStart`/`OnCampaignStart`), event catalog, current time-slicing APIs and allocation/performance findings supported by measured scope. Do not state a universal zero-allocation guarantee from source inspection or result-only tests.
    - `CODEMAP_SDK_GAMEMODELS.md`: SDK public APIs (`ForgeData`, `ForgeAgentMemory`, `ForgeCampaignEvents`), GameModel decorator implementations, `ExplainedNumber` conventions.
 2. **Update Diagrams & Tables**: Maintain exact symbol names and verify anti-shadowing (`GEMINI.md`).
 
 ### 🌐 Workflow 2: Dual-Language Technical Guides (`docs/<TOPIC>.md` & `.es.md`)
-1. **Strict Parity**: Every technical document in `docs/` MUST exist as a paired pair: English (`<TOPIC>.md`) and Spanish (`<TOPIC>.es.md`).
+1. **Strict Parity**: Every technical document in `docs/` MUST have an English canonical file and the Spanish counterpart recognized by `agents.tools.audit_documentation_parity`. Standard pairs use `<TOPIC>.md` and `<TOPIC>.es.md`; established aliases are `DESKTOP.md` ↔ `ASSEMBLY_WORKBENCH.es.md` and `VALIDATION-<VERSION>.md` ↔ `VALIDACION-<VERSION>.es.md`. Architecture and system-design guides use their own `.es.md` counterparts. Do not rename these legacy pairs to make the audit pass.
 2. **Synchronous Changeset**: Whenever an English document is revised, the Spanish translation MUST be updated in the same changeset. Code symbols, CLI commands, and metrics remain verbatim.
+3. **Enforced Gate**: Run `tools/Run-CalradiaForge-Python-Checks.bat --ledger --no-pause`; the documentation parity check must fail the runner when any counterpart is missing.
 
 ### 📜 Workflow 3: Append-Only "Registro de Mejoras" (DOCX + Hash Chain)
 *Delegates to [`calradia-forge-registro-mejoras`](../calradia-forge-registro-mejoras/SKILL.md)*

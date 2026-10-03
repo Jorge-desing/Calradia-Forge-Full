@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Calradia Forge Team",
+  "classifications": [
+    "Bannerlord",
+    "Modding",
+    "Calradia Forge"
+  ],
+  "identity": "CalradiaForge.Mod.Template",
+  "name": "Calradia Forge Bannerlord Mod",
+  "shortName": "calradiaforge-mod",
+  "sourceName": "CalradiaForge.ModTemplate",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "symbols": {
+    "moduleId": {
+      "type": "derived",
+      "valueSource": "name",
+      "valueTransform": "safe_namespace",
+      "replaces": "__MODULE_ID__"
+    },
+    "forgeSdkVersion": {
+      "type": "parameter",
+      "defaultValue": "25.2.0",
+      "replaces": "__FORGE_SDK_VERSION__"
+    }
+  }
+}

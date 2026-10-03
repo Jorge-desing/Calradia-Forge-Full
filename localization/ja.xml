@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <strings language="ja">
+  <string key="2. For optional periodic hero work, use ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) for stable buckets. Defer only work that can wait up to 24 in-game hours, and measure before claiming a performance gain." value="2. 任意の定期的なヒーロー処理では、ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) を使って安定したバケットに振り分けます。ゲーム内で最大24時間待てる処理だけを延期し、性能向上を主張する前に測定してください。" />
   <string key="Assign unique IDs" value="Assign unique IDs" />
   <string key="Build or reinstall module" value="Build or reinstall module" />
   <string key="Calradia Forge" value="カルラディアの鍛冶場" />
@@ -41,9 +42,6 @@
   <string key="Maximum" value="最大" />
   <string key="Recent events" value="最近のイベント" />
   <string key="Framework findings" value="フレームワークの検出結果" />
-  <string key="Harmony" value="Harmony" />
-  <string key="Harmony patch atlas" value="Harmony パッチ一覧" />
-  <string key="Optional read-only Harmony diagnostics. Shared targets are review candidates, not proven conflicts." value="読み取り専用の任意のHarmony診断です。共有ターゲットは確認候補であり、証明済みの競合ではありません。" />
   <string key="Patch preflight" value="パッチ事前検証" />
   <string key="Patch blueprint preflight" value="パッチ設計図の事前検証" />
   <string key="Providers" value="プロバイダー" />
@@ -266,12 +264,9 @@
   <string key="Test ID" value="テスト ID" />
   <string key="Status" value="状態" />
   <string key="Duration" value="所要時間" />
-  <string key="Read-only inventory of active Harmony patches in already-loaded assemblies." value="読み込み済みアセンブリ内のアクティブな Harmony パッチの読み取り専用一覧。" />
   <string key="Patch Preflight: Read-only structural check of declared targets and callback references; it never applies patches or invokes callbacks." value="Patch Preflight：宣言された対象とコールバック参照を読み取り専用で構造チェックします。パッチの適用やコールバックの呼び出しは行いません。" />
-  <string key="ForgeWeave: Event recording and sequence replay. Harmony Atlas is a separate read-only inventory; Patch Preflight checks blueprint declarations without applying patches." value="ForgeWeave：イベント記録とシーケンス再生。Harmony Atlas は独立した読み取り専用の一覧です。Patch Preflight はパッチを適用せずにブループリントの宣言を確認します。" />
   <string key="Event Replay &amp; Patch Diagnostics" value="イベント再生とパッチ診断" />
   <string key="2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in." value="2. パッチブループリントの確認：cf.patch_preflight を実行して保留中の宣言を確認します。パッチは適用されません。Forge メソッドの置換には、別途明示的にオプトインする必要があります。" />
-  <string key="ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools." value="ForgeWeave イベントパイプライン：決定的なイベント記録とシーケンス再生。Harmony 診断と Patch Blueprint Preflight は別々のツールです。" />
   <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. Forge メソッドの置換には別途明示的な要求が必要です。バックエンドがサポートしない宣言済みフック種別はメタデータのまま残ります。Patch Preflight は読み取り専用で、コールバックコードを呼び出しません。AddNonSerializedListener を使い、ForgeWeave のイベントリスナーをシリアライズ対象外にしてください。" />
   <string key="Hook inventory" value="フック一覧" />
   <string key="Next hook" value="次のフック" />
@@ -281,4 +276,14 @@
   <string key="Confirm action" value="操作を確認" />
   <string key="Approve displayed hook plan" value="表示されたフック計画を承認" />
   <string key="Selected hook" value="選択したフック" />
+  <string key="Patch diagnostics" value="パッチ診断" />
+  <string key="Read-only diagnostics for Forge hooks, Forge patches, and optional loaded patch runtimes." value="Forge フック、Forge パッチ、および任意の読み込み済みパッチランタイムを読み取り専用で診断します。" />
+  <string key="Optional external runtime" value="任意の外部ランタイム" />
+  <string key="ForgeWeave: Event recording and sequence replay. Patch diagnostics inspect Forge-owned hooks and patches; a compatible loaded runtime is observed read-only when available. Patch Preflight checks blueprint declarations without applying patches." value="ForgeWeave：イベント記録とシーケンス再生。パッチ診断では Forge 所有のフックとパッチを確認し、互換性のある読み込み済みランタイムがあれば読み取り専用で観察します。Patch Preflight はパッチを適用せず宣言を確認します。" />
+  <string key="イベント、SyncData、安定 ID による任意処理のバケット分けを含む CampaignBehaviorBase のひな形を生成します。コレクション全体の走査は続きます。" value="イベント、SyncData、安定 ID による任意処理のバケット分けを含む CampaignBehaviorBase のひな形を生成します。コレクション全体の走査は続きます。" />
+  <string key="安定 ID によるバッチスケジューリングを備えた CampaignBehaviorBase のひな形を生成" value="安定 ID によるバッチスケジューリングを備えた CampaignBehaviorBase のひな形を生成" />
+  <string key="Advanced Developer SDK: Surface contracts for 110+ SDK tools, bounded NPC memory inspired by CoALA concepts, and decoupled engine API bridges." value="高度な開発者向け SDK: 110 以上の SDK ツールの契約、CoALA の概念に着想を得た上限付き NPC メモリ、分離されたエンジン API ブリッジを提供します。" />
+  <string key="1. Never mutate engine entities during render ticks.&#10;2. Never store raw Hero, Settlement, or MobileParty pointers in persistent fields; resolve by StringId via MBObjectManager.&#10;3. Inspection queries must be read-only; measure the complete query path before making performance claims.&#10;4. ForgeAgentMemory queries bounded NPC memory data; it is not a CoALA language-agent runtime." value="1. 描画ティック中にエンジンエンティティを変更しないでください。&#10;2. Hero、Settlement、MobileParty の生ポインターを永続フィールドに保存しないでください。MBObjectManager を使用し、StringId から解決してください。&#10;3. 検査クエリは読み取り専用にし、性能を主張する前にクエリ全体を計測してください。&#10;4. ForgeAgentMemory が扱うのは上限付き NPC メモリデータであり、CoALA 言語エージェントのランタイムではありません。" />
+  <string key="2. Query ForgeAgentMemory: Execute cf.agent_memory_query to inspect semantic and episodic memory data." value="2. ForgeAgentMemory を照会: cf.agent_memory_query を実行して、意味記憶とエピソード記憶のデータを確認します。" />
+  <string key="Query ForgeAgentMemory fact counts and decay status" value="ForgeAgentMemory の事実数と有効期限の状態を照会" />
 </strings>

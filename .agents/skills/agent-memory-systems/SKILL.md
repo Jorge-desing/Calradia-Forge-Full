@@ -4,9 +4,10 @@ description: "Memory is the cornerstone of intelligent agents. Without it, every
   interaction starts from zero. This skill covers the architecture of agent
   memory: short-term (context window), long-term (vector stores), and the
   cognitive architectures that organize them."
-risk: safe
-source: vibeship-spawner-skills (Apache 2.0)
-date_added: 2026-02-27
+metadata:
+  risk: safe
+  source: vibeship-spawner-skills (Apache 2.0)
+  date_added: "2026-02-27"
 ---
 
 # Agent Memory Systems
@@ -20,9 +21,11 @@ Key insight: Memory isn't just storage - it's retrieval. A million stored facts
 mean nothing if you can't find the right one. Chunking, embedding, and retrieval
 strategies determine whether your agent remembers or forgets.
 
-The field is fragmented with inconsistent terminology. We use the CoALA cognitive
-architecture framework: semantic memory (facts), episodic memory (experiences),
-and procedural memory (how-to knowledge).
+The field is fragmented with inconsistent terminology. CoALA is one useful
+conceptual model for semantic memory (facts), episodic memory (experiences), and
+procedural memory (how-to knowledge). This generic skill does not establish that
+any particular repository implements or conforms to the CoALA framework. See the
+project-specific notes near the end before describing Calradia Forge behavior.
 
 ## Principles
 
@@ -980,9 +983,9 @@ async def migrate_embeddings(old_model, new_model):
 # New collection: re-embedding in progress
 # Switch over when complete
 
-## Case Study: CoALA Cognitive Memory in Mount & Blade II: Bannerlord (`ForgeAgentMemory`)
+## Case Study: Bounded Campaign-Agent Memory (`ForgeAgentMemory`)
 
-Calradia Forge implements the CoALA (Cognitive Architectures for Language Agents) memory model directly within a real-time C# game engine environment (`CalradiaForge.Sdk.ForgeAgentMemory`).
+The C# SDK's `CalradiaForge.Sdk.ForgeAgentMemory` provides bounded semantic, episodic, and procedural stores for game-runtime agents. These tiers are conceptually analogous to parts of CoALA, but this service is not a direct implementation of the full Cognitive Architectures for Language Agents framework and does not itself provide a language-agent runtime. Python orchestration uses a separate `CoALAAgentMemory` in `agents/memory.py`; keep the two APIs and their evidence distinct.
 
 ### 1. Three-Tier Architectural Implementation
 - **Semantic Memory (Structured Knowledge & World Facts):**
@@ -990,15 +993,15 @@ Calradia Forge implements the CoALA (Cognitive Architectures for Language Agents
   - Used for dynamic relational scores, personality profiles, and diplomatic status.
   - *Engine Constraint:* Absolute relation scores (`hero1.GetRelation(hero2)`) must be stored under `"Relation_" + heroId` in $[-100, 100]$. Transient interaction deltas are separated into `"LastRelationDelta_" + heroId` to prevent corrupting semantic knowledge.
 - **Episodic Memory (Narrative Stream & Experiences):**
-  - Chronological event logs (`RecordEvent`) recording category, textual summary, and importance.
-  - Ring buffer / FIFO quota management (`maxEvents = 128`) preventing memory unbounded growth.
-  - Pre-allocated zero-LINQ iterations to avoid garbage collection spikes during high-frequency battle ticks.
+  - Add timestamped experience payloads through `ForgeAgentMemory.Episodic.Add` or `TryAdd`; the API does not impose a narrative schema for category, summary, or importance.
+  - The current SDK bounds each agent to 512 episodes and each episode type to 128; oldest entries are evicted first when those FIFO quotas are exceeded. These are current SDK constants, not universal limits for other memory systems.
+  - A low-allocation claim must be measured on the complete game callback, not inferred from this store's loops.
 - **Procedural Memory (Action Rules & Heuristics):**
-  - Action templates and behavioral recipes (`RegisterProcedure`) providing executable steps for tactical AI decision trees.
+  - Store and query caller-defined task instructions through `ForgeAgentMemory.Procedural.Add` or `TryAdd`; this store does not implement or execute a behavior-tree runtime.
 
 ### 2. Game-Specific Invariants & Stateless Boundaries
 - **Stateless Campaign Behavior Rule:** Within Bannerlord mod assemblies (`src/CalradiaForge.Mod`), memory systems must NEVER inherit from `SaveableTypeDefiner` or serialize memory graphs in `SyncData`. Instead, working memories are transient, reconstructed on-demand from world queries, or persisted via the decoupled `ForgeSaveChunker` in the SDK layer.
-- **Garbage Collection Optimization:** Avoid LINQ `.Select().ToList()` or `.Sum()` in memory retrieval loops. Pre-allocate collections (`new List<T>(capacity)`) to maintain steady 60 FPS frame times during active combat and hourly campaign simulation ticks.
+- **Allocation Evidence:** Avoid unnecessary temporary collections in measured hot paths, but do not promise steady 60 FPS, zero allocations, or a performance benefit without profiling the complete callback in the target game.
 
 ---
 

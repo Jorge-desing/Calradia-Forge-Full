@@ -63,7 +63,7 @@ Modules/MyMod/
 ```csharp
 using TaleWorlds.Localization;
 
-namespace CalradiaForge.Localization
+namespace CalradiaForge.LocalizationSync
 {
     public static class TextExamples
     {

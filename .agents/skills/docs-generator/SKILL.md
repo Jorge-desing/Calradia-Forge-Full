@@ -46,7 +46,7 @@ This master orchestrator coordinates four specialized documentation skills:
 
 1. **Identify Affected Subsystems**:
    - `CODEMAP_ARCHITECTURE.md`: Module layout, assembly dependencies (`TaleWorlds` → `Core` → `Mod`/`Sdk` → `Desktop`), SubModule lifecycle hooks, Core classes, static rules.
-   - `CODEMAP_CAMPAIGN_BEHAVIORS.md`: CampaignBehaviorBase lifecycle, dual-registration (`OnGameStart` / `OnCampaignStart`), event catalog, anti-lag time slicing (modulo-24), zero-allocation loops.
+   - `CODEMAP_CAMPAIGN_BEHAVIORS.md`: CampaignBehaviorBase lifecycle, dual-registration (`OnGameStart` / `OnCampaignStart`), event catalog, stable `ForgeTimeSlicer.ShouldProcess` / `GetBucket` scheduling where behavior permits deferral, traversal cost, and allocation/performance findings backed by measurements rather than a universal zero-allocation claim.
    - `CODEMAP_SDK_GAMEMODELS.md`: SDK public APIs (`ForgeData`, `ForgeAgentMemory`, `ForgeCampaignEvents`), GameModel decorator implementations, `ExplainedNumber` conventions.
 2. **Update Diagram & Tables**:
    - Maintain ASCII flowcharts and class tables with exact symbol and assembly names.

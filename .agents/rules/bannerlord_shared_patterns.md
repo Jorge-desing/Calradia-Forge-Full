@@ -80,18 +80,21 @@ All dynamic campaign simulation logic, event listeners, and save-persistent stat
    - **NEVER** serialize native engine handles (`Hero`, `Settlement`, `MobileParty`, `GameEntity`, `Agent`) directly in fields or dictionaries.
    - Store string keys (`hero.StringId`, `settlement.StringId`, `party.StringId`) and resolve them on demand using:
      `MBObjectManager.Instance.GetObject<Hero>(heroId)`
-4. **Anti-Lag Time-Slicing (Modulo Pattern):**
-   - Prevent frame drops and "Midnight Stutter" by distributing bulk entity updates across 24 hourly ticks:
+4. **Stable Time Slicing for Deferrable Work:**
+   - Use the SDK scheduler only when delaying an entity update to its assigned hour preserves event semantics. It hashes a stable `StringId` and normalizes the supplied hour; filtering a collection does not reduce the scan itself:
      ```csharp
-     int hour = (int)CampaignTime.Now.ToHours % 24;
+     using CalradiaForge.Sdk;
+
+     int hour = (int)CampaignTime.Now.ToHours;
      foreach (Settlement s in Settlement.All)
      {
-         if ((s.StringId.GetHashCode() & 0x7FFFFFFF) % 24 == hour)
+         if (ForgeTimeSlicer.ShouldProcess(s.StringId, hour))
          {
              ProcessHourlySettlement(s);
          }
      }
      ```
+   - Measure traversal separately from selected processing. Avoid presenting modulo slicing as a universal fix for frame-time or "Midnight Stutter" problems.
 
 ---
 

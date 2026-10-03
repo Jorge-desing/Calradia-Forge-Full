@@ -7,7 +7,7 @@ description: Best practices, SiegeWeapon, CastleGate, WallSegment, dynamic navme
 
 This skill provides implementation patterns for custom siege engines, destruction tracking, dynamic navmesh integration, and mission logic in Mount & Blade II: Bannerlord.
 
-> **Prerequisites:** Read `bannerlord-shared-patterns` for universal safety rules (no Campaign namespace, no Harmony, no entity serialization in OnInit).
+> **Prerequisites:** Read `bannerlord-shared-patterns` for universal safety rules: no `Campaign` namespace, no Harmony dependency or Harmony patch/detour implementation, and no entity serialization in `OnInit`. The only Forge-side Harmony path is the optional read-only observer described there; it does not load or modify Harmony.
 
 ## 1. Custom Siege Engine (MissionObject)
 

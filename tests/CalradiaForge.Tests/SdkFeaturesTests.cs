@@ -77,7 +77,7 @@ namespace CalradiaForge.Tests
             test("Forge UI policy enforces context and writer gates", TestForgeUiPolicy);
             test("ModRuleAuditor fails closed on invalid XML, unsafe Pulse intervals, reparse points, and scan limits", TestModRuleAuditorSafety);
             test("ForgeAgentMemory handles null agent and key parameters gracefully", TestForgeAgentMemoryNullSafety);
-            test("ForgeTimeSlicer boundaries and zero-allocation processing", TestForgeTimeSlicerBoundaries);
+            test("ForgeTimeSlicer bucket boundaries and processing selection", TestForgeTimeSlicerBoundaries);
             test("Forge SDK hardening, optimization, and edge case safety", TestSdkHardeningAndOptimizations);
             test("Wave 3 Mod and SDK hardening, optimization, and anti-shadowing", TestWave3ModHardeningAndOptimizations);
             test("ForgeCommands and SDK simulation integration", TestForgeCommandsAndSimulations);
@@ -2977,6 +2977,71 @@ namespace CalradiaForge.Tests
             if (!ForgeTimeSlicer.ShouldProcess("e1", 5, 1)) throw new Exception("ShouldProcess with 1 bucket should return true.");
             if (ForgeTimeSlicer.GetBucket("e1", 0) != 0) throw new Exception("GetBucket with 0 buckets should return 0.");
             if (ForgeTimeSlicer.GetBucket("e1", 1) != 0) throw new Exception("GetBucket with 1 bucket should return 0.");
+            if (ForgeTimeSlicer.GetBucket(null, 24) != 0 || ForgeTimeSlicer.GetBucket(string.Empty, 24) != 0)
+                throw new Exception("Null and empty entity IDs must map to bucket zero.");
+            if (!ForgeTimeSlicer.ShouldProcess(null, 0, 24) || ForgeTimeSlicer.ShouldProcess(null, 1, 24)
+                || !ForgeTimeSlicer.ShouldProcess(string.Empty, 0, 24) || ForgeTimeSlicer.ShouldProcess(string.Empty, 1, 24))
+                throw new Exception("Null and empty entity IDs must be selected only for bucket zero.");
+
+            const int maximumBucketCount = int.MaxValue;
+            const string upperBucketId = "time_slice_upper_bound_100";
+            int upperBucketHour = ForgeTimeSlicer.GetBucket(upperBucketId, maximumBucketCount);
+            if (upperBucketHour <= int.MaxValue / 2)
+                throw new Exception("ForgeTimeSlicer upper-bound regression fixture must exercise overflowing positive normalization.");
+            if (!ForgeTimeSlicer.ShouldProcess(upperBucketId, upperBucketHour, maximumBucketCount))
+                throw new Exception("ShouldProcess must normalize large positive hours without overflowing for the maximum bucket count.");
+
+            var upperBucketEntities = new List<string> { upperBucketId };
+            int indexedUpperBucketProcessed = ForgeTimeSlicer.ProcessBatch(
+                (IReadOnlyList<string>)upperBucketEntities, id => id, _ => { }, upperBucketHour, maximumBucketCount);
+            if (indexedUpperBucketProcessed != 1)
+                throw new Exception("The IReadOnlyList ProcessBatch overload must safely normalize large positive hours.");
+
+            int enumerableUpperBucketProcessed = ForgeTimeSlicer.ProcessBatch(
+                (IEnumerable<string>)upperBucketEntities, id => id, _ => { }, upperBucketHour, maximumBucketCount);
+            if (enumerableUpperBucketProcessed != 1)
+                throw new Exception("The IEnumerable ProcessBatch overload must safely normalize large positive hours.");
+
+            foreach (string entityId in new[] { "hero_01", "settlement_02", "party_03", "entity_04" })
+            {
+                int assignedHours = 0;
+                for (int hour = 0; hour < ForgeTimeSlicer.DefaultHourlyBuckets; hour++)
+                {
+                    if (ForgeTimeSlicer.ShouldProcess(entityId, hour)) assignedHours++;
+                    if (ForgeTimeSlicer.ShouldProcess(entityId, hour) !=
+                        ForgeTimeSlicer.ShouldProcess(entityId, hour + ForgeTimeSlicer.DefaultHourlyBuckets))
+                        throw new Exception("Stable-ID scheduling must repeat for the same hour bucket each 24-hour cycle.");
+                }
+                if (assignedHours != 1)
+                    throw new Exception("Each stable ID must map to one hour bucket per default 24-hour cycle.");
+            }
+
+            const int traversalBucketCount = 2;
+            int traversalHour = ForgeTimeSlicer.GetBucket(upperBucketId, traversalBucketCount);
+            string unselectedId = null;
+            for (int candidateIndex = 0; candidateIndex < 32; candidateIndex++)
+            {
+                string candidate = "time_slice_unselected_" + candidateIndex;
+                if (!ForgeTimeSlicer.ShouldProcess(candidate, traversalHour, traversalBucketCount))
+                {
+                    unselectedId = candidate;
+                    break;
+                }
+            }
+            if (unselectedId == null)
+                throw new Exception("Traversal regression fixture must include an entity outside the selected bucket.");
+
+            var traversalEntities = new List<string> { upperBucketId, unselectedId };
+            int selectorCalls = 0;
+            int processorCalls = 0;
+            int traversalProcessed = ForgeTimeSlicer.ProcessBatch(
+                (IReadOnlyList<string>)traversalEntities,
+                id => { selectorCalls++; return id; },
+                _ => processorCalls++,
+                traversalHour,
+                traversalBucketCount);
+            if (selectorCalls != traversalEntities.Count || traversalProcessed != 1 || processorCalls != 1)
+                throw new Exception("Time-sliced batch selection must inspect all source entries while processing only matching buckets.");
         }
         private static void TestSdkHardeningAndOptimizations()
         {

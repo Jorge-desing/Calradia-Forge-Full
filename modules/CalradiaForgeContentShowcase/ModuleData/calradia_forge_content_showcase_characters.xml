@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<NPCCharacters>
+  <NPCCharacter id="cfcs_example_recruit" name="{=cfcs_example_recruit}Forge Recruit" age="25" level="5" occupation="Soldier" culture="Culture.empire" default_group="Infantry" is_hero="false" is_female="false">
+    <skills>
+      <skill id="OneHanded" value="40" />
+    </skills>
+    <Equipments>
+      <EquipmentRoster>
+        <equipment slot="Item0" id="Item.cfcs_practice_whip" />
+      </EquipmentRoster>
+      <EquipmentRoster civilian="true">
+        <equipment slot="Item0" id="Item.cfcs_practice_whip" />
+      </EquipmentRoster>
+    </Equipments>
+  </NPCCharacter>
+</NPCCharacters>

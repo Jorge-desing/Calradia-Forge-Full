@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Module>
+  <Name value="Calradia Forge Content Showcase" />
+  <Id value="CalradiaForgeContentShowcase" />
+  <Version value="v25.2.0" />
+  <SingleplayerModule value="true" />
+  <MultiplayerModule value="false" />
+  <DependedModules>
+    <DependedModule Id="Native" />
+    <DependedModule Id="SandBoxCore" />
+    <DependedModule Id="CalradiaForge" />
+  </DependedModules>
+  <SubModules>
+    <SubModule>
+      <Name value="Calradia Forge Content Showcase" />
+      <DLLName value="CalradiaForge.ContentShowcase.dll" />
+      <SubModuleClassType value="CalradiaForge.ContentShowcase.SubModule" />
+      <Tags>
+        <Tag key="DedicatedServerType" value="none" />
+        <Tag key="IsNoRenderModeElement" value="false" />
+      </Tags>
+    </SubModule>
+  </SubModules>
+  <Xmls>
+    <XmlNode><XmlName id="Items" path="calradia_forge_content_showcase_items" /></XmlNode>
+    <XmlNode><XmlName id="NPCCharacters" path="calradia_forge_content_showcase_characters" /></XmlNode>
+  </Xmls>
+</Module>

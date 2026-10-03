@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base type="string">
+  <tags>
+    <tag language="Spanish" />
+  </tags>
+  <strings>
+    <string id="cfcs_title" text="Muestra de contenido de Calradia Forge" />
+    <string id="cfcs_body" text="Esta página de solo lectura muestra un ViewModel Gauntlet propio del módulo y XML estático de tropa y objeto. No ejecuta pruebas ni cambia el estado del juego." />
+    <string id="cfcs_practice_whip" text="Látigo de práctica" />
+    <string id="cfcs_example_recruit" text="Recluta Forge" />
+    <string id="cfcs_close" text="Cerrar" />
+  </strings>
+</base>

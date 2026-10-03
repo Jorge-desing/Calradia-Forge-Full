@@ -14,8 +14,8 @@ namespace CalradiaForge.Mod.CampaignBehaviors
     /// <summary>
     /// Massive stateless CampaignBehavior that monitors, evaluates, and responds to clan dynamics,
     /// dynastic succession, character lifecycle milestones, companion roles, and hero progression.
-    /// Operates with a zero save-data footprint and utilizes modulo-24 hash time-slicing
-    /// across simulation ticks to eliminate frame drops and midnight freezes.
+    /// Operates with a zero save-data footprint and uses ForgeTimeSlicer's stable-ID
+    /// time-slicing across simulation ticks to distribute optional periodic work.
     /// </summary>
     // Registered explicitly by SubModule.OnGameStart. Do not add AutoRegisterBehavior:
     // ForgeBehaviorLoader scans this assembly and would otherwise add a second instance,
@@ -156,16 +156,14 @@ namespace CalradiaForge.Mod.CampaignBehaviors
         #region Time-Slicing Utility
 
         /// <summary>
-        /// Modulo-24 Hash Time-Slicing helper. Partitions entities across 24 hourly simulation slices
-        /// to ensure smooth framerates and prevent midnight stutters.
+        /// Stable-ID time-slicing helper. Partitions entities across 24 hourly simulation slices.
         /// </summary>
         public static bool ShouldProcessInCurrentHour(string stringId)
         {
             if (string.IsNullOrEmpty(stringId)) return false;
             if (!IsCampaignActive) return true;
-            int entityHash = stringId.GetHashCode() & 0x7FFFFFFF;
-            int currentHour = ((int)CampaignTime.Now.ToHours % 24 + 24) % 24;
-            return (entityHash % 24) == currentHour;
+            int currentHour = (int)CampaignTime.Now.ToHours;
+            return CalradiaForge.Sdk.ForgeTimeSlicer.ShouldProcess(stringId, currentHour);
         }
 
         #endregion
@@ -650,18 +648,18 @@ namespace CalradiaForge.Mod.CampaignBehaviors
 
         #endregion
 
-        #region Periodic Simulation Ticks & Modulo-24 Time-Slicing
+        #region Periodic Simulation Ticks & Stable-ID Time-Slicing
 
         /// <summary>
         /// Global daily hero tick. Executed once per game day for every hero across Calradia.
-        /// Edge Case 14: Enforces ZERO heap allocations to prevent GC hitches across 3,000+ heroes.
+        /// Keep per-hero work small; allocation and duration claims require measuring the complete event path.
         /// </summary>
         private void OnDailyTickHero(Hero hero)
         {
             if (hero == null || !hero.IsAlive || hero.HeroDeveloper == null) return;
             Interlocked.Increment(ref _periodicTicksProcessed);
 
-            // Zero-allocation inline assessment
+            // Lightweight inline assessment; verify the complete callback before making allocation claims.
             if (hero.IsWounded && hero.HitPoints >= hero.MaxHitPoints)
             {
                 // Hero has naturally recovered from battle wounds
@@ -687,7 +685,7 @@ namespace CalradiaForge.Mod.CampaignBehaviors
             if (mobileParty == null || !mobileParty.IsActive || mobileParty.LeaderHero == null) return;
             Interlocked.Increment(ref _periodicTicksProcessed);
 
-            // Throttle hourly party audit using modulo-24 hash
+            // Throttle the hourly party audit using the shared stable-ID schedule.
             if (!ShouldProcessInCurrentHour(mobileParty.StringId)) return;
 
             // Hourly party leader readiness check
@@ -699,28 +697,27 @@ namespace CalradiaForge.Mod.CampaignBehaviors
         }
 
         /// <summary>
-        /// Campaign hourly heartbeat. Evaluates exactly 1/24th of active heroes per hour
-        /// to spread simulation workloads evenly and eliminate midnight freezes.
+        /// Campaign hourly heartbeat. Evaluates the stable-ID bucket assigned to this hour
+        /// to spread the optional progression audit across the day.
         /// </summary>
         private void OnHourlyTick()
         {
             Interlocked.Increment(ref _periodicTicksProcessed);
 
             if (!IsCampaignActive) return;
-            // Modulo-24 Hash Time-Sliced evaluation of alive heroes
+            // Stable-ID time-sliced evaluation of alive heroes.
             var aliveHeroes = Hero.AllAliveHeroes;
             if (aliveHeroes == null) return;
 
             int count = aliveHeroes.Count;
-            int currentHour = ((int)CampaignTime.Now.ToHours % 24 + 24) % 24;
+            int currentHour = (int)CampaignTime.Now.ToHours;
 
             for (int i = 0; i < count; i++)
             {
                 Hero hero = aliveHeroes[i];
                 if (hero == null || !hero.IsAlive || string.IsNullOrEmpty(hero.StringId)) continue;
 
-                // Modulo-24 partition check: evaluate only entities belonging to this hour's bucket
-                if (((hero.StringId.GetHashCode() & 0x7FFFFFFF) % 24) == currentHour)
+                if (CalradiaForge.Sdk.ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour))
                 {
                     EvaluateHeroProgression(hero);
                 }
@@ -847,7 +844,7 @@ namespace CalradiaForge.Mod.CampaignBehaviors
                 }
                 else if ((candidate.Father != null && candidate.Father == leader.Father) || (candidate.Mother != null && candidate.Mother == leader.Mother))
                 {
-                    score += 80; // Sibling via direct parental match (zero allocations)
+                    score += 80; // Sibling via direct parental match
                 }
                 else if (candidate.Siblings != null)
                 {

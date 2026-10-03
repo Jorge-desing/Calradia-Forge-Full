@@ -15,6 +15,11 @@ Use this dedicated workspace skill as the **first gateway** whenever modifying, 
 
 This isolated project skill contains Calradia Forge's required .NET rules, including Dual-TFM boundaries, KISS, and domain routing. It does not depend on an upstream skill being installed or remaining unchanged. The protected local [`using-dotnet`](../using-dotnet/SKILL.md) snapshot remains as a backup of the source knowledge; installed `dotnet-artisan` guidance may supplement general .NET advice, but project constraints here take precedence.
 
+For versioned SDK packages, .NET templates, generated native content and capability
+claims, read [SDK onboarding](references/sdk-onboarding.md) and the
+[developer onboarding rule](../../rules/developer_onboarding.md). Keep HEAD,
+task-owned edits and unrelated pending API work distinct in package provenance.
+
 ---
 
 ## 1. Intent Detection & Trigger Conditions
@@ -56,7 +61,8 @@ Projects in this repository span two distinct .NET target frameworks. You MUST d
 
 | Project Area | Target Framework | Language / Runtime Rules |
 | :--- | :--- | :--- |
-| **Game Module (`CalradiaForge.Mod`)**, **Core (`CalradiaForge.Core`)**, **SDK (`CalradiaForge.Sdk`)** | `net472` (.NET Framework 4.7.2) | `LangVersion` is set to `latest` (modern syntax supported), but BCL APIs are strictly limited to .NET Framework 4.7.2. Do NOT use modern BCL types (e.g. `TimeProvider`, `DateOnly`, newer `System.Text.Json` features unless explicitly referenced). TaleWorlds engine calls MUST remain on the main game thread. |
+| **Game Module (`CalradiaForge.Mod`)** | `net472` (.NET Framework 4.7.2) | Modern language syntax does not imply modern BCL availability. TaleWorlds calls stay on the game thread; use local licensed references. |
+| **Core (`CalradiaForge.Core`)**, **SDK (`CalradiaForge.Sdk`)** | `net472;net8.0` | Keep shared code compatible with net472; isolate target-specific APIs. SDK has no TaleWorlds dependency. Core's net8.0 target remains engine-independent; inspect conditional references for net472. |
 | **Desktop Workbench (`CalradiaForge.Desktop`)** & **Render Tests** | `net8.0-windows` (.NET 8 WPF) | Full modern .NET 8 BCL available (async named pipes, `System.Text.Json`, `VirtualizingStackPanel`). Runs outside the game process. No TaleWorlds assemblies allowed. |
 | **Standalone Helpers (`BannerlordFbxImporter`)** | `net8.0-windows` | Separate experimental tool; keep distinct from game module and Desktop workbench. |
 
@@ -74,11 +80,11 @@ Before generating, planning, or editing any C# code, follow this sequence:
 │   calradia-forge-dotnet         │ ── Identify TFM (net472 vs net8.0-windows)
 └────────────────┬────────────────┘
                  │
-                 ├── Game Module / Core / SDK (net472)
+                 ├── Game Module (net472) / Core game-host backend (net472)
                  │         │
                  │         ▼
                  │   ┌─────────────────────────────────┐
-                 │   │    bannerlord-dotnet-artisan    │ ── Single-threaded, zero-allocation, save safety
+                 │   │    bannerlord-dotnet-artisan    │ ── Game-thread affinity, save safety, measured performance
                  │   └────────────────┬────────────────┘
                  │                    │
                  │                    ▼
@@ -88,6 +94,11 @@ Before generating, planning, or editing any C# code, follow this sequence:
                  │                    │
                  │                    ▼
                  │            [Domain Skill] (e.g. bannerlord-clan-succession)
+                 │
+                 ├── SDK (net472;net8.0) / Core engine-independent target (net8.0)
+                 │         │
+                 │         └── Apply dual-TFM and dependency checks from this gateway;
+                 │             add Bannerlord rules only for an engine-facing contract
                  │
                  └── Desktop Workbench (net8.0-windows)
                            │

@@ -9,9 +9,9 @@ See [AGENTS.md](AGENTS.md) for the complete multi-agent specification.
 ## 1. Quick Reference & Core Rules
 
 1. **Anti-Shadowing Constraint (CRITICAL)**:
-   - NEVER create a folder, class, or sub-namespace named `Campaign` or `Localization`.
-   - Shadowing `TaleWorlds.CampaignSystem.Campaign` causes C# compilation failures with `Campaign.Current`.
-   - Approved names: `CampaignBehaviors`, `DataExtensions`, `CampaignExtensions`.
+   - Within `src/CalradiaForge.Mod` and its associated packages, never create a folder, class, or sub-namespace named `Campaign` or `Localization`.
+   - These names can shadow `TaleWorlds.CampaignSystem.Campaign` or `TaleWorlds.Localization` when their namespaces are imported, breaking references such as `Campaign.Current`.
+   - Approved names: `CampaignBehaviors`, `DataExtensions`, `CampaignExtensions`, and `LocalizationSync`.
 
 2. **Target Framework Rules**:
    - `src/CalradiaForge.Mod`: `.NET Framework 4.7.2` (`net472`).
@@ -28,7 +28,8 @@ See [AGENTS.md](AGENTS.md) for the complete multi-agent specification.
    - Never remove or rewrite required contract tokens (e.g. `"Editable Calradia Forge starting point"`).
 
 5. **Dual-Language Documentation Parity**:
-   - Every file under `docs/` must have both English (`<TOPIC>.md`) and Spanish (`<TOPIC>.es.md`) versions.
+   - Technical documentation under `docs/` must have synchronized English (`<TOPIC>.md`) and Spanish (`<TOPIC>.es.md`) counterparts. Do not require bilingual copies of generated artifacts, append-only source records, or non-documentation assets.
+   - Preserve the audit's established aliases: `DESKTOP.md` ↔ `ASSEMBLY_WORKBENCH.es.md` and `VALIDATION-<VERSION>.md` ↔ `VALIDACION-<VERSION>.es.md`; architecture and system-design guides use their own `.es.md` counterparts. `tools/Run-CalradiaForge-Python-Checks.bat --ledger --no-pause` must fail if any counterpart is absent.
 
 6. **Project Scope Staging & Zero External Garbage**:
    - At the end of each repository-changing request, objective, or plan, commit all intentional project changes attributable to it; capture the baseline and exclude unrelated pre-existing work. Intermediate steps need no separate commits.
@@ -36,6 +37,9 @@ See [AGENTS.md](AGENTS.md) for the complete multi-agent specification.
    - Standing user authorization requires a scoped commit and normal upstream push at objective completion, without asking again. Honor an explicit no-push/local-only instruction for the current objective. Publication and force-push require separate authorization.
    - **Mandatory after every authorized push:** Verify the remote branch equals the pushed SHA and wait for its applicable Actions/check runs and commit statuses. If they fail, read their logs, correct the task-related cause, validate through BAT, push under the existing authorization and review the replacement SHA. Do not end the objective as complete after push alone, local success, an earlier green commit or a pending check. Report genuine external blockers as unverified. Include the final SHA and matching remote run links. This gate is direct session guidance and does not depend on loading a skill; details are in .agents/rules/git_sync_workflow.md.
    - Strictly exclude external debris: caches (`bin/`, `obj/`, `artifacts/`, `__pycache__/`, `*.pyc`), logs (`*.log`), game saves (`*.sav`), secrets (`.env`), and OS metadata.
+
+### Harmony independence
+Forge has no Harmony package, assembly, or distribution dependency. Optional diagnostics may reflect over an exact `0Harmony` runtime already loaded by another component, using verified public query members only; they must not load Harmony or mutate, reorder, or remove third-party patches. This is bounded observational evidence, not a compatibility or coexistence guarantee, complete detection of patch backends, conflict attribution from a shared target alone, or a sandbox/performance bound. Follow Rule F in `AGENTS.md` and `.agents/rules/calradia_forge_architecture.md`.
 
 ---
 
@@ -55,7 +59,7 @@ dotnet build CalradiaForge.sln -c Release -v:minimal
 
 ### Run Mandatory Statelessness & Anti-Shadowing Verification
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify_stateless_behavior.ps1
+cmd.exe /c "tools\Verify-CalradiaForge-StatelessBehavior.bat <nul"
 ```
 
 ### Run Full Test Suite (Core, ForgeWeave, Desktop MVVM, WPF Render Tests)
@@ -65,12 +69,17 @@ cmd.exe /c "tools\Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul"
 
 ### Run Core Subsystem Tests
 ```cmd
-cmd.exe /c "tools\Run-CalradiaForge-Core-Tests.bat -NonInteractive <nul"
+cmd.exe /c "tools\Run-CalradiaForge-Core-Tests.bat --no-pause <nul"
 ```
 
 ### Run Desktop Subsystem Tests
 ```powershell
-dotnet run --project tests/CalradiaForge.Desktop.Tests/CalradiaForge.Desktop.Tests.csproj -c Release
+cmd.exe /c "tools\Run-CalradiaForge-Desktop-Tests.bat --no-pause <nul"
+```
+
+### Run Desktop Render Subsystem Tests
+```cmd
+cmd.exe /c "tools\Run-CalradiaForge-Desktop-Render-Tests.bat --no-pause <nul"
 ```
 
 ### Packaging & Release Archives
@@ -105,12 +114,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1
 - Methods: `RegisterEntry()`, `UnregisterEntry()`, `GetEntry()`, `GetAllEntries()`, `Search()`, `AddBookmark()`, `RemoveBookmark()`, `IsBookmarked()`, `GetBookmarks()`, `RegisterFilter()`, `Filter()`.
 
 ### 3.3 Google Antigravity SDK Autonomous Agents Architecture & Token Compaction
-- Multi-agent autonomous framework in `agents/` powered by the **Google Antigravity SDK** (`google.antigravity`).
-- Coordinates 5 specialized agents: `ForgeMasterAgent`, `ForgeArchitectAgent`, `StatelessBehaviorAuditor`, `DesktopWpfSpecialist`, and `DocLedgerAgent`.
-- **Token Compaction Engine (`ForgeTokenCompactor`)**: Semantic output distillation achieving 80-99% token reduction while strictly guaranteeing lossless failure telemetry (compiler errors `CSxxxx`, test assertions, stack traces). Raw outputs saved to `artifacts/agent-runs/`.
-- Adaptive presets via `--compaction-preset [ultra (8k) | balanced (16k) | deep (32k)]`, with optional raw bypass via `--raw-tools`.
-- CLI runner: `python tools/run_forge_agents.py [audit|verify|docs|architect|run]`.
-- Verified via `py -3.12 -m unittest tests/test_forge_agents.py` with offline simulation fallback.
+- Optional autonomous-agent integration in `agents/` using the **Google Antigravity SDK** (`google.antigravity`); it is developer tooling, not a Calradia Forge or Bannerlord runtime dependency.
+- Configures one coordinator and five specialist roles: `ForgeMasterAgent`, `ForgeArchitectAgent`, `StatelessBehaviorAuditor`, `DesktopWpfSpecialist`, `DocLedgerAgent`, and `BugHunterAgent`.
+- Python orchestration uses `CoALAAgentMemory` from `agents/memory.py`; the C# SDK's `ForgeAgentMemory` is a distinct in-game runtime service.
+- **Token Compaction (`ForgeTokenCompactor`)**: Tool-specific patterns summarize supported output and retain recognized diagnostic lines; tests cover representative fixtures, not every compiler, test runner, locale, or failure format. Token estimates and reduction ratios are heuristic and input-dependent, not guaranteed targets. Use the original output when exact evidence is required.
+- Presets configure selected token thresholds via `--compaction-preset [ultra (8k) | balanced (16k) | deep (32k)]`; `--raw-tools` bypasses distillation. Raw logs are optional and available only when requested, non-empty, and successfully written to `artifacts/agent-runs/`.
+- Run the autonomous CLI with `tools\Run-CalradiaForge-Agents.bat [audit|verify|docs|architect|run]`; it always uses the repository `.venv` interpreter and gives setup instructions if that environment is missing.
+- Offline mode can invoke selected repository tools locally without the optional SDK; it does not run cloud agents. Online execution requires the SDK, credentials, and offline mode disabled. The `--agents` test profile needs the SDK because it tests SDK configuration; local execution does not prove cloud execution.
+- Install the optional profile with `tools\Setup-CalradiaForge-Python.bat --agents --no-pause`; verify with `tools\Run-CalradiaForge-Python-Checks.bat --ci --agents --no-pause`.
 - Technical specifications: `docs/AUTONOMOUS_AGENTS.md` and `docs/AUTONOMOUS_AGENTS.es.md`.
 
 ---
@@ -119,24 +130,50 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1
 
 When updating agent knowledge, ground lessons in commit diffs and current source, distinguish pending working-tree changes from validated committed behavior, and retain evidence limits. Read `.agents/skills/calradia-forge-dev-workflow/references/recent-commit-lessons.md` for persistence, failure tests, CI and distribution. Historical test counts and timings are not universal thresholds.
 
+For SDK packages, .NET templates and static content, follow
+`.agents/rules/developer_onboarding.md` and the `calradia-forge-dotnet` onboarding
+reference. Keep package/fixture evidence separate from public publication and live
+engine loading or rendering; if a check cannot be observed, report it as pending or
+unverified. Consumer modules target net472, resolve licensed TaleWorlds references
+locally, and must not redistribute TaleWorlds assemblies or the Forge SDK runtime
+already supplied by Forge. ForgeWeave, hooks and whole-method replacement have
+distinct contracts; shared-target metadata is a review signal, not proof of a
+conflict. At objective completion, consolidate validated lessons in project
+specialists and mirror shared instructions in AGENTS.md, CODEX.md and GEMINI.md.
+Preserve upstream snapshots and unrelated staged work.
+For periodic work that can safely be deferred, use `ForgeTimeSlicer.ShouldProcess`
+with a stable entity ID; this does not reduce the cost of scanning the source
+collection or guarantee even bucket sizes. Measure the complete callback before
+claiming an allocation budget or zero-allocation behavior.
+
 When working with skills in `.agents/skills/`:
 - Use `calradia-forge-dotnet` for C# / MSBuild tasks.
 - Use `/calradia-forge-docs` for documentation tasks (governed by `.agents/rules/calradia_forge_docs.md`).
 - Use `calradia-forge-dev-workflow` for general engineering lifecycle.
 - Never overwrite protected skills `using-dotnet`, `superpowers`, and `docs-generator`.
 
+## Specialist Skill Routing
+
+Use the specialist that matches the task after the `calradia-forge-dev-workflow` gateway:
+- Crash and lifecycle triage: `.agents/skills/debugging-master/SKILL.md`.
+- Measured runtime cost, allocations, and time-slicing: `.agents/skills/performance-hunter/SKILL.md`.
+- Tactical combat behavior-tree proposals: `.agents/skills/game-ai-behavior-trees/SKILL.md`.
+- Campaign callback cadence and simulation scheduling: `.agents/skills/discrete-event-simulation/SKILL.md`.
+- Autonomous-agent routing and output compaction: `.agents/skills/multi-agent-orchestration/SKILL.md`.
+- Gauntlet/WPF presentation, accessibility, and F10 integration: `.agents/skills/game-ui-design/SKILL.md`.
+
 ---
 
 ## 5. Antigravity Modular Rules Index & Compliance
 
-While Google Antigravity discovers `.agents/rules/*.md` automatically via directory walking, OpenAI Codex CLI sessions MUST reference and comply with these 43 domain rules organized in 7 functional clusters:
+While Google Antigravity discovers `.agents/rules/*.md` automatically via directory walking, OpenAI Codex CLI sessions MUST reference and comply with the domain rules organized in functional clusters:
 
 1. **Architecture & Core**: `calradia_forge_architecture.md`, `bannerlord_architecture.md`, `calradia_forge_sdk.md`, `calradia_forge_forgeweave.md`, `modding_environment.md`.
 2. **Bannerlord Gameplay Systems**: `bannerlord_campaign_behavior.md`, `bannerlord_save_system.md`, `bannerlord_shared_patterns.md`, `bannerlord_economy_trade_architecture.md`, `bannerlord_kingdom_diplomacy.md`, `bannerlord_settlement_rebellion.md`, `bannerlord_crime_underworld.md`, `bannerlord_character_development.md`, `bannerlord_clan_succession.md`, `bannerlord_quests_dialogues.md`, `bannerlord_audio_system.md`, `bannerlord_siege_mechanics.md`, `bannerlord_combat_ai_formations.md`, `bannerlord_mobileparty_spawner.md`, `bannerlord_map_visuals.md`, `bannerlord_missionview_hud.md`, `bannerlord_mission_lifecycle.md`, `bannerlord_inventory_barter.md`, `bannerlord_gamemodels_architecture.md`, `bannerlord_items_crafting_architecture.md`, `bannerlord_troop_character_architecture.md`, `bannerlord_xml_overrides.md`, `bannerlord_xml_schemas.md`, `bannerlord_localization.md`.
 3. **UI & User Experience**: `calradia_forge_ui.md`, `gauntlet_architecture.md`, `bannerlord_input_debug_agent.md`.
 4. **Documentation & Ledger**: `calradia_forge_docs.md`, `docs_generation_workflow.md`.
 5. **Verification & Distribution**: `calradia_forge_verification.md`, `distribution_safety.md`.
-6. **Codex & Multi-Agent Compatibility**: `codex_compatibility.md`, `development_workflow.md`.
+6. **Codex & Multi-Agent Compatibility**: `codex_compatibility.md`, `development_workflow.md`, `developer_onboarding.md`.
 7. **Packaging & Git Sync**: `auto_packaging.md`, `calradia_forge_packaging.md`, `packaging_version.md`, `git_sync_workflow.md`.
 
 *Instruction for Codex:* Before editing C#, XML, WPF, or automation scripts, read the corresponding rule file from `.agents/rules/<rule>.md` to maintain full project compliance.

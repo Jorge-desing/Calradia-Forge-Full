@@ -1,32 +1,35 @@
 ---
 name: performance-hunter
-description: High-performance .NET 4.7.2 and .NET 8 optimization for Mount & Blade II: Bannerlord and Calradia Forge. Zero-allocation simulation ticks, anti-lag modulo-24 time slicing, SIMD-friendly loops, struct enumerators, and GC churn elimination in 1000-agent battles.
-risk: safe
-source: Calradia Forge Agent Ecosystem (Apache 2.0)
-date_added: 2026-09-28
+description: Measured .NET 4.7.2 and .NET 8 optimization for Mount & Blade II Bannerlord and Calradia Forge. Simulation ticks, stable time slicing, traversal costs and allocation budgets verified through reproducible benchmarks.
+metadata:
+  risk: safe
+  source: Calradia Forge Agent Ecosystem (Apache 2.0)
+  date_added: "2026-09-28"
 ---
 
-# Performance Hunter: Zero-Allocation & Anti-Lag Engine Optimization
+# Performance Hunter: Measured Simulation Performance
 
-In Mount & Blade II: Bannerlord, simulation tick loops execute continuously across thousands of dynamic agents and world entities. Generating even small allocations during high-frequency ticks triggers Gen0 Garbage Collection spikes, producing noticeable stutter and frame drops during intense 1,000-agent battles. A master performance hunter enforces **Zero GC Allocations** on hot paths and distributes simulation workloads gracefully.
+Simulation ticks can process many agents and entities. Repeated allocations can increase GC pressure, but source syntax alone does not establish a pause or a frame-time regression. Measure duration and allocations across the complete callback, then reduce demonstrated costs within a documented budget.
 
 ---
 
 ## 1. Core Principles
 
 1. **Simulation Ticks Are Sacred**:
-   - Every allocation inside `OnMissionTick(dt)`, `HourlyTick()`, or Gauntlet UI render passes is technical debt.
-   - Target: **0 bytes allocated per tick** on the managed heap.
-2. **Ban LINQ in Hot Paths**:
-   - Calls to `.Where()`, `.Select()`, `.Any()`, `.ToList()`, or `.Count()` allocate delegate instances (`Func<T, bool>`), iterator state machines, and closure display classes.
-   - Replace with index-based `for (int i = 0; i < count; i++)` loops using direct array or `List<T>` indexed access.
-3. **Anti-Lag Time-Slicing (Modulo-24)**:
-   - In a campaign world with 2,000+ heroes and 400+ settlements, never iterate all entities in a single hourly tick.
-   - Sift entities across 24 hours: `hero.Id.GetHashCode() % 24 == currentHour`, smoothing CPU latency across the entire day.
-4. **Pre-Allocation & Capacity Hinting**:
-   - Dynamic collection re-hashing (`Dictionary`, `HashSet`, `List`) doubles capacity and discards old arrays. Always initialize collections with known or estimated capacities: `new List<Agent>(128)`.
+   - Record a budget for the actual mission, hourly or UI callback. They do not share one universal allocation budget.
+   - Claim **0 bytes allocated** only when a suitable measurement covers the complete synchronous path.
+2. **Measure LINQ and Iteration Costs**:
+   - LINQ pipelines and materialization can add allocations or work, but cost depends on the operator, source and runtime. Capturing lambdas may allocate closures; not every `Any` or `Count` call allocates.
+   - Compare a direct loop with the existing implementation under the same representative workload before changing code. Simpler iteration is not automatically faster or allocation-free.
+3. **Stable Time-Slicing for Deferrable Work**:
+   - Defer only work whose behavior permits the changed cadence, using `ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour)`.
+   - Supply a stable, nonempty entity ID: null and empty IDs map to bucket zero, concentrating those entities in that bucket.
+   - The helper assigns deterministic buckets; their sizes depend on entity IDs and are not guaranteed to be uniform. A filter inside a full collection loop still traverses every entity. Measure traversal separately from selected processing.
+4. **Measured Capacity Hinting**:
+   - Growing collections may allocate new storage and dictionaries or sets may rehash; growth behavior depends on the collection type and runtime.
+   - Set an initial capacity when a workload bound or representative estimate is known and measurements show growth cost. Avoid arbitrary large reservations.
 5. **Struct Enumeration & Non-Boxing Enumerators**:
-   - `foreach` over `IEnumerable<T>` boxes the enumerator as an `IDisposable` object.
+   - Interface enumeration can box a value-type enumerator; other enumerators already have reference types. Measure the actual collection and enumeration path.
    - Use concrete `List<T>` (which uses struct `List<T>.Enumerator`) or direct `for` indexing.
 
 ---
@@ -35,10 +38,10 @@ In Mount & Blade II: Bannerlord, simulation tick loops execute continuously acro
 
 ### Capabilities
 - `gc-churn-elimination`: Identifies and replaces heap allocations in mission and campaign tick loops.
-- `anti-lag-slicing`: Implements hash-based temporal distribution across simulation cycles.
+- `stable-id-time-buckets`: Selects eligible, deferrable work by deterministic ID bucket; it does not reduce a full collection scan or guarantee balanced work.
 - `cache-locality-optimization`: Arranges entity data for contiguous memory access and CPU cache line efficiency.
 - `string-memory-chunking`: Replaces string concatenation with pooled `StringBuilder` and chunked buffers.
-- `apm-latency-benchmarking`: Measures tick execution budgets against target frame thresholds (e.g. < 2.0 ms per tick).
+- `apm-latency-benchmarking`: Measures tick execution against a workload-specific budget established for the actual callback and host; there is no universal per-tick threshold.
 
 ### Scope
 - **In Scope**: `src/CalradiaForge.Mod` in-game game loop, `src/CalradiaForge.Core` behavioral engines, `src/CalradiaForge.Desktop` WPF render passes.
@@ -48,14 +51,14 @@ In Mount & Blade II: Bannerlord, simulation tick loops execute continuously acro
 
 ## 3. Concrete High-Performance Patterns
 
-### Pattern 1: Zero-Allocation Mission Agent Traversal
-Avoid LINQ when evaluating nearby combatants or formation targets.
+### Pattern 1: Mission Agent Traversal
+Direct iteration can avoid a LINQ pipeline when evaluating nearby combatants or formation targets. Measure the complete path, including engine calls, before making allocation or latency claims.
 
 ```csharp
-// BAD: Allocates delegate, closure, and iterator
+// Candidate to profile: this captured LINQ pipeline and materialization can add allocations and work.
 var enemies = Mission.Agents.Where(a => a.IsEnemyOf(agent) && a.IsActive()).ToList();
 
-// GOOD: Zero heap allocation, cache-friendly array iteration
+// Direct iteration avoids this LINQ pipeline; measure engine calls separately.
 public static Agent FindNearestEnemy(Agent sourceAgent, float maxDistanceSquared)
 {
     Agent nearest = null;
@@ -84,11 +87,11 @@ public static Agent FindNearestEnemy(Agent sourceAgent, float maxDistanceSquared
 }
 ```
 
-### Pattern 2: Modulo-24 Anti-Lag Time-Slicing
-Distribute periodic behavioral updates across the 24 campaign hours evenly.
+### Pattern 2: Stable Time-Slicing for Deferrable Campaign Work
+Use stable time-slicing only when the feature can tolerate waiting until an entity's assigned hour. The deterministic bucket function does not guarantee that exactly one twenty-fourth of entities will be processed per hour.
 
 ```csharp
-// CORRECT: Modulo-24 anti-lag distribution
+// Example: deterministic selection for work that is safe to defer
 public class OptimizedClanProgressionBehavior : CampaignBehaviorBase
 {
     public override void RegisterEvents()
@@ -112,8 +115,8 @@ public class OptimizedClanProgressionBehavior : CampaignBehaviorBase
         for (int i = 0; i < count; i++)
         {
             Hero hero = aliveHeroes[i];
-            // Distribute heroes across 24 hourly buckets
-            if (Math.Abs(hero.Id.GetHashCode()) % 24 == currentHour)
+            // Stable IDs select a deterministic bucket; bucket populations can vary.
+            if (CalradiaForge.Sdk.ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour))
             {
                 UpdateHeroDynasticProgression(hero);
             }
@@ -122,7 +125,7 @@ public class OptimizedClanProgressionBehavior : CampaignBehaviorBase
 
     private void UpdateHeroDynasticProgression(Hero hero)
     {
-        // Lightweight processing for 1/24th of the world population
+        // The selected share depends on the ID distribution; it is not guaranteed to be 1/24.
     }
 }
 ```
@@ -158,36 +161,29 @@ public static string ReassembleChunks(IReadOnlyList<string> chunks)
 
 ---
 
-## 4. Sharp Edges & Anti-Patterns
+## 4. Cost Hypotheses to Verify
 
-### Edge 1: Using LINQ in `OnMissionTick` or `HourlyTick`
-- **Severity**: HIGH
-- **Symptom**: Micro-stutters every 3-5 seconds in 500+ agent battles as the .NET Framework 4.7.2 Gen0 GC sweeps the nursery.
-- **Root Cause**: LINQ lambda capture allocates closures (`<>c__DisplayClass`) and enumerators on the managed heap.
-- **Fix**: Replace all LINQ queries in tick paths with standard index-based `for` loops.
+The following are profiling candidates, not established symptoms or universal root causes. Record the game/runtime version, collection size, callback frequency, elapsed time and allocations for the complete path before attributing a hitch or making a code change.
 
-### Edge 2: String Interpolation in High-Frequency HUD Calls
-- **Severity**: HIGH
-- **Symptom**: Hundreds of megabytes of short-lived strings allocated per minute, driving excessive GC collections.
-- **Root Cause**: `$"Speed: {speed:0.0} m/s"` allocates a new string every frame, even if `speed` has not changed.
-- **Fix**: Cache previous values, update UI text only upon value change (`PropertyChanged`), or use integer lookup tables.
-
-### Edge 3: Dynamic Dictionary Re-Hashing
-- **Severity**: MEDIUM
-- **Symptom**: Unpredictable latency spikes (10-25 ms) when inserting entries into tracking maps.
-- **Root Cause**: `new Dictionary<string, object>()` starts with capacity 0 or 3. Adding 500 items triggers 9 re-allocation cycles and rehashing of all existing keys.
-- **Fix**: Always specify capacity upfront: `new Dictionary<string, object>(expectedCapacity)`.
+- **LINQ/materialization**: A query may create iterators, delegates, closures or a result collection depending on its operators and call site. Measure the allocation and time on the actual source collection; do not ban LINQ by syntax alone.
+- **Repeated UI formatting**: Formatting a new value can create strings on each invocation. The per-second cost depends on call rate, text size and formatting path; measure it before introducing caches or lookup tables.
+- **Collection growth**: Dictionaries, sets and lists may resize and rehash as they grow. Growth counts and latency depend on runtime, capacity and workload; size from a measured or known bounded workload instead of assuming fixed resize counts.
 
 ---
 
 ## 5. Validation Rules & Benchmark Verification
 
-1. [ ] **Zero LINQ in Mod Ticks**: Verified that no LINQ namespaces (`System.Linq`) are imported or used in `src/CalradiaForge.Mod` tick loops.
-2. [ ] **Modulo-24 Time-Slicing**: Campaign loops updating all heroes verify `Math.Abs(entity.Id.GetHashCode()) % 24 == currentHour`.
-3. [ ] **Pre-Sized Collections**: All intermediate lists and dictionaries specify capacity in constructor calls.
-4. [ ] **Bounded Ring Buffers**: In-memory telemetry collections limit retention to 2,048 items max.
-5. [ ] **Single-Thread Dispatch**: Simulation calls from background threads are marshaled through `GameThreadActionDispatch`.
+1. [ ] **Profiled Hot-Path Candidates**: Measure the complete callback with representative data before optimizing LINQ, iteration, formatting or collection growth; compare alternatives using the same workload and runtime.
+2. [ ] **Measured Time-Slicing**: Use `ForgeTimeSlicer.ShouldProcess` only for
+   deferrable work whose callback cadence revisits all relevant buckets; measure the full traversal because filtering does not remove its O(N) scan.
+3. [ ] **Appropriate Capacity**: Size collections from a measured bounded workload;
+   do not reserve arbitrary large buffers solely to satisfy a static checklist.
+4. [ ] **Bounded Retention**: Verify each collection's actual declared bound;
+   2,048 is an example, not a universal limit for every subsystem.
+5. [ ] **Thread-Affinity Dispatch**: Verify each engine-facing call's thread-affinity contract and the host's actual dispatch path. `GameThreadActionDispatch.RunOrPost` is an internal helper used at specific `CalradiaForge.Mod` call sites; it does not automatically marshal every simulation call and is not a public SDK guarantee.
 
 ## Verified hook and delivery lessons
 
 For Finalizer/ILHook boundaries, confirmation selection, serial measurement and packaging from a scoped snapshot, read [hook delivery lessons](../calradia-forge-dev-workflow/references/hook-delivery-lessons.md). Recheck current source and preserve the distinction between passing fixtures and pending live main-menu validation.
+
+In the x64 `net472` DetourFixture, a no-argument Prefix target allocated a fresh empty argument array in the emitted adapter and cloned that zero-length array before dispatch. The same BAT benchmark measured 128.45 B/call before and 80.28 B/call after reusing `Array.Empty<object>()` and skipping an empty clone across five 25,000-call samples. The parameterized Prefix remained at 168.43 B/call in both runs. This is fixture-specific allocation evidence; it does not establish Bannerlord tick cost or justify broad hook-path claims.

@@ -97,7 +97,7 @@ ClanCharacterProgressionBehavior (Stateless)
 │   ├── Character Progression (5 events)
 │   └── Periodic Ticks (6 events)
 ├── Time-Slicing Utility
-│   └── ShouldProcessInCurrentHour(stringId) - Modulo-24 hash distribution
+│   └── ForgeTimeSlicer.ShouldProcess(stringId, currentHour) - Planificación por buckets estables
 └── Event Handlers
     ├── Null-safe entity checks
     ├── Interlocked counter increments
@@ -109,7 +109,7 @@ AgentCognitiveMemoryBehavior (Stateless)
 │   ├── Social & Progression (HeroRelationChanged, HeroGainedSkill)
 │   └── Periodic Maintenance (HourlyTickEvent, OnSessionLaunchedEvent)
 ├── Time-Slicing Utility
-│   └── Modulo-24 hash distribution for anti-lag semantic decay
+│   └── ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) para mantenimiento aplazable
 └── Volatile Memory Integration
     ├── ForgeAgentMemory.Episodic.TryAdd (Captivity, Liberation, MartialKill, BloodFeud, DispositionShift)
     ├── ForgeAgentMemory.Semantic.TryUpsert (IsAdult, IsImprisoned, TotalSlainHeroes, FeudTargetHeroId)
@@ -258,17 +258,17 @@ External Tool Integration
 
 ## Arquitectura de rendimiento
 
-### Estrategias contra las ralentizaciones
+### Estrategias de rendimiento medidas
 
-1. **Distribución temporal con módulo 24**: Distribuir el procesamiento de entidades entre los ticks horarios
+1. **Planificación por buckets estables**: Aplazar solo trabajo cuya semántica permita procesarlo en otro intervalo. `ForgeTimeSlicer` usa un hash estable del identificador; la distribución puede ser desigual y filtrar una colección sigue recorriéndola completa.
    ```csharp
-   int bucket = (entity.StringId.GetHashCode() & 0x7FFFFFFF) % 24;
-   if (bucket == currentHour) { ProcessEntity(entity); }
+   int currentHour = (int)CampaignTime.Now.ToHours;
+   if (ForgeTimeSlicer.ShouldProcess(entity.StringId, currentHour)) { ProcessEntity(entity); }
    ```
 
-2. **Cero asignaciones para el recolector de basura**: Evitar LINQ en los manejadores de ticks
-3. **Distancia al cuadrado**: Usar `DistanceSquared()` en lugar de `Math.Sqrt()`
-4. **Contadores Interlocked**: Telemetría segura entre hilos sin bloqueos
+2. **Medición de asignaciones**: Evitar LINQ en un tick caliente solo cuando el perfil o benchmark confirme el costo; los bucles explícitos y callbacks no son automáticamente libres de asignaciones.
+3. **Distancia al cuadrado**: Usar `DistanceSquared()` en lugar de `Math.Sqrt()` cuando solo se comparan distancias.
+4. **Contadores Interlocked**: Usar incrementos atómicos para contadores compartidos entre hilos; medir por separado el trabajo circundante.
 
 ## Arquitectura del sistema de guardado
 
@@ -339,7 +339,7 @@ ForgeDetour.Patch(MethodInfo original, MethodInfo replacement)
     └─ One-for-one native method replacement; verify/revert explicitly
 ```
 
-La revisión previa y la aplicación de parches son capacidades independientes; la revisión previa no condiciona ni activa la aplicación. No existe una exploración automática de ensamblados al iniciar. El punto de entrada heredado `ForgeBootstrapper.InitializeGlobalPatches()` está obsoleto y no hace nada. El Atlas histórico opcional de Harmony de Forge es un inventario independiente de solo lectura de una API de Harmony ya cargada; ForgeDetour y ForgeWeave no lo utilizan.
+La revisión previa y la aplicación de parches son capacidades independientes; la revisión previa no condiciona ni activa la aplicación. No existe una exploración automática de ensamblados al iniciar. El punto de entrada heredado `ForgeBootstrapper.InitializeGlobalPatches()` está obsoleto y no hace nada. La acción `patch-diagnostics` captura registros acotados de hooks y reemplazos propiedad de Forge; también puede incluir una señal diagnóstica acotada del runtime cuando un ensamblado ya cargado llamado `0Harmony` expone la superficie pública estática de consulta esperada `HarmonyLib.Harmony.GetAllPatchedMethods()` y `GetPatchInfo(MethodBase)`. La señal no es una prueba de compatibilidad con una versión o combinación de mods. El observador reflectivo opcional no tiene dependencia distribuida, nunca carga el runtime ni modifica parches; ForgeDetour y ForgeWeave no lo utilizan.
 
 ### Arquitectura de la malla cooperativa de eventos de ForgeWeave
 
@@ -357,7 +357,7 @@ ForgeWeaveEngine.Dispatch()
     │       ├── Success → Closed (quarantine lifted, cooldown reset)
     │       └── Failure → Open (exponential backoff up to 60s)
     ├── Exception Isolation (Per-handler try/catch)
-    └── Zero-Allocation APM Telemetry
+    └── Muestras APM preasignadas (el comportamiento de asignaciones debe medirse por recorrido)
         ├── Rolling 64-sample circular buffer (double[64])
         ├── P50 / P95 / P99 latency percentiles
         └── Histogram distribution buckets (<1ms, 1-5ms, 5-20ms, >20ms)
@@ -366,7 +366,7 @@ ForgeWeaveEngine.Dispatch()
 ```
 Campaign Simulation Events (HeroPrisonerTaken, HeroKilled, HeroRelationChanged, etc.)
     ↓
-AgentCognitiveMemoryBehavior (Modulo-24 Time Slicing on HourlyTick)
+AgentCognitiveMemoryBehavior (mantenimiento por buckets estables en HourlyTick; recorre los héroes vivos)
     ↓
 ForgeAgentMemory (CoALA Semantic & Episodic Volatile Storage)
     ├── Universal Reactive Dialogues (start -> lord_start, lord_talk_ask_something_2, hero_main_options)
@@ -429,7 +429,7 @@ Desktop Workbench (.NET 8 WPF)
     └── CycleModderRoleCommand: Quick keyboard and UI switching between roles
 ```
 
-La interfaz también sitúa Patch Blueprint Preflight y el Atlas histórico de Harmony en la categoría de navegación Weave. Son herramientas independientes: la revisión previa examina declaraciones inertes y el Atlas solo inventaría los enganches de Harmony que otro módulo ya ha cargado. Ninguna es una función de ForgeWeave.
+La interfaz también sitúa Patch Blueprint Preflight y Patch Diagnostics en la categoría de navegación Weave. Son herramientas independientes: la revisión previa examina declaraciones inertes y el diagnóstico informa del estado propiedad de Forge; su adaptador reflectivo opcional puede observar un runtime externo ya cargado. Ninguna es una función de ForgeWeave.
 
 ## Estructura de distribución del módulo
 
@@ -448,10 +448,10 @@ modules/CalradiaForge/
 
 ## Invariantes arquitectónicas principales
 
-1. **Cero Harmony para GameModels**: Usar el patrón Decorator en su lugar
+1. **Sin dependencia de frameworks externos de parches en GameModels**: Usar el patrón Decorator en su lugar
 2. **Siempre AddNonSerializedListener**: Nunca usar AddSerializedListener
 3. **StringId para referencias a entidades**: Nunca serializar Hero/Settlement directamente
-4. **Distribución temporal con módulo 24**: Obligatoria para el procesamiento masivo de entidades
+4. **Planificación por buckets estables**: Usar `ForgeTimeSlicer` solo para trabajo masivo que pueda aplazarse; medir la distribución y el costo de recorrer las entradas
 5. **Cumplimiento contra el ocultamiento de nombres**: Nunca usar los nombres "Campaign" o "Localization"
 6. **GameModels sin estado**: Sin estado mutable en las clases de modelos
 7. **Solo el hilo principal**: Las API de Campaign funcionan en un único hilo

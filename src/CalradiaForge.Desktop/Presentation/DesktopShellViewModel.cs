@@ -614,7 +614,7 @@ namespace CalradiaForge.Desktop.Presentation
                            tool.Id.IndexOf("Audit", StringComparison.OrdinalIgnoreCase) >= 0 ||
                            tool.Id.IndexOf("Save", StringComparison.OrdinalIgnoreCase) >= 0 ||
                            tool.Id.IndexOf("Assembly", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                           tool.Id.IndexOf("Harmony", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                           tool.Id.IndexOf("Patch", StringComparison.OrdinalIgnoreCase) >= 0 ||
                            tool.Id.IndexOf("Weave", StringComparison.OrdinalIgnoreCase) >= 0 ||
                            tool.Id.IndexOf("Memory", StringComparison.OrdinalIgnoreCase) >= 0;
 

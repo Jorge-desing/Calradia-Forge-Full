@@ -32,6 +32,13 @@ rem fixture process launched by its dedicated BAT, with no fixture EXE apphost.
 call "%ROOT%\tests\CalradiaForge.DetourFixture\Run-DetourFixture.bat" --no-pause
 set "RESULT=%ERRORLEVEL%"
 if not "%RESULT%"=="0" echo ERROR: Isolated native detour fixture failed with exit code %RESULT%.
+if not "%RESULT%"=="0" goto finish
+
+rem The optional external-runtime probe has no package or runtime dependency; its
+rem fake loaded assembly and malformed reflection metadata stay inside this fixture.
+call "%ROOT%\tests\CalradiaForge.PatchDiagnostics.Tests.bat" --no-pause
+set "RESULT=%ERRORLEVEL%"
+if not "%RESULT%"=="0" echo ERROR: Patch diagnostics fixture failed with exit code %RESULT%.
 
 :finish
 if "%PAUSE_ON_EXIT%"=="1" pause

@@ -178,6 +178,12 @@ internal static class Program
         var routes = Regex.Matches(catalog, @"^\s*T\(\""", RegexOptions.Multiline).Count +
             Regex.Matches(catalog, @"^\s*T\(ToolDefinition\.ApiDeprecationToolId,", RegexOptions.Multiline).Count;
         Check(routes == 194, "Reviewed route inventory must contain exactly 194 definitions, including sprite readiness, FBX preflight, and the two assembly tools");
+        Check(catalog.Contains("PatchBlueprintTemplate") && catalog.Contains("PatchDiagnosticsTemplate") &&
+              !catalog.Contains("HarmonyPatcher") && !catalog.Contains("HarmonyTranspiler"),
+            "Patch scaffolding routes must use Forge-neutral names without changing the route count");
+        var securityStudio = ReadSourceText(Desktop("Presentation/DesktopSimulationViewModels.Security.cs"));
+        Check(securityStudio.Contains("cf.patch_diagnostics") && !securityStudio.Contains("cf.harmony_summary"),
+            "The security studio must point to Forge patch diagnostics rather than a Harmony-specific command");
         Check(catalog.Contains("ToolDefinition.ApiDeprecationToolId"), "The unavailable API deprecation route must remain addressable by its stable identifier");
         Check(catalog.Contains("Duplicate desktop tool identifier"), "Duplicate route rejection is missing");
         foreach (var category in new[] { "Diagnostics & Safety", "Live Inspection & Memory", "Asset & XML Synthesizers", "Simulation & Balance", "Delivery & Deployment" })
@@ -696,9 +702,9 @@ internal static class Program
 
     static async Task Capabilities()
     {
-        await using var server=new Server(request=>new Response {Id=request.Id,Success=true,Data=request.Action=="hello"?Json.Serialize(new[]{"protocol:1","summary","framework","replay","patch-preflight"}):request.Action});
+        await using var server=new Server(request=>new Response {Id=request.Id,Success=true,Data=request.Action=="hello"?Json.Serialize(new[]{"protocol:2","summary","framework","replay","patch-diagnostics"}):request.Action});
         using var client=new PipeClient();await client.Connect(server.Id);
-        Check(client.Supports("framework")&&client.Supports("replay")&&client.Supports("patch-preflight")&&!client.Supports("harmony")&&client.Capabilities.Count==5,"Capability negotiation was not retained");
+        Check(client.Supports("framework")&&client.Supports("replay")&&client.Supports("patch-diagnostics")&&client.Supports("protocol:2")&&client.Capabilities.Count==5,"Capability negotiation was not retained");
     }
 
     static async Task ReplayRequest()
@@ -707,7 +713,7 @@ internal static class Program
         await using var server=new Server(request=>
         {
             if(request.Action=="replay")replay=request;
-            return new Response {Id=request.Id,Success=true,Data=request.Action=="hello"?Json.Serialize(new[]{"protocol:1","summary","framework","replay"}):request.Action};
+            return new Response {Id=request.Id,Success=true,Data=request.Action=="hello"?Json.Serialize(new[]{"protocol:2","summary","framework","replay"}):request.Action};
         });
         using var client=new PipeClient();await client.Connect(server.Id);
         var response=await client.Send(new Request {Action="replay",Argument="42"});
@@ -793,11 +799,11 @@ internal static class Program
         {
             Id = request.Id,
             Success = true,
-            Data = request.Action == "hello" ? Json.Serialize(new[] { "protocol:1", "Framework", "REPLAY" }) : request.Action
+            Data = request.Action == "hello" ? Json.Serialize(new[] { "protocol:2", "Framework", "REPLAY", "PATCH-DIAGNOSTICS" }) : request.Action
         });
         using var client = new PipeClient();
         await client.Connect(server.Id);
-        Check(client.Supports("framework") && client.Supports("replay"), "Capability matching became case sensitive");
+        Check(client.Supports("framework") && client.Supports("replay") && client.Supports("patch-diagnostics"), "Capability matching became case sensitive");
     }
 
     static async Task CapabilityReset()
@@ -874,7 +880,7 @@ internal static class Program
         {
             "Ui.CopyCommandAccessibleName", "Ui.CopyCommandAccessibleNameFormat", "Ui.CopyCliAccessibleName",
             "Ui.ClipboardCopyFailed", "Ui.ClipboardCopySucceeded", "Ui.ReportExported",
-            "Ui.ReportExportFailed", "Ui.ReportExportCancelled", "Ui.ReportExportedShort", "Ui.HooksCancelUnconfirmed", "Viz.Audio.Title",
+            "Ui.ReportExportFailed", "Ui.ReportExportCancelled", "Ui.ReportExportedShort", "Ui.HooksCancelUnconfirmed", "Viz.Audio.Title", "Viz.Memory.Title",
             "Viz.Audio.Equalizer", "Viz.Audio.Waveform", "Viz.Operation.Title", "Viz.Operation.ExecutionGuard",
             "Viz.Troop.CountBadge", "Viz.Troop.TierI", "Viz.Troop.TierTwoThree", "Viz.Troop.TierFour",
             "Viz.Troop.NobleLine", "Viz.Troop.CommonLevies", "Viz.Troop.LevelShort", "Viz.Troop.HpLabel",
@@ -887,11 +893,22 @@ internal static class Program
             "Viz.ModuleHierarchy.IdentifierLabel", "Viz.ModuleHierarchy.ReleaseTagLabel", "Viz.ModuleHierarchy.StageLabel",
             "Viz.ModuleHierarchy.UpstreamDependenciesLabel", "Viz.Diplomacy.RealmLabel", "Viz.Diplomacy.MonarchLabel",
             "Viz.Diplomacy.BorderConflictRiskLabel", "Viz.Component.IdentifierLabel", "Viz.Component.SchemaTargetLabel",
-            "Viz.Component.GeneratedMembersLabel"
+            "Viz.Component.GeneratedMembersLabel", "Viz.Memory.Search", "Viz.Memory.FilterAll", "Viz.Memory.FilterBelief",
+            "Viz.Memory.FilterStance", "Viz.Memory.FilterGoal", "Viz.Memory.ActionDecay", "Viz.Memory.ActionConsolidate",
+            "Viz.Memory.ActionAddEpisode", "Viz.Memory.GaugeSlots", "Viz.Memory.GaugeUtilityDecay", "Viz.Memory.PolicyProfile",
+            "Viz.Memory.PolicyComparison", "Viz.Memory.AgentProfilesShown", "Viz.Memory.SimulatedMemoryUtilization",
+            "Viz.Memory.SampleOnly", "Viz.Memory.Salience"
         };
         var englishValues = LoadSourceXml(files.Single(file => file.EndsWith("Strings.en.xaml", StringComparison.OrdinalIgnoreCase))).Descendants()
             .Where(node => node.Attribute(XName.Get("Key", "http://schemas.microsoft.com/winfx/2006/xaml")) != null)
             .ToDictionary(node => node.Attribute(XName.Get("Key", "http://schemas.microsoft.com/winfx/2006/xaml")).Value, node => node.Value, StringComparer.Ordinal);
+        var sampleMarkers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["de"] = "PROBE", ["en"] = "SAMPLE", ["es"] = "MUESTRA", ["fr"] = "ÉCHANTILLON",
+            ["it"] = "CAMPIONE", ["ja"] = "例", ["ko"] = "샘플", ["pl"] = "PRÓBKA",
+            ["pt"] = "AMOSTRA", ["ru"] = "ОБРАЗЕЦ", ["tr"] = "ÖRNEĞİ",
+            ["zh-HANS"] = "示例", ["zh-HANT"] = "範例"
+        };
         foreach (var file in files)
         {
             var values = LoadSourceXml(file).Descendants()
@@ -899,6 +916,11 @@ internal static class Program
                 .ToDictionary(node => node.Attribute(XName.Get("Key", "http://schemas.microsoft.com/winfx/2006/xaml")).Value, node => node.Value, StringComparer.Ordinal);
             foreach (var key in requiredTranslations)
                 Check(values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value), Path.GetFileName(file) + " has no value for " + key);
+            var languageCode = Path.GetFileNameWithoutExtension(file).Substring("Strings.".Length);
+            Check(values.TryGetValue("Viz.Memory.Title", out var memoryTitle) &&
+                  sampleMarkers.TryGetValue(languageCode, out var sampleMarker) &&
+                  memoryTitle.Contains(sampleMarker, StringComparison.OrdinalIgnoreCase),
+                Path.GetFileName(file) + " must label the CoALA-inspired memory view as a sample.");
             if (!file.EndsWith("Strings.en.xaml", StringComparison.OrdinalIgnoreCase))
                 foreach (var key in requiredTranslations)
                     Check(!string.Equals(values[key], englishValues[key], StringComparison.Ordinal), Path.GetFileName(file) + " leaves " + key + " untranslated.");
@@ -1034,7 +1056,11 @@ internal static class Program
             "Viz.ModuleHierarchy.IdentifierLabel", "Viz.ModuleHierarchy.ReleaseTagLabel", "Viz.ModuleHierarchy.StageLabel",
             "Viz.ModuleHierarchy.UpstreamDependenciesLabel", "Viz.Diplomacy.RealmLabel", "Viz.Diplomacy.MonarchLabel",
             "Viz.Diplomacy.BorderConflictRiskLabel", "Viz.Component.IdentifierLabel", "Viz.Component.SchemaTargetLabel",
-            "Viz.Component.GeneratedMembersLabel"
+            "Viz.Component.GeneratedMembersLabel", "Viz.Memory.Search", "Viz.Memory.FilterAll", "Viz.Memory.FilterBelief",
+            "Viz.Memory.FilterStance", "Viz.Memory.FilterGoal", "Viz.Memory.ActionDecay", "Viz.Memory.ActionConsolidate",
+            "Viz.Memory.ActionAddEpisode", "Viz.Memory.GaugeSlots", "Viz.Memory.GaugeUtilityDecay", "Viz.Memory.PolicyProfile",
+            "Viz.Memory.PolicyComparison", "Viz.Memory.AgentProfilesShown", "Viz.Memory.SimulatedMemoryUtilization",
+            "Viz.Memory.SampleOnly", "Viz.Memory.Salience"
         };
         foreach (var key in localizedKeys)
             Check(templates.Contains(key, StringComparison.Ordinal), "Visualizer templates do not reference localized label " + key);
@@ -1048,7 +1074,11 @@ internal static class Program
             "Text=\"Stable · Risk threshold: 45%\"", "StringFormat='TARGET ASSEMBLY: {0}'",
             "StringFormat='RUNTIME CLR: {0}'", "StringFormat='MODULE IDENTIFIER: {0}'",
             "StringFormat='RELEASE TAG: {0}'", "StringFormat='Border Conflict Risk: {0}%'",
-            "StringFormat='COMPONENT IDENTIFIER: {0}'", "StringFormat='SCHEMA TARGET: {0}'"
+            "StringFormat='COMPONENT IDENTIFIER: {0}'", "StringFormat='SCHEMA TARGET: {0}'",
+            "Content=\"All\"", "Content=\"Belief\"", "Content=\"Stance\"", "Content=\"Goal\"",
+            "Content=\"⏳ Decay\"", "Content=\"💤 Sleep\"", "Content=\"⚡ +Ep\"",
+            "Text=\"U(t) DECAY\"", "Text=\"POLICY WEIGHT PROFILE\"", "Text=\"ACTIVE vs REALM\"",
+            "SubText=\"SLOTS\""
         })
             Check(!templates.Contains(literal, StringComparison.Ordinal), "A visualizer label is still embedded in XAML: " + literal);
         return Task.CompletedTask;
@@ -1202,7 +1232,7 @@ internal static class Program
         Check(!client.Connected, "Client should be disconnected after heartbeat failure");
     }
 
-    static string HelloData()=>Json.Serialize(new[]{"protocol:1","summary","report","framework","event-journal","harmony","patch-preflight"});
+    static string HelloData()=>Json.Serialize(new[]{"protocol:2","summary","report","framework","event-journal","patch-diagnostics","patch-preflight"});
 
     // Real named pipes, with a synthetic peer: this exercises the production desktop
     // client without claiming a WPF interaction test or a Bannerlord engine run.

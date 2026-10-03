@@ -1,11 +1,13 @@
 """
-CoALA Cognitive Memory Architecture for Calradia Forge Autonomous Agents.
+CoALA-inspired memory model for Calradia Forge autonomous agents.
 
-Implements Cognitive Architectures for Language Agents (CoALA) memory tiers:
+Provides project-specific memory tiers inspired by Cognitive Architectures for
+Language Agents (CoALA); it does not claim formal conformance to a standard:
 1. Semantic Memory:
    - Invariant repository rules (GEMINI Anti-Shadowing Rule A, Stateless Behavior Rule B,
      Desktop Static Contracts Rule C, Distribution Safety Rule D).
-   - Zero decay; always present in agent context.
+   - Zero decay; included when the orchestration path requests semantic context.
+     It is not guaranteed to be injected into every agent invocation.
 2. Episodic Memory:
    - Timestamped record of past tool executions, agent handoffs, forensic log links,
      and empirical performance metrics.
@@ -19,14 +21,14 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from agents.compactor import CompactionStats, estimate_tokens
 
 
 @dataclass
 class EpisodicTrace:
-    """An episodic memory record representing a completed tool execution or subagent step."""
+    """Tool trace where status is displayed and has_errors only prioritizes retention."""
 
     step_id: int
     agent_name: str
@@ -36,13 +38,14 @@ class EpisodicTrace:
     compacted_tokens: int
     tokens_saved: int
     compression_ratio: float
-    has_errors: bool
+    has_errors: bool  # Retention signal; `status` distinguishes FAIL from INDETERMINATE.
     log_file: Optional[str] = None
     timestamp: str = field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    status: Optional[str] = field(default=None, repr=False)
 
     def to_compact_string(self) -> str:
         """Renders high-density episodic trace for prompt injection."""
-        status = "FAIL" if self.has_errors else "OK"
+        status = self.status or ("FAIL" if self.has_errors else "OK")
         ratio_pct = f"{self.compression_ratio * 100:.1f}%"
         log_ref = f" [Log: {self.log_file}]" if self.log_file else ""
         return (
@@ -54,19 +57,19 @@ class EpisodicTrace:
 class SemanticRepositoryMemory:
     """Immutable semantic memory containing Calradia Forge core constraints and rules."""
 
-    INVARIANTS: List[str] = [
+    INVARIANTS: Tuple[str, ...] = (
         "Rule A (Anti-Shadowing): Zero folders, namespaces, or classes named 'Campaign' or 'Localization'.",
         "Rule B (Statelessness): Zero SaveableTypeDefiner and empty SyncData in src/CalradiaForge.Mod.",
         "Rule C (Desktop Contracts): Mandatory source tokens preserved in src/CalradiaForge.Desktop.",
         "Rule D (Distribution Safety): Exclude raw game DLLs, user saves, and batch/powershell scripts.",
         "Single-Threaded Engine: All Bannerlord Campaign/Mission entity calls must execute on main thread.",
-        "Anti-Lag Time-Slicing: Modulo-24 hero distribution and zero LINQ allocations in simulation ticks.",
-    ]
+        "Optional Time-Slicing: Use ForgeTimeSlicer.ShouldProcess with stable IDs only when work may be deferred; buckets can be uneven and filtering still scans the full collection. Measure the complete callback before making allocation or latency claims.",
+    )
 
     @classmethod
     def get_semantic_context(cls) -> str:
         """Returns the canonical semantic invariants formatted for agent context injection."""
-        lines = ["=== Core Semantic Invariants (Immutable Repository Rules) ==="]
+        lines = ["=== Core Semantic Invariants (Repository Constraints) ==="]
         for inv in cls.INVARIANTS:
             lines.append(f"  • {inv}")
         return "\n".join(lines)
@@ -100,7 +103,7 @@ class WorkingAgentMemory:
 
 
 class CoALAAgentMemory:
-    """CoALA multi-tiered cognitive memory system managing agent context."""
+    """Project-specific multi-tiered memory model inspired by CoALA."""
 
     def __init__(
         self,
@@ -127,7 +130,10 @@ class CoALAAgentMemory:
         compact = stats.compacted_tokens if stats else raw
         saved = stats.tokens_saved if stats else 0
         ratio = stats.compression_ratio if stats else 0.0
+        status = stats.status if stats else None
         has_errors = stats.has_errors if stats else False
+        if status not in {"OK", "FAIL", "INDETERMINATE"}:
+            status = "FAIL" if has_errors else "OK"
         log_file = stats.log_file if stats else None
 
         trace = EpisodicTrace(
@@ -141,28 +147,32 @@ class CoALAAgentMemory:
             compression_ratio=ratio,
             has_errors=has_errors,
             log_file=log_file,
+            status=status,
         )
 
         self.episodic.append(trace)
 
-        # Enforce FIFO bound while preserving any traces with errors
+        # Enforce the FIFO bound, preferring to retain attention-worthy traces.
         if len(self.episodic) > self.max_episodic_traces:
-            # Find oldest non-error trace to prune
-            prune_idx = None
-            for i, t in enumerate(self.episodic[:-5]):
-                if not t.has_errors:
-                    prune_idx = i
-                    break
-            if prune_idx is not None:
-                self.episodic.pop(prune_idx)
-            else:
-                self.episodic.pop(0)
+            # First prune the oldest non-error outside the five newest traces,
+            # then any older success if failures occupy that prefix. Only when
+            # every retained trace needs attention must the oldest be evicted.
+            prune_idx = next(
+                (i for i, trace in enumerate(self.episodic[:-5]) if not trace.has_errors),
+                None,
+            )
+            if prune_idx is None:
+                prune_idx = next(
+                    (i for i, trace in enumerate(self.episodic) if not trace.has_errors),
+                    None,
+                )
+            self.episodic.pop(0 if prune_idx is None else prune_idx)
 
         self.working.update(agent_name, action, summary)
         return trace
 
     def render_context(self) -> str:
-        """Renders the consolidated CoALA memory structure within token budget."""
+        """Renders the consolidated memory structure within the configured token budget."""
         sections = [
             self.semantic.get_semantic_context(),
             "",

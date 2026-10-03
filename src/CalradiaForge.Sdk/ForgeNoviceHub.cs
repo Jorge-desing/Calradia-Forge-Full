@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using System.Xml.Linq;
 
@@ -12,13 +13,26 @@ namespace CalradiaForge.Sdk
     /// </summary>
     public static class ForgeNoviceHub
     {
+        private static readonly HashSet<string> ReservedCSharpKeywords = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked",
+            "class", "const", "continue", "decimal", "default", "delegate", "do", "double", "else",
+            "enum", "event", "explicit", "extern", "false", "finally", "fixed", "float", "for",
+            "foreach", "goto", "if", "implicit", "in", "int", "interface", "internal", "is", "lock",
+            "long", "namespace", "new", "null", "object", "operator", "out", "override", "params",
+            "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short",
+            "sizeof", "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true",
+            "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual",
+            "void", "volatile", "while"
+        };
+
         // ─────────────────────────────────────────────────────────────────
         // 1. CampaignBehaviorBase Scaffold
         // ─────────────────────────────────────────────────────────────────
 
         /// <summary>
         /// Generates a fully annotated CampaignBehaviorBase C# class.
-        /// Follows the double-SyncData guard pattern and time-slicing anti-lag strategy.
+        /// Follows the double-SyncData guard pattern and stable-ID buckets for eligible optional batch work.
         /// </summary>
         public static string GenerateBehaviorScaffold(string className = "MyForgeBehavior", string ns = "MyMod.CampaignBehaviors")
         {
@@ -35,6 +49,7 @@ namespace CalradiaForge.Sdk
             sb.AppendLine();
             sb.AppendLine("// STEP 1: Add these usings at the top of your file.");
             sb.AppendLine("using System.Collections.Generic;");
+            sb.AppendLine("using CalradiaForge.Sdk;");
             sb.AppendLine("using TaleWorlds.CampaignSystem;");
             sb.AppendLine("using TaleWorlds.CampaignSystem.Actions;");
             sb.AppendLine("using TaleWorlds.CampaignSystem.Party;");
@@ -88,16 +103,16 @@ namespace CalradiaForge.Sdk
             sb.AppendLine("        }");
             sb.AppendLine();
             sb.AppendLine("        // HourlyTickEvent fires every in-game hour.");
-            sb.AppendLine("        // Anti-lag tip: use time-slicing (mod by 24) to spread work across hours.");
+            sb.AppendLine("        // Spread optional batch work across 24 in-game hours using Forge's stable StringId hash.");
             sb.AppendLine("        private void OnHourlyTick()");
             sb.AppendLine("        {");
             sb.AppendLine("            _myCounter++;");
-            sb.AppendLine("            // Time-slicing: only process 1/24 of all settlements per hour.");
-            sb.AppendLine("            int bucket = (int)CampaignTime.Now.ToHours % 24;");
+            sb.AppendLine("            // Stable-ID buckets select eligible optional work; bucket sizes vary and this loop still visits every settlement.");
+            sb.AppendLine("            int currentHour = (int)CampaignTime.Now.ToHours;");
             sb.AppendLine("            foreach (Settlement s in Settlement.All)");
             sb.AppendLine("            {");
             sb.AppendLine("                if (!s.IsTown) continue;");
-            sb.AppendLine("                if ((s.StringId.GetHashCode() & 0x7FFFFFFF) % 24 != bucket) continue;");
+            sb.AppendLine("                if (!ForgeTimeSlicer.ShouldProcess(s.StringId, currentHour)) continue;");
             sb.AppendLine("                // TODO: process this settlement here");
             sb.AppendLine("            }");
             sb.AppendLine("        }");
@@ -139,7 +154,25 @@ namespace CalradiaForge.Sdk
             tier = Math.Max(1, Math.Min(6, tier));
 
             int level = 5 + (tier * 6);
-            int attrValue = 4 + tier;
+            var troop = ForgeTroopBuilder.Create(id)
+                .WithName(name)
+                .WithAge(25)
+                .WithLevel(level)
+                .WithCulture(culture)
+                .WithDefaultGroup("Infantry")
+                .WithOccupation("Soldier")
+                .AddSkill("OneHanded", 40 + tier * 20)
+                .AddSkill("TwoHanded", 20 + tier * 10)
+                .AddSkill("Polearm", 30 + tier * 10)
+                .AddSkill("Athletics", 50 + tier * 10)
+                .AddBattleEquipment("Item0", "horse_whip")
+                .AddBattleEquipment("Item1", "heavy_round_shield")
+                .AddBattleEquipment("Head", "open_desert_helmet")
+                .AddBattleEquipment("Body", "desert_robe_over_mail")
+                .AddBattleEquipment("Gloves", "mail_mitten")
+                .AddBattleEquipment("Leg", "leather_boots")
+                .AddCivilianEquipment("Item0", "horse_whip")
+                .AddUpgradeTarget(id + "_veteran");
 
             var sb = new StringBuilder();
             sb.AppendLine("<!-- ═══════════════════════════════════════════════════════════════ -->");
@@ -149,45 +182,10 @@ namespace CalradiaForge.Sdk
             sb.AppendLine("     ═══════════════════════════════════════════════════════════════ -->");
             sb.AppendLine("<NPCCharacters>");
             sb.AppendLine();
-            sb.AppendLine($"  <!-- Troop Definition: age (0-128 integer), level ~ 5+(tier*6), default_group (Infantry/Ranged/Cavalry/HorseArcher) -->");
-            sb.AppendLine($"  <!-- tier={tier} | culture={culture} | level={level} -->");
-            sb.AppendLine($"  <NPCCharacter id=\"{id}\"");
-            sb.AppendLine($"               name=\"{name}\"");
-            sb.AppendLine($"               age=\"25\"");
-            sb.AppendLine($"               level=\"{level}\"");
-            sb.AppendLine($"               culture=\"{culture}\"");
-            sb.AppendLine($"               is_hero=\"false\"");
-            sb.AppendLine($"               is_female=\"false\"");
-            sb.AppendLine($"               default_group=\"Infantry\"");
-            sb.AppendLine($"               occupation=\"Soldier\">");
-            sb.AppendLine();
-            sb.AppendLine($"    <!-- Skills affect combat effectiveness -->");
-            sb.AppendLine($"    <skills>");
-            sb.AppendLine($"      <skill id=\"OneHanded\" value=\"{40 + tier * 20}\"/>");
-            sb.AppendLine($"      <skill id=\"TwoHanded\" value=\"{20 + tier * 10}\"/>");
-            sb.AppendLine($"      <skill id=\"Polearm\"   value=\"{30 + tier * 10}\"/>");
-            sb.AppendLine($"      <skill id=\"Athletics\" value=\"{50 + tier * 10}\"/>");
-            sb.AppendLine($"    </skills>");
-            sb.AppendLine();
-            sb.AppendLine($"    <!-- Battle equipment sets (at least one required) -->");
-            sb.AppendLine($"    <!-- Valid slot names: Item0, Item1, Item2, Item3, Head, Cape, Body, Gloves, Leg -->");
-            sb.AppendLine($"    <Equipments>");
-            sb.AppendLine($"      <EquipmentRoster>");
-            sb.AppendLine($"        <equipment slot=\"Item0\" id=\"Item.empire_sword_2_t3\"/> <!-- Main weapon -->");
-            sb.AppendLine($"        <equipment slot=\"Item1\" id=\"Item.kite_shield\"/>       <!-- Shield -->");
-            sb.AppendLine($"        <equipment slot=\"Head\"  id=\"Item.open_helmet\"/>       <!-- Helmet -->");
-            sb.AppendLine($"        <equipment slot=\"Body\"  id=\"Item.chain_mail_c\"/>      <!-- Armor -->");
-            sb.AppendLine($"        <equipment slot=\"Leg\"   id=\"Item.leather_boots\"/>     <!-- Boots -->");
-            sb.AppendLine($"      </EquipmentRoster>");
-            sb.AppendLine($"    </Equipments>");
-            sb.AppendLine();
-            sb.AppendLine($"    <!-- Upgrade path: this troop can promote to these after gaining XP -->");
-            sb.AppendLine($"    <!-- Prefix rule: upgrade targets must start with same prefix as this troop -->");
-            sb.AppendLine($"    <upgrade_targets>");
-            sb.AppendLine($"      <upgrade_target id=\"{id}_veteran\"/>");
-            sb.AppendLine($"    </upgrade_targets>");
-            sb.AppendLine();
-            sb.AppendLine($"  </NPCCharacter>");
+            sb.AppendLine("  <!-- Tier controls the generated level and combat skill values. -->");
+            sb.AppendLine("  <!-- The equipment IDs below are native examples; replace them with IDs supplied by your mod. -->");
+            sb.AppendLine("  <!-- The upgrade target is a reference: define the matching veteran NPCCharacter in your module. -->");
+            sb.AppendLine(troop.BuildElement().ToString());
             sb.AppendLine($"</NPCCharacters>");
 
             return sb.ToString();
@@ -240,9 +238,21 @@ namespace CalradiaForge.Sdk
             if (string.IsNullOrWhiteSpace(culture)) culture = "Culture.empire";
             if (string.IsNullOrWhiteSpace(itemType)) itemType = "OneHandedWeapon";
 
-            bool isWeapon = itemType.Contains("Weapon") || itemType.Contains("Bow") ||
-                            itemType.Contains("Crossbow") || itemType.Contains("Shield") ||
-                            itemType == "Thrown";
+            var item = ForgeItemBuilder.Create(id)
+                .WithName(name)
+                .WithCulture(culture)
+                .WithType(itemType);
+
+            ConfigureNoviceItem(item, itemType);
+            var itemElement = item.BuildElement();
+            ConfigureNoviceItemElement(itemElement, itemType);
+            if (itemElement.Element("ItemComponent")?.Element("Weapon") != null &&
+                itemElement.Attribute("body_name") == null)
+            {
+                itemElement.SetAttributeValue("body_name", "bo_sword_2h_a");
+                itemElement.SetAttributeValue("holster_mesh", "sword_2h_a");
+            }
+            itemElement.SetAttributeValue("is_merchandise", "true");
 
             var sb = new StringBuilder();
             sb.AppendLine("<!-- ═══════════════════════════════════════════════════════════════ -->");
@@ -250,56 +260,222 @@ namespace CalradiaForge.Sdk
             sb.AppendLine("     Save as: ModuleData/Items.xml");
             sb.AppendLine("     Register in SubModule.xml: <XmlName id=\"Items\" path=\"Items\" />");
             sb.AppendLine("     ID prefix rule: use your mod prefix to avoid overwriting vanilla items.");
+            sb.AppendLine("     Replace mesh/body names with assets shipped by your module before release.");
             sb.AppendLine("     ═══════════════════════════════════════════════════════════════ -->");
             sb.AppendLine("<Items>");
             sb.AppendLine();
-
-            if (isWeapon)
-            {
-                sb.AppendLine($"  <!-- Custom Weapon: value in denars, weight in kg, 3D meshes (body & holster) -->");
-                sb.AppendLine($"  <Item id=\"{id}\"");
-                sb.AppendLine($"        name=\"{name}\"");
-                sb.AppendLine($"        value=\"500\"");
-                sb.AppendLine($"        culture=\"{culture}\"");
-                sb.AppendLine($"        type=\"{itemType}\"");
-                sb.AppendLine($"        weight=\"1.5\"");
-                sb.AppendLine($"        is_merchandise=\"true\"");
-                sb.AppendLine($"        body_name=\"bo_sword_2h_a\"");
-                sb.AppendLine($"        holster_mesh=\"sword_2h_a\">");
-                sb.AppendLine($"    <Weapons>");
-                sb.AppendLine($"      <!-- Weapon combat stats: thrust/swing damage, damage type (Cut/Pierce/Blunt), speed (0-100), blade length (cm) -->");
-                sb.AppendLine($"      <Weapon usage_data=\"{itemType}\"");
-                sb.AppendLine($"              item_usage=\"long_sword_1h\"");
-                sb.AppendLine($"              thrust_damage=\"18\"");
-                sb.AppendLine($"              thrust_damage_type=\"Pierce\"");
-                sb.AppendLine($"              swing_damage=\"28\"");
-                sb.AppendLine($"              swing_damage_type=\"Cut\"");
-                sb.AppendLine($"              speed_rating=\"88\"");
-                sb.AppendLine($"              weapon_length=\"105\"");
-                sb.AppendLine($"              handling=\"88\"/>");
-                sb.AppendLine($"    </Weapons>");
-                sb.AppendLine($"  </Item>");
-            }
-            else
-            {
-                sb.AppendLine($"  <!-- Custom Armor: type (HeadArmor/BodyArmor/LegArmor/HandArmor/Cape/HorseHarness), weight in kg -->");
-                sb.AppendLine($"  <Item id=\"{id}\"");
-                sb.AppendLine($"        name=\"{name}\"");
-                sb.AppendLine($"        value=\"200\"");
-                sb.AppendLine($"        culture=\"{culture}\"");
-                sb.AppendLine($"        type=\"{itemType}\"");
-                sb.AppendLine($"        weight=\"5.0\"");
-                sb.AppendLine($"        is_merchandise=\"true\">");
-                sb.AppendLine($"    <!-- Armor protection ratings per body slot -->");
-                sb.AppendLine($"    <Armor head_armor=\"20\"");
-                sb.AppendLine($"           body_armor=\"30\"");
-                sb.AppendLine($"           leg_armor=\"10\"");
-                sb.AppendLine($"           arm_armor=\"10\"/>");
-                sb.AppendLine($"  </Item>");
-            }
-
+            sb.AppendLine(itemElement.ToString());
             sb.AppendLine($"</Items>");
             return sb.ToString();
+        }
+
+        private static void ConfigureNoviceItem(ForgeItemBuilder item, string itemType)
+        {
+            switch (itemType.ToUpperInvariant())
+            {
+                case "ONEHANDEDWEAPON":
+                    item.WithValue(500).WithWeight(1.5).AsWeapon("OneHandedSword", 90, 88, 18, "Pierce", 28, "Cut", "onehanded_block_shield_swing");
+                    break;
+                case "TWOHANDEDWEAPON":
+                    item.WithValue(500).WithWeight(2.5).AsWeapon("TwoHandedSword", 85, 82, 22, "Pierce", 35, "Cut", "twohanded_block_swing");
+                    break;
+                case "POLEARM":
+                    item.WithValue(500).WithWeight(2.0).AsWeapon("TwoHandedPolearm", 56, 70, 12, "Pierce", 24, "Cut", "polearm_block_thrust");
+                    break;
+                case "BOW":
+                    item.WithMesh("shortbow_b").WithValue(500).WithWeight(0.3)
+                        .AsWeapon("Bow", 92, 87, 30, "Pierce", 0, "Blunt", "bow");
+                    break;
+                case "CROSSBOW":
+                    item.WithMesh("crossbow_a").WithValue(500).WithWeight(1.0)
+                        .AsWeapon("Crossbow", 92, 62, 75, "Pierce", 0, "Blunt", "crossbow_fast");
+                    break;
+                case "THROWN":
+                    item.WithValue(200).WithWeight(1.0).AsWeapon("ThrowingAxe", 70, 70, 35, "Pierce", 35, "Cut", "throwing_axe");
+                    break;
+                case "SHIELD":
+                    item.WithMesh("sturgia_shield_a").WithValue(200).WithWeight(4.7)
+                        .AsWeapon("LargeShield", 86, 86, 5, "Blunt", 0, "Blunt", "hand_shield");
+                    break;
+                case "HORSE":
+                    item.WithValue(2000).WithWeight(50.0).AsHorse(45, 65, 15, 20);
+                    break;
+                case "HEADARMOR":
+                    item.WithMesh("headscarf_d").WithValue(75).WithWeight(0.5).AsArmor(0, 0, 0, 3, false);
+                    break;
+                case "BODYARMOR":
+                    item.WithMesh("aserai_tunic_long").WithValue(200).WithWeight(1.6).AsArmor(2, 2, 1, 0, true);
+                    break;
+                case "LEGARMOR":
+                    item.WithMesh("aserai_female_costume_shoe").WithValue(50).WithWeight(0.5).AsArmor(0, 2, 0, 0, false);
+                    break;
+                case "HANDARMOR":
+                    item.WithMesh("padded_vambrace_a_handguard").WithValue(100).WithWeight(0.6).AsArmor(0, 0, 9, 0, false);
+                    break;
+                case "CAPE":
+                    item.WithMesh("aserai_female_costume_cloak").WithValue(50).WithWeight(0.2).AsArmor(2, 0, 0, 0, false);
+                    break;
+                case "HORSEHARNESS":
+                    item.WithMesh("bandit_saddle_desert").WithValue(500).WithWeight(21.0).AsArmor(9, 0, 0, 0, false);
+                    break;
+                case "GOODS":
+                    item.WithValue(100).WithWeight(1.0);
+                    break;
+                default:
+                    throw new ArgumentException("Unsupported Bannerlord item type.", nameof(itemType));
+            }
+        }
+
+        private static void ConfigureNoviceItemElement(XElement item, string itemType)
+        {
+            string normalizedType = itemType.ToUpperInvariant();
+            var component = item.Element("ItemComponent");
+            var weapon = component?.Element("Weapon");
+            var armor = component?.Element("Armor");
+
+            switch (normalizedType)
+            {
+                case "BOW":
+                    item.SetAttributeValue("body_name", "bo_shortbow_b");
+                    item.SetAttributeValue("difficulty", "0");
+                    item.SetAttributeValue("holster_mesh", "shortbow_b_holster");
+                    item.SetAttributeValue("holster_mesh_with_weapon", "shortbow_b_holster_weapon");
+                    item.SetAttributeValue("item_holsters", "bow_hip:bow_hip_2");
+                    weapon.SetAttributeValue("ammo_class", "Arrow");
+                    weapon.SetAttributeValue("ammo_limit", "1");
+                    weapon.SetAttributeValue("missile_speed", "84");
+                    weapon.SetAttributeValue("weapon_length", "106");
+                    weapon.SetAttributeValue("accuracy", "99");
+                    weapon.SetAttributeValue("physics_material", "wood_weapon");
+                    weapon.SetAttributeValue("center_of_mass", "0.0,0,-0.1");
+                    weapon.Attribute("weapon_balance")?.Remove();
+                    weapon.Attribute("swing_damage")?.Remove();
+                    weapon.Attribute("swing_damage_type")?.Remove();
+                    SetNoviceWeaponFlags(weapon, "RangedWeapon", "HasString", "StringHeldByHand", "NotUsableWithOneHand", "TwoHandIdleOnMount", "AutoReload", "UnloadWhenSheathed", "CanBeUsedWhileCrouched");
+                    SetNoviceItemFlags(item, "Stealth", "ForceAttachOffHandPrimaryItemBone");
+                    break;
+                case "CROSSBOW":
+                    item.SetAttributeValue("body_name", "bo_cross_bow_heavy");
+                    item.SetAttributeValue("difficulty", "0");
+                    item.SetAttributeValue("AmmoOffset", "0.0, 0.02131, 0.24650");
+                    item.SetAttributeValue("item_holsters", "crossbow_back:bow_hip:mace_right_hip:bow_hip_2");
+                    item.SetAttributeValue("holster_position_shift", "0.02,0,-0.4");
+                    weapon.SetAttributeValue("ammo_class", "Bolt");
+                    weapon.SetAttributeValue("ammo_limit", "1");
+                    weapon.SetAttributeValue("missile_speed", "77");
+                    weapon.SetAttributeValue("accuracy", "95");
+                    weapon.SetAttributeValue("weapon_length", "95");
+                    weapon.SetAttributeValue("reload_phase_count", "2");
+                    weapon.SetAttributeValue("physics_material", "wood_weapon");
+                    weapon.SetAttributeValue("center_of_mass", "0,0,0.4");
+                    weapon.Attribute("weapon_balance")?.Remove();
+                    weapon.Attribute("swing_damage")?.Remove();
+                    weapon.Attribute("swing_damage_type")?.Remove();
+                    SetNoviceWeaponFlags(weapon, "RangedWeapon", "HasString", "NotUsableWithOneHand", "TwoHandIdleOnMount");
+                    SetNoviceItemFlags(item, "Stealth");
+                    break;
+                case "SHIELD":
+                    item.SetAttributeValue("body_name", "bo_cap_sturgia_shield_a");
+                    item.SetAttributeValue("shield_body_name", "bo_sturgia_shield_a");
+                    item.SetAttributeValue("recalculate_body", "false");
+                    item.SetAttributeValue("using_tableau", "true");
+                    item.SetAttributeValue("difficulty", "0");
+                    item.SetAttributeValue("item_holsters", "shield_round:shield_4");
+                    item.SetAttributeValue("has_lower_holster_priority", "true");
+                    item.SetAttributeValue("holster_position_shift", "0,0,0");
+                    weapon.SetAttributeValue("body_armor", "9");
+                    weapon.SetAttributeValue("physics_material", "wood_shield");
+                    weapon.SetAttributeValue("position", "-0.02, 0.0, 0.0");
+                    weapon.SetAttributeValue("rotation", "-15.0,-90.0,-10.0");
+                    weapon.SetAttributeValue("weapon_length", "70");
+                    weapon.SetAttributeValue("center_of_mass", "0, 0, 0");
+                    weapon.SetAttributeValue("hit_points", "500");
+                    weapon.SetAttributeValue("modifier_group", "shield");
+                    weapon.Attribute("weapon_balance")?.Remove();
+                    weapon.Attribute("swing_damage")?.Remove();
+                    weapon.Attribute("swing_damage_type")?.Remove();
+                    SetNoviceWeaponFlags(weapon, "CanBlockRanged", "HasHitPoints");
+                    SetNoviceItemFlags(item, "WoodenParry", "ForceAttachOffHandPrimaryItemBone", "HeldInOffHand");
+                    break;
+                case "HEADARMOR":
+                    ConfigureNoviceArmor(armor, "head_armor", "3");
+                    armor.SetAttributeValue("has_gender_variations", "false");
+                    armor.SetAttributeValue("hair_cover_type", "all");
+                    armor.SetAttributeValue("modifier_group", "cloth_unarmoured");
+                    armor.SetAttributeValue("material_type", "Cloth");
+                    armor.SetAttributeValue("beard_cover_type", "type3");
+                    SetNoviceItemFlags(item, "Stealth", "Civilian", "UseTeamColor");
+                    break;
+                case "BODYARMOR":
+                    ConfigureNoviceArmor(armor, "body_armor", "2", "leg_armor", "2", "arm_armor", "1");
+                    armor.SetAttributeValue("has_gender_variations", "true");
+                    armor.SetAttributeValue("covers_body", "true");
+                    armor.SetAttributeValue("modifier_group", "cloth_unarmoured");
+                    armor.SetAttributeValue("material_type", "Cloth");
+                    SetNoviceItemFlags(item, "UseTeamColor", "Civilian");
+                    break;
+                case "LEGARMOR":
+                    ConfigureNoviceArmor(armor, "leg_armor", "2");
+                    armor.Attribute("has_gender_variations")?.Remove();
+                    armor.SetAttributeValue("covers_legs", "false");
+                    armor.SetAttributeValue("modifier_group", "cloth_unarmoured");
+                    armor.SetAttributeValue("material_type", "Cloth");
+                    SetNoviceItemFlags(item, "Civilian");
+                    break;
+                case "HANDARMOR":
+                    ConfigureNoviceArmor(armor, "arm_armor", "9");
+                    armor.Attribute("has_gender_variations")?.Remove();
+                    armor.SetAttributeValue("stealth_factor", "10");
+                    armor.SetAttributeValue("modifier_group", "cloth");
+                    armor.SetAttributeValue("material_type", "Cloth");
+                    SetNoviceItemFlags(item, "Stealth", "Civilian");
+                    break;
+                case "CAPE":
+                    ConfigureNoviceArmor(armor, "body_armor", "2");
+                    armor.Attribute("has_gender_variations")?.Remove();
+                    armor.SetAttributeValue("modifier_group", "cloth_unarmoured");
+                    armor.SetAttributeValue("material_type", "Cloth");
+                    SetNoviceItemFlags(item, "Civilian", "UseTeamColor");
+                    break;
+                case "HORSEHARNESS":
+                    item.SetAttributeValue("subtype", "body_armor");
+                    ConfigureNoviceArmor(armor, "body_armor", "9");
+                    armor.Attribute("has_gender_variations")?.Remove();
+                    armor.SetAttributeValue("mane_cover_type", "none");
+                    armor.SetAttributeValue("family_type", "1");
+                    armor.SetAttributeValue("reins_mesh", "bandit_saddle_desert_rein");
+                    armor.SetAttributeValue("material_type", "Cloth");
+                    SetNoviceItemFlags(item, "Civilian");
+                    break;
+            }
+        }
+
+        private static void ConfigureNoviceArmor(XElement armor, params string[] attributes)
+        {
+            armor.RemoveAttributes();
+            for (int index = 0; index < attributes.Length; index += 2)
+                armor.SetAttributeValue(attributes[index], attributes[index + 1]);
+        }
+
+        private static void SetNoviceWeaponFlags(XElement weapon, params string[] flags)
+        {
+            var weaponFlags = new XElement("WeaponFlags");
+            foreach (string flag in flags)
+                weaponFlags.SetAttributeValue(flag, "true");
+            weapon.Add(weaponFlags);
+        }
+
+        private static void SetNoviceItemFlags(XElement item, params string[] flags)
+        {
+            var itemFlags = item.Element("Flags");
+            if (itemFlags == null)
+            {
+                itemFlags = new XElement("Flags");
+                item.Add(itemFlags);
+            }
+
+            foreach (string flag in flags)
+                itemFlags.SetAttributeValue(flag, "true");
         }
 
         // ─────────────────────────────────────────────────────────────────
@@ -456,7 +632,7 @@ namespace CalradiaForge.Sdk
                 { "HourlyTickEvent",
                     "Fires every in-game hour (24 times per in-game day).\n" +
                     "USE FOR: Slow background processing — economy updates, NPC state machines.\n" +
-                    "TIP: Time-slice with ((Settlement.StringId.GetHashCode() & 0x7FFFFFFF) % 24) to avoid lag." },
+                    "TIP: For optional work whose deferral preserves behavior, use ForgeTimeSlicer.ShouldProcess(settlement.StringId, currentHour); stable-ID bucket sizes may vary, and a loop still scans every settlement (O(N))." },
                 { "DailyTickSettlementEvent",
                     "Fires once per in-game day for EACH settlement.\n" +
                     "USE FOR: Settlement loyalty, food, economy adjustments.\n" +
@@ -958,8 +1134,8 @@ namespace CalradiaForge.Sdk
         // ─────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Generates a custom AgentComponent and MissionLogic adhering to Bannerlord's deferred initialization
-        /// and unpatch safety rules for custom combat tactics and battlefield shouts.
+        /// Generates an illustrative AgentComponent and MissionLogic source scaffold for custom combat tactics
+        /// and battlefield shouts. Review it against the target game's references and lifecycle before use.
         /// </summary>
         public static string GenerateCombatAiComponentScaffold(string componentName = "BattleShoutAgentComponent",
             string missionLogicName = "BattleTacticsMissionLogic", string shoutSoundName = "custom_battle_cry")
@@ -968,10 +1144,14 @@ namespace CalradiaForge.Sdk
             if (string.IsNullOrWhiteSpace(missionLogicName)) missionLogicName = "BattleTacticsMissionLogic";
             if (string.IsNullOrWhiteSpace(shoutSoundName)) shoutSoundName = "custom_battle_cry";
 
+            ValidateGeneratedIdentifier(componentName, nameof(componentName));
+            ValidateGeneratedIdentifier(missionLogicName, nameof(missionLogicName));
+            string escapedShoutSoundName = EscapeCSharpStringLiteral(shoutSoundName);
+
             var sb = new StringBuilder();
             sb.AppendLine("// ═══════════════════════════════════════════════════════════════");
             sb.AppendLine("// CALRADIA FORGE — Agent Battle Shout & Formation Tactics");
-            sb.AppendLine("// ─── Generated by ForgeNoviceHub. Safe to copy to your project.");
+            sb.AppendLine("// ─── Generated by ForgeNoviceHub. Review against your target Bannerlord version before use.");
             sb.AppendLine("// ═══════════════════════════════════════════════════════════════");
             sb.AppendLine();
             sb.AppendLine("// ── ARCHITECTURE NOTICE ──────────────────────────────────────────");
@@ -1000,7 +1180,7 @@ namespace CalradiaForge.Sdk
             sb.AppendLine("            _lastShoutTime = curTime;");
             sb.AppendLine();
             sb.AppendLine("            // 3D positional audio emitter at agent position");
-            sb.AppendLine($"            SoundEvent.PlaySound2D(\"{shoutSoundName}\");");
+            sb.AppendLine($"            SoundEvent.PlaySound2D(\"{escapedShoutSoundName}\");");
             sb.AppendLine();
             sb.AppendLine("            // Morale boost to nearby friendly formation members");
             sb.AppendLine("            if (Agent.Formation != null)");
@@ -1042,6 +1222,51 @@ namespace CalradiaForge.Sdk
             sb.AppendLine("    }");
             sb.AppendLine("}");
             return sb.ToString();
+        }
+
+        private static void ValidateGeneratedIdentifier(string value, string parameterName)
+        {
+            bool isValid = value.Length > 0 && string.Equals(
+                value, value.Normalize(NormalizationForm.FormC), StringComparison.Ordinal) &&
+                (value[0] == '_' || char.IsLetter(value[0]));
+            for (int i = 1; isValid && i < value.Length; i++)
+            {
+                char character = value[i];
+                isValid = character == '_' || char.IsLetterOrDigit(character);
+            }
+
+            if (!isValid || ReservedCSharpKeywords.Contains(value))
+                throw new ArgumentException("The generated type name must be a simple C# identifier in normalization form C and cannot be a reserved keyword.", parameterName);
+        }
+
+        private static string EscapeCSharpStringLiteral(string value)
+        {
+            var escaped = new StringBuilder(value.Length);
+            for (int i = 0; i < value.Length; i++)
+            {
+                char character = value[i];
+                switch (character)
+                {
+                    case '\\': escaped.Append("\\\\"); break;
+                    case '"': escaped.Append("\\\""); break;
+                    case '\0': escaped.Append("\\0"); break;
+                    case '\a': escaped.Append("\\a"); break;
+                    case '\b': escaped.Append("\\b"); break;
+                    case '\f': escaped.Append("\\f"); break;
+                    case '\n': escaped.Append("\\n"); break;
+                    case '\r': escaped.Append("\\r"); break;
+                    case '\t': escaped.Append("\\t"); break;
+                    case '\v': escaped.Append("\\v"); break;
+                    default:
+                        if (char.IsControl(character) || char.IsSurrogate(character) || character == '\u2028' || character == '\u2029')
+                            escaped.Append("\\u").Append(((int)character).ToString("X4", CultureInfo.InvariantCulture));
+                        else
+                            escaped.Append(character);
+                        break;
+                }
+            }
+
+            return escaped.ToString();
         }
     }
 }

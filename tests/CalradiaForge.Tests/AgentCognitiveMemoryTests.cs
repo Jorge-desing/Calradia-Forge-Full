@@ -19,8 +19,9 @@ namespace CalradiaForge.Tests
             test("AgentCognitiveMemory: GEMINI.md Anti-Shadowing compliance", TestAntiShadowingRule);
             test("AgentCognitiveMemory: SubModule.OnGameStart registers behavior via AddBehavior()", TestSubModuleRegistration);
             test("AgentCognitiveMemory: Hooks into verified TaleWorlds CampaignEvents declaratively", TestCampaignEventsCoverage);
-            test("AgentCognitiveMemory: Modulo-24 time-slicing logic in HourlyTick prevents frame drops", TestModulo24TimeSlicing);
+            test("AgentCognitiveMemory: HourlyTick uses the stable SDK time-slicing helper", TestModulo24TimeSlicing);
             test("AgentCognitiveMemory: Live volatile memory integration with ForgeAgentMemory", TestLiveForgeAgentMemoryIntegration);
+            test("AgentCognitiveMemory: Telemetry counts only writes accepted by bounded memory", TestTelemetryCountsOnlyAcceptedWrites);
             test("AgentCognitiveMemory: Universal cognitive dialogue flows and token chaining", TestCognitiveDialogueRegistrationAndTokens);
             test("AgentCognitiveMemory: Cognitive dialogue condition and response delegates", TestCognitiveDialogueConditionLogic);
             test("AgentCognitiveMemory: IPC protocol agent-memory registration and serialization", TestIpcMemoryProtocolAndSerialization);
@@ -227,9 +228,11 @@ namespace CalradiaForge.Tests
             string path = GetBehaviorFilePath();
             string code = File.ReadAllText(path);
 
-            if (!code.Contains("% 24") || !code.Contains("HourlyTick"))
+            if (!code.Contains("ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour)") ||
+                code.Contains("GetHashCode()") ||
+                !code.Contains("HourlyTick"))
             {
-                throw new Exception("AgentCognitiveMemoryBehavior must contain modulo-24 hash time-slicing in HourlyTick.");
+                throw new Exception("AgentCognitiveMemoryBehavior must use ForgeTimeSlicer with the stable Hero.StringId in its hourly maintenance loop.");
             }
         }
 
@@ -252,6 +255,55 @@ namespace CalradiaForge.Tests
 
             ForgeAgentMemory.ClearAll();
             if (ForgeAgentMemory.RegisteredAgentsCount != 0) throw new Exception("ClearAll failed to reset RegisteredAgentsCount.");
+        }
+
+        private static void TestTelemetryCountsOnlyAcceptedWrites()
+        {
+            ForgeAgentMemory.ClearAll();
+            try
+            {
+                Type behaviorType = GetBehaviorType();
+                object behavior = Activator.CreateInstance(behaviorType);
+                MethodInfo recordEpisode = behaviorType.GetMethod("TryRecordEpisodicMemory", BindingFlags.Instance | BindingFlags.NonPublic);
+                MethodInfo updateFact = behaviorType.GetMethod("TryUpdateSemanticFact", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (recordEpisode == null || updateFact == null)
+                    throw new Exception("Memory write helpers needed for telemetry regression were not found.");
+
+                const string acceptedAgentId = "telemetry_accepted_agent";
+                if (!(bool)recordEpisode.Invoke(behavior, new object[] { acceptedAgentId, "Test", "accepted episode" }))
+                    throw new Exception("The episodic telemetry fixture write should be accepted.");
+                if (!(bool)updateFact.Invoke(behavior, new object[] { acceptedAgentId, "TestFact", true }))
+                    throw new Exception("The semantic telemetry fixture write should be accepted.");
+
+                PropertyInfo episodicCounter = behaviorType.GetProperty("TotalEpisodicMemoriesRecorded");
+                PropertyInfo semanticCounter = behaviorType.GetProperty("TotalSemanticFactsUpdated");
+                if (episodicCounter == null || semanticCounter == null ||
+                    (int)episodicCounter.GetValue(behavior, null) != 1 ||
+                    (int)semanticCounter.GetValue(behavior, null) != 1)
+                    throw new Exception("Accepted memory writes must increment their corresponding telemetry counters once.");
+
+                for (int i = 1; i < ForgeAgentMemory.MaximumAgents; i++)
+                {
+                    string agentId = "telemetry_quota_agent_" + i;
+                    if (!ForgeAgentMemory.Episodic.TryAdd(agentId, "Quota", "fill"))
+                        throw new Exception("Could not fill the bounded memory registry for quota rejection coverage.");
+                }
+
+                if (ForgeAgentMemory.RegisteredAgentsCount != ForgeAgentMemory.MaximumAgents)
+                    throw new Exception("The memory registry did not reach its configured agent quota.");
+
+                bool rejectedEpisode = (bool)recordEpisode.Invoke(behavior, new object[] { "telemetry_rejected_agent", "Test", "rejected episode" });
+                bool rejectedFact = (bool)updateFact.Invoke(behavior, new object[] { "telemetry_rejected_agent", "TestFact", true });
+                if (rejectedEpisode || rejectedFact)
+                    throw new Exception("New memory writes beyond the global agent quota must be rejected.");
+
+                if ((int)episodicCounter.GetValue(behavior, null) != 1 || (int)semanticCounter.GetValue(behavior, null) != 1)
+                    throw new Exception("Rejected memory writes must not increment telemetry counters.");
+            }
+            finally
+            {
+                ForgeAgentMemory.ClearAll();
+            }
         }
 
         private static void TestCognitiveDialogueRegistrationAndTokens()

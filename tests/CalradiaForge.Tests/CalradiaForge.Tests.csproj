@@ -14,6 +14,7 @@
     <ProjectReference Include="../CalradiaForge.PatchBatchFixture/CalradiaForge.PatchBatchFixture.csproj" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="$(GameBin)\TaleWorlds.Library.dll"><Private>true</Private></Reference>
     <PackageReference Include="AsmResolver.DotNet" Version="6.0.1" />
     <Compile Include="../../src/CalradiaForge.Mod/PipeServer.cs" Link="PipeServer.cs" />

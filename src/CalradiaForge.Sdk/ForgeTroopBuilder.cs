@@ -34,7 +34,7 @@ namespace CalradiaForge.Sdk
         public string FaceKeyTemplate { get; private set; }
 
         private readonly Dictionary<string, int> _skills = new Dictionary<string, int>();
-        private readonly List<Dictionary<string, string>> _battleSets = new List<Dictionary<string, string>>();
+        private readonly SortedDictionary<int, Dictionary<string, string>> _battleSets = new SortedDictionary<int, Dictionary<string, string>>();
         private readonly Dictionary<string, string> _civilianSet = new Dictionary<string, string>();
         private readonly List<string> _upgradeTargets = new List<string>();
 
@@ -43,7 +43,7 @@ namespace CalradiaForge.Sdk
             if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Troop ID cannot be null or empty.", nameof(id));
             Id = id;
             Name = id;
-            _battleSets.Add(new Dictionary<string, string>());
+            _battleSets.Add(0, new Dictionary<string, string>());
         }
 
         public static ForgeTroopBuilder Create(string id) => new ForgeTroopBuilder(id);
@@ -118,17 +118,19 @@ namespace CalradiaForge.Sdk
         public ForgeTroopBuilder AddBattleEquipment(string slot, string itemId, int variationIndex = 0)
         {
             if (string.IsNullOrWhiteSpace(itemId)) throw new ArgumentException("Item ID cannot be null or empty.", nameof(itemId));
+            if (variationIndex < 0) throw new ArgumentOutOfRangeException(nameof(variationIndex), variationIndex, "Equipment variation index cannot be negative.");
             if (!ValidSlots.Contains(slot))
                 throw new ArgumentException($"Invalid equipment slot '{slot}'. Valid slots: {string.Join(", ", ValidSlots)}");
 
-            while (_battleSets.Count <= variationIndex)
+            if (!_battleSets.TryGetValue(variationIndex, out Dictionary<string, string> variation))
             {
-                _battleSets.Add(new Dictionary<string, string>());
+                variation = new Dictionary<string, string>();
+                _battleSets.Add(variationIndex, variation);
             }
 
             string trimmedItem = itemId.Trim();
             string formattedItem = trimmedItem.StartsWith("Item.", StringComparison.OrdinalIgnoreCase) ? trimmedItem : $"Item.{trimmedItem}";
-            _battleSets[variationIndex][slot] = formattedItem;
+            variation[slot] = formattedItem;
             return this;
         }
 
@@ -147,7 +149,6 @@ namespace CalradiaForge.Sdk
         public ForgeTroopBuilder AddUpgradeTarget(string targetId)
         {
             if (string.IsNullOrWhiteSpace(targetId)) throw new ArgumentException("Upgrade target ID cannot be null or empty.");
-            if (_upgradeTargets.Count >= 2) throw new InvalidOperationException("Troop cannot have more than 2 branching upgrade targets in Bannerlord.");
 
             string formattedTarget = targetId.StartsWith("NPCCharacter.", StringComparison.OrdinalIgnoreCase)
                 ? targetId
@@ -156,10 +157,10 @@ namespace CalradiaForge.Sdk
             if (formattedTarget.Equals($"NPCCharacter.{Id}", StringComparison.OrdinalIgnoreCase) || formattedTarget.Equals(Id, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException($"Troop '{Id}' cannot have itself as an upgrade target (cyclic upgrade loop).");
 
-            if (!_upgradeTargets.Contains(formattedTarget))
-            {
-                _upgradeTargets.Add(formattedTarget);
-            }
+            if (_upgradeTargets.Contains(formattedTarget)) return this;
+            if (_upgradeTargets.Count >= 2) throw new InvalidOperationException("Troop cannot have more than 2 branching upgrade targets in Bannerlord.");
+
+            _upgradeTargets.Add(formattedTarget);
             return this;
         }
 
@@ -193,21 +194,21 @@ namespace CalradiaForge.Sdk
             }
 
             var equipmentsElem = new XElement("Equipments");
-            foreach (var set in _battleSets)
+            foreach (var set in _battleSets.Values)
             {
                 if (set.Count > 0)
                 {
-                    var setElem = new XElement("EquipmentSet");
+                    var rosterElem = new XElement("EquipmentRoster");
                     foreach (var item in set)
                     {
-                        setElem.Add(new XElement("equipment", new XAttribute("slot", item.Key), new XAttribute("id", item.Value)));
+                        rosterElem.Add(new XElement("equipment", new XAttribute("slot", item.Key), new XAttribute("id", item.Value)));
                     }
-                    equipmentsElem.Add(setElem);
+                    equipmentsElem.Add(rosterElem);
                 }
             }
 
             // Civilian Set
-            var civElem = new XElement("EquipmentSet", new XAttribute("civilian", "true"));
+            var civElem = new XElement("EquipmentRoster", new XAttribute("civilian", "true"));
             if (_civilianSet.Count > 0)
             {
                 foreach (var item in _civilianSet)

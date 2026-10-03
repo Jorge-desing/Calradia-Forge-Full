@@ -145,28 +145,21 @@ def run_solution_tests(skip_build: bool = True, raw: bool = False) -> str:
 def run_ui_automation_smoke(raw: bool = False) -> str:
     """Executes the Windows UI Automation smoke test against Calradia Forge Desktop.
 
-    Verifies 29 accessibility nodes, container virtualization, tab switching,
+    Verifies accessibility nodes, container virtualization, tab switching,
     and non-mutating UI interaction without altering user preferences.
 
     Args:
         raw: If True, returns uncompacted console output bypassing distillation.
 
     Returns:
-        Summary of the 29 UI Automation checks and latency metrics.
+        Summary of the UI Automation checks and observed latency metrics.
     """
     repo_root = _get_repo_root()
-    script_path = repo_root / "tools" / "Test-CalradiaForge-Desktop-Uia.ps1"
-    if not script_path.exists():
-        return f"Error: UIA script '{script_path}' not found."
+    batch_path = repo_root / "tools" / "Test-CalradiaForge-Desktop-Uia.bat"
+    if not batch_path.exists():
+        return f"Error: UIA batch launcher '{batch_path}' not found."
 
-    cmd = [
-        "powershell.exe",
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        str(script_path),
-    ]
+    cmd = ["cmd.exe", "/d", "/c", str(batch_path)]
     try:
         proc = subprocess.run(
             cmd,
@@ -193,7 +186,6 @@ def audit_documentation_parity(raw: bool = False) -> str:
     - Established aliases:
       - DESKTOP.md <-> ASSEMBLY_WORKBENCH.es.md
       - VALIDATION-<VER>.md <-> VALIDACION-<VER>.es.md
-      - ARCHITECTURE.md <-> SYSTEM_DESIGN.md
     - Internal canonical codemaps (CODEMAP_*.md) are excluded from bilingual requirement.
 
     Args:
@@ -209,7 +201,6 @@ def audit_documentation_parity(raw: bool = False) -> str:
 
     known_aliases = {
         "DESKTOP.md": "ASSEMBLY_WORKBENCH.es.md",
-        "ARCHITECTURE.md": "SYSTEM_DESIGN.md",
     }
 
     en_files: List[Path] = []
@@ -219,7 +210,7 @@ def audit_documentation_parity(raw: bool = False) -> str:
         name = item.name
         if name.startswith("CODEMAP_"):
             continue  # Codemaps are canonical technical internal references
-        if name.endswith(".es.md") or name.startswith("VALIDACION-") or name == "SYSTEM_DESIGN.md":
+        if name.endswith(".es.md") or name.startswith("VALIDACION-"):
             es_files.add(name)
         else:
             en_files.append(item)
@@ -598,7 +589,8 @@ def audit_code_smells(raw: bool = False) -> str:
     Checks:
     1. String formatting / substitution bugs (e.g. incorrect variable substitution in relation changes).
     2. Rule B violation: dataStore.SyncData calls in CampaignBehaviors.
-    3. Unbounded LINQ allocations in tick loops or high-frequency event handlers.
+    3. Selected LINQ operator calls in SubModule.OnApplicationTick, using a static source heuristic.
+       This check does not measure runtime allocations or inspect every high-frequency handler.
     4. Silent exception swallowing in non-diagnostic code blocks.
 
     Args:
@@ -627,7 +619,8 @@ def audit_code_smells(raw: bool = False) -> str:
             if re.search(r"dataStore\s*\.\s*SyncData\b", content):
                 issues.append(f"{cs_file.name}: contains stateful dataStore.SyncData call violating Rule B.")
 
-    # 3. Check for LINQ in hot tick loops
+    # 3. Statically scan selected LINQ operators in SubModule.OnApplicationTick.
+    # This is a source heuristic, not a measurement of runtime allocation cost.
     submodule_path = repo_root / "src" / "CalradiaForge.Mod" / "SubModule.cs"
     if submodule_path.exists():
         sm_text = submodule_path.read_text(encoding="utf-8", errors="ignore")
@@ -635,7 +628,10 @@ def audit_code_smells(raw: bool = False) -> str:
         if tick_match:
             tick_body = tick_match.group(1)
             if re.search(r"\.(Where|Select|ToList|ToArray)\s*\(", tick_body):
-                issues.append("SubModule.cs: OnApplicationTick contains heap-allocating LINQ queries in hot path.")
+                issues.append(
+                    "SubModule.cs: selected LINQ operators were found in OnApplicationTick; "
+                    "review the call path and measure runtime costs before making allocation claims."
+                )
 
     # 4. Check for empty catch blocks in Mod code (excluding documented intentional swallows)
     mod_dir = repo_root / "src" / "CalradiaForge.Mod"
@@ -739,7 +735,8 @@ def audit_code_smells(raw: bool = False) -> str:
             "Code Smells & Antipatterns Audit PASSED:\n"
             "  - String formatting: zero variable substitution or shadowing bugs detected.\n"
             "  - Stateless persistence: 100% of CampaignBehaviors have clean, empty SyncData.\n"
-            "  - Hot path allocations: zero LINQ queries in OnApplicationTick or high-frequency loops.\n"
+            "  - Static LINQ scan: no .Where, .Select, .ToList, or .ToArray calls detected in "
+            "SubModule.OnApplicationTick (not an allocation measurement).\n"
             "  - Exception handling: no undocumented empty catch blocks detected.\n"
             "  - Console commands: 100% of ForgeCommands defend against null args.\n"
             "  - Cognitive memory: Semantic relation facts accurately track GetRelation and LastRelationDelta.\n"

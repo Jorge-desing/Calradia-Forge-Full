@@ -15,11 +15,32 @@ internal static class ReleaseTests
 {
     public static void Run(Action<string,Action> test)
     {
+        test("Deployment preserves the first original backup for duplicate target copies",()=>{
+            var source=File.ReadAllText("tools/deploy_to_game.ps1");
+            var start=source.IndexOf("function Copy-WithBackup",StringComparison.Ordinal);
+            var end=source.IndexOf("function Restore-VerifiedBackup",start,StringComparison.Ordinal);
+            Assert(start>=0&&end>start);
+            var copy=source.Substring(start,end-start);
+            var duplicateCheck=copy.IndexOf("$script:deploymentOriginals.ContainsKey($resolvedDestination)",StringComparison.Ordinal);
+            var backupCopy=copy.IndexOf("Copy-Item -LiteralPath $destination -Destination $backupPath -Force",StringComparison.Ordinal);
+            Assert(duplicateCheck>=0&&backupCopy>duplicateCheck&&
+                copy.Contains("Deployment backup hash mismatch: $relativePath")&&
+                copy.Contains("Deployment backup path already exists; refusing to overwrite it:"));
+        });
         test("English is the default product language",()=>Assert(Localization.DefaultLanguage=="en" && new Settings().Language=="en"));
         test("English text is independent of selected OS culture",()=>{var previous=Thread.CurrentThread.CurrentUICulture;try{Thread.CurrentThread.CurrentUICulture=new System.Globalization.CultureInfo("es-MX");Assert(Localization.Text("Modules",Localization.DefaultLanguage)=="Modules");}finally{Thread.CurrentThread.CurrentUICulture=previous;}});
         test("Spanish is an explicit secondary translation",()=>Assert(Localization.Text("Modules","es")=="Módulos" && Localization.Text("Modules","en")=="Modules"));
         test("Unsupported languages fall back to English",()=>Assert(Localization.Text("Modules","fr")=="Modules" && Localization.Text("Unregistered extension message","es")=="Unregistered extension message"));
-        test("Protocol advertises the complete standalone developer surface",()=>{var expected=new[]{"hello","summary","scan","modules","dependencies","diagnostics","logs","inspect","pin","compare","snapshots","unpin","tests","commands","command","test-mode","confirm-copy","run","run-batch","metrics","framework","event-journal","replay","harmony","patch-blueprints","patch-preflight","hook-snapshots","hook-verify","hook-apply-plan","hook-apply-confirm","hook-revert-plan","hook-revert-confirm","hook-plan-cancel","report","export","panel-open","panel-close","language","agent-memory"};var capabilities=ForgeProtocol.Hello(SuiteInfo.Version,"1.4.8");Assert(capabilities.Contains("protocol:1")&&expected.All(capabilities.Contains)&&ForgeProtocol.Actions.SequenceEqual(expected)&&capabilities.Length==expected.Length+3);});
+        test("Capability and request-envelope versions remain independent",()=>{
+            var request=new Request();
+            var response=new Response();
+            var newerEnvelope=new Request { Version=2 };
+            var validate=typeof(Runtime).GetMethod("IsSupportedEnvelopeVersion",BindingFlags.Static|BindingFlags.NonPublic);
+            Assert(validate!=null);
+            Assert(ForgeProtocol.Version==2&&ForgeProtocol.EnvelopeVersion==1&&request.Version==ForgeProtocol.EnvelopeVersion&&response.Version==ForgeProtocol.EnvelopeVersion&&
+                (bool)validate.Invoke(null,new object[]{request})&&!(bool)validate.Invoke(null,new object[]{newerEnvelope})&&!(bool)validate.Invoke(null,new object[]{null}));
+        });
+        test("Protocol advertises the complete standalone developer surface",()=>{var expected=new[]{"hello","summary","scan","modules","dependencies","diagnostics","logs","inspect","pin","compare","snapshots","unpin","tests","commands","command","test-mode","confirm-copy","run","run-batch","metrics","framework","event-journal","replay","patch-diagnostics","patch-blueprints","patch-preflight","hook-snapshots","hook-verify","hook-apply-plan","hook-apply-confirm","hook-revert-plan","hook-revert-confirm","hook-plan-cancel","report","export","panel-open","panel-close","language","agent-memory"};var capabilities=ForgeProtocol.Hello(SuiteInfo.Version,"1.4.8");Assert(capabilities.Contains("protocol:2")&&expected.All(capabilities.Contains)&&ForgeProtocol.Actions.SequenceEqual(expected)&&capabilities.Length==expected.Length+3);});
         test("Gauntlet hook preview rejects stale, changed and unregistered selections",()=>{
             var panelType=typeof(Runtime).Assembly.GetType("CalradiaForge.Mod.PanelViewModel",true);
             var validate=panelType.GetMethod("IsValidHookPlan",BindingFlags.Static|BindingFlags.NonPublic);
@@ -452,18 +473,24 @@ internal static class ReleaseTests
             try {var result=ExtensionStartup.Connect(new TestEngine());Assert(result.Connected&&healthy&&result.Errors.Count==1&&result.Errors[0].Contains("broken extension"));}
             finally {ForgeApi.Available-=broken;ForgeApi.Available-=ready;ForgeApi.Disconnect();}
         });
-        test("Harmony atlas reports absence without requiring Harmony",()=>{var result=HarmonyDiagnostics.Inspect(new Assembly[0]);Assert(!result.Available&&!result.Supported&&result.Status.Contains("not loaded"));});
-        test("Harmony atlas reports an incompatible runtime without failing",()=>{var result=HarmonyDiagnostics.Inspect(typeof(UnsupportedHarmony));Assert(result.Available&&!result.Supported&&result.Status.Contains("unavailable"));});
-        test("Harmony atlas preserves target identity, owners, kinds and ordering",()=>{
-            var result=HarmonyDiagnostics.Inspect(typeof(FakeHarmony),null,20);var target=result.Methods.Single(row=>row.Signature.Contains("System.Int32"));var prefix=target.Patches.Single(patch=>patch.Kind=="Prefix");
-            Assert(result.Supported&&result.DiscoveredMethodCount==2&&target.HasMultipleOwners&&target.Owners.SequenceEqual(new[]{"owner.alpha","owner.beta"})&&
-                target.Patches.Select(patch=>patch.Kind).SequenceEqual(new[]{"Prefix","Postfix","Transpiler","Finalizer"})&&
-                prefix.Owner=="owner.alpha"&&prefix.Priority==700&&prefix.Before.Single()=="owner.before"&&prefix.After.Single()=="owner.after"&&prefix.PatchMethod=="Prefix"&&
-                target.Patches.Single(patch=>patch.Kind=="Transpiler").PatchMethod=="Transpiler"&&target.Patches.Single(patch=>patch.Kind=="Finalizer").PatchMethod=="Finalizer");
+        test("Forge patch diagnostics reports only Forge-owned hook records",()=>{
+            var engine=new TestEngine();
+            var target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)});
+            engine.Register(new ForgeHookDefinition {Id="diagnostics.fixture",Owner="fixture.owner",Target=target,Prefix=_=>{}});
+            var result=ForgePatchDiagnostics.Capture((IForgeHookService)engine,(IForgePatchService)engine,Array.Empty<Assembly>());
+            Assert(result.Status=="Incomplete"&&result.HookCount==1&&result.PatchCount==0&&result.Hooks.Single().Id=="diagnostics.fixture"&&
+                result.Hooks.Single().Owner=="fixture.owner"&&result.Hooks.Single().State==ForgeHookState.Registered.ToString()&&result.Hooks.Single().HasPrefix&&
+                result.ExternalRuntime.Status=="NotLoaded"&&result.Notes.Any(note=>note.Contains("Custom Forge hook registry GetSnapshots",StringComparison.Ordinal)));
+            Assert(Json.Serialize(result).Contains("diagnostics.fixture"));
         });
-        test("Harmony atlas filters and explicitly bounds displayed targets",()=>{var filtered=HarmonyDiagnostics.Inspect(typeof(FakeHarmony),"owner.beta",20);var limited=HarmonyDiagnostics.Inspect(typeof(FakeHarmony),null,1);Assert(filtered.Methods.Count==1&&filtered.Methods[0].Owners.Contains("owner.beta")&&limited.Methods.Count==1&&limited.Truncated);});
-        test("Harmony atlas tolerates unreadable patch metadata",()=>{var result=HarmonyDiagnostics.Inspect(typeof(BrokenHarmony),null,20);Assert(result.Supported&&result.DiscoveredMethodCount==1&&result.Methods.Count==1);});
-        test("Harmony atlas marks empty metadata without calling it active",()=>{var result=HarmonyDiagnostics.Inspect(typeof(EmptyHarmony),null,20);Assert(result.EmptyMetadataMethodCount==1&&result.ActiveMethodCount==0&&result.Methods.Single().MetadataStatus=="No metadata"&&result.Status.Contains("not confirmed"));});
+        test("Forge patch diagnostics marks missing registries unavailable and an unrequested adapter explicitly",()=>{var result=ForgePatchDiagnostics.Capture(null,null);Assert(result.Status=="Unavailable"&&result.Notes.Any(note=>note.Contains("not supplied"))&&result.ExternalRuntime.Status=="NotRequested");});
+        test("Forge patch diagnostics preserves explicit owned conflicts without inferring them",()=>{
+            var hook=new ForgeHookSnapshot("fixture.conflict","fixture.owner","Fixture.Target",true,false,null,null,null,ForgeHookState.Conflict,"detour state is uncertain");
+            var hooks=new DiagnosticsHookFixture(new[]{hook});
+            var result=ForgePatchDiagnostics.Capture(hooks,new TestEngine(),Array.Empty<Assembly>());
+            Assert(result.Status=="Incomplete"&&result.ConflictCount==1&&result.FailedCount==0&&result.Hooks.Single().State=="Conflict"&&result.Hooks.Single().Detail.Contains("uncertain")&&
+                result.Notes.Any(note=>note.Contains("Custom Forge hook registry GetSnapshots",StringComparison.Ordinal)));
+        });
         test("Patch blueprint registry is additive and read-only",()=>{
             var engine=new TestEngine();var provider=new BlueprintProvider("blueprint.provider",Blueprint("blueprint.one",MethodReference.From(typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)}))));
             engine.Register(provider);Assert(engine.PatchBlueprintProviders.Single().Id=="blueprint.provider");
@@ -647,25 +674,21 @@ internal static class ReleaseTests
         test("Dependency cycle never produces a complete order",()=>Assert(!DependencyPlanner.Create(new[]{M("A","B"),M("B","A")}).Complete));
         test("Duplicate module IDs reject order",()=>Assert(!DependencyPlanner.Create(new[]{M("A"),M("a")}).Complete));
         test("Dependency ID matching is case insensitive",()=>Assert(DependencyPlanner.Create(new[]{M("A"),M("B","a")}).Complete));
-        test("Older sparse reports normalize safely",()=>{var w=new ReportWorkspace();w.Open(new SessionReport{Logs=null,Tests=null,Snapshots=null,Metrics=null,Harmony=null,ForgeWeave=null,PatchPreflight=null,ModuleDiagnostics=null},"old");Assert(w.Section("logs","")=="[]"&&w.Section("harmony","").Contains("Not captured")&&w.Section("framework","").Contains("Not captured")&&w.Section("patch-preflight","").Contains("Not captured")&&w.Section("summary","").Contains("old"));});
+        test("Older sparse reports normalize safely",()=>{var w=new ReportWorkspace();w.Open(new SessionReport{Logs=null,Tests=null,Snapshots=null,Metrics=null,PatchDiagnostics=null,ForgeWeave=null,PatchPreflight=null,ModuleDiagnostics=null},"old");Assert(w.Section("logs","")=="[]"&&w.Section("patch-diagnostics","").Contains("Not captured")&&w.Section("framework","").Contains("Not captured")&&w.Section("patch-preflight","").Contains("Not captured")&&w.Section("summary","").Contains("old"));});
         test("Malformed report preserves previously opened evidence",()=>{var w=new ReportWorkspace();var previous=new SessionReport{Session="preserve"};w.Open(previous,"baseline");Throws(()=>w.Open(new SessionReport{Logs=new List<LogEntry>{null}},"invalid"));Assert(ReferenceEquals(w.Report,previous)&&w.Source=="baseline");});
         test("HTML rejects null records with an actionable error",()=>{try{ReportHtml.Render(new SessionReport{Snapshots=new List<ObjectSnapshot>{null}});}catch(ArgumentException e){Assert(e.Message.Contains("null entries"));return;}throw new Exception("Expected report validation");});
 
 
-        test("Harmony report HTML escapes patch metadata",()=>{
+        test("Forge patch diagnostics HTML escapes owned and external metadata",()=>{
             var report=new SessionReport {
-                Harmony=new HarmonySnapshot {
+                PatchDiagnostics=new ForgePatchDiagnosticsSnapshot {
                     Status="<script>",
-                    Methods=new List<HarmonyPatchedMethod> {
-                        new HarmonyPatchedMethod {
-                            Owners=new List<string>{"<owner>"},
-                            Patches=new List<HarmonyPatchObservation>{new HarmonyPatchObservation{Kind="Prefix",Owner="<patch>"}}
-                        }
-                    }
+                    Hooks=new List<ForgeOwnedHookRecord>{new ForgeOwnedHookRecord{Id="<hook>",Owner="<owner>",TargetMethod="<target>"}},
+                    ExternalRuntime=new ExternalPatchRuntimeSnapshot {Status="Observed",Targets=new List<ExternalPatchTarget>{new ExternalPatchTarget {Owners=new List<string>{"<external>"}}}}
                 }
             };
             var html=ReportHtml.Render(report);
-            Assert(html.Contains("Harmony patch atlas")&&!html.Contains("<script>"));
+            Assert(html.Contains("Forge patch diagnostics")&&!html.Contains("<script>")&&!html.Contains("<hook>")&&!html.Contains("<external>"));
         });
         test("Patch preflight report HTML escapes author declarations",()=>{
             var report=new SessionReport {PatchPreflight=new PatchPreflightSnapshot {Status="<script>",Outcomes=new List<PatchPreflightOutcome>{new PatchPreflightOutcome {Declaration=new PatchBlueprintDeclaration {Module="<owner>",Blueprint=Blueprint("<blueprint>",new MethodReference {AssemblyName="<assembly>",DeclaringType="<type>",MemberName="<method>"})}}}}};
@@ -821,60 +844,18 @@ internal static class ReleaseTests
     {
         public PatchCallbackConstructorFixture() { }
     }
-    public static class UnsupportedHarmony { }
-    public static class FakeOriginals
+    sealed class DiagnosticsHookFixture:IForgeHookService
     {
-        public static void Target(int value) { }
-        public static void Target(string value) { }
-    }
-    public static class FakePatches
-    {
-        public static void Prefix() { }
-        public static void Postfix() { }
-        public static void Transpiler() { }
-        public static void Finalizer() { }
-    }
-    public sealed class FakePatch
-    {
-        public string owner; public int priority; public int index; public string[] before; public string[] after;
-        public MethodInfo PatchMethod { get; set; }
-    }
-    public sealed class FakePatchInfo
-    {
-        public List<string> Owners { get; set; }=new List<string>();
-        public List<FakePatch> Prefixes { get; set; }=new List<FakePatch>();
-        public List<FakePatch> Postfixes { get; set; }=new List<FakePatch>();
-        public List<FakePatch> Transpilers { get; set; }=new List<FakePatch>();
-        public List<FakePatch> Finalizers { get; set; }=new List<FakePatch>();
-    }
-    public static class FakeHarmony
-    {
-        static readonly MethodInfo integer=typeof(FakeOriginals).GetMethod("Target",new[]{typeof(int)});
-        static readonly MethodInfo text=typeof(FakeOriginals).GetMethod("Target",new[]{typeof(string)});
-        public static IEnumerable<MethodBase> GetAllPatchedMethods()=>new MethodBase[]{integer,text};
-        public static FakePatchInfo GetPatchInfo(MethodBase target)
-        {
-            if(target==integer)return new FakePatchInfo {Owners=new List<string>{"owner.beta","owner.alpha"},Prefixes=new List<FakePatch>{new FakePatch{owner="owner.alpha",priority=700,index=2,before=new[]{"owner.before"},after=new[]{"owner.after"},PatchMethod=typeof(FakePatches).GetMethod("Prefix")}},Postfixes=new List<FakePatch>{new FakePatch{owner="owner.beta",priority=200,index=3,PatchMethod=typeof(FakePatches).GetMethod("Postfix")}},Transpilers=new List<FakePatch>{new FakePatch{owner="owner.alpha",priority=300,index=4,PatchMethod=typeof(FakePatches).GetMethod("Transpiler")}},Finalizers=new List<FakePatch>{new FakePatch{owner="owner.beta",priority=400,index=5,PatchMethod=typeof(FakePatches).GetMethod("Finalizer")}}};
-            return new FakePatchInfo {Owners=new List<string>{"owner.gamma"},Prefixes=new List<FakePatch>{new FakePatch{owner="owner.gamma",priority=100,index=4,PatchMethod=typeof(FakePatches).GetMethod("Prefix")}}};
-        }
-    }
-    public sealed class BrokenPatchInfo
-    {
-        public IEnumerable<string> Owners { get { throw new InvalidOperationException("metadata getter failed"); } }
-        public IEnumerable<FakePatch> Prefixes { get { return new FakePatch[0]; } }
-        public IEnumerable<FakePatch> Postfixes { get { return new FakePatch[0]; } }
-        public IEnumerable<FakePatch> Transpilers { get { return new FakePatch[0]; } }
-        public IEnumerable<FakePatch> Finalizers { get { return new FakePatch[0]; } }
-    }
-    public static class BrokenHarmony
-    {
-        public static IEnumerable<MethodBase> GetAllPatchedMethods()=>new MethodBase[]{typeof(FakeOriginals).GetMethod("Target",new[]{typeof(int)})};
-        public static BrokenPatchInfo GetPatchInfo(MethodBase target)=>new BrokenPatchInfo();
-    }
-    public static class EmptyHarmony
-    {
-        public static IEnumerable<MethodBase> GetAllPatchedMethods()=>new MethodBase[]{typeof(FakeOriginals).GetMethod("Target",new[]{typeof(int)})};
-        public static FakePatchInfo GetPatchInfo(MethodBase target)=>null;
+        readonly IReadOnlyList<ForgeHookSnapshot> snapshots;
+        public DiagnosticsHookFixture(IReadOnlyList<ForgeHookSnapshot> snapshots)=>this.snapshots=snapshots;
+        public IForgeHookHandle Register(ForgeHookDefinition definition)=>throw new NotSupportedException();
+        public IReadOnlyList<ForgeHookSnapshot> GetSnapshots(string owner=null)=>snapshots;
+        public ForgeHookOperationResult Apply(string hookId)=>throw new NotSupportedException();
+        public ForgeHookOperationResult Verify(string hookId)=>throw new NotSupportedException();
+        public ForgeHookOperationResult Revert(string hookId)=>throw new NotSupportedException();
+        public IReadOnlyList<ForgeHookOperationResult> RevertOwner(string owner)=>throw new NotSupportedException();
+        public IReadOnlyList<ForgeHookOperationResult> RevertAll()=>throw new NotSupportedException();
+        public void Disconnect()=>throw new NotSupportedException();
     }
     sealed class HookLifecycleFixtureHost:IForgeRegistry,IForgeHookService,IForgeHookServiceLifecycle
     {

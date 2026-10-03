@@ -16,6 +16,7 @@ namespace CalradiaForge.Tests
             test("Native briefing decorations cannot intercept buttons", Decorations);
             test("Native panel exposes enriched category metadata and curated commands", CategoryEnrichment);
             test("Native panel supports modder role preset cycling and command pinning", ModderRoleCustomization);
+            test("Native periodic-work guidance uses stable buckets and localized deferral limits", StableTimeSlicingGuidance);
         }
 
         static Type PanelType => ClanCharacterProgressionTests.LoadModAssembly().GetType("CalradiaForge.Mod.PanelViewModel", true);
@@ -189,6 +190,45 @@ namespace CalradiaForge.Tests
             togglePinMethod.Invoke(panel, new object[] { firstCmd });
             Check(pinnedList.Count == 0, "Pinned list should be empty after unpinning");
             Check(!(bool)hasPinnedProp.GetValue(panel), "HasPinnedCommands should be false after unpinning");
+        }
+
+        static void StableTimeSlicingGuidance()
+        {
+            const string guidance = "2. For optional periodic hero work, use ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) for stable buckets. Defer only work that can wait up to 24 in-game hours, and measure before claiming a performance gain.";
+            const string resourceId = "forge_b6e557fb90d8";
+            string panelSource = File.ReadAllText("src/CalradiaForge.Mod/PanelViewModel.cs");
+            Check(panelSource.Contains(guidance), "The simulation guidance must use the stable SDK helper and state when deferral is safe.");
+            Check(!panelSource.Contains("hero.Id.GetHashCode() % 24"), "The UI must not recommend process-dependent hero bucketing.");
+            Check(File.ReadAllText("tools/regenerate_language_resources.py").Contains(guidance), "The resource generator must classify the new panel key as source-localized.");
+
+            var sourceCatalogs = new[]
+            {
+                new { Iso = "en", Folder = "EN" }, new { Iso = "es", Folder = "SP" },
+                new { Iso = "pt", Folder = "BR" }, new { Iso = "de", Folder = "DE" },
+                new { Iso = "fr", Folder = "FR" }, new { Iso = "it", Folder = "IT" },
+                new { Iso = "pl", Folder = "PL" }, new { Iso = "ru", Folder = "RU" },
+                new { Iso = "tr", Folder = "TR" }, new { Iso = "zh-HANS", Folder = "CNs" },
+                new { Iso = "zh-HANT", Folder = "CNt" }, new { Iso = "ja", Folder = "JP" },
+                new { Iso = "ko", Folder = "KO" }
+            };
+
+            foreach (var locale in sourceCatalogs)
+            {
+                string sourcePath = Path.Combine("localization", locale.Iso + ".xml");
+                var sourceEntry = XDocument.Load(sourcePath).Descendants("string")
+                    .SingleOrDefault(entry => (string)entry.Attribute("key") == guidance);
+                Check(sourceEntry != null && !string.IsNullOrWhiteSpace((string)sourceEntry.Attribute("value")),
+                    "Missing source translation for stable time-slicing guidance: " + locale.Iso);
+
+                string resourcePath = Path.Combine("modules/CalradiaForge/ModuleData/Languages", locale.Folder, "forge_strings.xml");
+                var resourceEntry = XDocument.Load(resourcePath).Descendants("string")
+                    .SingleOrDefault(entry => (string)entry.Attribute("id") == resourceId);
+                Check(resourceEntry != null && (string)resourceEntry.Attribute("text") == (string)sourceEntry.Attribute("value"),
+                    "Generated game resource does not match the localized source for " + locale.Iso);
+            }
+
+            // This is general native-panel help text, not a native-menu control label.
+            // The localized source catalogs and generated game resources are verified above.
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Input;
+using CalradiaForge.Sdk;
 
 namespace CalradiaForge.Desktop.Presentation
 {
@@ -636,8 +637,9 @@ internal sealed class WorkshopEnterpriseItemViewModel
             ];
         }
 
-        string capacitySummary = "6 / 100 Agent Slots Active · 6.0% Memory Utilization (T=0h Active)";
+        string capacitySummary = string.Empty;
         double capacityPercentage = 6.0;
+        int activeAgentCount;
         int activeScenarioIndex;
         IReadOnlyList<AgentProfileViewModel> agents;
         AgentProfileViewModel selectedAgent;
@@ -656,13 +658,15 @@ internal sealed class WorkshopEnterpriseItemViewModel
         {
             agents = ScenarioAgentSets[0];
             selectedAgent = agents[0];
+            activeAgentCount = agents.Count;
+            capacitySummary = FormatCapacitySummary(activeAgentCount);
             SelectAgentCommand = new RelayCommand(p => { if (p is AgentProfileViewModel a) SelectedAgent = a; });
             SimulateMemoryDecayCommand = new RelayCommand(() => CycleScenario());
             InjectSimulatedEpisodeCommand = new RelayCommand(() =>
             {
                 var stamp = DateTime.UtcNow.ToString("HH:mm:ss");
                 var hero = SelectedAgent?.Name ?? "Active NPC";
-                liveInjectedEpisodes.Insert(0, $"[{stamp} CoALA Live] Observed diplomatic council deliberation with {hero}");
+                liveInjectedEpisodes.Insert(0, $"[{stamp} Simulated sample] Observed diplomatic council deliberation with {hero}");
                 Raise(nameof(FilteredEpisodicEvents));
                 Raise(nameof(FilteredFactsSummary));
             });
@@ -673,7 +677,11 @@ internal sealed class WorkshopEnterpriseItemViewModel
         }
 
         public IReadOnlyList<double> MemoryDecayTrajectory { get => memoryDecayTrajectory; private set => Set(ref memoryDecayTrajectory, value); }
-        public double MemorySlotUtilizationGaugeValue => CapacityPercentage;
+        public double MemorySlotUtilizationGaugeValue => activeAgentCount;
+        public double MaximumAgentSlots => ForgeAgentMemory.MaximumAgents;
+        public double MemorySlotUtilizationPercentage => activeAgentCount / (double)ForgeAgentMemory.MaximumAgents * 100.0;
+        public string MemorySlotUtilizationLabel => MemorySlotUtilizationPercentage.ToString("F2", CultureInfo.CurrentCulture) + "%";
+        public string MemoryUtilizationSummary => CapacityPercentage.ToString("F1", CultureInfo.CurrentCulture) + "%";
         public double CognitiveCacheHitRateGauge => 94.2;
 
         static readonly string[] DefaultRadarAxes = ["Combat", "Diplomacy", "Trade", "Governance", "Recon"];
@@ -684,9 +692,16 @@ internal sealed class WorkshopEnterpriseItemViewModel
         public IReadOnlyList<double> ProceduralPolicyRadarValues => selectedAgent?.ProceduralPolicyValues ?? DefaultRadarValues;
         public IReadOnlyList<double> ProceduralPolicyRadarComparisonValues => selectedAgent?.ProceduralPolicyComparisonValues ?? DefaultRadarComparisonValues;
 
-        public string Architecture => "CoALA Cognitive Architecture (Short-Term Working + Bounded Episodic + Semantic Facts + Utility Decay)";
+        public string Architecture => "Simulated bounded agent-memory sample inspired by CoALA concepts; not a live registry or CoALA runtime.";
         public string CapacitySummary { get => capacitySummary; set => Set(ref capacitySummary, value); }
-        public double CapacityPercentage { get => capacityPercentage; set => Set(ref capacityPercentage, value); }
+        public double CapacityPercentage
+        {
+            get => capacityPercentage;
+            set
+            {
+                if (Set(ref capacityPercentage, value)) Raise(nameof(MemoryUtilizationSummary));
+            }
+        }
         public IReadOnlyList<AgentProfileViewModel> Agents { get => agents; private set => Set(ref agents, value); }
 
         public string SelectedCategoryFilter
@@ -920,6 +935,10 @@ internal sealed class WorkshopEnterpriseItemViewModel
             activeScenarioIndex = Math.Abs(index) % 3;
             var targetSet = ScenarioAgentSets[activeScenarioIndex];
             Agents = targetSet;
+            activeAgentCount = targetSet.Length;
+            CapacitySummary = FormatCapacitySummary(activeAgentCount);
+            Raise(nameof(MemorySlotUtilizationGaugeValue));
+            Raise(nameof(MemorySlotUtilizationLabel));
             SelectedAgent = targetSet[0];
             Raise(nameof(ActiveClusterOverview));
             Raise(nameof(ActiveConsolidationRate));
@@ -928,17 +947,14 @@ internal sealed class WorkshopEnterpriseItemViewModel
             Raise(nameof(ProceduralPolicyRadarComparisonValues));
             if (activeScenarioIndex == 0)
             {
-                CapacitySummary = "6 / 100 Agent Slots Active · 6.0% Memory Utilization (T=0h Active)";
                 CapacityPercentage = 6.0;
             }
             else if (activeScenarioIndex == 1)
             {
-                CapacitySummary = "6 / 100 Agent Slots Active · 4.8% Memory Utilization (T+24h Decay Stage)";
                 CapacityPercentage = 4.8;
             }
             else
             {
-                CapacitySummary = "6 / 100 Agent Slots Active · 3.2% Memory Utilization (T+72h Pruned & Consolidated)";
                 CapacityPercentage = 3.2;
             }
             UpdateDecayTrajectory();
@@ -948,10 +964,19 @@ internal sealed class WorkshopEnterpriseItemViewModel
 
         public void ApplyLiveIpcTelemetry(int liveAgentCount, int liveSemantic, int liveEpisodic, int liveProcedural)
         {
-            CapacitySummary = $"Live Game Session · {liveAgentCount} Registered Cognitive NPCs · {liveSemantic} Active Facts · {liveEpisodic} Episodes";
-            CapacityPercentage = Math.Min(100.0, (liveAgentCount / 2048.0) * 100.0);
+            activeAgentCount = Math.Clamp(liveAgentCount, 0, ForgeAgentMemory.MaximumAgents);
+            CapacitySummary = FormatCapacitySummary(activeAgentCount);
+            Raise(nameof(MemorySlotUtilizationGaugeValue));
+            Raise(nameof(MemorySlotUtilizationLabel));
+            CapacityPercentage = Math.Min(100.0, (liveAgentCount / (double)ForgeAgentMemory.MaximumAgents) * 100.0);
             UpdateDecayTrajectory();
         }
+
+        static string FormatCapacitySummary(int agentCount) => string.Format(
+            CultureInfo.CurrentCulture,
+            "{0:N0} / {1:N0}",
+            agentCount,
+            ForgeAgentMemory.MaximumAgents);
 
         IReadOnlyList<ForgeStepItem> cognitiveConsolidationPipelineSteps = new List<ForgeStepItem>
         {
@@ -1043,12 +1068,12 @@ internal sealed class WorkshopEnterpriseItemViewModel
 
             Raise(nameof(MemorySlotUtilizationGaugeValue));
         }
-        public string StudioDocumentation => "CoALA / MIRIX Cognitive Memory Architecture: Real-time working memory, episodic event recording, semantic knowledge graph with multi-dimensional utility decay score U = 0.4*R + 0.3*F + 0.3*I, and universal cognitive dialogues.";
-        public string ArchitecturalInvariants => "1. Episodic records are bounded at 50 entries per agent to prevent unbounded memory growth.\n2. Semantic decay occurs on modulo-24 anti-lag time-slicing.\n3. 100% stateless save persistence (0 SaveableTypeDefiner, resolve via Hero.StringId).\n4. Condition delegates in cognitive dialogues must be side-effect free.";
-        public string StudioCaveat => "Never serialize Hero or Agent engine instances directly into persistent dictionaries. Always store StringIds to survive save game reload cycles.";
+        public string StudioDocumentation => "Illustrative agent-memory dashboard inspired by CoALA concepts. Its seeded agents, facts, episodes, quotas, and decay charts are simulated sample data, not a CoALA runtime or live registry.";
+        public string ArchitecturalInvariants => "1. Episodic records are bounded at 50 entries per agent to prevent unbounded memory growth.\n2. Semantic TTL facts expire on access; the hourly stable-ID bucket only defers the maintenance read for eligible heroes and does not remove the full hero-list scan.\n3. 100% stateless save persistence (0 SaveableTypeDefiner, resolve via Hero.StringId).\n4. Condition delegates in cognitive dialogues must be side-effect free.";
+        public string StudioCaveat => "Illustrative simulated sample only: no live agent registry or CoALA language-agent runtime is connected. Never serialize Hero or Agent engine instances directly; store StringIds for persistence.";
         public string QuickActionCommand => "cf.agent_memory_stats";
         public string QuickActionLabel => "Memory Telemetry";
-        public string ScratchpadNotes { get; set; } = "Notes: CoALA cognitive decay utility score verified at U = 0.4*R + 0.3*F + 0.3*I across 2048 bounded slots.";
+        public string ScratchpadNotes { get; set; } = "Sample note: illustrative memory decay values are simulated; they do not verify a CoALA runtime or live agent registry.";
         public IReadOnlyList<StudioConsoleCommand> CuratedConsoleCommands { get; } =
         [
             new("cf.agent_memory_stats", "Inspect active tracked agents, fact counts, and decay state.", "CoALA Cognitive", true),

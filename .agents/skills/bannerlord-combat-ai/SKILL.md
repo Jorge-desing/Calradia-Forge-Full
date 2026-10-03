@@ -5,9 +5,9 @@ description: Best practices, AgentComponent lifecycle, Formation orders, casualt
 
 # Bannerlord Combat AI, Formation Tactics & Animation Blending
 
-This skill provides patterns for implementing custom combat mechanics, formation orders, casualty analysis, and agent animations natively in Mount & Blade II: Bannerlord without Harmony.
+This skill provides patterns for implementing custom combat mechanics, formation orders, casualty analysis, and agent animations through native Mount & Blade II: Bannerlord extension points, without a Harmony dependency or patch-based implementation.
 
-> **Prerequisites:** Read `bannerlord-shared-patterns` for universal safety rules (no Campaign namespace, no Harmony, no entity serialization).
+> **Prerequisites:** Read `bannerlord-shared-patterns` for universal safety rules: no `Campaign` namespace, no Harmony dependency or Harmony patch/detour implementation, and no entity serialization. The only Forge-side Harmony path is the optional read-only observer described there; it does not load or modify Harmony.
 
 ## 1. AgentComponent Lifecycle Pattern
 

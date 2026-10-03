@@ -1052,8 +1052,13 @@ if navigation_languages!=set(SUPPORTED_LOCALIZATION_LANGUAGES):
     raise ValueError('Source catalogs do not match the supported localization languages.')
 english_catalog.update({source:localized['en'] for source,localized in navigation_palette.items()})
 english_catalog.update({source:localized['en'] for source,localized in gauntlet_composer.items()})
-output_filter_keys=(
+source_localized_panel_keys=(
     'Evidence',
+    '2. For optional periodic hero work, use ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) for stable buckets. Defer only work that can wait up to 24 in-game hours, and measure before claiming a performance gain.',
+    'Advanced Developer SDK: Surface contracts for 110+ SDK tools, bounded NPC memory inspired by CoALA concepts, and decoupled engine API bridges.',
+    '1. Never mutate engine entities during render ticks.\n2. Never store raw Hero, Settlement, or MobileParty pointers in persistent fields; resolve by StringId via MBObjectManager.\n3. Inspection queries must be read-only; measure the complete query path before making performance claims.\n4. ForgeAgentMemory queries bounded NPC memory data; it is not a CoALA language-agent runtime.',
+    '2. Query ForgeAgentMemory: Execute cf.agent_memory_query to inspect semantic and episodic memory data.',
+    'Query ForgeAgentMemory fact counts and decay status',
     'Filter current output without changing the tool argument.',
     'Filter output lines...',
     'Clear output filter.',
@@ -1076,6 +1081,7 @@ output_filter_keys=(
     'Clear the pinned output baseline.',
     'Output baseline cleared.',
 )
+english_catalog.update({key: key for key in source_localized_panel_keys})
 test_results_explorer_keys=(
     'Test results',
     'Recent test results',
@@ -1099,10 +1105,10 @@ for language,folder,display,catalog in catalogs:
     catalog.update({source:localized[language] for source,localized in navigation_palette.items()})
     catalog.update({source:localized[language] for source,localized in gauntlet_composer.items()})
     source_catalog={entry.attrib['key']:entry.attrib['value'] for entry in E.parse(ROOT/'localization'/f'{language}.xml').getroot()}
-    for key in output_filter_keys:
+    for key in source_localized_panel_keys:
         translated=source_catalog.get(key)
         if not translated or (language=='en' and translated!=key):
-            raise ValueError(f'Incomplete in-game Gauntlet label translation for {language}: {key}')
+            raise ValueError(f'Incomplete in-game panel translation for {language}: {key}')
         catalog[key]=translated
     for key in test_results_explorer_keys:
         translated=source_catalog.get(key)

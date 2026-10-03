@@ -230,10 +230,10 @@ internal sealed class BlueprintNodeViewModel
         public string StudioCaveat => "Omitting SetDialogs() from InitializeQuestOnGameLoad() causes quest NPCs to become permanently silent or unresponsive after reloading a saved game.";
         public string QuickActionCommand => "cf.novice_scaffold behavior MyCustomBehavior";
         public string QuickActionLabel => "Scaffold Behavior";
-        public string ScratchpadNotes { get; set; } = "Notes: Generated behaviors enforce double SetDialogs() and anti-lag modulo-24 time slicing.";
+        public string ScratchpadNotes { get; set; } = "Notes: Behavior scaffolds include optional stable-ID bucket selection for deferrable hourly work; bucket sizes vary and filtering still scans the collection.";
         public IReadOnlyList<StudioConsoleCommand> CuratedConsoleCommands { get; } =
         [
-            new("cf.novice_scaffold behavior MyCustomBehavior", "Generate an anti-lag CampaignBehaviorBase scaffold.", "Scaffolding", true),
+            new("cf.novice_scaffold behavior MyCustomBehavior", "Generate a CampaignBehaviorBase scaffold with an optional deferrable-work example; bucket filtering still scans the collection.", "Scaffolding", true),
             new("cf.novice_scaffold quest MyDeliveryQuest", "Generate a QuestBase class enforcing double SetDialogs().", "Scaffolding"),
             new("cf.novice_scaffold troop ImperialLegionary", "Generate valid NPCCharacters.xml troop loadout.", "Scaffolding"),
             new("cf.novice_scaffold item IronArmingSword", "Generate valid Items.xml weapon definition.", "Scaffolding"),
@@ -247,7 +247,7 @@ internal sealed class BlueprintNodeViewModel
         [
             "1. Scaffold CampaignBehaviorBase with AddNonSerializedListener.",
             "2. Ensure double SetDialogs() in Quest constructor AND InitializeQuestOnGameLoad().",
-            "3. Enforce modulo-24 anti-lag time slicing in HourlyTick."
+            "3. Use stable-ID bucket selection only for optional hourly work that can safely be deferred; it still scans the input collection."
         ];
         public string TroubleshootingHeader => "Troubleshooting: Silent NPC Dialogue Glitch on Game Load";
         public string TroubleshootingRemedy => "If quest NPCs stop responding after loading a save game, verify that SetDialogs() is called inside InitializeQuestOnGameLoad(). Never omit this secondary hook.";
@@ -1666,7 +1666,7 @@ internal sealed class BlueprintNodeViewModel
             new("CRASH-041", "WARN", "dump_0928.cfcrash", 88, "NullReferenceException captured in TaleWorlds MissionView.OnInit.", "Defer skeleton manipulations to first OnTick(dt).", "BrassBrush"),
             new("MESH-002", "WARN", "custom_armor.tpac", 204, "Vertex count exceeds 15,000 LOD0 threshold.", "Optimize mesh topology or generate LOD1/LOD2 decimation.", "BrassBrush"),
             new("XSD-008", "INFO", "ModuleData/items.xml", 340, "Unrecognized custom attribute 'forge_perk' ignored by native parser.", "Verify schema extension tag in SubModule.xml.", "VerdigrisBrush"),
-            new("TIME-015", "PASS", "HourlyTickHandler.cs", 62, "Anti-lag modulo-24 time-slicing active for hero updates.", "Optimal distribution.", "VerdigrisBrush")
+            new("TIME-015", "INFO", "HourlyTickHandler.cs", 62, "Stable-ID bucket selection is shown for optional hourly work; collection traversal and bucket balance are not measured.", "Measure the complete callback with representative IDs and entity counts before claiming a performance gain or balanced load.", "BrassBrush")
         ];
 
         static readonly HexDiffSnippetViewModel[] DefaultHexSnippets =
@@ -1776,7 +1776,7 @@ internal sealed class BlueprintNodeViewModel
                 SessionTitle = "CRASH FORENSICS & SANDBOX TRIAGE LAB";
                 OverallHealthStatus = "ANOMALY ISOLATED · 2 WARNINGS (BOUNDED)";
                 HealthBrushKey = "BrassBrush";
-                TargetScope = "CRASH DUMP & HEURISTIC TRACE (artifacts/*.cfcrash)";
+                TargetScope = "EXCEPTION REPORT & HEURISTIC TRACE (artifacts/*.cfcrash)";
                 ScanMetricsSummary = "Forensic Triage: 8 Exceptions Decoded · 2 Warnings · Bounded Sandbox";
                 ActiveProfileLabel = "Development Sandbox & Crash Forensics";
                 ComplianceScoreGaugeValue = 84.0;
@@ -1814,7 +1814,7 @@ internal sealed class BlueprintNodeViewModel
         [
             new("cf.audit_rules", "Execute static source audit across all behaviors and assemblies.", "Diagnostics", true),
             new("cf.validate_schema", "Validate XML data files against TaleWorlds XSD schemas.", "Diagnostics"),
-            new("cf.parse_crash", "Decode binary and text crash dumps (.cfcrash) with symbol resolution.", "Diagnostics"),
+            new("cf.parse_crash", "Review Forge .cfcrash exception text; .dmp and .sav inputs are reported as file metadata only.", "Diagnostics"),
             new("cf.check_conflicts", "Evaluate module dependencies and load order DAG for conflicts.", "Diagnostics"),
             new("cf.verify_assembly", "Verify CLR assembly metadata, strong naming, and security bounds.", "Diagnostics")
         ];
@@ -1823,7 +1823,7 @@ internal sealed class BlueprintNodeViewModel
         [
             "1. Execute static rule audit to verify GEMINI Rule A (anti-shadowing) and Rule B (statelessness).",
             "2. Validate SubModule.xml schema and verify module folder name parity.",
-            "3. Inspect crash dumps for OnInit() mesh/skeleton lifecycle violations."
+            "3. Treat exception text as evidence; use game logs and a debugger for native symbols or lifecycle context."
         ];
         public string TroubleshootingHeader => "Troubleshooting: Native Crash on Mission Load (0xC0000005)";
         public string TroubleshootingRemedy => "If Bannerlord crashes natively during battle scene loading without a C# stack trace, verify that MissionLogic or ScriptComponentBehaviour classes do not create physics meshes in OnInit(). Defer all mesh manipulations to first OnTick(float dt).";

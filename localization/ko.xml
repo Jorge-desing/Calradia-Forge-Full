@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <strings language="ko">
+  <string key="2. For optional periodic hero work, use ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) for stable buckets. Defer only work that can wait up to 24 in-game hours, and measure before claiming a performance gain." value="2. 선택적 영웅 주기 작업에는 ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour)를 사용해 안정적인 버킷으로 나누세요. 게임 내 최대 24시간 기다릴 수 있는 작업만 미루고, 성능 향상을 주장하기 전에 측정하세요." />
   <string key="Assign unique IDs" value="Assign unique IDs" />
   <string key="Build or reinstall module" value="Build or reinstall module" />
   <string key="Calradia Forge" value="칼라디아의 대장간" />
@@ -41,9 +42,6 @@
   <string key="Maximum" value="최대" />
   <string key="Recent events" value="최근 이벤트" />
   <string key="Framework findings" value="프레임워크 결과" />
-  <string key="Harmony" value="Harmony" />
-  <string key="Harmony patch atlas" value="Harmony 패치 목록" />
-  <string key="Optional read-only Harmony diagnostics. Shared targets are review candidates, not proven conflicts." value="읽기 전용 선택적 Harmony 진단입니다. 공유 대상은 검토 후보이며 확인된 충돌이 아닙니다." />
   <string key="Patch preflight" value="패치 사전 검증" />
   <string key="Patch blueprint preflight" value="패치 청사진 사전 검증" />
   <string key="Providers" value="공급자" />
@@ -266,12 +264,9 @@
   <string key="Test ID" value="테스트 ID" />
   <string key="Status" value="상태" />
   <string key="Duration" value="기간" />
-  <string key="Read-only inventory of active Harmony patches in already-loaded assemblies." value="이미 로드된 어셈블리의 활성 Harmony 패치 읽기 전용 목록." />
   <string key="Patch Preflight: Read-only structural check of declared targets and callback references; it never applies patches or invokes callbacks." value="Patch Preflight: 선언된 대상 및 콜백 참조의 구조를 읽기 전용으로 확인합니다. 패치를 적용하거나 콜백을 호출하지 않습니다." />
-  <string key="ForgeWeave: Event recording and sequence replay. Harmony Atlas is a separate read-only inventory; Patch Preflight checks blueprint declarations without applying patches." value="ForgeWeave: 이벤트 기록 및 시퀀스 재생. Harmony Atlas는 별도의 읽기 전용 목록이며, Patch Preflight는 패치를 적용하지 않고 블루프린트 선언을 확인합니다." />
   <string key="Event Replay &amp; Patch Diagnostics" value="이벤트 재생 및 패치 진단" />
   <string key="2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in." value="2. 패치 블루프린트 검토: 대기 중인 선언을 검토하려면 cf.patch_preflight를 실행하세요. 패치를 적용하지 않습니다. Forge 메서드 교체에는 별도의 명시적 동의가 필요합니다." />
-  <string key="ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools." value="ForgeWeave 이벤트 파이프라인: 결정적 이벤트 기록 및 시퀀스 재생. Harmony 진단과 Patch Blueprint Preflight는 별개의 도구입니다." />
   <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. Forge 메서드 교체에는 별도의 명시적 요청이 필요합니다. 백엔드가 지원하지 않는 선언된 hook 종류는 메타데이터로만 남습니다. Patch Preflight는 읽기 전용이며 콜백 코드를 호출하지 않습니다. AddNonSerializedListener를 사용해 ForgeWeave 이벤트 리스너를 직렬화하지 않도록 하세요." />
   <string key="Hook inventory" value="후크 목록" />
   <string key="Next hook" value="다음 후크" />
@@ -281,4 +276,14 @@
   <string key="Confirm action" value="작업 확인" />
   <string key="Approve displayed hook plan" value="표시된 후크 계획 승인" />
   <string key="Selected hook" value="선택한 후크" />
+  <string key="Patch diagnostics" value="패치 진단" />
+  <string key="Read-only diagnostics for Forge hooks, Forge patches, and optional loaded patch runtimes." value="Forge 후크와 패치 및 선택적으로 이미 로드된 패치 런타임을 읽기 전용으로 진단합니다。" />
+  <string key="Optional external runtime" value="선택적 외부 런타임" />
+  <string key="ForgeWeave: Event recording and sequence replay. Patch diagnostics inspect Forge-owned hooks and patches; a compatible loaded runtime is observed read-only when available. Patch Preflight checks blueprint declarations without applying patches." value="ForgeWeave: 이벤트 기록 및 시퀀스 재생. 패치 진단은 Forge 소유 후크와 패치를 검사하며, 호환되는 로드된 런타임이 있으면 읽기 전용으로 관찰합니다. Patch Preflight는 패치를 적용하지 않고 선언을 확인합니다。" />
+  <string key="이벤트, SyncData, 안정적인 ID 버킷을 포함한 CampaignBehaviorBase 골격을 생성합니다. 선택적 작업을 나누지만 전체 컬렉션은 계속 순회합니다." value="이벤트, SyncData, 안정적인 ID 버킷을 포함한 CampaignBehaviorBase 골격을 생성합니다. 선택적 작업을 나누지만 전체 컬렉션은 계속 순회합니다." />
+  <string key="안정적인 ID 기반 일괄 예약 기능이 있는 CampaignBehaviorBase 골격 생성" value="안정적인 ID 기반 일괄 예약 기능이 있는 CampaignBehaviorBase 골격 생성" />
+  <string key="Advanced Developer SDK: Surface contracts for 110+ SDK tools, bounded NPC memory inspired by CoALA concepts, and decoupled engine API bridges." value="고급 개발자 SDK: 110개 이상의 SDK 도구 계약, CoALA 개념에서 영감을 받은 제한된 NPC 메모리, 분리된 엔진 API 브리지를 제공합니다." />
+  <string key="1. Never mutate engine entities during render ticks.&#10;2. Never store raw Hero, Settlement, or MobileParty pointers in persistent fields; resolve by StringId via MBObjectManager.&#10;3. Inspection queries must be read-only; measure the complete query path before making performance claims.&#10;4. ForgeAgentMemory queries bounded NPC memory data; it is not a CoALA language-agent runtime." value="1. 렌더링 틱 중에는 엔진 엔티티를 변경하지 마세요.&#10;2. Hero, Settlement 또는 MobileParty의 원시 포인터를 영구 필드에 저장하지 마세요. MBObjectManager를 통해 StringId로 확인하세요.&#10;3. 검사 쿼리는 읽기 전용이어야 합니다. 성능을 주장하기 전에 전체 쿼리 경로를 측정하세요.&#10;4. ForgeAgentMemory 쿼리는 제한된 NPC 메모리 데이터를 다루며 CoALA 언어 에이전트 런타임이 아닙니다." />
+  <string key="2. Query ForgeAgentMemory: Execute cf.agent_memory_query to inspect semantic and episodic memory data." value="2. ForgeAgentMemory 조회: 의미 및 에피소드 메모리 데이터를 확인하려면 cf.agent_memory_query를 실행하세요." />
+  <string key="Query ForgeAgentMemory fact counts and decay status" value="ForgeAgentMemory 사실 개수와 만료 상태 조회" />
 </strings>

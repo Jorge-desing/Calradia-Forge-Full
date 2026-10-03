@@ -68,24 +68,27 @@ When saving `Dictionary<string, int>` or custom structs:
 
 ---
 
-## 4. Tick Performance & Anti-Lag Architecture
-During midnight or hourly pulses, running unoptimized loops on 1,500+ heroes creates the "Midnight Freeze" stutter.
+## 4. Tick Performance & Time Slicing
+Choose scheduling and performance changes from the behavior's timing requirements and measurements. Do not infer a frame-time regression or a universal performance threshold from source syntax alone.
 
-### Anti-Lag Strategies:
-1. **Modulo Slicing Across 24 Hours**:
+### Measured Strategies:
+1. **Stable Time Slicing for Deferrable Work**:
+   Use the SDK scheduler when an operation may safely wait for its assigned hour. It hashes a stable `StringId` and normalizes the supplied hour; it does not make the collection scan itself O(N/24).
    ```csharp
-   int currentHour = (int)CampaignTime.Now.ToHours % 24;
+   using CalradiaForge.Sdk;
+
+   int currentHour = (int)CampaignTime.Now.ToHours;
    foreach (Hero hero in Hero.AllAliveHeroes)
    {
        if (hero == null || !hero.IsActive) continue;
-       int bucket = (hero.StringId.GetHashCode() & 0x7FFFFFFF) % 24;
-       if (bucket == currentHour)
+       if (ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour))
        {
            ProcessHeroDailyLogic(hero);
        }
    }
    ```
-2. **Zero GC Allocations**: Avoid LINQ (`.Where()`, `.Select()`, `.ToList()`) and lambda closures inside `HourlyTick` or `DailyTickParty`. Reuse pre-allocated scratch collections.
+   This example still traverses `Hero.AllAliveHeroes` on every call. Use a maintained bucket/index only if justified by a measured traversal cost and correct invalidation semantics.
+2. **Allocation and Duration Budgets**: Measure the complete callback, including invoked helpers and engine calls, before deciding whether LINQ, delegates, or temporary collections need changes. Avoid claiming zero allocations or GC pauses without such evidence.
 3. **Squared Distance Calculations**: Always compare squared distances (`Vec2.DistanceSquared`) instead of `Math.Sqrt`.
 
 ---

@@ -10,6 +10,8 @@ include = [
     "tools/audit_localization.py",
     "tools/audit_package.py",
     "tools/validate_game_icon_assets.py",
+    "tools/validate_onboarding_knowledge.py",
+    "tools/run_developer_onboarding_smoke.py",
 ]
 
 # These paths are intentionally outside the initial gate: generated/temporary

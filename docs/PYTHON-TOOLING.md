@@ -28,6 +28,7 @@ tools\Setup-CalradiaForge-Python.bat --agents
 
 The `--agents` option is explicit; ordinary project setup does not install the Antigravity runtime. Keep agent-only packages in `agents/requirements.txt` rather than adding them to the general tool profile.
 
+
 ## Skill metadata validation
 
 Run the repository launcher with the skill directory to validate its `SKILL.md` frontmatter using the Codex Skill Creator validator and the project environment:

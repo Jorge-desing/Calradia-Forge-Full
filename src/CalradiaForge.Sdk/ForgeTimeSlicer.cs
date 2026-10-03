@@ -4,9 +4,9 @@ using System.Collections.Generic;
 namespace CalradiaForge.Sdk
 {
     /// <summary>
-    /// Anti-Lag Time-Slicing Engine for Bannerlord CampaignBehaviors.
-    /// Distributes entity updates (heroes, settlements, caravans) evenly across hourly ticks
-    /// using a deterministic 24-bucket hash algorithm to eliminate the "Midnight Freeze" stutter.
+    /// Deterministic time-slicing helper for Bannerlord CampaignBehaviors.
+    /// Assigns entity identifiers to buckets so callers can spread eligible work across updates.
+    /// Distribution depends on the identifiers and does not guarantee even workloads or eliminate stutter.
     /// </summary>
     public static class ForgeTimeSlicer
     {
@@ -38,13 +38,19 @@ namespace CalradiaForge.Sdk
         public static bool ShouldProcess(string entityId, int currentHour, int totalBuckets = DefaultHourlyBuckets)
         {
             if (totalBuckets <= 1) return true;
-            int normalizedHour = ((currentHour % totalBuckets) + totalBuckets) % totalBuckets;
+            int normalizedHour = NormalizeHour(currentHour, totalBuckets);
             return GetBucket(entityId, totalBuckets) == normalizedHour;
         }
 
+        private static int NormalizeHour(int currentHour, int totalBuckets)
+        {
+            int normalizedHour = currentHour % totalBuckets;
+            return normalizedHour < 0 ? normalizedHour + totalBuckets : normalizedHour;
+        }
+
         /// <summary>
-        /// Processes only the subset of entities assigned to the current hour's bucket with zero LINQ allocations.
-        /// Optimized for indexable collections (List, T[], MBReadOnlyList) with zero enumerator allocations.
+        /// Processes entities assigned to the current hour's bucket without a LINQ pipeline.
+        /// Uses indexed access; collection, selector, or processor implementations may still allocate.
         /// </summary>
         public static int ProcessBatch<T>(
             IReadOnlyList<T> entities,
@@ -68,7 +74,7 @@ namespace CalradiaForge.Sdk
                 return processedCount;
             }
 
-            int targetBucket = ((currentHour % totalBuckets) + totalBuckets) % totalBuckets;
+            int targetBucket = NormalizeHour(currentHour, totalBuckets);
 
             for (int i = 0; i < entities.Count; i++)
             {
@@ -86,7 +92,8 @@ namespace CalradiaForge.Sdk
         }
 
         /// <summary>
-        /// Processes only the subset of entities assigned to the current hour's bucket with zero LINQ allocations.
+        /// Processes entities assigned to the current hour's bucket without a LINQ pipeline.
+        /// The sequence enumerator, selector, or processor implementations may allocate.
         /// </summary>
         public static int ProcessBatch<T>(
             IEnumerable<T> entities,
@@ -109,7 +116,7 @@ namespace CalradiaForge.Sdk
                 return processedCount;
             }
 
-            int targetBucket = ((currentHour % totalBuckets) + totalBuckets) % totalBuckets;
+            int targetBucket = NormalizeHour(currentHour, totalBuckets);
 
             foreach (T entity in entities)
             {

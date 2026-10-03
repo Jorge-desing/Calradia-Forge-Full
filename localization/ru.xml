@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <strings language="ru">
+  <string key="2. For optional periodic hero work, use ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) for stable buckets. Defer only work that can wait up to 24 in-game hours, and measure before claiming a performance gain." value="2. Для необязательной периодической обработки героев используйте ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) для распределения по стабильным группам. Откладывайте только работу, которая может подождать до 24 игровых часов, и измеряйте результат, прежде чем заявлять об улучшении производительности." />
   <string key="Assign unique IDs" value="Assign unique IDs" />
   <string key="Build or reinstall module" value="Build or reinstall module" />
   <string key="Calradia Forge" value="Кузница Кальрадии" />
@@ -41,9 +42,6 @@
   <string key="Maximum" value="Максимум" />
   <string key="Recent events" value="Недавние события" />
   <string key="Framework findings" value="Выводы фреймворка" />
-  <string key="Harmony" value="Harmony" />
-  <string key="Harmony patch atlas" value="Атлас патчей Harmony" />
-  <string key="Optional read-only Harmony diagnostics. Shared targets are review candidates, not proven conflicts." value="Необязательная диагностика Harmony только для чтения. Общие цели требуют проверки, но не являются доказанными конфликтами." />
   <string key="Patch preflight" value="Предварительная проверка патчей" />
   <string key="Patch blueprint preflight" value="Предварительная проверка плана патча" />
   <string key="Providers" value="Поставщики" />
@@ -266,12 +264,9 @@
   <string key="Test ID" value="ID теста" />
   <string key="Status" value="Статус" />
   <string key="Duration" value="Длительность" />
-  <string key="Read-only inventory of active Harmony patches in already-loaded assemblies." value="Список активных патчей Harmony в уже загруженных сборках (только для чтения)." />
   <string key="Patch Preflight: Read-only structural check of declared targets and callback references; it never applies patches or invokes callbacks." value="Patch Preflight: структурная проверка объявленных целей и ссылок на обратные вызовы в режиме только для чтения; патчи не применяются, обратные вызовы не вызываются." />
-  <string key="ForgeWeave: Event recording and sequence replay. Harmony Atlas is a separate read-only inventory; Patch Preflight checks blueprint declarations without applying patches." value="ForgeWeave: запись событий и воспроизведение последовательностей. Harmony Atlas — отдельный инвентарь только для чтения; Patch Preflight проверяет объявления blueprint без применения патчей." />
   <string key="Event Replay &amp; Patch Diagnostics" value="Воспроизведение событий и диагностика патчей" />
   <string key="2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in." value="2. Проверка blueprint патча: запустите cf.patch_preflight, чтобы проверить ожидающие объявления. Команда не применяет патчи; замена метода Forge требует отдельного явного подтверждения." />
-  <string key="ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools." value="Конвейер событий ForgeWeave: детерминированная запись событий и воспроизведение последовательностей. Диагностика Harmony и Patch Blueprint Preflight — отдельные инструменты." />
   <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. Для замены метода Forge требуется отдельный явный запрос; объявленные типы хуков, не поддерживаемые backend, остаются метаданными. Patch Preflight работает только для чтения и не вызывает код обратных вызовов. Используйте AddNonSerializedListener, чтобы обработчики событий ForgeWeave не сериализовались." />
   <string key="Hook inventory" value="Список хуков" />
   <string key="Next hook" value="Следующий хук" />
@@ -281,4 +276,14 @@
   <string key="Confirm action" value="Подтвердить действие" />
   <string key="Approve displayed hook plan" value="Одобрить показанный план хуков" />
   <string key="Selected hook" value="Выбранный хук" />
+  <string key="Patch diagnostics" value="Диагностика патчей" />
+  <string key="Read-only diagnostics for Forge hooks, Forge patches, and optional loaded patch runtimes." value="Диагностика хуков и патчей Forge и необязательных уже загруженных сред патчинга только для чтения." />
+  <string key="Optional external runtime" value="Необязательная внешняя среда" />
+  <string key="ForgeWeave: Event recording and sequence replay. Patch diagnostics inspect Forge-owned hooks and patches; a compatible loaded runtime is observed read-only when available. Patch Preflight checks blueprint declarations without applying patches." value="ForgeWeave: запись событий и воспроизведение последовательностей. Диагностика проверяет хуки и патчи Forge; совместимая уже загруженная среда наблюдается только для чтения. Patch Preflight проверяет объявления без применения патчей." />
+  <string key="Создает шаблон CampaignBehaviorBase с событиями, SyncData и корзинами стабильных ID для необязательной работы; полный список по-прежнему обходится." value="Создает шаблон CampaignBehaviorBase с событиями, SyncData и корзинами стабильных ID для необязательной работы; полный список по-прежнему обходится." />
+  <string key="Создает шаблон CampaignBehaviorBase с пакетным планированием по стабильному ID" value="Создает шаблон CampaignBehaviorBase с пакетным планированием по стабильному ID" />
+  <string key="Advanced Developer SDK: Surface contracts for 110+ SDK tools, bounded NPC memory inspired by CoALA concepts, and decoupled engine API bridges." value="Расширенный SDK для разработчиков: контракты более чем 110 инструментов SDK, ограниченная память NPC на основе идей CoALA и независимые мосты к API движка." />
+  <string key="1. Never mutate engine entities during render ticks.&#10;2. Never store raw Hero, Settlement, or MobileParty pointers in persistent fields; resolve by StringId via MBObjectManager.&#10;3. Inspection queries must be read-only; measure the complete query path before making performance claims.&#10;4. ForgeAgentMemory queries bounded NPC memory data; it is not a CoALA language-agent runtime." value="1. Никогда не изменяйте игровые сущности во время кадров рендеринга.&#10;2. Никогда не сохраняйте исходные указатели Hero, Settlement или MobileParty в постоянных полях; разрешайте их по StringId через MBObjectManager.&#10;3. Проверочные запросы должны быть только для чтения; измеряйте весь путь запроса до заявлений о производительности.&#10;4. Запросы ForgeAgentMemory работают с ограниченными данными памяти NPC; это не среда языковых агентов CoALA." />
+  <string key="2. Query ForgeAgentMemory: Execute cf.agent_memory_query to inspect semantic and episodic memory data." value="2. Запрос ForgeAgentMemory: выполните cf.agent_memory_query для просмотра семантических и эпизодических данных памяти." />
+  <string key="Query ForgeAgentMemory fact counts and decay status" value="Запросить число фактов ForgeAgentMemory и состояние их устаревания." />
 </strings>

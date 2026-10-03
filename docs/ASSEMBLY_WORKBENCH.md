@@ -26,3 +26,7 @@ In the standalone .NET 8 WPF Desktop workbench, AsmResolver also powers deep off
 - **Distribution Safety Metadata:** Audits assembly metadata attributes (`Company`, `Product`, `Description`, `Copyright`) to safeguard against false-positive antivirus quarantines.
 - **Interactive CLR Security Radar (Rev032):** Visualizes CLR metadata cards (Declared Types, Method Table, Assembly References, StringId Resolution Count), 5 compliance gauge bars, and canonical assembly audit presets cycling via `PresetActionButton`.
 
+## Patch diagnostics (current)
+
+The current in-game console command is `cf.patch_diagnostics`; it returns bounded Forge-owned hook and replacement-patch records. The `patch-diagnostics` protocol action serves the same read-only snapshot to Desktop. An optional reflection observer checks the expected public static `HarmonyLib.Harmony.GetAllPatchedMethods()` and `GetPatchInfo(MethodBase)` query surface on an already-loaded assembly named `0Harmony`; this is a bounded runtime diagnostic signal, not a release or mod-compatibility test. It has no distributed dependency, does not load or mutate that runtime, and cannot see unrelated patch backends. The probe is synchronous and in-process. Its enumeration and output caps do not limit work performed inside Harmony query methods or getters, and it is neither a sandbox nor an authenticity verifier. The predecessor alias `cf.harmony_summary` is retired.
+

@@ -33,8 +33,8 @@ namespace CalradiaForge.Sdk
     }
 
     /// <summary>
-    /// Provides a CoALA-based cognitive memory architecture for Bannerlord NPCs.
-    /// Supports bounded semantic, episodic, and procedural memory.
+    /// Provides bounded semantic, episodic, and procedural memory for Bannerlord NPCs.
+    /// Its tiers are conceptually analogous to parts of CoALA; this service is not a complete language-agent runtime.
     /// </summary>
     public static class ForgeAgentMemory
     {

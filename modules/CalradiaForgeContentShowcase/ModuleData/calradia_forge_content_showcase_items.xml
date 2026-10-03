@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Items>
+  <Item id="cfcs_practice_whip" name="{=cfcs_practice_whip}Practice Whip" mesh="horse_whip" culture="Culture.empire" weight="0.2" appearance="1" Type="OneHandedWeapon" value="50" body_name="bo_mace_a" recalculate_body="true" item_holsters="sword_left_hip">
+    <ItemComponent>
+      <Weapon weapon_class="OneHandedSword" thrust_speed="79" speed_rating="99" weapon_balance="90" thrust_damage="6" thrust_damage_type="Blunt" swing_damage="5" swing_damage_type="Blunt" item_usage="onehanded_block_shield_swing" />
+    </ItemComponent>
+  </Item>
+</Items>

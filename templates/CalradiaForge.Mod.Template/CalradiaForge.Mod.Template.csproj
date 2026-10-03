@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <PackageId>CalradiaForge.Mod.Template</PackageId>
+    <PackageVersion>$(CalradiaForgeVersion)</PackageVersion>
+    <Authors>Calradia Forge Team</Authors>
+    <Description>Starter project template for a Bannerlord module using Calradia Forge.</Description>
+    <PackageTags>Bannerlord;modding;template;CalradiaForge</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/Jorge-desing/Calradia-Forge-Full</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageType>Template</PackageType>
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <NoDefaultExcludes>true</NoDefaultExcludes>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="README.md" Pack="true" PackagePath="README.md" />
+    <Content Include="content\.template.config\**\*">
+      <Pack>true</Pack>
+      <PackagePath>content\.template.config\%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+    </Content>
+    <Content Include="content\CalradiaForge.ModTemplate\**\*">
+      <Pack>true</Pack>
+      <PackagePath>content\CalradiaForge.ModTemplate\%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+    </Content>
+  </ItemGroup>
+</Project>

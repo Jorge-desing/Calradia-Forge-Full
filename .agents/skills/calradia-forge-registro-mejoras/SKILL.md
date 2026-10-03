@@ -51,7 +51,7 @@ Create a new file following the naming convention:
 [Detailed description of what problem occurred, why it needed fixing or optimization, including symptoms and repro]
 
 ## Solución técnica y decisiones arquitectónicas
-[Technical explanation of the solution: algorithms, data structures, zero GC allocation guarantees, anti-lag time-slicing, styling rules, or thread safety]
+[Technical explanation of the solution: algorithms, data structures, measured allocation behavior for the complete relevant path, time-slicing limits, styling rules, or thread safety. Do not promise zero allocations, reduced latency, or an anti-lag effect unless the exact path and workload were measured.]
 
 ## Cambios en activos, código y dependencias
 [Specific files modified, functions changed, resources removed/optimized, byte budget deltas]
@@ -66,6 +66,13 @@ Este anexo añade evidencia a la revisión anterior sin reemplazar sus párrafos
 ```
 
 ### Step 3: Execute Compilation Tool
+Use the project environment through the BAT gateway:
+`tools/Append-CalradiaForge-Improvement-Record.bat docs/append/<annex>.md`.
+Verify afterward with the same launcher and `--verify`. Discover the next revision
+immediately before appending; another agent may have appended since the task baseline.
+Do not include unrelated predecessor revisions in a scoped commit without resolving
+their ownership and chain dependency.
+
 Run the append tool:
 ```bash
 python tools/append_detailed_changelog_revision.py docs/append/RevXXX-<Topic>.md

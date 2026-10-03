@@ -9,6 +9,11 @@ from zipfile import ZipFile
 
 
 GAME_ICON_LICENSE_URL = "https://creativecommons.org/licenses/by/3.0/"
+SOURCE_TEMPLATE_MANIFEST_PATH = (
+    "Source/templates/CalradiaForge.Mod.Template/content/"
+    "CalradiaForge.ModTemplate/SubModule.xml"
+)
+SOURCE_TEMPLATE_VERSION = "v1.0.0"
 GAME_ICONS = {
     "archery-target": ("Lorc", "https://game-icons.net/1x1/lorc/archery-target.html"),
     "compass": ("Lorc", "https://game-icons.net/1x1/lorc/compass.html"),
@@ -50,6 +55,13 @@ def validate_entry(name, desktop):
         raise ValueError(f"Timestamped working backup included: {name}")
     if lower.endswith(".dll") and Path(normal).name.lower().startswith("taleworlds"):
         raise ValueError(f"Game assembly included: {name}")
+    if lower.endswith(".dll") and Path(normal).name.lower() in {
+        "0harmony.dll",
+        "harmony.dll",
+        "lib.harmony.dll",
+        "harmonyx.dll",
+    }:
+        raise ValueError(f"Harmony runtime must remain optional and must not be bundled: {name}")
     if lower.endswith((".bat", ".ps1")):
         allowed_desktop_launcher = desktop and lower == "desktop/run-calradiaforge-desktop.bat"
         if not allowed_desktop_launcher:
@@ -76,6 +88,38 @@ def validate_xml(archive, names):
                 raise ValueError(f"Invalid packaged XML {name}: {error}") from error
             count += 1
     return count
+
+
+def validate_source_template_manifest(archive, manifest):
+    """Validate the source template's placeholders and its template-owned version."""
+    try:
+        root = ElementTree.fromstring(archive.read(manifest))
+    except (KeyError, ElementTree.ParseError) as error:
+        raise ValueError(f"Invalid source template manifest {manifest}: {error}") from error
+
+    expected_values = {
+        "./Name": "__MODULE_ID__",
+        "./Id": "__MODULE_ID__",
+        "./Version": SOURCE_TEMPLATE_VERSION,
+        "./SubModules/SubModule/Name": "__MODULE_ID__",
+        "./SubModules/SubModule/DLLName": "CalradiaForge.ModTemplate.dll",
+        "./SubModules/SubModule/SubModuleClassType": "CalradiaForge.ModTemplate.SubModule",
+    }
+    if root.tag != "Module":
+        raise ValueError(f"Invalid source template manifest root in {manifest}: expected Module")
+    for xpath, expected in expected_values.items():
+        element = root.find(xpath)
+        actual = element.get("value") if element is not None else None
+        if actual != expected:
+            raise ValueError(
+                f"Invalid source template manifest {manifest}: {xpath} must preserve {expected!r}, got {actual!r}"
+            )
+
+    dependencies = {
+        element.get("Id") for element in root.findall("./DependedModules/DependedModule")
+    }
+    if "CalradiaForge" not in dependencies:
+        raise ValueError(f"Invalid source template manifest {manifest}: CalradiaForge dependency is required")
 
 
 def validate_game_icon_attribution(archive, attribution_path, notice_path):
@@ -193,7 +237,10 @@ def audit_archive(path, expected_roots, required, version, desktop, required_fil
         xml_count = validate_xml(archive, names)
         manifests = [name for name in names if name.endswith("/SubModule.xml")]
         for manifest in manifests:
-            if f'Version value="v{version}"'.encode() not in archive.read(manifest):
+            normalized_manifest = manifest.replace("\\", "/")
+            if normalized_manifest == SOURCE_TEMPLATE_MANIFEST_PATH:
+                validate_source_template_manifest(archive, manifest)
+            elif f'Version value="v{version}"'.encode() not in archive.read(manifest):
                 raise ValueError(f"Manifest version mismatch in {manifest}")
         icon_attribution = None
         if attribution_path or notice_path:
@@ -226,7 +273,7 @@ def audit(root, version):
     for path in (modules, source, desktop):
         if not path.is_file():
             raise ValueError(f"Missing release archive: {path.name}")
-    module_roots = {"CalradiaForge", "CalradiaForgeExamples", "CalradiaForgePriceProvider", "CalradiaForgePriceConsumer"}
+    module_roots = {"CalradiaForge", "CalradiaForgeExamples", "CalradiaForgePriceProvider", "CalradiaForgePriceConsumer", "CalradiaForgeContentShowcase"}
     module_icon_files = {
         "CalradiaForge/GUI/SpriteParts/ui_calradiaforge/calradiaforge_{}.png".format(
             icon.replace("-", "_"))
@@ -248,6 +295,15 @@ def audit(root, version):
         "CalradiaForgeExamples/SubModule.xml",
         "CalradiaForgePriceProvider/SubModule.xml",
         "CalradiaForgePriceConsumer/SubModule.xml",
+        "CalradiaForgeContentShowcase/SubModule.xml",
+        "CalradiaForgeContentShowcase/bin/Win64_Shipping_Client/CalradiaForge.ContentShowcase.dll",
+        "CalradiaForgeContentShowcase/GUI/Prefabs/ForgeContentShowcase.xml",
+        "CalradiaForgeContentShowcase/ModuleData/calradia_forge_content_showcase_items.xml",
+        "CalradiaForgeContentShowcase/ModuleData/calradia_forge_content_showcase_characters.xml",
+        "CalradiaForgeContentShowcase/ModuleData/Languages/EN/content_showcase_strings.xml",
+        "CalradiaForgeContentShowcase/ModuleData/Languages/EN/language_data.xml",
+        "CalradiaForgeContentShowcase/ModuleData/Languages/SP/content_showcase_strings.xml",
+        "CalradiaForgeContentShowcase/ModuleData/Languages/SP/language_data.xml",
         "CalradiaForge/THIRD_PARTY_NOTICES.md",
         "CalradiaForge/GUI/SpriteParts/ATTRIBUTION.json",
         "CalradiaForge/GUI/SpriteParts/Config.xml",
@@ -274,6 +330,12 @@ def audit(root, version):
        notice_path="CalradiaForge/THIRD_PARTY_NOTICES.md")]
     results.append(audit_archive(source, {"Source", "SDK", "README.md"}, {
         "Source/Directory.Build.props",
+        "Source/templates/CalradiaForge.Mod.Template/CalradiaForge.Mod.Template.csproj",
+        "Source/templates/CalradiaForge.Mod.Template/content/.template.config/template.json",
+        "Source/templates/CalradiaForge.Mod.Template/content/CalradiaForge.ModTemplate/CalradiaForge.ModTemplate.csproj",
+        "Source/templates/CalradiaForge.Mod.Template/content/CalradiaForge.ModTemplate/SubModule.cs",
+        "Source/templates/CalradiaForge.Mod.Template/content/CalradiaForge.ModTemplate/SubModule.xml",
+        "Source/examples/CalradiaForge.ContentShowcase/Generator/Program.cs",
         "Source/src/CalradiaForge.Sdk/AnalysisContracts.cs",
         "Source/docs/README.es.md",
         "Source/docs/ASSEMBLY_WORKBENCH.md",

@@ -1,5 +1,41 @@
 # Lista de cambios
 
+## Validación final de la evolución del SDK y límites de evidencia — 02-10-2026 (Registro Rev129)
+
+- Se volvió a validar la suite local completa con `tools\Run-CalradiaForge-Tests.bat`: compilaciones limpias `net472`, `net8.0` y Desktop, con cero advertencias/errores; Core 416/416, ForgeWeave 73/73, Desktop 65/65 y 295 casos WPF con 320 pases de layout/render. Los 19.288 ms corresponden al arnés, no a latencia observada de la aplicación.
+- El BAT de onboarding empaquetó e instaló SDK/plantilla en aislamiento, generó y restauró un módulo consumidor y lo compiló para `net472` contra referencias licenciadas de GameBin local sin advertencias. El BAT del showcase aprobó generación estática determinista, esquemas/referencias y compilación del módulo. Esos paquetes no incluyen DLL propietarias de TaleWorlds.
+- Pasaron Python `--ci`, la aceptación stateless 4/4, la auditoría del conocimiento de onboarding y la validación de las 29 skills modificadas. El perfil opcional `--agents` sigue sin estar disponible: su instalación explícita falló con `InvalidChunkLength` de pip; el entorno base de herramientas permanece sano.
+- El observador Harmony continúa siendo opcional: inspecciona solo un ensamblado `0Harmony` ya cargado mediante la superficie de consulta pública esperada. No es dependencia de Harmony ni prueba de coexistencia con terceros o sandbox. No se verificaron sesión Bannerlord, análisis TPAC profundo, publicación pública de NuGet ni integración con mercados de IDE. El producto permanece en 25.2.0 y `ForgeApi.Version` en 13.
+
+## Conciliación de evidencia y contratos del showcase — 02-10-2026 (Registro Rev128)
+
+- Añade una aclaración append-only de la evidencia de Rev127. El último log integrado conservado verifica Core 410/410, Patch Diagnostics 28/28, ForgeWeave 73/73, Desktop 65/65 y 295 casos WPF con 308 pases de layout/render; sus 24.476 ms son tiempo del arnés. Los totales superiores y los 20.903 ms citados en Rev127 siguen siendo un resultado reportado, pero no pueden reproducirse independientemente desde un log conservado equivalente. Esto registra una brecha de retención de evidencia, no una ejecución fallida.
+- Refuerza el validador del showcase: las rutas de localización deben ser exactas, permanecer en el directorio del idioma y apuntar a un archivo existente; el botón de cierre debe aceptar foco y exponer el binding de su rótulo localizado. Hay fixtures negativos para rutas inválidas, archivos ausentes, foco y rótulo.
+- Mantiene separado el benchmark sintético de `ForgeTimeSlicer.ProcessBatch` de cualquier afirmación sobre callbacks de campaña o rendimiento en juego. No se infiere comportamiento de Bannerlord en vivo.
+
+## Onboarding del SDK y consolidación del conocimiento basados en evidencia — 02-10-2026 (Registro Rev127)
+
+- Completa la ruta local de inicio con el paquete versionado del SDK, una plantilla de módulo `dotnet new` y un showcase determinista de tropas/ítems estáticos. El módulo `net472` generado se restauró y compiló contra referencias licenciadas del GameBin local sin advertencias; el paquete no distribuye ensamblados TaleWorlds.
+- Registra los diagnósticos de parches acotados y de solo lectura y el prototipo Gauntlet estático con límites explícitos de evidencia. Harmony sigue siendo una observación opcional de un runtime ya cargado; esto no demuestra compatibilidad con mods reales que usen Harmony. La guía de time-slicing especifica que seleccionar por ID estable aún recorre la colección de entrada y no afirma mejoras de rendimiento sin medir.
+- Consolida lecciones verificadas en las reglas, skills especialistas y las tres guías raíz de agentes. La suite BAT integrada final aprobó compilaciones limpias, Core 415/415, Patch Diagnostics 30/30, ForgeWeave 73/73, Desktop 65/65 y 295 casos WPF con 320 pases de layout/render. Los 20.903 ms pertenecen al arnés, no a la aplicación abierta.
+- El producto permanece en 25.2.0 y `ForgeApi.Version` en 13. No se afirma carga/render en Bannerlord en vivo, publicación pública de NuGet ni integración con mercados de Visual Studio/Rider.
+
+## Estado diagnóstico, telemetría de escrituras aceptadas y evidencia alineada — 02-10-2026 (Registro Rev126)
+
+- La inspección de parches externos ahora distingue una recopilación incompleta de una salida realmente truncada; los errores y ensamblados omitidos ya no implican recorte de resultados. La telemetría de memoria cognitiva solo aumenta cuando el SDK acepta escrituras acotadas. La cobertura incluye IDs nulos/vacíos del time-slicer que se asignan al bucket cero y documenta que deben usarse IDs estables y no vacíos. El test del inspector de memoria Desktop refleja su estado real de muestra inspirada en CoALA, en vez de esperar un snapshot de runtime. La validación BAT integrada aprobó: Core 415/415, Patch Diagnostics 28/28, ForgeWeave 73/73, Desktop 65/65 y 295 casos WPF con 308 pases de layout/render; las compilaciones no tuvieron advertencias ni errores. Son resultados del arnés y de fuentes, no evidencia de Bannerlord en vivo.
+
+## Correcciones de evidencia de simulación y diagnóstico — 02-10-2026 (Registro Rev125)
+
+- Los informes `.cfcrash` serializan ahora el texto de excepción como JSON válido, con regresiones para rutas Windows y caracteres de control. El launcher Core ejecuta ahora las pruebas del flanco F10 y la serialización. Se corrigieron los bindings de herramientas de agentes y el comando no interactivo; se aclaró el alcance limitado del análisis de fallos. Los informes históricos de rendimiento permanecen intactos y la guía actual del SDK limita las frases anteriores de anti-lag y cero asignaciones a la evidencia realmente medida. No se afirma comportamiento en Bannerlord en vivo.
+
+## Conocimiento verificado y cobertura de contratos del showcase — 02-10-2026 (Registro Rev124)
+
+- El validador del showcase comprueba las anotaciones de bindings del prefab y las claves referenciadas en ambos catálogos localizados, con regresiones negativas. La guía de depuración ahora coincide con el JSON `.cfcrash`, la regla de `SyncData` sin persistencia y la retención real de 64 entradas de ForgeWeave; el alcance del dispatcher está explícito. Las guías raíz enrutan a las seis skills especialistas y la guía de simulación marca claims de carga no medidos. El BAT del showcase aprobó sus contratos, la compilación limpia del módulo `net472`, Core 411/411 y ForgeWeave 73/73; no se afirma render dentro de Bannerlord.
+
+## Seguridad del builder SDK, paridad de guías y plantilla local — 02-10-2026 (Registro Rev123)
+
+- Las variaciones de equipo de tropa ahora guardan solo los índices declarados en orden ascendente, por lo que un índice positivo extremo no crea todos los espacios intermedios; los índices negativos se rechazan. Repetir un objetivo de mejora existente es idempotente al alcanzar dos ramas, mientras que un tercer objetivo distinto sigue siendo inválido. Las regresiones aprobaron mediante el BAT Core. Se alineó la regla anti-sombreado de AGENTS.md, CODEX.md y GEMINI.md para `Campaign` y `Localization`, y la guía de evolución del SDK ahora enlaza evidencia hasta Rev123. El BAT de onboarding también compiló un consumidor generado contra referencias del GameBin local sin advertencias; no se inició el juego.
+
 ## Auditorías actuales de gestión de parches — 2026-10-01 (Registro Rev103)
 
 - Las auditorías de agentes siguen la sincronización de recibos y la verificación del detour registrado actuales, en lugar de nombres obsoletos, con cinco regresiones que rechazan protecciones ausentes. La verificación stateless alojada usa el gateway BAT portable. Las comprobaciones Python locales aprueban; la validación remota de agentes opcionales queda pendiente. La evidencia estática de gestión no demuestra seguridad concurrente del destino.
@@ -818,3 +854,50 @@ La aplicación real de hooks en el menú principal sigue sin verificar porque la
 - Al cerrar Hook Workbench, reconcilia la ruta recordada con los filtros activos del rail; si ninguna ruta queda visible, elimina la selección inaccesible y, al limpiar el filtro, restaura una ruta disponible.
 - Corrige el botón Connect recortado en el encabezado compacto y sustituye la etiqueta diagnóstica genérica solo en español por el recurso localizado de orden de trabajo. Las pruebas verifican la etiqueta Connect completa y su acceso por teclado, además de la disposición, el estado localizado y el hit testing de Hook Workbench en los 13 idiomas y tres temas, con viewport mínimo y normal.
 - Validación BAT: compilación limpia con cero advertencias/errores, Desktop 65/65, 295 casos WPF y 308 pases de layout/render. El arnés usa un DPI WPF fijo y no emula la escala de pantalla de Windows; la entrada de teclado nativa y la interacción WPF en vivo siguen sin verificar. Se conserva la versión 25.2.0; no se inició sesión de juego, campaña ni batalla.
+
+# Rev117 — Incorporación al SDK, muestra de contenido y diagnóstico de patches independiente de Harmony — 2026-10-01
+
+Esta entrada del changelog consolida las revisiones protegidas 115 (incorporación de desarrolladores y muestra de contenido) y 116 (diagnósticos independientes de Harmony y actualización del conocimiento).
+
+- Añade un flujo local de empaquetado NuGet de `CalradiaForge.Sdk`, una plantilla `.NET new` para módulos `net472` con referencias locales a TaleWorlds y una muestra instalable y determinista de tropas/ítems generados y una página Gauntlet de solo lectura. No agrega API pública del SDK ni distribuye ensamblados propietarios del juego.
+- Sustituye la ruta retirada de snapshots/informes Harmony por diagnósticos de patches propios de Forge. La compatibilidad opcional observa mediante reflexión únicamente un ensamblado `0Harmony` ya cargado cuando se solicita; Forge no tiene referencia o paquete Harmony, no lo carga ni modifica, y no afirma coexistencia en ejecución.
+- Mantiene el producto en `25.2.0`, `ForgeApi.Version` en 13 y el sobre de solicitud en 1; la superficie de protocolo de diagnóstico modificada queda en la versión 2. Actualiza las skills y guías de agentes para usar el helper de time-slicing estable verificado y limitar afirmaciones de rendimiento/asignaciones a mediciones.
+- Validación BAT: compilación `net472`/`net8.0` limpia, sin advertencias ni errores; Core 403/403, ForgeWeave 73/73, Desktop 65/65, 295 casos de render WPF y 308 pases de layout/render, además de 25 comprobaciones del pipeline de assets. También pasaron los BAT de incorporación/plantilla y muestra de contenido. Los tiempos de render pertenecen al arnés, no miden la latencia de la app. Se omitió el lector TPAC opcional porque falta su fixture local de TpacTool.
+- La integración con mercados de IDE, la publicación pública del paquete, la coexistencia en ejecución con Harmony y la carga/renderizado en vivo dentro de Bannerlord siguen sin verificarse.
+
+# Rev118 — Casos límite de time-slicing y validación de incorporación — 2026-10-02
+
+- Hace que la normalización horaria del SDK evite desbordamientos para cantidades positivas de grupos de hasta `int.MaxValue`; las regresiones cubren `ShouldProcess` y ambos overloads de `ProcessBatch`. El helper aún recorre y calcula el hash de cada ID de entrada, no promete una carga uniforme por grupo y solo es apropiado para trabajo que se pueda aplazar sin riesgo.
+- Asegura que los campos editables generados por Gauntlet muestren su `Label` localizado existente. El texto de ayuda del panel nativo sigue validándose en los catálogos fuente y recursos de idioma generados; una prueba ya no exige incorrectamente que una guía general sea una clave de control del menú nativo.
+- Corrige la generación de recursos para textos de panel localizados independientes y representa la falta de un snapshot de diagnóstico externo como `NotCaptured`, sin presentarla como prueba de que el runtime no existe. Las skills y guías principales de agentes ahora limitan las afirmaciones sobre asignaciones, time-slicing, observación Harmony e incorporación a su evidencia real.
+- Validación BAT: compilación completa limpia; Core 404/404, ForgeWeave 73/73, Desktop 65/65, render WPF con 295 casos y 308 pasadas de layout/render (16.098 ms de arnés); fixture de diagnósticos de patches 28/28; aceptación stateless aprobada; pasaron las pruebas de incorporación y muestra de contenido; también pasaron herramientas Python base/Ruff, 25 fixtures de assets, cinco fixtures de imágenes y utilidades de agentes offline. No se afirma rendimiento ni renderizado dentro del juego.
+- El informe de incorporación más reciente es `artifacts/sdk-evolution/onboarding/20261002T033001Z-00c3d2e2/source-package-report.json`; los hashes locales de los paquetes SDK/plantilla están registrados en `docs/SDK_EVOLUTION.md` y `.es.md`. La instalación opcional de dependencias Antigravity sigue sin verificarse porque pip terminó con `InvalidChunkLength`. El análisis profundo de TPAC y la carga/renderizado en vivo de Bannerlord siguen sin verificarse.
+
+# Rev119 — Paridad documental obligatoria y alias corregidos — 2026-10-02
+
+- Corrige la auditoría bilingüe para que el documento inglés `SYSTEM_DESIGN.md` no se clasifique como contraparte en español de `ARCHITECTURE.md`; ambos ahora requieren su propio archivo `.es.md`.
+- Hace que las contrapartes españolas faltantes fallen el runner de auditoría del ledger y agrega regresiones para los alias, la clasificación de documentos ingleses y el gate fallido. Conserva los alias establecidos de `DESKTOP.md` y de los archivos versionados `VALIDATION-<VERSION>.md`.
+- Validación BAT: pasaron las comprobaciones Python/Ruff, incluidas 25 pruebas de assets, cinco de imágenes, diez regresiones de auditoría de agentes y paridad documental de 42/42 sin contrapartes faltantes. La revisión protegida 118 y su cadena SHA-256 se verifican por separado después del append.
+
+# Rev120 — Incorporación, diagnósticos y conocimiento de agentes basados en evidencia — 2026-10-02
+
+- Consolida una ruta de incorporación verificada en el código fuente con el SDK empaquetable en local, una plantilla `.NET new`, una muestra determinista de tropas/ítems y una página Gauntlet estática. Pasan la instalación local de paquetes/plantilla y la restauración/compilación del módulo `net472` generado; esto no publica paquetes en NuGet ni en mercados de IDE.
+- Sustituye la antigua superficie de snapshots Harmony por diagnósticos propios de Forge. La observación opcional usa reflexión sobre una identidad `0Harmony` compatible y exacta solo cuando ya está cargada y una solicitud de diagnóstico la pide. Forge no añade referencias/paquetes Harmony, no la carga ni modifica, y no afirma coexistencia real entre mods.
+- Sincroniza la guía del SDK, las pruebas, los mapas, las skills y las instrucciones raíz de agentes sobre time-slicing por ID estable: los buckets pueden tener tamaños distintos y filtrar sigue recorriendo la colección de entrada (O(N)); no se afirma una mejora general de latencia ni balanceo de carga.
+- Validación BAT final: compilaciones limpias con 0 advertencias/errores; Core 410/410, ForgeWeave 73/73, Desktop 65/65, render WPF con 295 casos y 308 pases de render/layout; aceptación stateless 4/4; Python/Ruff y assets aprobados; pasaron los BAT de incorporación/plantilla y muestra de contenido; 26 skills modificadas pasaron `quick_validate.py`. El tiempo WPF pertenece solo al arnés.
+- Se mantienen producto 25.2.0, `ForgeApi.Version` 13, sobre de solicitud v1 y protocolo de diagnósticos de patches v2. No se validaron una sesión real de Bannerlord, campaña, batalla, runtime/coexistencia real con Harmony, publicación pública del paquete ni integración con mercados de IDE.
+
+# Rev121 — Generación precisa de contenido y validación de agentes basada en evidencia — 2026-10-02
+
+- Conserva los pesos fraccionarios como decimales XML con cultura invariable en lugar de redondearlos a una cifra decimal, mantiene el formato establecido `.0` en valores enteros y rechaza `NaN`/infinito. La generación de Banner se declara no soportada hasta verificar el esquema Native Items de su versión.
+- Actualiza las guías de validación de releases y agentes para usar launchers BAT mantenidos, informar conteos por corrida, distinguir la ejecución local de herramientas de una simulación y separar la evidencia del arnés del comportamiento real del juego.
+- Validación BAT: pasó la suite completa con compilaciones limpias `net472`, `net8.0` y Desktop; Core 411/411, ForgeWeave 73/73, Desktop 65/65 y WPF con 295 casos/308 pases de layout-render. Los 16.366 ms son tiempo del arnés. Pasaron generación determinista, XSD local y compilación `net472` del showcase; también el onboarding portable del SDK/plantilla y los checks stateless.
+- La revisión estática de Harmony no encontró dependencia del producto ni ruta de carga de Harmony; no demuestra compatibilidad/coexistencia con mods que lo usen. No se inició Bannerlord, campaña ni batalla; el render en juego y la publicación pública en NuGet/IDE siguen sin verificar.
+- El producto permanece en 25.2.0 y `ForgeApi.Version` permanece en 13.
+
+# Rev122 — Corrección de paridad española del SDK y hashes portables de archivo — 2026-10-02
+
+- Corrige dos entradas españolas del catálogo del SDK cuyas claves fuente se habían traducido en lugar de coincidir con las claves inglesas; conserva intactos sus valores en español. La generación de UI nativa vuelve a aceptar el catálogo bilingüe.
+- Sustituye el hash del empaquetado basado en búsqueda de comandos por SHA-256 de streaming en .NET y disposición determinista de recursos, para que el script canónico funcione en el host Windows PowerShell actual.
+- Validación BAT: pasó el pipeline de empaquetado con compilaciones limpias, Core 411/411, ForgeWeave 73/73, Desktop 65/65, WPF con 295 casos/308 pases de layout-render, generación/XSD del showcase y DocFX. Los tres archivos 25.2.0 pasaron la auditoría; los SHA-256 calculados de forma independiente coincidieron con el manifiesto generado. Los tiempos del arnés no son latencia de la aplicación.
+- La versión del producto, el contrato público del SDK y las dependencias del paquete no cambian. No se ejecutó Bannerlord ni se publicó el producto.

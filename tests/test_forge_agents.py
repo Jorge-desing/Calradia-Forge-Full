@@ -6,7 +6,7 @@ Validates:
 2. Subagent definitions, system instructions, and tool bindings.
 3. Repository domain tools execution.
 4. ForgeTokenCompactor semantic output distillation, token metrics, and forensic logging.
-5. Lossless error and stack trace preservation during tool distillation.
+5. Retention of representative matching diagnostic lines during tool distillation.
 6. ForgeAgentOrchestrator multi-agent delegation pipeline.
 7. CLI runner command dispatch.
 """
@@ -203,7 +203,7 @@ class TestForgeTools(unittest.TestCase):
 
 
 class TestForgeTokenCompactor(unittest.TestCase):
-    """Tests ForgeTokenCompactor semantic distillation, error preservation, and forensic logging."""
+    """Tests representative distillation patterns, diagnostic retention, and optional logging."""
 
     def setUp(self) -> None:
         ForgeTokenCompactor.reset_history()
@@ -244,7 +244,7 @@ class TestForgeTokenCompactor(unittest.TestCase):
         self.assertTrue(stats.compression_ratio > 0.70, f"Expected >70% reduction, got {stats.compression_ratio:.1%}")
 
     def test_distill_dotnet_build_preserves_compiler_errors(self) -> None:
-        """CRITICAL: Verifies agent intelligence is preserved with lossless compiler errors."""
+        """Verifies matching compiler diagnostics are retained for a representative build fixture."""
         failed_lines = [
             "Build FAILED for CalradiaForge.sln [Release]:",
             "  Restoring packages...",
@@ -270,8 +270,12 @@ class TestForgeTokenCompactor(unittest.TestCase):
     def test_distill_solution_tests_success(self) -> None:
         raw_tests = (
             "Ran 8 tests in 0.066s\nOK\n"
+            "[Core] Running SDK, ForgeWeave, and module tests through the batch launcher...\n"
             "CalradiaForge.Tests: 239 passed\n"
+            "RESULT: 239 passed, 0 failed\n"
+            "[ForgeWeave] Running bounded event and replay tests via dotnet and this batch launcher...\n"
             "RESULT: 71 passed, 0 failed\n"
+            "[Desktop] Running protocol, tool catalog, and MVVM tests via dotnet and this batch launcher...\n"
             "RESULT: 54 passed, 0 failed\n"
             "PASS 275 WPF render cases; 16917 ms. No game session or tool execution.\n"
             "PERF 150 render/layout passes, 2311.7 ms in those calls; visual-tree snapshots 89 builds / 1282 hits / 119410 visited nodes.\n"
@@ -281,13 +285,49 @@ class TestForgeTokenCompactor(unittest.TestCase):
 
         self.assertFalse(stats.has_errors)
         self.assertIn("Solution Test Suite PASSED", distilled)
-        self.assertIn("Assets Pipeline: 8/8 passed", distilled)
-        self.assertIn("Core Systems: 239/239 passed", distilled)
-        self.assertIn("ForgeWeave: 71/71 passed", distilled)
-        self.assertIn("Desktop MVVM: 54/54 passed", distilled)
-        self.assertIn("Desktop Render: 275/275 passed", distilled)
+        self.assertIn("Asset Pipeline: 8 tests passed", distilled)
+        self.assertIn("Core Systems: 239 passed (0 failed)", distilled)
+        self.assertIn("ForgeWeave: 71 passed (0 failed)", distilled)
+        self.assertIn("Desktop MVVM: 54 passed (0 failed)", distilled)
+        self.assertIn("Desktop Render: 275 cases passed (16917 ms harness time)", distilled)
         self.assertIn("150 layout passes", distilled)
         self.assertIn("119,410 nodes visited", distilled)
+
+    def test_distill_solution_tests_does_not_shift_missing_suite_result(self) -> None:
+        raw_tests = (
+            "[Core] Running selected tests...\nRESULT: 30 passed, 0 failed\n"
+            "[ForgeWeave] Running selected tests...\n"
+            "[Desktop] Running selected tests...\nRESULT: 12 passed, 0 failed\n"
+            "All selected Calradia Forge test suites passed."
+        )
+        distilled, stats = ForgeTokenCompactor.distill("run_solution_tests", raw_tests, save_raw=False)
+
+        self.assertFalse(stats.has_errors)
+        self.assertIn("Core Systems: 30 passed (0 failed)", distilled)
+        self.assertNotIn("ForgeWeave:", distilled)
+        self.assertIn("Desktop MVVM: 12 passed (0 failed)", distilled)
+
+    def test_distill_solution_tests_does_not_invent_suite_counts(self) -> None:
+        raw_tests = "All selected Calradia Forge test suites passed."
+        distilled, stats = ForgeTokenCompactor.distill("run_solution_tests", raw_tests, save_raw=False)
+
+        self.assertFalse(stats.has_errors)
+        self.assertIn("Solution Test Suite PASSED for the suites selected by the launcher", distilled)
+        self.assertNotIn("Asset Pipeline:", distilled)
+        self.assertNotIn("Core Systems:", distilled)
+        self.assertNotIn("ForgeWeave:", distilled)
+        self.assertNotIn("Desktop", distilled)
+
+    def test_distill_solution_tests_without_overall_status_is_indeterminate(self) -> None:
+        raw_tests = "CalradiaForge.Tests: 12 passed\nRESULT: 12 passed, 0 failed"
+        distilled, stats = ForgeTokenCompactor.distill("run_solution_tests", raw_tests, save_raw=False)
+
+        self.assertTrue(stats.has_errors)
+        self.assertEqual(0, stats.error_count)
+        self.assertEqual("INDETERMINATE", stats.status)
+        self.assertIn("INDETERMINATE:", stats.summary_line())
+        self.assertIn("INDETERMINATE", distilled)
+        self.assertNotIn("Solution Test Suite PASSED", distilled)
 
     def test_distill_solution_tests_failure_preserves_stack_traces(self) -> None:
         raw_failed_tests = (
@@ -415,12 +455,18 @@ class TestCoALAAgentMemory(unittest.TestCase):
 
     def test_semantic_memory_invariants(self) -> None:
         sem = SemanticRepositoryMemory.get_semantic_context()
+        self.assertIsInstance(SemanticRepositoryMemory.INVARIANTS, tuple)
+        with self.assertRaises(TypeError):
+            SemanticRepositoryMemory.INVARIANTS[0] = "mutable"
         self.assertIn("Rule A (Anti-Shadowing)", sem)
         self.assertIn("Rule B (Statelessness)", sem)
         self.assertIn("Rule C (Desktop Contracts)", sem)
         self.assertIn("Rule D (Distribution Safety)", sem)
         self.assertIn("Single-Threaded Engine", sem)
-        self.assertIn("Anti-Lag Time-Slicing", sem)
+        self.assertIn("Optional Time-Slicing", sem)
+        self.assertIn("buckets can be uneven", sem)
+        self.assertIn("filtering still scans the full collection", sem)
+        self.assertIn("Measure the complete callback", sem)
 
     def test_working_memory_lifecycle(self) -> None:
         wm = WorkingAgentMemory(objective="Perform architecture audit")

@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory=$true)][ValidateRange(1,2147483647)][int]$ProcessId,
-    [ValidateSet('hello','summary','scan','modules','dependencies','logs','inspect','pin','compare','unpin','snapshots','tests','commands','metrics','report','harmony','panel-open','panel-close','test-mode','run','confirm-copy')][string]$Action='summary',
+    [ValidateSet('hello','summary','scan','modules','dependencies','logs','inspect','pin','compare','unpin','snapshots','tests','commands','metrics','report','patch-diagnostics','panel-open','panel-close','test-mode','run','confirm-copy')][string]$Action='summary',
     [string]$Argument='',
     [string]$OutputPath,
     [switch]$AllowTestChanges

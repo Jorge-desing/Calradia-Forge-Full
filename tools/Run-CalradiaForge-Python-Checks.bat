@@ -57,6 +57,12 @@ if errorlevel 1 goto failed
 echo [Python] Running SDK-independent agent tool audit regressions...
 "%PYTHON%" -m unittest tests\test_forge_tool_audits.py
 if errorlevel 1 goto failed
+echo [Python] Running offline orchestrator route and verdict regressions...
+"%PYTHON%" -m unittest tests\test_orchestrator_report_status.py
+if errorlevel 1 goto failed
+echo [Python] Checking the repository-local agent CLI launcher...
+"%PYTHON%" -m unittest tests\test_agent_cli_launcher.py
+if errorlevel 1 goto failed
 if "%RUN_AGENT_TESTS%"=="0" goto ci_success
 "%PYTHON%" -c "from google.antigravity import LocalAgentConfig, types; import google.genai"
 if errorlevel 1 (

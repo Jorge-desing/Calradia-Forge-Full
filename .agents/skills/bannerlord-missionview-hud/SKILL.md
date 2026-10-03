@@ -7,7 +7,7 @@ description: Best practices, 3D-to-2D WorldToScreen projection, and in-mission G
 
 Use this skill when developing client-side visual overlays, overhead nameplates, target reticles, 3D healthbars, in-mission tactical menus, or custom keyboard/mouse interaction layers during battles, sieges, and town visits.
 
-> **Prerequisites:** Read `bannerlord-shared-patterns` for universal safety rules (no Campaign namespace, no Harmony, no entity serialization).
+> **Prerequisites:** Read `bannerlord-shared-patterns` for universal safety rules: no `Campaign` namespace, no Harmony dependency or Harmony patch/detour implementation, and no entity serialization. The only Forge-side Harmony path is the optional read-only observer described there; it does not load or modify Harmony.
 
 ---
 

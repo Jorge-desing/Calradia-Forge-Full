@@ -14,7 +14,7 @@ Calradia Forge is an advanced modding framework, live developer tooling suite, a
 | :--- | :--- | :--- | :--- |
 | `src/CalradiaForge.Mod` | `net472` | In-game Bannerlord module (`MBSubModuleBase`, Gauntlet UI panels, CampaignBehaviors) | Requires TaleWorlds assemblies; game-thread affinity; stateless behaviors. |
 | `src/CalradiaForge.Core` | `net472;net8.0` | Core SDK, behavioral systems, telemetry, rule auditors, UI helpers | Zero TaleWorlds hard dependency in net8.0 mode; thread-safe registries. |
-| `src/CalradiaForge.Sdk` | `net472;net8.0` | Public SDK surfaces, cognitive memory (`ForgeAgentMemory`), API bridges | Clean decoupled contracts; no engine entity direct references. |
+| `src/CalradiaForge.Sdk` | `net472;net8.0` | Public SDK surfaces, game-runtime cognitive memory (`ForgeAgentMemory`), API bridges | Clean decoupled contracts; no engine entity direct references. `ForgeAgentMemory` is distinct from Python orchestration's `CoALAAgentMemory`. |
 | `src/CalradiaForge.Desktop` | `net8.0-windows` | Standalone desktop workbench (WPF MVVM, IPC pipe client, offline analyzer) | Strict UI thread isolation; static source contracts; tactical palette. |
 | `CodexCaptureCompat` | Native C++17 / x64 | Windows 10 Computer Use screenshot compatibility layer (`version.dll`) | Local DLL proxy for `codex-computer-use.exe`; preserves system exports. |
 
@@ -61,6 +61,11 @@ Calradia Forge is an advanced modding framework, live developer tooling suite, a
   5. OS metadata (`Thumbs.db`, `.DS_Store`, `desktop.ini`).
 - **Pre-commit Audit**: Always verify `git status --porcelain` to confirm that all staged items belong to the project and zero external garbage or caches are included.
 
+### Rule F: Harmony Independence and Optional Observation
+- Do not add Harmony/`0Harmony` package references, compile-time or runtime assembly references, bundled binaries, or a required Harmony installation to any Forge product.
+- Optional diagnostics may inspect an exact, already-loaded `0Harmony` runtime through Forge-owned reflection over verified public query members. They must not load Harmony, patch/unpatch/reorder third-party code, or make Forge behavior depend on Harmony being present.
+- Treat observations as bounded review evidence only. They do not prove coexistence, detect every patch backend, attribute a conflict from a shared target alone, or sandbox/bound Harmony's own synchronous CPU and memory work. See `.agents/rules/calradia_forge_architecture.md` and `docs/DEPENDENCY_FRAMEWORK_REVIEW.md`.
+
 ---
 
 ## 3. Essential Commands & Verification Playbook
@@ -81,7 +86,7 @@ dotnet build CalradiaForge.sln -c Release -v:minimal
 
 ### Stateless Behavior & Acceptance Verification (Mandatory Gate)
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify_stateless_behavior.ps1
+cmd.exe /c "tools\Verify-CalradiaForge-StatelessBehavior.bat <nul"
 ```
 
 ### Full Test Suite (Core, ForgeWeave, Desktop MVVM, WPF Render Tests)
@@ -90,9 +95,9 @@ cmd.exe /c "tools\Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul"
 ```
 
 ### Unit Test Execution by Subsystem
-- **Core Tests**: `cmd.exe /c "tools\Run-CalradiaForge-Core-Tests.bat -NonInteractive <nul"`
-- **Desktop MVVM & Protocol Tests**: `dotnet run --project tests/CalradiaForge.Desktop.Tests/CalradiaForge.Desktop.Tests.csproj -c Release`
-- **Desktop Live Render Tests**: `dotnet run --project tests/CalradiaForge.Desktop.RenderTests/CalradiaForge.Desktop.RenderTests.csproj -c Release`
+- **Core Tests**: `cmd.exe /c "tools\Run-CalradiaForge-Core-Tests.bat --no-pause <nul"`
+- **Desktop MVVM & Protocol Tests**: `cmd.exe /c "tools\Run-CalradiaForge-Desktop-Tests.bat --no-pause <nul"`
+- **Desktop Live Render Tests**: `cmd.exe /c "tools\Run-CalradiaForge-Desktop-Render-Tests.bat --no-pause <nul"`
 
 ### Release Packaging
 ```powershell
@@ -125,15 +130,17 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1
 ### 4.3 In-Game Codex / Encyclopedia Extender (`ForgeEncyclopediaExtender`)
 - In-game Bannerlord Encyclopedia / Codex extension API is implemented in `CalradiaForge.Core.SDK.UI.ForgeEncyclopediaExtender`.
 - Allows registering custom entries, categories, tags, dynamic filters, and quick bookmarks.
-- Thread-safe and zero-allocation friendly.
+- Internal collection access is synchronized, but entry objects remain mutable and query methods may allocate result lists. Do not claim whole-API thread safety or zero allocations without measuring the specific usage path.
 
 ### 4.4 Google Antigravity SDK Autonomous Agents Architecture & Token Compaction
-- The repository houses a specialized multi-agent autonomous framework in `agents/` powered by the **Google Antigravity SDK** (`google.antigravity`).
-- Coordinates 5 specialized agents: `ForgeMasterAgent` (orchestrator), `ForgeArchitectAgent` (C# architecture and GEMINI anti-shadowing), `StatelessBehaviorAuditor` (save safety and stateless SyncData), `DesktopWpfSpecialist` (WPF MVVM, container virtualization, DirectX aliasing, and UI Automation), and `DocLedgerAgent` (bilingual docs parity and SHA-256 ledger integrity).
-- **Token Compaction Engine (`ForgeTokenCompactor`)**: Semantic output distillation achieving 80-99% token reduction while strictly guaranteeing **lossless failure telemetry** (100% preservation of compiler errors `CSxxxx`, test assertions, and stack traces). Uncompressed console outputs are saved to `artifacts/agent-runs/`.
-- Adaptive presets via `--compaction-preset [ultra (8k) | balanced (16k) | deep (32k)]`, with optional raw bypass via `--raw-tools`.
-- Invoked via `tools/run_forge_agents.py` with subcommands: `audit`, `verify`, `docs`, `architect`, and `run "<prompt>"`.
-- Verified via `py -3.12 -m unittest tests/test_forge_agents.py` with deterministic offline simulation mode when no API key is set.
+- The repository has an optional autonomous-agent integration in `agents/` using the **Google Antigravity SDK** (`google.antigravity`). It is developer tooling, not a Calradia Forge or Bannerlord runtime dependency.
+- The configured roster is one coordinator plus five specialist roles: `ForgeMasterAgent`, `ForgeArchitectAgent`, `StatelessBehaviorAuditor`, `DesktopWpfSpecialist`, `DocLedgerAgent`, and `BugHunterAgent`.
+- Python orchestration uses `CoALAAgentMemory` in `agents/memory.py`; the C# SDK's `ForgeAgentMemory` is a separate in-game runtime service.
+- **Token Compaction (`ForgeTokenCompactor`)**: Tool-specific patterns summarize supported output and retain recognized diagnostic lines; tests cover representative fixtures, not every compiler, test runner, locale, or failure format. Token estimates and reduction ratios are heuristic and input-dependent, not guaranteed targets. Use the original output when exact evidence is required.
+- Presets configure selected token thresholds via `--compaction-preset [ultra (8k) | balanced (16k) | deep (32k)]`; `--raw-tools` bypasses distillation. Raw logs are optional and available only when requested, non-empty, and successfully written to `artifacts/agent-runs/`.
+- Run the autonomous CLI through `tools\Run-CalradiaForge-Agents.bat` with subcommands such as `audit`, `verify`, `docs`, `architect`, or `run "<prompt>"`; the launcher uses the repository `.venv` interpreter and never falls back to a global Python.
+- Offline mode can invoke selected repository tools locally without the optional SDK; it does not run cloud agents. Online Antigravity execution requires the SDK, credentials, and offline mode disabled. The `--agents` test profile requires the SDK because it tests SDK configuration; local execution does not prove cloud execution.
+- Install the optional profile with `tools\Setup-CalradiaForge-Python.bat --agents --no-pause`; it installs only into the repository `.venv`. Verify it with `tools\Run-CalradiaForge-Python-Checks.bat --ci --agents --no-pause`.
 - Detailed architecture and usage guidelines: `docs/AUTONOMOUS_AGENTS.md` and `docs/AUTONOMOUS_AGENTS.es.md`.
 
 ---
@@ -145,6 +152,7 @@ All technical documentation under `docs/` must maintain strict conceptual parity
 - English source: `docs/<TOPIC>.md`
 - Spanish counterpart: `docs/<TOPIC>.es.md`
 - Never modify an English document without synchronizing its Spanish counterpart in the same changeset.
+- Established parity aliases are `DESKTOP.md` ↔ `ASSEMBLY_WORKBENCH.es.md` and `VALIDATION-<VERSION>.md` ↔ `VALIDACION-<VERSION>.es.md`; architecture and system-design guides use their own `.es.md` counterparts. Require `tools/Run-CalradiaForge-Python-Checks.bat --ledger --no-pause` to fail when a counterpart is missing.
 - Major releases and architectural revisions are recorded in the immutable append-only ledger ("Registro de Mejoras", `docs/CalradiaForge-Registro-Mejoras-Rev*.docx`) backed by a SHA-256 cryptographic hash chain in `docs/CalradiaForge-Registro-Mejoras.integrity.jsonl`.
 
 ---
@@ -153,7 +161,23 @@ All technical documentation under `docs/` must maintain strict conceptual parity
 
 When updating agent knowledge, ground lessons in commit diffs and current source, distinguish pending working-tree changes from validated committed behavior, and retain evidence limits. Read `.agents/skills/calradia-forge-dev-workflow/references/recent-commit-lessons.md` for persistence, failure tests, CI and distribution. Historical test counts and timings are not universal thresholds.
 
-The repository houses 45 specialized agent skills organized into 7 functional clusters in `.agents/skills/`:
+For SDK packages, .NET templates and static content, follow
+`.agents/rules/developer_onboarding.md` and the `calradia-forge-dotnet` onboarding
+reference. Keep package/fixture evidence separate from public publication and live
+engine loading or rendering; if a check cannot be observed, report it as pending or
+unverified. Consumer modules target net472, resolve licensed TaleWorlds references
+locally, and must not redistribute TaleWorlds assemblies or the Forge SDK runtime
+already supplied by Forge. ForgeWeave, hooks and whole-method replacement have
+distinct contracts; shared-target metadata is a review signal, not proof of a
+conflict. At objective completion, consolidate validated lessons in project
+specialists and mirror shared instructions in AGENTS.md, CODEX.md and GEMINI.md.
+Preserve upstream snapshots and unrelated staged work.
+For periodic work that can safely be deferred, use `ForgeTimeSlicer.ShouldProcess`
+with a stable entity ID; this does not reduce the cost of scanning the source
+collection or guarantee even bucket sizes. Measure the complete callback before
+claiming an allocation budget or zero-allocation behavior.
+
+The repository houses specialized agent skills organized into functional clusters in `.agents/skills/`:
 - **Primary Gateways**:
   - `calradia-forge-dotnet`: First step for all .NET, C#, and MSBuild tasks.
   - `calradia-forge-docs`: First step for documentation, codemaps, and ledger updates.
@@ -161,11 +185,21 @@ The repository houses 45 specialized agent skills organized into 7 functional cl
 - **Protected Upstream Copies**:
   - `using-dotnet`, `superpowers`, and `docs-generator` are preserved local copies containing project adaptations. Never overwrite them with raw upstream updates.
 
+## Specialist Skill Routing
+
+Use the specialist that matches the task after the `calradia-forge-dev-workflow` gateway:
+- Crash and lifecycle triage: `.agents/skills/debugging-master/SKILL.md`.
+- Measured runtime cost, allocations, and time-slicing: `.agents/skills/performance-hunter/SKILL.md`.
+- Tactical combat behavior-tree proposals: `.agents/skills/game-ai-behavior-trees/SKILL.md`.
+- Campaign callback cadence and simulation scheduling: `.agents/skills/discrete-event-simulation/SKILL.md`.
+- Autonomous-agent routing and output compaction: `.agents/skills/multi-agent-orchestration/SKILL.md`.
+- Gauntlet/WPF presentation, accessibility, and F10 integration: `.agents/skills/game-ui-design/SKILL.md`.
+
 ---
 
 ## 7. Rules Taxonomy & Domain Gateway Routing
 
-In addition to root invariants, the repository maintains 43 modular rules in `.agents/rules/` automatically discovered by Antigravity and indexed for OpenAI Codex CLI across 7 functional clusters:
+In addition to root invariants, the repository maintains modular rules in `.agents/rules/` automatically discovered by Antigravity and indexed for OpenAI Codex CLI across functional clusters:
 
 | Cluster | Key Rule Files (`.agents/rules/`) | Primary Scope & Invariants |
 | :--- | :--- | :--- |
@@ -174,7 +208,7 @@ In addition to root invariants, the repository maintains 43 modular rules in `.a
 | **UI & Presentation** | `calradia_forge_ui.md`<br>`gauntlet_architecture.md`<br>`bannerlord_input_debug_agent.md` | Gauntlet UI XML layout, F10 hotkey polling with rising-edge fallback, Desktop WPF MVVM, theme dictionaries, and accessibility. |
 | **Documentation & Ledger** | `calradia_forge_docs.md`<br>`docs_generation_workflow.md` | Strict English/Spanish parity (`docs/<TOPIC>.md` $\leftrightarrow$ `.es.md`), DocFX compilation, and SHA-256 append-only ledger integrity. |
 | **Verification & Distribution** | `calradia_forge_verification.md`<br>`distribution_safety.md` | Build verification, 5-stage test suite, static source reflection contracts, and exclusion of game DLLs/scripts/zone streams. |
-| **Codex & Multi-Agent** | `codex_compatibility.md`<br>`development_workflow.md` | OpenAI Codex CLI cross-parity, Windows 10 Computer Use proxy (`CodexCaptureCompat`), and Antigravity subagent coordination. |
+| **Codex & Multi-Agent** | `codex_compatibility.md`<br>`development_workflow.md`<br>`developer_onboarding.md` | Cross-agent parity, evidence-grounded SDK/template/content onboarding, Windows capture compatibility and agent coordination. |
 | **Packaging & Git Workflow** | `auto_packaging.md`<br>`calradia_forge_packaging.md`<br>`packaging_version.md`<br>`git_sync_workflow.md` | Automated ZIP packaging (`FastPackageEngine`), version synchronization, chat-scoped commits at objective completion, and explicit GitHub synchronization. |
 
 ### Explicit follow-up push authorization

@@ -28,7 +28,7 @@ Before pushing a release or a change whose workflow requires full validation, en
    Must succeed with 0 errors.
 2. **Stateless Behavior Gate (Mandatory):**
    ```powershell
-   powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify_stateless_behavior.ps1
+   cmd.exe /c "tools\Verify-CalradiaForge-StatelessBehavior.bat <nul"
    ```
    Must pass 4/4 acceptance criteria.
 3. **Distribution & Secret Safety:**

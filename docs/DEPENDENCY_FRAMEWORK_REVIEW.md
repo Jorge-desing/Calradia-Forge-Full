@@ -1,6 +1,6 @@
 # Dependency framework review
 
-This review defines the current extension path for Calradia Forge. ForgeWeave is the primary framework for new cooperative tools. Harmony material remains only to document an isolated historical diagnostic that is neither a Forge dependency nor the recommended author workflow.
+This review defines the current extension path for Calradia Forge. ForgeWeave is the primary framework for new cooperative tools. Patch diagnostics provide a neutral Forge-owned snapshot; an optional reflection observer checks for an expected public query surface on an already-loaded assembly named `0Harmony`. That check is a limited runtime diagnostic signal, not a Harmony compatibility test. Harmony remains neither a Forge dependency nor the recommended author workflow.
 
 ## ForgeWeave: the current framework
 
@@ -35,11 +35,11 @@ The legacy SDK v1 registry still accepts tests, commands and diagnostic provider
 
 Patch Blueprint Preflight remains a separate, read-only authoring aid. `IPatchBlueprintProvider` supplies inert declarations with exact assembly, type, member and parameter metadata. Forge resolves them only against already loaded assemblies, reports structural problems and never applies a declaration, calls its callback, infers final execution order, or changes a patch. This makes a preflight useful without making ForgeWeave a patch engine. See [PATCH_BLUEPRINTS.md](PATCH_BLUEPRINTS.md).
 
-## Historical Harmony Atlas
+## Patch diagnostics and optional external observation
 
-`HarmonyDiagnostics` is retained as a bounded, reflection-only historical diagnostic. When another selected module has already loaded a compatible public `HarmonyLib.Harmony` API, an explicit `harmony` protocol request can capture limited target identity, owners, patch categories, declared ordering metadata and patch-method identity. The result is for review: a shared target is not proof of a conflict, and an owner string is not automatically a Bannerlord module ID.
+`ForgePatchDiagnostics` returns a bounded `ForgePatchDiagnosticsSnapshot` with Forge-owned hooks and replacement-patch records, counts and notes. The `patch-diagnostics` protocol action is the current read-only entry point. Its optional external observer searches caller-supplied loaded assemblies for the expected `0Harmony` assembly identity, resolves `HarmonyLib.Harmony` from that same assembly, and checks for the public static `GetAllPatchedMethods()` query returning `IEnumerable` and `GetPatchInfo(MethodBase)` query returning a value. This expected query surface is not a promise of compatibility with a Harmony release or mod combination. The observer does not load or distribute Harmony and creates no compile-time dependency. External observations include limited target identity, owners, patch categories, declared ordering metadata and patch-method identity. They are review evidence only: a shared target is not proof of a conflict, and an owner string is not automatically a Bannerlord module ID.
 
-The Atlas does not reference, redistribute, load, patch, unpatch or reorder Harmony. It is isolated from ForgeWeave, hidden from the primary native and desktop workflow, and no longer guides new extension authors. Absence or an incompatible query surface is reported without changing Forge behavior. The 0.4.0 native Atlas evidence in [VALIDATION.md](VALIDATION.md) is historical and does not validate ForgeWeave.
+The observer is optional and observational: it never patches, unpatches or reorders third-party code. It cannot see other patching backends or prove compatibility or coexistence. If the expected assembly, type or query surface is absent, Forge reports that observation without changing its own behavior. This diagnostic signal is bounded at the assembly/target enumeration and copied-output layers; external queries and public getters still execute synchronously in-process and are not sandboxed. The 0.4.0 native Atlas evidence in [VALIDATION.md](VALIDATION.md) is historical and does not validate ForgeWeave.
 
 ## Quality and validation boundaries
 
@@ -53,4 +53,4 @@ No novelty, universal superiority or replacement claim is established by this re
 - [Patches metadata](https://harmony.pardeike.net/api/HarmonyLib.Patches.html)
 - [Individual patch metadata](https://harmony.pardeike.net/api/HarmonyLib.Patch.html)
 
-These references are retained for the historical Atlas only. The installed API was inspected for the 0.4.0 diagnostic implementation; it is not a ForgeWeave dependency or compatibility target.
+These upstream references provide context for Harmony's query and patch metadata APIs and the historical Atlas. The current optional observer is tested with an isolated fixture that exposes the expected `0Harmony` identity and public query surface; this does not verify an installed Harmony release, a particular mod combination, or runtime coexistence. The adapter remains optional and creates no Forge dependency.

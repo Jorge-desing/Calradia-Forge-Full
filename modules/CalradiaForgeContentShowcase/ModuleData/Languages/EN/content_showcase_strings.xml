@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base type="string">
+  <tags>
+    <tag language="English" />
+  </tags>
+  <strings>
+    <string id="cfcs_title" text="Calradia Forge content showcase" />
+    <string id="cfcs_body" text="This read-only page demonstrates a module-owned Gauntlet ViewModel and static troop and item XML. It does not run tests or change game state." />
+    <string id="cfcs_practice_whip" text="Practice Whip" />
+    <string id="cfcs_example_recruit" text="Forge Recruit" />
+    <string id="cfcs_close" text="Close" />
+  </strings>
+</base>

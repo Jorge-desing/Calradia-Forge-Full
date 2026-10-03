@@ -224,8 +224,13 @@ namespace CalradiaForge.UI.ViewModels
   `<ScrollablePanel ClipRect="Clip" InnerPanel="Clip\Inner" VerticalScrollbar="Scroll">`
 - **Text Inputs:** On `EditableTextWidget`, always set `UpdateTextOnTyping="true"`. Otherwise, the ViewModel won't receive the user's text until they press the Enter key.
 - **Focus and selection are separate:** TaleWorlds' [`Widget` API](https://apidoc.bannerlord.com/v/1.3.4/class_tale_worlds_1_1_gauntlet_u_i_1_1_base_types_1_1_widget.html) exposes `IsFocusable` (settable) and `IsFocused` (read-only). A focusable control is not proof that keyboard/gamepad navigation reaches it or that focus is visibly rendered. Keep the focused control visually distinguishable from a selected route, verify the actual brush/state behavior against the targeted game build, and test navigation in game; do not invent a `Focused` brush state from the property name alone.
+- **Hook Workbench routing:** In the current Calradia Forge prefab, Hook Workbench is a conditional action surface inside `ForgePrimaryCommandHost`, shown only when `IsHookWorkbenchVisible` (`IsPatchPreflightActive && ShowCommandDeck`) is true. It is not a global overlay: keep the navigation rail and evidence frame as independent shell regions, and let other route/action content remain governed by its existing route state. Notify bindings for Hook Workbench visibility and dependent disabled states when the selected route or evidence-focus state changes; keep a structural regression for this composition.
 - **Editable-field cue:** The official [`EditableTextWidget` API](https://apidoc.bannerlord.com/v/1.3.4/class_tale_worlds_1_1_gauntlet_u_i_1_1_base_types_1_1_editable_text_widget.html) documents `DefaultSearchText` as text shown while the field is empty and unfocused, plus a configurable `MaxLength` (512 in that API reference). Use a localized cue when it improves an unlabeled field, keep a persistent label for important inputs, and verify property/default behavior against the project's target game version before relying on it.
-- **Hot Reloading:** Open the in-game console (`Ctrl + ~`) and enter `ui.toggle_debug_mode` to live-reload Gauntlet XML layouts without restarting.
+- **Reload evidence:** Verify console commands and resource-cache behavior against
+  the installed target engine before claiming prefab reload. Debug-mode toggles or
+  simulated `cf.reload_prefabs` catalog entries do not establish reload support.
+  Composer output is a static prefab/ViewModel/localization bundle; validate its
+  real engine load separately from XML/binding checks.
 
 ---
 

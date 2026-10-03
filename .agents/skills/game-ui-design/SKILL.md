@@ -1,14 +1,15 @@
 ---
 name: game-ui-design
-description: World-class game UI/UX design architecture for Mount & Blade II: Bannerlord Gauntlet XML prefabs and Calradia Forge .NET 8 WPF Desktop Workbench. Tactical military aesthetics, F10 hotkey rising-edge polling, responsive scaling (1080p to 4K), WCAG AAA contrast, and accessible keyboard/gamepad navigation.
-risk: safe
-source: Calradia Forge Agent Ecosystem (Apache 2.0)
-date_added: 2026-09-28
+description: "Design guidance for Mount & Blade II: Bannerlord Gauntlet XML prefabs and the Calradia Forge .NET 8 WPF workbench. Covers tactical visual hierarchy, resource verification, accessible navigation, measured contrast, responsive layout checks, and the repository's existing F10 input-edge integration."
+metadata:
+  risk: safe
+  source: Calradia Forge Agent Ecosystem (Apache 2.0)
+  date_added: "2026-09-28"
 ---
 
 # Game UI Design: Gauntlet XML Prefabs & Tactical Desktop Workbench
 
-User interface design in Mount & Blade II: Bannerlord bridges two distinct domains: in-game tactical overlays rendered by TaleWorlds' proprietary **Gauntlet UI** engine, and developer workbench tooling built on modern **.NET 8 WPF**. A master game UI designer understands both environments, maintaining immersive tactical aesthetics, robust input polling, high-contrast readability, and seamless responsive scaling across resolutions from 1080p to 4K.
+User interface design in Mount & Blade II: Bannerlord bridges two distinct domains: in-game tactical overlays rendered by TaleWorlds' proprietary **Gauntlet UI** engine, and developer workbench tooling built on modern **.NET 8 WPF**. Treat their resource systems, input models, and validation paths separately. Source contracts, headless rendering, and live engine behavior are different kinds of evidence; report each one explicitly. The project-specific F10 integration is described below, but it is not a universal guarantee that every key event or game version will behave identically.
 
 ---
 
@@ -17,17 +18,14 @@ User interface design in Mount & Blade II: Bannerlord bridges two distinct domai
 1. **Dual UI Architecture**:
    - **In-Game Overlay (Gauntlet UI)**: Lightweight XML prefabs rendered in the game engine viewport, bound to C# ViewModels via `TaleWorlds.Library.ViewModel` with properties decorated by `[DataSourceProperty]`.
    - **Desktop Workbench (WPF MVVM)**: Standalone assembly and telemetry tool, styled with tactical resource dictionaries (`DeepPineBrush`, `BrassBrush`, `VerdigrisBrush`, `CoalBrush`), vector charts, and strict thread isolation.
-2. **Tactical Military Aesthetics & WCAG AAA Contrast**:
-   - Calradia Forge employs a cohesive tactical palette:
-     - `DeepPineBrush` (`#0D1B1E`): Base canvas and card background.
-     - `CoalBrush` (`#121517`): Recessed telemetry trays and dark containers.
-     - `BrassBrush` (`#C8963E`): Primary actions, gold emblems, and important headings.
-     - `VerdigrisBrush` (`#2A9D8F`): Active indicators, telemetry trends, and passing rules.
-     - `EmberBrush` (`#E76F51`): Warnings, error thresholds, and combat casualties.
-     - `PaperBrush` (`#EAE0D5`): High-legibility text ensuring WCAG AAA contrast ratio ($\ge 7:1$).
-3. **Robust Hotkey Polling with Rising-Edge Fallback**:
-   - TaleWorlds' `InputKey.F10` polling can drop keystrokes during intensive frame ticks if using only `Input.IsKeyPressed`.
-   - Always implement an F10-only rising-edge fallback using `IsKeyDown` / `IsKeyDownImmediate` combined with an edge-detection latch.
+2. **Tactical Military Aesthetics & Measured Contrast**:
+   - WPF theme resources include a tactical palette. In the current War Table dictionary, the base values are `DeepPineBrush` (`#13231E`), `CoalBrush` (`#0D1714`), `BrassBrush` (`#C7A45A`), `VerdigrisBrush` (`#6FB183`), `EmberBrush` (`#BC6542`), and `PaperBrush` (`#F1E6C8`). Parchment and High Contrast override these values; inspect the active theme dictionary before use.
+   - Gauntlet uses its own registered brushes. WPF brush names and color values do not automatically exist in Gauntlet.
+   - Do not claim WCAG AAA (or another contrast level) from a palette name or color swatch alone; calculate the rendered foreground/background pair and inspect relevant states.
+3. **Use the Existing F10 Input-Edge Integration**:
+   - `src/CalradiaForge.Mod/SubModule.cs` routes configured F10 input through `F10InputEdgeGate` in `OnApplicationTick`, combining `IsKeyPressed`, `IsKeyDown`, and `IsKeyDownImmediate`. The gate emits one edge while any signal remains present, rearms after all clear, and is reset when the configured hotkey is not F10.
+   - Preserve this integration and its tests instead of introducing a second `ForgeInputManager` or a separate latch. Other configured hotkeys use the normal `IsKeyPressed` path.
+   - The gate's unit tests cover synthetic signal sequences; they do not guarantee input delivery, focus behavior, or panel rendering in every live game/version. Verify live behavior separately when the task requires it.
 4. **980x680 DIP Minimum Surface Contract**:
    - Desktop workbench views must fit within a `980x680` DIP minimum viewport without vertical clipping or horizontal truncation of the evidence ledger.
 
@@ -36,11 +34,11 @@ User interface design in Mount & Blade II: Bannerlord bridges two distinct domai
 ## 2. Capabilities & Scope
 
 ### Capabilities
-- `gauntlet-xml-prefab-authoring`: Constructs clean Gauntlet XML layouts with responsive anchors and clipping.
+- `gauntlet-xml-prefab-authoring`: Guides Gauntlet XML layout construction with responsive anchors and clipping; verify the target engine's accepted attributes and resources.
 - `datasource-viewmodel-binding`: Connects C# properties and commands to Gauntlet widgets cleanly.
 - `tactical-palette-styling`: Applies cohesive brushes, typography, and corner radiuses.
-- `rising-edge-input-polling`: Implements reliable hotkey listeners that never drop keystrokes.
-- `responsive-viewport-budgeting`: Ensures UI cards scale gracefully across minimum and maximum display sizes.
+- `f10-input-edge-integration`: Maintains the existing `F10InputEdgeGate`/`SubModule` path and regression coverage without promising universal key delivery.
+- `responsive-viewport-budgeting`: Plans and validates layouts at explicitly tested viewport sizes and content lengths.
 
 ### Scope
 - **In Scope**: In-game Gauntlet UI panels (`Modules/CalradiaForge/GUI/Prefabs/`), Desktop WPF views (`src/CalradiaForge.Desktop/Resources/Views/`), theme dictionaries.
@@ -51,7 +49,7 @@ User interface design in Mount & Blade II: Bannerlord bridges two distinct domai
 ## 3. Concrete Game UI Patterns
 
 ### Pattern 1: Gauntlet Prefab XML Structure
-Gauntlet XML layout for an in-game telemetry overlay card.
+Schematic layout for an in-game telemetry card. `CalradiaForge.HeaderGold` and `CalradiaForge.TerminalText` are defined in the current module's `GUI/Brushes/CalradiaForge.xml`. A prefab reference alone does not register a brush: ensure the definition file is discovered and packaged by the target module's resource-loading setup, then verify the names resolve in the target game before copying this layout.
 
 ```xml
 <Prefab>
@@ -67,8 +65,8 @@ Gauntlet XML layout for an in-game telemetry overlay card.
             HorizontalAlignment="Left" VerticalAlignment="Top">
       <Children>
         <!-- Background Frame -->
-        <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" 
-                     Brush="CalradiaForge.Panel.DeepPine" />
+        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                Sprite="BlankWhiteSquare_9" Color="#142019FF" />
         
         <!-- Content Stack -->
         <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" 
@@ -76,10 +74,10 @@ Gauntlet XML layout for an in-game telemetry overlay card.
           <Children>
             <!-- Title Header -->
             <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" 
-                        Text="@CategoryTitle" Brush="CalradiaForge.Text.Brass" />
+                        Text="@CategoryTitle" Brush="CalradiaForge.HeaderGold" />
             <!-- Status Metric -->
             <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" 
-                        Text="@ActiveTelemetrySummary" Brush="CalradiaForge.Text.Paper" />
+                        Text="@ActiveTelemetrySummary" Brush="CalradiaForge.TerminalText" />
           </Children>
         </ListPanel>
       </Children>
@@ -88,31 +86,23 @@ Gauntlet XML layout for an in-game telemetry overlay card.
 </Prefab>
 ```
 
-### Pattern 2: F10 Rising-Edge Hotkey Polling
-Guarantees reliable toggling of in-game developer panels.
+### Pattern 2: Existing F10 Edge Gate in `SubModule`
+Use the current integration rather than duplicating the gate. This excerpt follows `src/CalradiaForge.Mod/SubModule.cs`; it describes the repository's implementation, not a universal input guarantee.
 
 ```csharp
-public class ForgeInputManager
+// Excerpt from SubModule.OnApplicationTick; names are owned by that class.
+if (cachedHotkey == InputKey.F10)
 {
-    private bool _wasF10DownLastTick;
-
-    public bool CheckF10HotkeyTrigger()
-    {
-        // 1. Primary engine check
-        bool isPressed = Input.IsKeyPressed(InputKey.F10);
-
-        // 2. Rising-edge fallback check using IsKeyDownImmediate
-        bool isDownNow = Input.IsKeyDownImmediate(InputKey.F10) || Input.IsKeyDown(InputKey.F10);
-        bool isRisingEdge = isDownNow && !_wasF10DownLastTick;
-        _wasF10DownLastTick = isDownNow;
-
-        return isPressed || isRisingEdge;
-    }
+    hotkeyPressed = f10InputGate.Poll(
+        keyPressed,
+        Input.IsKeyDown(InputKey.F10),
+        Input.IsKeyDownImmediate(InputKey.F10));
 }
+else f10InputGate.Reset();
 ```
 
 ### Pattern 3: Desktop ViewTemplate Three-Column Layout
-Enforces tactical studio structure while respecting the 980x680 DIP minimum surface.
+Illustrative WPF layout. The 980x680 DIP minimum is a project workbench contract; validate the affected view and its longest supported content through maintained render checks rather than inferring that every template fits from this sample.
 
 ```xaml
 <Grid Grid.Row="1">
@@ -142,24 +132,32 @@ Enforces tactical studio structure while respecting the 980x680 DIP minimum surf
 - **Root Cause**: TaleWorlds' reflection-based Gauntlet binding engine ignores public properties that lack the `[DataSourceProperty]` attribute.
 - **Fix**: Decorate all exposed ViewModel getters and setters with `[DataSourceProperty]`.
 
-### Edge 2: Inventing Non-Existent Geometry Keys in XAML
+### Edge 2 (WPF-only): Inventing Non-Existent Resource Keys in XAML
 - **Severity**: CRITICAL
+- **Scope**: WPF XAML dictionaries only; Gauntlet XML uses the game's own widget, brush, and sprite registration system.
 - **Symptom**: `XamlParseException` on workbench startup: *Resource not found: Icon.NewStudio*.
-- **Root Cause**: Guessing icon key names instead of verifying against `TacticalIcons.xaml` or `GameIcons.xaml`.
-- **Fix**: Always verify icon keys against the canonical resource dictionaries before referencing in XAML.
+- **Root Cause**: Guessing a WPF resource key instead of verifying it in the actual merged resource dictionaries.
+- **Fix**: Verify WPF resource keys against the dictionaries loaded by the affected view. Do not treat `TacticalIcons.xaml` or `GameIcons.xaml` as Gauntlet resources.
 
-### Edge 3: Violating 980x680 DIP Viewport Cutoff
+### Edge 3 (WPF-only): Violating the 980x680 DIP Viewport Contract
+- **Scope**: Desktop WPF workbench render/layout checks. This is not a Gauntlet viewport contract.
 - **Severity**: HIGH
-- **Symptom**: `AssertEmptyLedgerFitsMinimumSurface` test fails; users on smaller displays cannot see the action buttons without scrolling.
-- **Root Cause**: Adding fixed-height cards that push the evidence ledger below the 640 DIP vertical threshold.
-- **Fix**: Keep default tool cards collapsed (`HasVisualDashboard == false` for `toolArray[0]`) and bound inner scrollable areas with `MaxHeight="220"`.
+- **Current regression contract**: `AssertEmptyLedgerFitsMinimumSurface` checks the empty-ledger title and action bounds against `ResponsiveWorkbenchScrollViewport` at the actual `980x680` DIP minimum, including a minimum 32-DIP action height. It does not define a universal 640-DIP ledger threshold.
+- **Root Cause**: Shell/header growth, clipping, or fixed content can move the empty-state action outside the measured viewport. The default catalog route is a standard route; dashboard and Split Deck routes have separate responsive checks.
+- **Fix**: Preserve measured bounds for the affected route and state, and exercise the relevant standard/dashboard cases in the render harness. Do not use catalog index (`toolArray[0]`) or an inner `MaxHeight="220"` from another template as a universal layout workaround.
 
 ---
 
 ## 5. Validation Rules & Verification Checklist
 
 1. [ ] **`[DataSourceProperty]` Decorators**: All properties exposed to Gauntlet XML prefabs have `[DataSourceProperty]`.
-2. [ ] **Valid Vector Geometry Keys**: All `<Path Data="{StaticResource ...}">` reference existing keys in `TacticalIcons.xaml` or `GameIcons.xaml`.
-3. [ ] **F10 Rising-Edge Fallback**: Input handlers combine `IsKeyPressed` with an `IsKeyDownImmediate` edge latch.
-4. [ ] **980x680 DIP Contract**: Headless render tests confirm layout fits within minimum surface bounds without vertical clipping.
-5. [ ] **WCAG AAA Contrast**: Text elements maintain high contrast against backgrounds using `PaperBrush` or `BrassBrush`.
+2. [ ] **Resources**: For Gauntlet, verify widget/brush/sprite names in the module's registered resources. For WPF only, verify vector geometry `StaticResource` keys in the loaded XAML dictionaries.
+3. [ ] **F10 Integration**: Preserve `F10InputEdgeGate` in `SubModule.OnApplicationTick`; confirm synthetic edge tests pass and separately record whether live input/panel behavior was observed.
+4. [ ] **WPF 980x680 DIP Contract**: Run relevant Desktop render cases at the minimum surface and inspect measured bounds for the affected view, long text, and state variants.
+5. [ ] **Contrast**: Measure actual text/background combinations and focus/selection states; color names are not evidence of WCAG conformance.
+
+### Evidence Boundaries in Maintained UI Launchers
+
+- `tools/Run-CalradiaForge-Gauntlet-Visual-Checks.bat` validates decorative-sprite inputs, runs `tools/audit_gauntlet_ui.py` for source-level prefab/binding/layout contracts, and then runs Core tests. The auditor explicitly does not replace an in-game render check; a green BAT does not prove that Bannerlord imported the atlas or rendered the prefab.
+- `tools/Run-CalradiaForge-Desktop-Render-Tests.bat` runs the WPF render/resource harness on its isolated test desktop. Its render cases are evidence about WPF and the harness, not Gauntlet, native Windows DPI behavior, or live game interaction.
+- Keep these claims separate in reports: static/source audit, packaged/imported resource inspection (for example, Resource Browser), off-screen WPF harness render, and actual Bannerlord UI render/input are distinct verification states. Promote a claim to imported or live-verified only after observing that exact stage.

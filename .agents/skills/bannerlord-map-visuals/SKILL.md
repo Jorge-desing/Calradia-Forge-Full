@@ -91,7 +91,7 @@ public static void SafeRemoveEntity(GameEntity entity)
 ---
 
 ## Critical Domain Rules
-> **Universal rules** (no Campaign namespace, no Harmony, no entity serialization) are in `bannerlord-shared-patterns`.
+> **Universal rules** are in `bannerlord-shared-patterns`: do not create a `Campaign` namespace, add a Harmony dependency, use Harmony patches/detours to implement this feature, or serialize engine entities. The only Forge-side Harmony path is the optional read-only observer described there; it does not load or modify Harmony.
 
 1. **Never create meshes or entities in `OnInit()`**: Wait for `OnSessionLaunchedEvent` — mesh manipulation in `OnInit()` causes a seamless C++ engine crash.
 2. **Never serialize `GameEntity` or `PartyVisual` in `SyncData()`**: Entities are transient C++ handles that are invalid between sessions.

@@ -97,7 +97,7 @@ ClanCharacterProgressionBehavior (Stateless)
 │   ├── Character Progression (5 events)
 │   └── Periodic Ticks (6 events)
 ├── Time-Slicing Utility
-│   └── ShouldProcessInCurrentHour(stringId) - Modulo-24 hash distribution
+│   └── ForgeTimeSlicer.ShouldProcess(stringId, currentHour) - Stable bucket scheduling
 └── Event Handlers
     ├── Null-safe entity checks
     ├── Interlocked counter increments
@@ -109,7 +109,7 @@ AgentCognitiveMemoryBehavior (Stateless)
 │   ├── Social & Progression (HeroRelationChanged, HeroGainedSkill)
 │   └── Periodic Maintenance (HourlyTickEvent, OnSessionLaunchedEvent)
 ├── Time-Slicing Utility
-│   └── Modulo-24 hash distribution for anti-lag semantic decay
+│   └── ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) for eligible deferred maintenance
 └── Volatile Memory Integration
     ├── ForgeAgentMemory.Episodic.TryAdd (Captivity, Liberation, MartialKill, BloodFeud, DispositionShift)
     ├── ForgeAgentMemory.Semantic.TryUpsert (IsAdult, IsImprisoned, TotalSlainHeroes, FeudTargetHeroId)
@@ -258,17 +258,17 @@ External Tool Integration
 
 ## Performance Architecture
 
-### Anti-Lag Strategies
+### Measured Performance Strategies
 
-1. **Modulo-24 Time Slicing**: Distribute entity processing across hourly ticks
+1. **Stable-Bucket Time Slicing**: Defer only work whose semantics permit processing in a later slice. `ForgeTimeSlicer` uses a stable identifier hash; distribution may be uneven, and filtering a collection still scans that collection.
    ```csharp
-   int bucket = (entity.StringId.GetHashCode() & 0x7FFFFFFF) % 24;
-   if (bucket == currentHour) { ProcessEntity(entity); }
+   int currentHour = (int)CampaignTime.Now.ToHours;
+   if (ForgeTimeSlicer.ShouldProcess(entity.StringId, currentHour)) { ProcessEntity(entity); }
    ```
 
-2. **Zero GC Allocations**: Avoid LINQ in tick handlers
-3. **Squared Distance**: Use `DistanceSquared()` instead of `Math.Sqrt()`
-4. **Interlocked Counters**: Thread-safe telemetry without locks
+2. **Allocation Measurement**: Avoid LINQ in a hot tick only when profiling or a benchmark confirms the cost; explicit loops and callbacks are not automatically allocation-free.
+3. **Squared Distance**: Use `DistanceSquared()` instead of `Math.Sqrt()` when only comparing distances.
+4. **Interlocked Counters**: Use atomic increments for counters accessed across threads; measure surrounding work separately.
 
 ## Save System Architecture
 
@@ -339,7 +339,7 @@ ForgeDetour.Patch(MethodInfo original, MethodInfo replacement)
     └─ One-for-one native method replacement; verify/revert explicitly
 ```
 
-Patch preflight and patch application are independent capabilities; preflight does not gate or trigger application. There is no automatic startup assembly scan. The legacy `ForgeBootstrapper.InitializeGlobalPatches()` entry point is obsolete and does nothing. Forge's optional historical Harmony Atlas is a separate read-only inventory of an already-loaded Harmony API; it is not used by ForgeDetour or ForgeWeave.
+Patch preflight and patch application are independent capabilities; preflight does not gate or trigger application. There is no automatic startup assembly scan. The legacy `ForgeBootstrapper.InitializeGlobalPatches()` entry point is obsolete and does nothing. The `patch-diagnostics` action captures bounded Forge-owned hook/replacement records and may include a bounded runtime diagnostic signal when an already-loaded assembly named `0Harmony` exposes the expected public static `HarmonyLib.Harmony.GetAllPatchedMethods()` and `GetPatchInfo(MethodBase)` query surface. This signal is not a release or mod-compatibility test. The optional reflection observer has no distributed dependency, never loads the runtime, and does not mutate patches; ForgeDetour and ForgeWeave do not use it.
 
 ### ForgeWeave Cooperative Event Mesh Architecture
 
@@ -357,7 +357,7 @@ ForgeWeaveEngine.Dispatch()
     │       ├── Success → Closed (quarantine lifted, cooldown reset)
     │       └── Failure → Open (exponential backoff up to 60s)
     ├── Exception Isolation (Per-handler try/catch)
-    └── Zero-Allocation APM Telemetry
+    └── Preallocated APM Telemetry Samples (allocation behavior must be measured per call path)
         ├── Rolling 64-sample circular buffer (double[64])
         ├── P50 / P95 / P99 latency percentiles
         └── Histogram distribution buckets (<1ms, 1-5ms, 5-20ms, >20ms)
@@ -366,7 +366,7 @@ ForgeWeaveEngine.Dispatch()
 ```
 Campaign Simulation Events (HeroPrisonerTaken, HeroKilled, HeroRelationChanged, etc.)
     ↓
-AgentCognitiveMemoryBehavior (Modulo-24 Time Slicing on HourlyTick)
+AgentCognitiveMemoryBehavior (stable-bucket maintenance on HourlyTick; scans alive heroes)
     ↓
 ForgeAgentMemory (CoALA Semantic & Episodic Volatile Storage)
     ├── Universal Reactive Dialogues (start -> lord_start, lord_talk_ask_something_2, hero_main_options)
@@ -429,7 +429,7 @@ Desktop Workbench (.NET 8 WPF)
     └── CycleModderRoleCommand: Quick keyboard and UI switching between roles
 ```
 
-The UI also places Patch Blueprint Preflight and the historical Harmony Atlas in the Weave navigation category. They are separate tools: preflight reviews inert declarations, and the Atlas only inventories Harmony hooks that another module has already loaded. Neither is a ForgeWeave feature.
+The UI also places Patch Blueprint Preflight and Patch Diagnostics in the Weave navigation category. They are separate tools: preflight reviews inert declarations, while diagnostics reports Forge-owned state and may observe an already-loaded external runtime through its optional reflection adapter. Neither is a ForgeWeave feature.
 
 ## Module Distribution Structure
 
@@ -448,10 +448,10 @@ modules/CalradiaForge/
 
 ## Key Architectural Invariants
 
-1. **Zero Harmony for GameModels**: Use Decorator Pattern instead
+1. **No external patch-framework dependency in GameModels**: Use Decorator Pattern instead
 2. **Always AddNonSerializedListener**: Never use AddSerializedListener
 3. **StringId for Entity References**: Never serialize Hero/Settlement directly
-4. **Modulo-24 Time Slicing**: Required for bulk entity processing
+4. **Stable-Bucket Scheduling**: Use `ForgeTimeSlicer` only for bulk work that is safe to defer; measure distribution and the cost of scanning inputs
 5. **Anti-Shadowing Compliance**: Never use "Campaign" or "Localization" names
 6. **Stateless GameModels**: No mutable state in model classes
 7. **Main Thread Only**: Campaign APIs are single-threaded

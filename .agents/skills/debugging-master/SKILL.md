@@ -1,9 +1,6 @@
 ---
 name: debugging-master
-description: Scientific debugging methodology for Mount & Blade II: Bannerlord and Calradia Forge. Hypothesis-driven root-cause isolation, TaleWorlds native crash triage (0xC0000005), 10-minute rule, stack trace symbol resolution, and save state corruption diagnosis.
-risk: safe
-source: Calradia Forge Agent Ecosystem (Apache 2.0)
-date_added: 2026-09-28
+description: "Scientific debugging methodology for Mount & Blade II: Bannerlord and Calradia Forge. Hypothesis-driven root-cause isolation, TaleWorlds native crash triage (0xC0000005), 10-minute rule, stack trace symbol resolution, and save state corruption diagnosis."
 ---
 
 # Debugging Master: Scientific Mod & Engine Triage
@@ -34,7 +31,7 @@ Debugging Bannerlord modules is applied science, not intuitive guessing. When a 
 ## 2. Capabilities & Scope
 
 ### Capabilities
-- `bannerlord-crash-triage`: Decodes binary `.cfcrash` dumps and native unhandled exceptions.
+- `bannerlord-crash-triage`: Triages Forge's JSON-text `.cfcrash` reports and native unhandled exceptions; native dump decoding requires a separate debugger workflow.
 - `lifecycle-debugging`: Diagnoses timing violations across `MBSubModuleBase`, `CampaignBehaviorBase`, and `MissionLogic`.
 - `memory-corruption-isolation`: Identifies memory leaks, buffer overruns, and unpinned native pointers.
 - `save-system-diagnostics`: Traces broken `IDataStore.SyncData()` calls, GUID truncation, and SaveableTypeDefiner ID collisions.
@@ -82,26 +79,24 @@ public class SafeMissionEquipmentLogic : MissionLogic
 }
 ```
 
-### Pattern 2: Binary Crash Dump (.cfcrash) Decoding
-Calradia Forge generates structured `.cfcrash` dumps in `artifacts/` when an unhandled exception escapes.
+### Pattern 2: Forge `.cfcrash` JSON Metadata
+`SubModule.OnUnhandledException` writes a JSON text report to `Modules/CalradiaForge/crash_<timestamp>.cfcrash`. Its current fields are `Timestamp`, `IsTerminating`, and `Exception`; it is not a binary dump and does not include game version, module provenance, native context, or thread affinity.
 
 ```
-CFCRASH DUMP HEADER:
-  Timestamp:     2026-09-28T03:32:05.112Z
-  GameVersion:   e1.2.9 / v25.2.0
-  Exception:     System.NullReferenceException: Object reference not set to an instance of an object.
-  NativeContext: TaleWorlds.MountAndBlade.View.MissionViews.MissionView.OnInit() + 0x4A
-  ThreadAffinity: MainGameThread [ID: 1]
-  ActiveModule:  CalradiaForge.Mod
+{
+  "Timestamp": "<ISO-8601 timestamp>",
+  "IsTerminating": true,
+  "Exception": "<escaped Exception.ToString() text>"
+}
 ```
 
 **Triage Protocol**:
-1. Check `ActiveModule` to verify whether the failing instruction originated from mod code or vanilla engine code called with invalid state.
-2. Verify `ThreadAffinity`: If `ThreadAffinity != MainGameThread`, an asynchronous task violated game-thread affinity.
-3. Inspect `NativeContext` to isolate the TaleWorlds subsystem (`MissionViews`, `CampaignSystem`, `GauntletUI`).
+1. Treat the exception text as evidence to investigate, not proof that Forge or a specific module caused the failure.
+2. Inspect the raw exception and its stack trace when present. The Forge analysis route checks only whether the `.cfcrash` text contains an exception marker; it does not infer thread affinity, identify the responsible module, or resolve native symbols.
+3. Use game logs, debugger symbols, and independently captured runtime context when those details are required; do not infer fields absent from the report.
 
 ### Pattern 3: Stateless SyncData Guard Pattern
-Mod behaviors must never corrupt user game saves. Keep `SyncData(IDataStore dataStore)` completely free of stateful serialization unless strictly isolated with unique string IDs and primitive types.
+Mod behaviors must not persist custom state through `SyncData(IDataStore dataStore)`. In `src/CalradiaForge.Mod`, keep the override free of `dataStore.SyncData(...)` calls; derive transient state from engine entities or use the approved SDK services instead.
 
 ```csharp
 // CORRECT: 100% Stateless CampaignBehaviorBase
@@ -112,7 +107,9 @@ public class DynasticProgressionBehavior : CampaignBehaviorBase
         CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
     }
 
-    // MANDATORY: Keep completely empty to guarantee 100% save-compatibility
+    // Keep empty when this behavior owns no persistent state. This prevents
+    // this behavior from adding custom save fields; it does not certify whole-save
+    // compatibility across the game, other mods, or future versions.
     public override void SyncData(IDataStore dataStore)
     {
         // Zero SaveableTypeDefiner, zero dataStore.SyncData(...)
@@ -121,12 +118,20 @@ public class DynasticProgressionBehavior : CampaignBehaviorBase
 
     private void OnHourlyTick()
     {
-        // Modulo-24 anti-lag time-slicing
+        // Defer only optional work whose semantics allow it to run in its stable-ID bucket.
         int currentHour = (int)CampaignTime.Now.ToHours;
-        // ...
+        foreach (Hero hero in Hero.AllAliveHeroes)
+        {
+            if (hero == null || string.IsNullOrEmpty(hero.StringId)) continue;
+            if (!ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour)) continue;
+
+            ProcessOptionalMaintenance(hero);
+        }
     }
 }
 ```
+
+`ForgeTimeSlicer.ShouldProcess` selects entities by stable identifier; it does not schedule or enumerate them for the caller. A loop still traverses the full source collection and hashes each eligible ID, bucket sizes can be uneven, and default hourly slicing can defer selected work by up to 24 in-game hours. Use it only where that delay preserves event semantics. Measure the full callback, including collection traversal and work performed for selected entities, before claiming reduced cost, latency, or allocations. Time-slicing is not a general fix for frame-time spikes.
 
 ---
 
@@ -144,11 +149,11 @@ public class DynasticProgressionBehavior : CampaignBehaviorBase
 - **Root Cause**: `catch (Exception) { }` inside `HourlyTick` or `OnMissionTick` catches thousands of exceptions per second, causing massive CLR exception handling overhead and silent state corruption.
 - **Fix**: Never use empty catch blocks. Log structured failure evidence via `ForgeLogger.Error(ex)` and isolate or quarantine the failing subsystem.
 
-### Edge 3: Mutating Engine Entities from Asynchronous Background Tasks
+### Edge 3: Accessing Engine Entities from Asynchronous Background Tasks
 - **Severity**: HIGH
-- **Symptom**: Rare, non-reproducible crashes in `TaleWorlds.CampaignSystem.Campaign.OnTick()` or `MBObjectManager.GetObject()`.
-- **Root Cause**: TaleWorlds campaign and mission objects (`Hero`, `MobileParty`, `Settlement`) are not thread-safe. Reading or writing entity fields from `Task.Run()` causes concurrent dictionary mutation crashes.
-- **Fix**: Marshal all entity accesses back to the main game thread via `GameThreadActionDispatch.Dispatch(() => { ... })`.
+- **Symptom**: A worker-thread access may race with game-loop updates, throw, or fail inside engine code; the exact failure depends on the API and lifecycle.
+- **Root Cause**: Campaign and mission APIs generally have game-thread affinity; do not assume entities are safe for concurrent reads or writes unless that member's contract says so.
+- **Fix**: Marshal work through a dispatcher supplied by the host. In this repository, `GameThreadActionDispatch` is internal to `CalradiaForge.Mod` and exposes `RunOrPost`; external SDK consumers must not assume it is public or that a `Dispatch` method exists.
 
 ---
 
@@ -158,4 +163,4 @@ public class DynasticProgressionBehavior : CampaignBehaviorBase
 2. [ ] **Stateless SyncData**: Verified with `tools\verify_stateless_behavior.ps1` that mod behaviors declare zero `SaveableTypeDefiner` and empty `SyncData`.
 3. [ ] **GEMINI.md Rule A**: Zero namespaces, folders, or classes named `Campaign` or `Localization` in `src/CalradiaForge.Mod`.
 4. [ ] **PDB Symbol Availability**: Release builds generate portable PDBs for exact file-and-line stack trace resolution.
-5. [ ] **Bounded Memory Retention**: Replay and diagnostic loggers bound retained entries to a maximum of 2,048 slots to prevent OOM.
+5. [ ] **Bounded Memory Retention**: Verify each feature's actual limit. ForgeWeave retains at most 64 dispatch-journal entries and 64 replay records/results; `ForgeAgentMemory.MaximumAgents` is a separate 2,048-agent identity limit, not a replay or log capacity.

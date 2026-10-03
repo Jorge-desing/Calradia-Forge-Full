@@ -24,7 +24,7 @@ Every public class, struct, interface, enum, method, and property across `Calrad
 /// 
 /// Lifecycle: [When the object or hook is created, registered, invoked, and finalized.]
 /// Thread Safety: [Main thread only, free-threaded, or requires lock/Interlocked synchronization.]
-/// Performance: [Allocation profile, e.g. Zero GC allocations in ticks, O(1) lookups.]
+/// Performance: [Measured allocation profile and complexity for the stated workload. Do not claim zero allocations without measuring the complete call path, including caller-owned enumeration, selectors, callbacks, and result construction.]
 /// 
 /// Example:
 /// <code>

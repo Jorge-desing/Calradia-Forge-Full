@@ -1,0 +1,41 @@
+# Evidencia de evolución e interoperabilidad del runtime
+
+Esta nota registra el límite de capacidades verificado en la revisión de código `59789ad` (2026-10-01). Es una guía de evidencia, no una promesa de que los cambios sin confirmar del árbol de trabajo hayan pasado la misma revisión o validación.
+
+La entrega paralela de hooks se confirmó después como `d8c0def`, con contrato SDK
+13. Es un cambio separado, no un incremento de API realizado por el trabajo de onboarding.
+La implementación combinada anterior aprobó el BAT Core integrado y un fixture BAT
+aislado de 11 casos. Tras endurecer la identidad del ensamblado, la superficie pública
+y las firmas exactas, el fixture aislado aprobó 21/21. Ninguno de esos fixtures demuestra
+coexistencia dentro de Bannerlord ni seguridad de parches nativos concurrentes.
+
+## Las capacidades de runtime son distintas
+
+| Capacidad | Comportamiento verificado | Límite |
+|---|---|---|
+| ForgeWeave | Manejadores cooperativos para callbacks emitidos por el adaptador Bannerlord de Forge. Los fallos se miden, aíslan y pueden ponerse en cuarentena. | No intercepta métodos arbitrarios, carga ensamblados de mods ni emite IL. |
+| Patch Blueprint Preflight | Resuelve declaraciones inertes contra ensamblados ya cargados en la sesión. | No aplica parches, no determina su orden final ni demuestra que sean seguros. |
+| `ForgeApi.Patches` / `ForgePatcher` | Reemplazo explícito y experimental de métodos completos, con registros de verificación y reversión. | El escritor nativo no detiene otros hilos ni decodifica o reubica las instrucciones sobrescritas. No debe describirse como seguro con destinos activos concurrentes ni como reemplazo general de frameworks externos de parches. |
+| `ForgeApi.Hooks` | El contrato API 13 añade un callback `Finalizer` explícito junto a Prefix/Postfix. Se ejecuta después de la ruta de callbacks/original, incluso ante fallos, mientras lo permita el gate de callbacks del host; puede conservar, reemplazar o suprimir una excepción pendiente, sujeto a validar el valor de retorno. | Los hooks son síncronos en el hilo que invoca el destino. El registro es inerte y Apply/Revert son operaciones explícitas del host bajo un gate estricto de hilo del juego y menú principal. Si el Finalizer también falla, ambas excepciones se conservan en `AggregateException`; los fixtures seriales no prueban seguridad ante ejecución concurrente del destino. |
+| Transpilador IL local al host | El host Bannerlord `net472` tiene una entrada separada `ForgeHookService.RegisterTranspiler` que usa `ILContext.Manipulator` de MonoMod y el ciclo de vida del handle común. | El SDK expone el ciclo de vida normal de registro, snapshots y el indicador de metadatos `HasTranspiler`, pero no esta entrada ni el manipulador/`ILContext`; IPC nunca transporta el delegado ni el contexto IL. Aunque la aplicación y administración iniciales pasan por el gate del host, MonoMod puede reconstruir una transformación IL activa en otro hilo llamador hasta que se revierta explícitamente. Los manipuladores deben poder repetirse y usar solo el IL recibido y configuración estable; nunca deben acceder al estado vivo del juego. No se afirma seguridad concurrente. |
+| `ForgePatchDiagnostics` | Instantánea acotada de hooks/reemplazos propiedad de Forge; el adaptador reflectivo opcional consulta la API pública de un ensamblado `0Harmony` suministrado por quien llama solo si ya está cargado. Sin dependencia de compilación ni distribución de Harmony. | La inspección externa tiene intención de solo lectura, pero las consultas síncronas y los getters públicos se ejecutan dentro del proceso y pueden realizar trabajo interno; los límites cubren enumeración y salida copiada, no CPU ni asignaciones de Harmony. No es un sandbox, no detecta todos los backends ni demuestra un conflicto destructivo. |
+
+La revisión histórica citada tenía `ForgeApi.Version = 12`; el código fuente actual tiene `ForgeApi.Version = 13`. Comprueba directamente las capacidades opcionales durante el runtime; no infieras que un servicio está implementado solo por la constante de versión de compilación. Toda ampliación posterior del contrato o los hooks requiere auditoría y pruebas separadas antes de actualizar documentación o promesas del producto.
+
+## Categorías de evidencia de diagnóstico de parches
+
+`ForgePatchDiagnosticsSnapshot` separa los registros de hooks/reemplazos propiedad de Forge de la observación opcional `ExternalRuntime`. La instantánea externa incluye fecha, notas acotadas y una marca de obsolescencia administrada por el host; puede indicar `NotRequested`, `NotLoaded`, `Observed`, `Incomplete` o `Unsupported`, junto con identidad del runtime y objetivos/propietarios/observaciones acotados. El adaptador opcional solo considera un ensamblado ya cargado y proporcionado por quien lo llama cuyo nombre simple sea `0Harmony`; después refleja miembros públicos de consulta. Sus límites acotan la enumeración de ensamblados/destinos y la salida copiada; no limitan el tiempo de CPU ni las asignaciones que ocurran dentro de llamadas síncronas a Harmony o sus getters públicos. Esas llamadas se ejecutan dentro del proceso: el adaptador no es un sandbox ni promete ausencia de efectos secundarios. Interpreta la evidencia con cautela:
+
+- **Observed / Observado:** los registros Forge devolvieron sus copias de estado; por separado, una observación externa solo aparece cuando el adaptador opcional consultó la superficie pública esperada de `0Harmony` en un ensamblado ya cargado. Es una señal diagnóstica acotada del runtime, no evidencia de compatibilidad con una versión o combinación de mods.
+- **Review / Revisión:** varios propietarios externos declaran el mismo destino. La propiedad compartida amerita revisión, pero no demuestra incompatibilidad ni que todos los propietarios estén desviando el destino actualmente.
+- **Inconclusive / No concluyente:** el runtime opcional no estaba cargado, no era compatible, devolvió una consulta incompleta o no aportó metadatos de destinos. Una instantánea externa vacía nunca demuestra la ausencia de otros runtimes o detours nativos. `ConflictCount` resume estados de registros propiedad de Forge; no es un veredicto automático de conflicto entre frameworks.
+
+`Runtime` marca como obsoletas las evidencias almacenadas de diagnóstico de parches y del preflight durante la inicialización del contexto y cuando después observa un cambio en las referencias a los objetos `Campaign.Current` o `Mission.Current`. Es una señal de cambio de contexto, no un TTL de reloj. El fixture aislado del adaptador externo cubre marcas temporales de captura y notas de vigencia, pero no hace que el `Runtime` de Bannerlord atraviese una transición real de campaña o misión. No hay un mock existente de estado del juego que permita esa transición, así que el comportamiento de `IsStale` ante cambios de contexto queda pendiente de una regresión respaldada por el motor o de una validación en vivo.
+
+El diagnóstico nunca debe reordenar, desactivar o revertir automáticamente parches de terceros. Una futura clasificación de conflictos requiere identidad estable del método, procedencia y vigencia explícitas de la evidencia, y pruebas de interoperabilidad real antes de justificar etiquetas más contundentes. Los cambios de detour fuera de los registros de Forge pueden ser invisibles para el adaptador opcional de solo lectura.
+
+## Diagnósticos y evolución por etapas
+
+Atribuye los fallos solo a manejadores o hooks propiedad de Forge para los que Forge tenga ID, destino, etapa de ejecución y excepción capturada. No prometas interceptar todos los cierres ni indicar líneas de origen cuando no haya símbolos. Mantén acotados el trabajo de callbacks y el almacenamiento de diagnósticos en el hilo del juego.
+
+Orden recomendado: reconciliar la superficie SDK confirmada con los cambios pendientes; conservar observaciones de solo lectura y etiquetas de incertidumbre; validar interoperabilidad en fixtures aislados; y después considerar políticas visibles para el usuario. Mantén el reemplazo de memoria ejecutable como optativo y experimental hasta demostrar seguridad ante concurrencia y límites de instrucciones. Los builders de alto nivel y las plantillas de IDE pueden avanzar de forma independiente de este límite de runtime.

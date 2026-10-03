@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <strings language="zh-HANT">
+  <string key="2. For optional periodic hero work, use ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) for stable buckets. Defer only work that can wait up to 24 in-game hours, and measure before claiming a performance gain." value="2. 對於可選的週期性英雄工作，使用 ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) 分配至穩定分組。僅延後可等待最多 24 個遊戲內小時的工作，並在宣稱效能提升前先行測量。" />
   <string key="Assign unique IDs" value="Assign unique IDs" />
   <string key="Build or reinstall module" value="Build or reinstall module" />
   <string key="Calradia Forge" value="卡拉迪亞熔爐" />
@@ -41,9 +42,6 @@
   <string key="Maximum" value="最大值" />
   <string key="Recent events" value="最近事件" />
   <string key="Framework findings" value="框架發現" />
-  <string key="Harmony" value="Harmony" />
-  <string key="Harmony patch atlas" value="Harmony 補丁圖譜" />
-  <string key="Optional read-only Harmony diagnostics. Shared targets are review candidates, not proven conflicts." value="可選的唯讀 Harmony 診斷。共用目標是需要檢查的候選項，並非已證實的衝突。" />
   <string key="Patch preflight" value="補丁預檢" />
   <string key="Patch blueprint preflight" value="補丁藍圖預檢" />
   <string key="Providers" value="提供者" />
@@ -266,12 +264,9 @@
   <string key="Test ID" value="測試 ID" />
   <string key="Status" value="狀態" />
   <string key="Duration" value="耗時" />
-  <string key="Read-only inventory of active Harmony patches in already-loaded assemblies." value="已載入組件中作用中的 Harmony 修補程式唯讀清單。" />
   <string key="Patch Preflight: Read-only structural check of declared targets and callback references; it never applies patches or invokes callbacks." value="Patch Preflight：以唯讀方式檢查已宣告目標的結構和回呼參照；絕不套用修補程式或呼叫回呼。" />
-  <string key="ForgeWeave: Event recording and sequence replay. Harmony Atlas is a separate read-only inventory; Patch Preflight checks blueprint declarations without applying patches." value="ForgeWeave：事件記錄與序列重播。Harmony Atlas 是獨立的唯讀清單；Patch Preflight 會檢查藍圖宣告，但不會套用修補程式。" />
   <string key="Event Replay &amp; Patch Diagnostics" value="事件重播與修補程式診斷" />
   <string key="2. Patch Blueprint Review: Run cf.patch_preflight to review pending declarations. It does not apply patches; applying a Forge method replacement requires a separate explicit opt-in." value="2. 修補程式藍圖審查：執行 cf.patch_preflight 以審查待處理的宣告。此操作不會套用修補程式；替換 Forge 方法需要另行明確選擇啟用。" />
-  <string key="ForgeWeave Event Pipeline: Deterministic event recording and sequence replay. Harmony diagnostics and Patch Blueprint Preflight are separate tools." value="ForgeWeave 事件管線：決定性事件記錄與序列重播。Harmony 診斷和 Patch Blueprint Preflight 是獨立工具。" />
   <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. 替換 Forge 方法需要另行明確提出要求；後端不支援的已宣告 Hook 類型會保留為中繼資料。Patch Preflight 僅供讀取，不會呼叫回呼程式碼。請使用 AddNonSerializedListener，讓 ForgeWeave 事件監聽器不參與序列化。" />
   <string key="Hook inventory" value="掛鉤清單" />
   <string key="Next hook" value="下一個掛鉤" />
@@ -281,4 +276,14 @@
   <string key="Confirm action" value="確認操作" />
   <string key="Approve displayed hook plan" value="核准顯示的掛鉤計畫" />
   <string key="Selected hook" value="所選掛鉤" />
+  <string key="Patch diagnostics" value="補丁診斷" />
+  <string key="Read-only diagnostics for Forge hooks, Forge patches, and optional loaded patch runtimes." value="以唯讀方式診斷 Forge 掛鉤、Forge 補丁以及可選的已載入補丁執行環境。" />
+  <string key="Optional external runtime" value="選用外部執行環境" />
+  <string key="ForgeWeave: Event recording and sequence replay. Patch diagnostics inspect Forge-owned hooks and patches; a compatible loaded runtime is observed read-only when available. Patch Preflight checks blueprint declarations without applying patches." value="ForgeWeave：事件記錄與序列重播。補丁診斷會檢查 Forge 自有掛鉤與補丁；若有相容且已載入的執行環境，則以唯讀方式觀察。Patch Preflight 檢查宣告但不會套用補丁。" />
+  <string key="產生包含事件、SyncData 和穩定 ID 分桶的 CampaignBehaviorBase 架構，用於可選工作；仍會巡覽整個集合。" value="產生包含事件、SyncData 和穩定 ID 分桶的 CampaignBehaviorBase 架構，用於可選工作；仍會巡覽整個集合。" />
+  <string key="產生含有穩定 ID 批次排程的 CampaignBehaviorBase 架構" value="產生含有穩定 ID 批次排程的 CampaignBehaviorBase 架構" />
+  <string key="Advanced Developer SDK: Surface contracts for 110+ SDK tools, bounded NPC memory inspired by CoALA concepts, and decoupled engine API bridges." value="進階開發者 SDK：提供 110 多種 SDK 工具的介面契約、受 CoALA 概念啟發的有界 NPC 記憶，以及解耦的引擎 API 橋接。" />
+  <string key="1. Never mutate engine entities during render ticks.&#10;2. Never store raw Hero, Settlement, or MobileParty pointers in persistent fields; resolve by StringId via MBObjectManager.&#10;3. Inspection queries must be read-only; measure the complete query path before making performance claims.&#10;4. ForgeAgentMemory queries bounded NPC memory data; it is not a CoALA language-agent runtime." value="1. 切勿在渲染影格期間修改引擎實體。&#10;2. 切勿在持久欄位中儲存原始 Hero、Settlement 或 MobileParty 指標；應透過 MBObjectManager 依 StringId 解析。&#10;3. 檢查查詢必須為唯讀；宣稱效能提升前，請先測量完整查詢路徑。&#10;4. ForgeAgentMemory 查詢的是有界 NPC 記憶資料；它不是 CoALA 語言代理執行階段。" />
+  <string key="2. Query ForgeAgentMemory: Execute cf.agent_memory_query to inspect semantic and episodic memory data." value="2. 查詢 ForgeAgentMemory：執行 cf.agent_memory_query 以檢查語意和情節記憶資料。" />
+  <string key="Query ForgeAgentMemory fact counts and decay status" value="查詢 ForgeAgentMemory 事實數量與到期狀態" />
 </strings>

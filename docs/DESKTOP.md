@@ -19,6 +19,9 @@ The `ApiDeprecationChecker` route remains in the Desktop catalog for stable navi
 ### Diagnostic evidence and ForgeWeave parsing
 Core source heuristics mask comments and C# string literals before checking source-only rules; they remain bounded text analysis, not compiler diagnostics. Cancellation is honored while processing individual source and localization files. An unreadable or oversized file produces a localized finding and does not prevent analysis of later files. Desktop's Evidence Ledger displays each finding's rule ID, source location, evidence, and recommendation; evidence export preserves those fields in the legacy detail value. A successful ForgeWeave transport is reported as `Unparsed` when its payload is missing, empty, malformed, or lacks required snapshot metadata. The transport remains marked `Received`, the reason is capped at 240 characters, and the payload is retained for review. `Received` and `Unparsed` are not completion or verification claims.
 
+### Patch diagnostics
+The Desktop client uses the `patch-diagnostics` protocol action to display a bounded `ForgePatchDiagnosticsSnapshot` of Forge-owned hooks and replacement patches. Its optional external observer checks the expected public static `HarmonyLib.Harmony.GetAllPatchedMethods()` and `GetPatchInfo(MethodBase)` query surface on an already-loaded assembly named `0Harmony`; this is a bounded runtime diagnostic signal, not a release or mod-compatibility test. Forge does not load Harmony or add its assembly as a build/distribution reference. The probe runs synchronously in-process: Forge bounds assembly/target enumeration and copied output, but cannot bound CPU time or allocations performed internally by Harmony query methods or getters. It is not a sandbox or authenticity verifier. The observer is read-only and cannot see other patching backends. The current in-game console alias is `cf.patch_diagnostics`; the predecessor alias `cf.harmony_summary` is retired.
+
 The internal MVVM shell delegates observable state and commands to CommunityToolkit.Mvvm through a compatibility surface, owns visible failures, cancellation, and the selected tool. MaterialDesignThemes supplies presentation resources; local WPF geometries keep icons font-independent. AsmResolver also powers the Desktop's offline assembly workbench. Game-icons.net source paths are embedded as WPF geometries with attribution in `THIRD_PARTY_NOTICES.md`; the application never fetches artwork at runtime. A reviewed tool catalog defines each navigation route, input, and mutation requirement. The active work order is rendered through a `ContentControl` data template.
 
 The game's public declarative Gauntlet extension SDK is separate from this WPF Desktop catalog. See [Gauntlet UI extensions](GAME_UI_EXTENSIONS.md) for `[ForgeUiPage]`, `[ForgeUiCommand]`, owner-prefab validation, and game-thread behavior. Desktop keeps its internal MVVM route and does not load extension Gauntlet prefabs.
@@ -126,13 +129,13 @@ The workbench elevates visual differentiation from generic action buttons to ful
   3. *Workbench Hotkeys:* Direct keyboard shortcut references (`Ctrl+Enter`, `Ctrl+D`, `Ctrl+P`, `Ctrl+E`, `Esc`, `Ctrl+F`).
   4. *Headless CLI Invocation:* Exact command line syntax for automation (`CalradiaForge.Desktop.exe --tool <Id>`).
 
-### Measured WPF Workbench Optimization & GC Reduction (Rev034)
+### Source-Level WPF Workbench Changes and Render-Harness Measurements (Rev034)
 - **Zero-Allocation Reactive Collections:** `BatchObservableCollection<T>.ReplaceAll` features a specialized `IReadOnlyList<T>` overload that performs in-place element equality comparison (`EqualityComparer<T>.Default.Equals`), eliminating intermediate array allocations when filter or navigation states remain unchanged.
 - **Direct Search & Palette Filtering:** `DesktopShellViewModel.FilterPaletteTools` and `RefreshVisibleTools` replaced LINQ `.Where(...)` and `.Select(...)` chains with pre-sized index-based loops, eliminating iterator allocations and closure allocations during rapid search keystrokes.
 - **Operational Rail Pre-Allocation:** `RefreshOperationalRailEntries` pre-computes exact collection capacity based on visible groups and active tool counts, preventing array resize cycles as rail entries are populated.
 - **Converter Boxing Elimination:** `PinnedGlyphConverter` evaluates `IList<ToolDefinition>` and `IReadOnlyList<ToolDefinition>` via direct indexer access, eliminating `IEnumerator` interface boxing across all 194 tool routes on every render pass.
 - **Simulation Buffer Pre-Sizing:** `DesktopSimulationService` reports (troop trees, CoALA agent memory, audio waveforms, and 30-day economic models) initialize `StringBuilder` buffers at 2,048 characters, avoiding dynamic heap reallocations.
-- **Empirical Layout Benchmark:** Synchronous WPF render layout call time reduced from 1,711.5 ms to 1,647.4 ms (-64.1 ms) across 275 test cases, with app startup and first render accelerating from 1,488.6 ms to 1,391.4 ms (-97.2 ms).
+- **Off-Screen Render-Harness Benchmark:** Synchronous layout-call time in the fixed-DIP render harness changed from 1,711.5 ms to 1,647.4 ms (-64.1 ms) across 275 cases. The harness's initialization/first-render phase changed from 1,488.6 ms to 1,391.4 ms (-97.2 ms). These are harness measurements, not user-observed application startup or interaction latency.
 
 ### Multi-Layer Optimization & Metadata Precomputation (Rev035)
 - **Tool Catalog Metadata Precomputation (`ToolCatalog` & `ToolDefinition`):**
@@ -159,12 +162,12 @@ The workbench elevates visual differentiation from generic action buttons to ful
   - `KingdomDiplomacyDashboardViewModel`: Precomputed `FactionStanceViewModel.TensionText` and `BarWidth` in constructor and cached static `ScenarioStances` arrays.
   - `ComponentGeneratorDashboardViewModel`: Pre-allocated `ScenarioBlueprints` across all 3 blueprint scenarios.
 - **Headless Simulation Engine Precomputation (`DesktopSimulationService`):**
-  - Precomputed `CanonicalTroopReport`, `CanonicalTroopEvidence`, `CanonicalAudioReport`, `CanonicalAudioEvidence`, `CanonicalEconomyReport`, and `CanonicalEconomyEvidence` as `static readonly` fields. Default simulation runs now return pre-allocated results with zero heap allocations.
-  - Pre-allocated `BarCache` lookup table for 24-character capacity meters, eliminating string allocations during progress rendering.
+  - Precomputed `CanonicalTroopReport`, `CanonicalTroopEvidence`, `CanonicalAudioReport`, `CanonicalAudioEvidence`, `CanonicalEconomyReport`, and `CanonicalEconomyEvidence` as `static readonly` fields. The synchronous default branches reuse those report/evidence instances. The full WPF workspace path also schedules a task, creates a `WorkspaceExecutionResult`, and materializes returned evidence; no end-to-end zero-allocation claim is established.
+  - `BarCache` reuses the returned meter string when `RenderBar` is called with width 24. It does not remove allocations in surrounding report formatting or the asynchronous workspace path.
   - Replaced LINQ queries and dynamic arrays in `InspectAgentMemory` with cached arrays (`SampleLordAgents`, `EpisodicTypes`) and indexed loops.
 - **Empirical WPF Render and Layout Benchmark:**
   - Non-visual fixtures and contracts accelerated from 812.42 ms to **691.69 ms** (-15%).
-  - App startup and first render accelerated from 1,594.45 ms to **1,460.39 ms** (-8.4%).
+  - The off-screen render harness's initialization/first-render phase changed from 1,594.45 ms to **1,460.39 ms** (-8.4%); it is not a measurement of user-observed application startup.
 ### Deep Theme Resource Freezing, Hardware BitmapCache & Advanced Cognitive Consolidation (Rev039)
 - **Deep-Freeze of Theme Resources (`DesktopThemeService`):**
   - Implemented recursive resource freezing (`FreezeDictionaryResources`) across all `SolidColorBrush`, `LinearGradientBrush`, `DrawingBrush`, and `Color` entries in active theme dictionaries upon applying themes (`ApplyDefault` and `Apply(themeId)`).
@@ -172,8 +175,8 @@ The workbench elevates visual differentiation from generic action buttons to ful
 - **Hardware BitmapCache on Static Vector Groups (`MainWindow.xaml`):**
   - Equipped complex vector decoration groups (`WorkbenchCartographicBoardDecoration` grid and `HeaderSealButton` inner decoration) with `<BitmapCache EnableClearType="False" RenderAtScale="1.0" SnapsToDevicePixels="True"/>`.
   - Converts complex geometry rasterization into GPU texture sampling during layout passes, resize, and theme switches.
-- **CoALA Memory Salience & Dynamic Consolidation Metrics:**
-  - `AgentProfileViewModel`: Added zero-allocation evaluation loop in constructor computing `TopSalientFact`, `ClusterSummary`, and `ConsolidationIndex`.
+- **Agent-Memory Sample and Salience Metrics:**
+  - The WPF route presents illustrative memory profiles; it is not a live Bannerlord registry or a direct CoALA runtime. The selection loop itself avoids temporary collections, but surrounding summary interpolation and array construction allocate. No zero-allocation claim is made for the complete view-model/report path.
   - `AgentMemoryDashboardViewModel`: Exposed `ActiveClusterOverview` and `ActiveConsolidationRate` bound directly to the header telemetry card with reactive notifications on agent selection and scenario cycling.
 - **Expanded Windows UI Automation Smoke Verification (`calradia-forge-ui-automation`):**
   - Expanded `tools/Test-CalradiaForge-Desktop-Uia.ps1` to 29 checks across 24+ shell nodes.
@@ -233,7 +236,7 @@ The workbench elevates visual differentiation from generic action buttons to ful
   - Expanded `CuratedConsoleCommands` across all 8 Tactical Studio ViewModels to incorporate 6-8 commands per studio spanning all 4 key families:
     - *CoALA Cognitive Memory:* `cf.agent_memory_stats`, `cf.agent_memory_query`, `cf.agent_memory_salience`, `cf.agent_memory_decay`, `cf.agent_memory_cluster`, `cf.agent_memory_export`.
     - *Tactical Simulation & Balance:* `cf.sim_tactics cavalry/infantry/archery`, `cf.siege_tactics`, `cf.sim_economy workshops`, `cf.sim_settlements all`, `cf.sim_dynasty all`, `cf.sim_crime all`, `cf.sim_trade grain`.
-    - *Diagnostics & Workflow:* `cf.audit`, `cf.model_audit`, `cf.dump_diagnostics`, `cf.audit_save`, `cf.audit_localization`, `cf.harmony_summary`, `cf.patch_preflight`, `cf.gc_profile`.
+    - *Diagnostics & Workflow:* `cf.audit`, `cf.model_audit`, `cf.dump_diagnostics`, `cf.audit_save`, `cf.audit_localization`, `cf.patch_diagnostics`, `cf.patch_preflight`, `cf.gc_profile`.
     - *Scaffolding & Generation:* `cf.novice_scaffold quest/behavior/troop/item/armor/submodule`, `cf.novice_checklist`, `cf.novice_events all`.
 - **Hybrid Personalization & Studio Palettes:**
   - Added studio-level command pinning with toggle glyphs (`★`/`☆`), primary quick-action execution (`QuickActionCommand` / `QuickActionLabel`), and developer scratchpad annotations (`ScratchpadNotes`).
@@ -367,5 +370,9 @@ Static interface labels in the troop-tree, workshop, code-security, module-topol
 cmd.exe /d /c "tools\Run-CalradiaForge-Tests.bat --desktop-only --no-pause --render-output artifacts\desktop-robustness-after-20260927-final.json <nul>" built with zero warnings/errors, passed Desktop 63/63 and 289 WPF render cases with 182 layout passes. The artifact records 11,758 ms total harness time and 3,483.7 ms in layout calls; these are harness timings, not open-app latency. tools\Test-CalradiaForge-Desktop-Uia.bat passed 23/23 read-only checks; the report records ForegroundUnchanged=true and no foreground event from the owned process. UIA verifies the launched window's accessible tree, not visual approval; pickers, work execution, preference changes, and visual appearance were not examined. No Bannerlord session was started.
 
 After adding text wrapping to translated stat lines and compact badges in narrow visualizer cards, the final BAT rerun passed the same 63 Desktop checks and 289 render cases with 182 layout passes. `artifacts/desktop-robustness-after-20260927-final-wrap.json` records 10,939 ms total harness time and 3,120.8 ms in layout calls; these remain harness timings, not application latency. The read-only UIA BAT was also rerun and passed 23/23 controls, including both dossier copy buttons, with ForegroundUnchanged=true.
+
+### Evidence clarification — agent-memory sample and allocations (2026-10-02)
+
+The Desktop memory inspector uses built-in demonstration profiles and must label them as samples rather than verified game telemetry. Its displayed SDK limits match `ForgeAgentMemory` source. The historical selection loop does not allocate temporary collections, but summary strings and arrays in the surrounding view-model/report work do allocate; neither source inspection nor the old note measured a complete WPF interaction's allocation profile.
 
 Rev071 is the source-documentation counter; its protected Register of Improvements appendix is Rev051. Product version remains 25.2.0; no public API, route, command, permission, protocol, dependency, or ZIP changed.

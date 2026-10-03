@@ -116,6 +116,7 @@ All reactive simulation logic, event subscriptions, and save-persistent state be
 
 ```csharp
 using System.Collections.Generic;
+using CalradiaForge.Sdk;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Party;
@@ -158,15 +159,16 @@ namespace CalradiaForge.Core.CampaignBehaviors
 
         private void OnHourlyTick()
         {
-            // Anti-lag time-slicing: process 1/24th of entities per hourly tick
-            int bucket = (int)CampaignTime.Now.ToHours % 24;
+            // Use only when this work may safely be deferred to another hour.
+            int currentHour = (int)CampaignTime.Now.ToHours;
             foreach (Settlement s in Settlement.All)
             {
                 if (!s.IsTown) continue;
-                if ((s.StringId.GetHashCode() & 0x7FFFFFFF) % 24 != bucket) continue;
+                if (!ForgeTimeSlicer.ShouldProcess(s.StringId, currentHour)) continue;
 
                 // Process this settlement's scheduled hourly cycle
             }
+            // Filtering still scans Settlement.All; measure traversal and processing separately.
         }
 
         private void OnDailyTickSettlement(Settlement settlement)
@@ -180,7 +182,7 @@ namespace CalradiaForge.Core.CampaignBehaviors
 ### Safe Entity Reference Rules
 - **Never serialize** `Hero`, `Settlement`, `MobileParty`, or `GameEntity` directly in behavior fields.
 - Store `hero.StringId` and resolve via `MBObjectManager.Instance.GetObject<Hero>(id)`.
-- **Zero GC Allocations in Ticks:** Avoid LINQ (`.Where()`, `.Select()`, `.ToList()`) and lambda closures inside `HourlyTick` or `DailyTickParty` to prevent GC pauses.
+- **Measured Tick Costs:** Measure duration and allocations across the complete callback before setting a budget or claiming a GC pause. Avoid repeated materialization or capturing callbacks in a hot path when measurements show a cost; syntax alone does not prove an allocation or frame-time regression.
 - **Single-Threaded Main Execution:** All campaign engine calls must execute on the main game thread.
 
 ---
@@ -323,7 +325,7 @@ namespace CalradiaForge.Core.CampaignBehaviors
 ## Universal Safety Rules
 
 1. **Never name a namespace, folder, or class `Campaign`** — it shadows `TaleWorlds.CampaignSystem.Campaign` and breaks compilation for `Campaign.Current.*` (`GEMINI.md`).
-2. **Do not add or use Harmony.** Use the Decorator Pattern above for simulation changes. The separate experimental runtime hook capability is not Harmony, is explicitly applied, and must not be treated as an alternative `GameModel` extension path.
+2. **Do not depend on Harmony.** Never add `0Harmony` as a compile-time/runtime dependency or distribute it. Use the Decorator Pattern above for simulation changes. Forge's optional patch observer may use reflection only against the exact public query surface of an already-loaded `0Harmony` assembly; it must not load Harmony or modify external patches. This is bounded diagnostic evidence, not a coexistence guarantee or a sandbox. The separate experimental runtime hook capability is not Harmony, is explicitly applied, and must not be treated as an alternative `GameModel` extension path.
 3. **Never serialize transient engine handles** (`GameEntity`, `Agent`, `PartyVisual`) in `SyncData`.
 4. **Never store raw Hero/Settlement instances** in persistent state — use `StringId`.
 5. **All `AddNonSerializedListener` calls go in `RegisterEvents()`** — never in constructors or `OnSessionLaunched`.

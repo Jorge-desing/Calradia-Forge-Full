@@ -32,11 +32,15 @@ En el banco de trabajo de escritorio .NET 8 WPF, los 8 Tactical Studios integran
 - **Expansión de Comandos por Familias:**
   - *Memoria Cognitiva CoALA:* `cf.agent_memory_stats`, `cf.agent_memory_query`, `cf.agent_memory_salience`, `cf.agent_memory_decay`, `cf.agent_memory_cluster`, `cf.agent_memory_export`.
   - *Simulación Táctica y Equilibrio:* `cf.sim_tactics cavalry/infantry/archery`, `cf.siege_tactics`, `cf.sim_economy workshops`, `cf.sim_settlements all`, `cf.sim_dynasty all`, `cf.sim_crime all`, `cf.sim_trade grain`.
-  - *Diagnóstico y Flujo de Trabajo:* `cf.audit`, `cf.model_audit`, `cf.dump_diagnostics`, `cf.audit_save`, `cf.audit_localization`, `cf.harmony_summary`, `cf.patch_preflight`, `cf.gc_profile`.
+  - *Diagnóstico y Flujo de Trabajo:* `cf.audit`, `cf.model_audit`, `cf.dump_diagnostics`, `cf.audit_save`, `cf.audit_localization`, `cf.patch_diagnostics`, `cf.patch_preflight`, `cf.gc_profile`.
   - *Andamiaje y Generación:* `cf.novice_scaffold quest/behavior/troop/item/armor/submodule`, `cf.novice_checklist`, `cf.novice_events all`.
 - **Personalización Híbrida y Paletas de Estudio:**
   - Anclaje de comandos con glifo interactivo (`★`/`☆`), ejecución rápida de la acción primaria del estudio (`QuickActionCommand` / `QuickActionLabel`) y notas de desarrollo persistentes (`ScratchpadNotes`).
   - Modelo de utilidad cognitiva CoALA con ordenación adaptativa basada en recencia ($R$), frecuencia ($F$) e importancia/anclaje ($I$).
+
+## Diagnóstico de parches (actual)
+
+El comando actual de consola dentro del juego es `cf.patch_diagnostics`; devuelve registros acotados de hooks y parches de reemplazo propiedad de Forge. La acción de protocolo `patch-diagnostics` entrega la misma instantánea de solo lectura a Desktop. Un observador reflectivo opcional comprueba la superficie pública estática de consulta esperada `HarmonyLib.Harmony.GetAllPatchedMethods()` y `GetPatchInfo(MethodBase)` en un ensamblado ya cargado llamado `0Harmony`; es una señal diagnóstica acotada del runtime, no una prueba de compatibilidad con una versión o combinación de mods. No tiene dependencia distribuida, no carga ni modifica ese runtime y no puede ver otros backends de parches. La consulta es síncrona y se ejecuta dentro del proceso. Sus límites de enumeración y salida no limitan el trabajo que realicen internamente los métodos de consulta o getters de Harmony; tampoco es un sandbox ni un verificador de autenticidad. El alias predecesor `cf.harmony_summary` quedó retirado.
 
 ## Playbooks de Ingeniería, Árboles de Solución de Problemas y Macros Procedurales en Estudios Tácticos (Rev047)
 

@@ -12,10 +12,10 @@ using CalradiaForge.Sdk;
 namespace CalradiaForge.Mod.CampaignBehaviors
 {
     /// <summary>
-    /// Stateless CampaignBehavior that records, manages, and decays CoALA-based cognitive
-    /// memories (semantic facts and episodic experiences) for campaign heroes and NPCs in real time.
+    /// Stateless CampaignBehavior that records, manages, and decays tiered cognitive
+    /// memories inspired by CoALA concepts (semantic facts and episodic experiences) for campaign heroes and NPCs.
     /// Operates with zero save-game footprint via volatile <see cref="ForgeAgentMemory"/> and
-    /// utilizes modulo-24 hash time-slicing across hourly simulation ticks to eliminate frame drops.
+    /// uses ForgeTimeSlicer's stable-ID time-slicing across hourly simulation ticks to spread maintenance work.
     /// </summary>
     // Registered explicitly by SubModule.OnGameStart. Do not add AutoRegisterBehavior:
     // ForgeBehaviorLoader scans this assembly and would otherwise add a second instance,
@@ -42,7 +42,7 @@ namespace CalradiaForge.Mod.CampaignBehaviors
         /// <summary>Total periodic hourly ticks evaluated during this campaign session.</summary>
         public int TotalPeriodicTicksProcessed => _periodicTicksProcessed;
 
-        /// <summary>Total anti-lag decay passes executed across hero time-slices.</summary>
+        /// <summary>Total decay passes selected by stable-ID hourly buckets.</summary>
         public int TotalDecayPassesExecuted => _decayPassesExecuted;
 
         /// <summary>Total number of distinct cognitive agents tracked in memory.</summary>
@@ -113,12 +113,24 @@ namespace CalradiaForge.Mod.CampaignBehaviors
             if (string.IsNullOrEmpty(agentId)) return;
 
             // Record episodic milestone
-            ForgeAgentMemory.Episodic.TryAdd(agentId, "Lifecycle", "Reached adulthood and entered active campaign.");
-            Interlocked.Increment(ref _episodicMemoriesRecorded);
+            TryRecordEpisodicMemory(agentId, "Lifecycle", "Reached adulthood and entered active campaign.");
 
             // Set semantic fact
-            ForgeAgentMemory.Semantic.TryUpsert(agentId, "IsAdult", true);
+            TryUpdateSemanticFact(agentId, "IsAdult", true);
+        }
+
+        private bool TryRecordEpisodicMemory(string agentId, string type, object content)
+        {
+            if (!ForgeAgentMemory.Episodic.TryAdd(agentId, type, content)) return false;
+            Interlocked.Increment(ref _episodicMemoriesRecorded);
+            return true;
+        }
+
+        private bool TryUpdateSemanticFact(string agentId, string key, object value)
+        {
+            if (!ForgeAgentMemory.Semantic.TryUpsert(agentId, key, value)) return false;
             Interlocked.Increment(ref _semanticFactsUpdated);
+            return true;
         }
 
         private void OnHeroPrisonerTaken(PartyBase capturerParty, Hero prisonerHero)
@@ -132,13 +144,11 @@ namespace CalradiaForge.Mod.CampaignBehaviors
             string capturerId = capturerParty?.LeaderHero?.StringId ?? capturerParty?.Id ?? "unknown";
 
             // Record episodic memory for prisoner
-            ForgeAgentMemory.Episodic.TryAdd(prisonerId, "Captivity", "Captured by " + capturerName + ".");
-            Interlocked.Increment(ref _episodicMemoriesRecorded);
+            TryRecordEpisodicMemory(prisonerId, "Captivity", "Captured by " + capturerName + ".");
 
             // Update semantic state for prisoner
-            ForgeAgentMemory.Semantic.TryUpsert(prisonerId, "IsImprisoned", true);
-            ForgeAgentMemory.Semantic.TryUpsert(prisonerId, "CurrentCaptorId", capturerId);
-            Interlocked.Add(ref _semanticFactsUpdated, 2);
+            TryUpdateSemanticFact(prisonerId, "IsImprisoned", true);
+            TryUpdateSemanticFact(prisonerId, "CurrentCaptorId", capturerId);
 
             // If capturer has a leader hero, record victory in leader's episodic memory
             Hero capturerLeader = capturerParty?.LeaderHero;
@@ -146,10 +156,8 @@ namespace CalradiaForge.Mod.CampaignBehaviors
             {
                 string capturerLeaderId = capturerLeader.StringId;
                 string prisonerName = prisonerHero.Name?.ToString() ?? "an enemy hero";
-                ForgeAgentMemory.Episodic.TryAdd(capturerLeaderId, "Victory", "Captured " + prisonerName + " in battle.");
-                ForgeAgentMemory.Semantic.TryUpsert(capturerLeaderId, "LastCapturedHeroId", prisonerId);
-                Interlocked.Increment(ref _episodicMemoriesRecorded);
-                Interlocked.Increment(ref _semanticFactsUpdated);
+                TryRecordEpisodicMemory(capturerLeaderId, "Victory", "Captured " + prisonerName + " in battle.");
+                TryUpdateSemanticFact(capturerLeaderId, "LastCapturedHeroId", prisonerId);
             }
         }
 
@@ -160,12 +168,10 @@ namespace CalradiaForge.Mod.CampaignBehaviors
             string prisonerId = prisoner.StringId;
             if (string.IsNullOrEmpty(prisonerId)) return;
 
-            ForgeAgentMemory.Episodic.TryAdd(prisonerId, "Liberation", "Released from captivity (" + detail + ").");
-            Interlocked.Increment(ref _episodicMemoriesRecorded);
+            TryRecordEpisodicMemory(prisonerId, "Liberation", "Released from captivity (" + detail + ").");
 
-            ForgeAgentMemory.Semantic.TryUpsert(prisonerId, "IsImprisoned", false);
-            ForgeAgentMemory.Semantic.TryUpsert(prisonerId, "CurrentCaptorId", "none");
-            Interlocked.Add(ref _semanticFactsUpdated, 2);
+            TryUpdateSemanticFact(prisonerId, "IsImprisoned", false);
+            TryUpdateSemanticFact(prisonerId, "CurrentCaptorId", "none");
         }
 
         private void OnHeroKilled(Hero victim, Hero killer, KillCharacterAction.KillCharacterActionDetail detail, bool showNotification)
@@ -179,23 +185,19 @@ namespace CalradiaForge.Mod.CampaignBehaviors
             {
                 string killerId = killer.StringId;
                 string victimName = victim.Name?.ToString() ?? "an enemy";
-                ForgeAgentMemory.Episodic.TryAdd(killerId, "MartialKill", "Slew " + victimName + " in combat (" + detail + ").");
-                Interlocked.Increment(ref _episodicMemoriesRecorded);
+                TryRecordEpisodicMemory(killerId, "MartialKill", "Slew " + victimName + " in combat (" + detail + ").");
 
                 int prevKills = ForgeAgentMemory.Semantic.Get<int>(killerId, "TotalSlainHeroes");
-                ForgeAgentMemory.Semantic.TryUpsert(killerId, "TotalSlainHeroes", prevKills + 1);
-                ForgeAgentMemory.Semantic.TryUpsert(killerId, "LastVictimId", victimId ?? "unknown");
-                Interlocked.Add(ref _semanticFactsUpdated, 2);
+                TryUpdateSemanticFact(killerId, "TotalSlainHeroes", prevKills + 1);
+                TryUpdateSemanticFact(killerId, "LastVictimId", victimId ?? "unknown");
 
                 // Record grudge in clan leader's memory if victim was clan kin
                 Clan victimClan = victim.Clan;
                 if (victimClan != null && victimClan.Leader != null && victimClan.Leader != victim && !string.IsNullOrEmpty(victimClan.Leader.StringId))
                 {
                     string leaderId = victimClan.Leader.StringId;
-                    ForgeAgentMemory.Episodic.TryAdd(leaderId, "BloodFeud", "Kin " + victimName + " was killed by " + (killer.Name?.ToString() ?? "enemy") + ".");
-                    ForgeAgentMemory.Semantic.TryUpsert(leaderId, "FeudTargetHeroId", killerId);
-                    Interlocked.Increment(ref _episodicMemoriesRecorded);
-                    Interlocked.Increment(ref _semanticFactsUpdated);
+                    TryRecordEpisodicMemory(leaderId, "BloodFeud", "Kin " + victimName + " was killed by " + (killer.Name?.ToString() ?? "enemy") + ".");
+                    TryUpdateSemanticFact(leaderId, "FeudTargetHeroId", killerId);
                 }
             }
 
@@ -218,29 +220,25 @@ namespace CalradiaForge.Mod.CampaignBehaviors
             string name2 = hero2.Name?.ToString() ?? "Hero";
 
             // Record episodic relation shifts
-            ForgeAgentMemory.Episodic.TryAdd(id1, "DispositionShift", "Relation with " + name2 + " changed by " + relationChange + " (" + detail + ").");
-            ForgeAgentMemory.Episodic.TryAdd(id2, "DispositionShift", "Relation with " + name1 + " changed by " + relationChange + " (" + detail + ").");
-            Interlocked.Add(ref _episodicMemoriesRecorded, 2);
+            TryRecordEpisodicMemory(id1, "DispositionShift", "Relation with " + name2 + " changed by " + relationChange + " (" + detail + ").");
+            TryRecordEpisodicMemory(id2, "DispositionShift", "Relation with " + name1 + " changed by " + relationChange + " (" + detail + ").");
 
             // Record affected relatives if present with null safety
             if (affectedRelative1 != null && !string.IsNullOrEmpty(affectedRelative1.StringId))
             {
-                ForgeAgentMemory.Episodic.TryAdd(affectedRelative1.StringId, "FamilyDispositionShift", "Family relation between " + name1 + " and " + name2 + " shifted by " + relationChange + " (" + detail + ").");
-                Interlocked.Increment(ref _episodicMemoriesRecorded);
+                TryRecordEpisodicMemory(affectedRelative1.StringId, "FamilyDispositionShift", "Family relation between " + name1 + " and " + name2 + " shifted by " + relationChange + " (" + detail + ").");
             }
             if (affectedRelative2 != null && !string.IsNullOrEmpty(affectedRelative2.StringId))
             {
-                ForgeAgentMemory.Episodic.TryAdd(affectedRelative2.StringId, "FamilyDispositionShift", "Family relation between " + name1 + " and " + name2 + " shifted by " + relationChange + " (" + detail + ").");
-                Interlocked.Increment(ref _episodicMemoriesRecorded);
+                TryRecordEpisodicMemory(affectedRelative2.StringId, "FamilyDispositionShift", "Family relation between " + name1 + " and " + name2 + " shifted by " + relationChange + " (" + detail + ").");
             }
 
             // Update semantic relation facts
             int currentRel = hero1.GetRelation(hero2);
-            ForgeAgentMemory.Semantic.TryUpsert(id1, "Relation_" + id2, currentRel);
-            ForgeAgentMemory.Semantic.TryUpsert(id2, "Relation_" + id1, currentRel);
-            ForgeAgentMemory.Semantic.TryUpsert(id1, "LastRelationDelta_" + id2, relationChange);
-            ForgeAgentMemory.Semantic.TryUpsert(id2, "LastRelationDelta_" + id1, relationChange);
-            Interlocked.Add(ref _semanticFactsUpdated, 4);
+            TryUpdateSemanticFact(id1, "Relation_" + id2, currentRel);
+            TryUpdateSemanticFact(id2, "Relation_" + id1, currentRel);
+            TryUpdateSemanticFact(id1, "LastRelationDelta_" + id2, relationChange);
+            TryUpdateSemanticFact(id2, "LastRelationDelta_" + id1, relationChange);
         }
 
         private void OnHeroGainedSkill(Hero hero, SkillObject skill, int changeAmount, bool shouldNotify)
@@ -251,11 +249,9 @@ namespace CalradiaForge.Mod.CampaignBehaviors
             if (string.IsNullOrEmpty(heroId)) return;
 
             string skillName = skill.Name?.ToString() ?? skill.StringId ?? "Skill";
-            ForgeAgentMemory.Episodic.TryAdd(heroId, "SkillProgression", "Advanced " + skillName + " by +" + changeAmount + ".");
-            Interlocked.Increment(ref _episodicMemoriesRecorded);
+            TryRecordEpisodicMemory(heroId, "SkillProgression", "Advanced " + skillName + " by +" + changeAmount + ".");
 
-            ForgeAgentMemory.Semantic.TryUpsert(heroId, "LastMasteredSkill", skill.StringId);
-            Interlocked.Increment(ref _semanticFactsUpdated);
+            TryUpdateSemanticFact(heroId, "LastMasteredSkill", skill.StringId);
         }
 
         private void OnHourlyTick()
@@ -264,9 +260,8 @@ namespace CalradiaForge.Mod.CampaignBehaviors
 
             if (Campaign.Current == null) return;
 
-            // Anti-lag time-slicing modulo 24: processes 1/24th of active alive heroes per hour
-            int currentHour = (int)CampaignTime.Now.ToHours % 24;
-            if (currentHour < 0) currentHour += 24;
+            // Stable-ID time-slicing processes each hero in one of the 24 hourly buckets.
+            int currentHour = (int)CampaignTime.Now.ToHours;
 
             var aliveHeroes = Hero.AllAliveHeroes;
             if (aliveHeroes == null || aliveHeroes.Count == 0) return;
@@ -276,8 +271,7 @@ namespace CalradiaForge.Mod.CampaignBehaviors
                 var hero = aliveHeroes[i];
                 if (hero == null || !hero.IsAlive) continue;
 
-                // Modulo-24 hash partition without negative values
-                if (((hero.Id.GetHashCode() & 0x7FFFFFFF) % 24) == currentHour)
+                if (ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour))
                 {
                     string agentId = hero.StringId;
                     if (!string.IsNullOrEmpty(agentId))

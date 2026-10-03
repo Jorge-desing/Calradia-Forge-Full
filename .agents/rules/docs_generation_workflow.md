@@ -34,7 +34,7 @@ Codemaps maintain architectural alignment between source code and documentation.
 - **`docs/CODEMAP_CAMPAIGN_BEHAVIORS.md`**:
   - `CampaignBehaviorBase` lifecycle and dual-registration patterns (`OnGameStart` for simulation listeners, `OnCampaignStart` for world state).
   - Complete event catalog and subscription signatures (`CampaignEvents`).
-  - Anti-lag time-slicing (modulo-24: `hero.Id.GetHashCode() % 24 == currentHour`) and zero GC allocations in tick loops.
+  - `ForgeTimeSlicer.ShouldProcess` / `GetBucket` for stable `StringId` scheduling only when work may be deferred without changing event semantics; note that filtering still traverses the source collection and report allocation claims only with measurements across the relevant callback.
   - Save system safety rules and `SaveableTypeDefiner` base ID allocation ($\ge 2,500,000$).
 - **`docs/CODEMAP_SDK_GAMEMODELS.md`**:
   - SDK public service contracts (`ForgeData`, `ForgeAgentMemory`, `ForgeCampaignEvents`, `ForgeUI`, `ForgeDetour`).

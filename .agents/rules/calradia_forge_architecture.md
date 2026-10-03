@@ -10,20 +10,27 @@ trigger: always_on
 
 ### Required Dependency Order
 ```
-TaleWorlds.* (Native Engine)
-    ↓
-CalradiaForge.Core (Framework Layer)
-    ↓                    ↓
-CalradiaForge.Mod   CalradiaForge.Sdk
-    ↓                    ↓
-CalradiaForge.Desktop (Companion Application)
+CalradiaForge.Sdk (net472;net8.0, no engine references)
+    ↑
+CalradiaForge.Core (net472;net8.0)
+    ↑                    ↑
+CalradiaForge.Mod    CalradiaForge.Desktop
+(net472, engine)     (net8.0-windows, standalone)
 ```
 
 ### Forbidden Dependencies
 - **CalradiaForge.Mod** must NOT reference CalradiaForge.Desktop
 - **CalradiaForge.Sdk** must NOT reference CalradiaForge.Mod
-- **CalradiaForge.Core** must NOT reference any other CalradiaForge assemblies
-- **CalradiaForge.Desktop** must NOT reference TaleWorlds.* directly (only through Sdk)
+- **CalradiaForge.Core** references CalradiaForge.Sdk; its engine references and
+  MonoMod backend are restricted to the `net472` target.
+- **CalradiaForge.Desktop** must NOT reference TaleWorlds.* directly or transitively.
+- No Forge product may reference, require, or distribute Harmony/`0Harmony`. The optional
+  Forge-owned patch observer may reflect only over an exact, already-loaded runtime and
+  verified public query surface; it never loads the library or modifies external patches.
+  This diagnostic path is observational, does not guarantee coexistence, and cannot bound
+  work performed internally by synchronous third-party calls.
+- Inspect the actual project files before recommending dependencies. SDK/template
+  onboarding follows [developer_onboarding.md](developer_onboarding.md).
 
 ### Enforcement
 ```csharp
@@ -453,8 +460,8 @@ public void TestInternalMethod()
 | ModRuleAuditor | Static analysis validation | Core |
 | ForgeLogger | Logging system | Core |
 | ForgeConfig | Configuration management | Core |
-| ForgeBootstrapper | Harmony patch initialization | Core |
-| ForgeWeaveEngine | Patch management | Core |
+| ForgeBootstrapper | Explicit experimental replacement bootstrap; no automatic patch scan | Core |
+| ForgeWeaveEngine | Cooperative event dispatch and handler health | Core |
 
 ### Core Extension Points
 ```csharp
@@ -478,7 +485,7 @@ public class CustomRuleAuditor
 ```
 docs/
 ├── CODEMAP_ARCHITECTURE.md           # Overall architecture & assembly dependencies
-├── CODEMAP_CAMPAIGN_BEHAVIORS.md     # Event catalog & anti-lag time-slicing
+├── CODEMAP_CAMPAIGN_BEHAVIORS.md     # Event catalog & stable-ID time-slicing
 ├── CODEMAP_SDK_GAMEMODELS.md         # SDK public contracts & decorator models
 ├── <TOPIC>.md / <TOPIC>.es.md        # Technical guides with strict bilingual parity
 ├── append/RevXXX-*.md                # Append-only Markdown annexes
@@ -514,9 +521,14 @@ docs/
 
 ## 16. Performance Architecture
 
-### Anti-Lag Requirements
-1. **Modulo-24 Time Slicing**: Required for bulk entity processing
-2. **Zero GC Allocations**: Avoid LINQ in tick handlers
+### Performance & Workload Controls
+1. **Stable Time Slicing**: For periodic work whose behavior permits deferral, use
+   `ForgeTimeSlicer.ShouldProcess` with a stable entity ID. Bucket sizes depend on
+   the identifiers and are not guaranteed to be even; placing the check inside a
+   full collection loop still traverses every entity.
+2. **Measured Allocation Budgets**: Avoid unnecessary LINQ and materialization in
+   tick handlers. Claim zero allocations only when measurement covers the complete
+   synchronous callback; the helper or loop shape alone does not prove it.
 3. **Squared Distance**: Use DistanceSquared() instead of Math.Sqrt()
 4. **Interlocked Counters**: Thread-safe telemetry without locks
 
@@ -672,7 +684,8 @@ if (!scriptFile.Replace('\\', '/').Contains("/tools/"))
 11. **ModRuleAuditor**: Use built-in rules for validation
 12. **Configuration**: Store settings in modules/CalradiaForge/settings.json
 13. **InternalsVisibleTo**: Enable test assembly access
-14. **Performance**: Apply anti-lag patterns (modulo-24, no LINQ in ticks)
+14. **Performance**: Defer only eligible periodic work with the stable time-slicing
+    helper; measure full traversal and allocations, and avoid unnecessary LINQ in ticks.
 15. **Documentation**: Maintain CODEMAP_*.md files
 16. **Security**: Implement crash recovery and initialization safety
 17. **Testing**: Write integration tests for critical paths
@@ -682,4 +695,6 @@ if (!scriptFile.Replace('\\', '/').Contains("/tools/"))
 21. **.NET Routing & Simplicity**: Start with `calradia-forge-dotnet`, which contains the required TFM, routing, and KISS rules; use `bannerlord-dotnet-artisan` for game code. Installed general .NET guidance is optional, and the protected local `using-dotnet` snapshot is not a runtime dependency. Enforce TFM separation (`net472` module vs `net8.0-windows` Desktop).
 22. **Desktop Source-Contract Invariants**: Preserve static reflection/inspection tokens verbatim in Desktop WPF services and view models
 23. **Member Qualification (`System.IO.Path`)**: Explicitly qualify `System.IO.Path` when classes expose a `Path` property
-24. **ForgeWeave Event Mesh Integrity**: Enforce bounded execution budgets, isolated replays, zero-allocation handler health tracking, and Gauntlet UI dynamic discovery
+24. **ForgeWeave Event Mesh Integrity**: Enforce bounded execution budgets and isolated
+    replays; measure handler health-tracking allocations on the complete dispatch path;
+    preserve Gauntlet UI dynamic discovery.

@@ -103,7 +103,7 @@ namespace CalradiaForge.Desktop.Presentation
                 or "SDK_ForgeRenownTracker" or "SDK_ForgeTitleGranter" or "SDK_ForgeFactionSplitter" or "SDK_ForgeNobleCourt" => DesktopStudioKind.KingdomDiplomacy,
                 "SoundXmlSynthesizer" or "TroopXmlSynthesizer" or "ItemXmlSynthesizer" or "WeaponCraftingForge"
                 or "BrushSynthesizer" or "XmlSnippetForge" or "LocalizationHashGenerator" or "LocalizationMatrix"
-                or "HarmonyPatcher" or "HarmonyTranspiler" or "QuestDialogBuilder"
+                or "PatchBlueprintTemplate" or "PatchDiagnosticsTemplate" or "QuestDialogBuilder"
                 or "NoviceBehavior" or "NoviceTroop" or "NoviceQuest" or "NoviceItem" or "NoviceSubmodule"
                 or "NoviceChecklist" or "NoviceEvents" or "NoviceHint" or "NoviceWorkshop" or "NoviceParty"
                 or "NoviceBuilding" or "NoviceCombatAi" => DesktopStudioKind.ComponentGenerator,
@@ -295,8 +295,11 @@ namespace CalradiaForge.Desktop.Presentation
         public string PipeAction { get; }
         public string Group => group;
         public string IconKey => iconKey;
+        bool IsAgentMemorySampleRoute => Id is "SaveInspector" or "ForgeAgentMemoryInspector" or "AgentMemoryInspector";
         public string AvailabilityReason => Id == ApiDeprecationToolId
             ? LocalizedText("Ui.ApiDeprecation.Availability", "Unavailable until a verified, versioned TaleWorlds API deprecation catalog is available.")
+            : IsAgentMemorySampleRoute
+            ? "Sample-only dashboard; it does not query a live Forge memory registry."
             : ChangesState
             ? "Guarded: enable the in-game test workflow on a copied campaign."
             : RequiresInput
@@ -304,7 +307,7 @@ namespace CalradiaForge.Desktop.Presentation
                 : Kind == DesktopToolKind.Live
                     ? "Ready after a compatible Forge session advertises this capability."
                     : "Ready for a bounded desktop operation.";
-        public string KindLabel => Kind switch
+        public string KindLabel => IsAgentMemorySampleRoute ? "SIMULATED SAMPLE" : Kind switch
         {
             DesktopToolKind.Analyzer => "ANALYZER",
             DesktopToolKind.AssemblyEditor => "COPY-ONLY EDITOR",
@@ -316,6 +319,8 @@ namespace CalradiaForge.Desktop.Presentation
         };
         public string Purpose => Id == ApiDeprecationToolId
             ? LocalizedText("Ui.ApiDeprecation.Purpose", "Unavailable pending a verified, versioned TaleWorlds API deprecation catalog.")
+            : IsAgentMemorySampleRoute
+            ? "Review a bounded simulated agent-memory sample inspired by CoALA concepts; it is not a live registry or CoALA runtime."
             : Kind switch {
             DesktopToolKind.Analyzer => "Inspect supported local evidence with a bounded analyzer.",
             DesktopToolKind.AssemblyEditor => "Preview a version-metadata change and write only a separately backed-up copy.",
@@ -355,7 +360,7 @@ namespace CalradiaForge.Desktop.Presentation
             "AudioFmodMixerInspector" => "Inspecciona la configuración acústica del motor TaleWorlds/FMOD, manifest de sonidos 2D/3D (module_sounds.xml), curvas de atenuación y categorías de mixer (ui, mission_combat, ambient). Modela la forma de onda acústica y el espectro en frecuencia con verificación estricta de clipping.",
             "TroopTreeVisualizer" => "Visualiza y simula árboles jerárquicos de progresión de tropas militares de Bannerlord (Tiers 1 a 6). Renderiza nodos DAG interactivos, equipamiento, estadísticas de combate (Vigor, Control, Resistencia, Tácticas) y calcula curvas comparativas de balance militar.",
             "WorkshopEnterpriseSimulator" => "Simulador macroeconómico de 30 días para talleres y empresas urbanas de Calradia (cervecerías, herrerías, prensas de aceite). Modela costos de materias primas, demanda local, rentabilidad diaria y medidor de riesgo de descontento/rebelión civil.",
-            "SaveInspector" or "ForgeAgentMemoryInspector" or "AgentMemoryInspector" => "Auditor de arquitectura de memoria cognitiva CoALA para NPCs y agentes de Bannerlord. Analiza cuota global de agentes, memoria semántica con decadencia TTL, cola FIFO episódica y rutinas tácticas procedimentales.",
+            "SaveInspector" or "ForgeAgentMemoryInspector" or "AgentMemoryInspector" => "Panel de muestra simulada de memoria de agentes, inspirado en conceptos de CoALA. Presenta cuotas y memorias semántica, episódica y procedimental de ejemplo; no inspecciona un registro en vivo ni implementa un runtime CoALA.",
             "SaveTypeDefinerAuditor" => "Auditor de bajo nivel de metadatos CLR para SaveableTypeDefiner en assemblies del mod. Verifica por análisis estático que el base ID sea estrictamente >= 2.500.000 para prevenir colisiones catastróficas de serialización en partidas guardadas.",
             "CampaignNamespaceGuard" => "Guardián de integridad de espacios de nombres. Garantiza el cumplimiento de la Regla A (Anti-Shadowing de GEMINI.md), impidiendo que ningún tipo, carpeta o subespacio de nombres oculte TaleWorlds.CampaignSystem ni rompa Campaign.Current.",
             "ModConflictMatrix" => "Matriz topológica de resolución y detección de conflictos entre módulos de Mount & Blade II: Bannerlord. Analiza el orden de carga (Load Order DAG), sobrescrituras de XML, dependencias cíclicas y submódulos huérfanos.",
@@ -366,7 +371,7 @@ namespace CalradiaForge.Desktop.Presentation
             "SettlementCalculator" or "SDK_ForgeWeatherController" => "Estudio de expedición y equilibrio de campaña de Calradia. Modela el crecimiento de hogares, estabilidad de lealtad, guarniciones, seguridad cívica y variaciones meteorológicas.",
             "LiveConsole" or "MemoryProfiler" or "ObjectInspector" => "Estudio de telemetría y sesión interactiva en tiempo real (Live Session). Monitorea el bus de eventos de ForgeWeave por Named Pipes, latencia IPC de ida y vuelta, saturación del buffer en anillo y cuotas de memoria sin interferir con el hilo del juego.",
             "ModPackager" or "RecentExports" or "FbxAsciiPreflight" => "Estudio de empaquetado y entrega de producción (Delivery & Deployment). Ejecuta auditorías preflight de FastPackageEngine, verificación de firmas e integridad SHA-256, saneamiento de streams Zone.Identifier y generación paralela multihilo.",
-            "XmlSchemaValidator" or "CrashAnalyzer" or "WatchdogParser" or "PackagingAuditor" or "MissionMeshGuard" or "ModIdAuditor" => "Estudio de diagnóstico e integridad estructural (Diagnostics & Integrity). Inspecciona la validez de esquemas XML, detección de excepciones y cuelgues en volcados .cfcrash, paridad de manifiestos SubModule.xml y barreras de memoria nativa sin alterar el estado del motor.",
+            "XmlSchemaValidator" or "CrashAnalyzer" or "WatchdogParser" or "PackagingAuditor" or "MissionMeshGuard" or "ModIdAuditor" => "Estudio de diagnóstico e integridad estructural (Diagnostics & Integrity). Inspecciona la validez de esquemas XML, texto de excepción en informes .cfcrash, paridad de manifiestos SubModule.xml y barreras de memoria nativa sin alterar el estado del motor.",
                 _ => $"{Purpose} Opera de forma estrictamente acotada (bounded) y aislada del hilo de renderizado, garantizando cero efectos colaterales persistentes en partidas guardadas ni en la instalación del juego."
             };
 
@@ -494,8 +499,8 @@ namespace CalradiaForge.Desktop.Presentation
             T("UnderworldCrimeSimulator", "Underworld & Crime Racket Simulator", "Simulation & Balance", DesktopToolKind.Simulation, false, false, null),
             T("ModPackager", "1-Click Mod Packager", "Delivery & Deployment", DesktopToolKind.Generator, true, false, null),
             T("DependencySorter", "Topological Module Sorter", "Delivery & Deployment", DesktopToolKind.Generator, true, false, null),
-            T("HarmonyPatcher", "Harmony Patch Generator", "Delivery & Deployment", DesktopToolKind.Generator, false, false, null),
-            T("HarmonyTranspiler", "Harmony Transpiler Analyzer", "Delivery & Deployment", DesktopToolKind.Generator, false, false, null),
+            T("PatchBlueprintTemplate", "Forge Patch Blueprint Template", "Delivery & Deployment", DesktopToolKind.Generator, false, false, null),
+            T("PatchDiagnosticsTemplate", "Forge Patch Diagnostics Template", "Delivery & Deployment", DesktopToolKind.Generator, false, false, null),
             T("QuestDialogBuilder", "Quest & Dialogue Flow Builder", "Delivery & Deployment", DesktopToolKind.Generator, false, false, null),
             T("RecentExports", "Recent Exports", "Delivery & Deployment", DesktopToolKind.Report, false, false, null),
             T("SdkCheatSheet", "Architecture Cheat Sheet", "Delivery & Deployment", DesktopToolKind.Report, false, false, null),

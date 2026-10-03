@@ -33,7 +33,7 @@ When declaring custom troops, lords, mercenaries, companions, or NPC templates f
       <skill id="Athletics" value="100" />
     </skills>
     <Equipments>
-      <EquipmentSet>
+      <EquipmentRoster>
         <equipment slot="Item0" id="Item.vlandic_bastard_sword" />
         <equipment slot="Item1" id="Item.vlandic_heavy_heater_shield" />
         <equipment slot="Head" id="Item.spiked_helmet_with_mail" />
@@ -41,12 +41,12 @@ When declaring custom troops, lords, mercenaries, companions, or NPC templates f
         <equipment slot="Body" id="Item.vlandic_coat_of_plates" />
         <equipment slot="Gloves" id="Item.mail_gauntlets" />
         <equipment slot="Leg" id="Item.iron_greaves" />
-      </EquipmentSet>
-      <EquipmentSet civilian="true">
+      </EquipmentRoster>
+      <EquipmentRoster civilian="true">
         <equipment slot="Item0" id="Item.vlandic_dagger" />
         <equipment slot="Body" id="Item.tunic_with_belt" />
         <equipment slot="Leg" id="Item.rough_tied_boots" />
-      </EquipmentSet>
+      </EquipmentRoster>
     </Equipments>
     <upgrade_targets>
       <upgrade_target id="NPCCharacter.mymod_vlandia_banneret" />
@@ -56,7 +56,7 @@ When declaring custom troops, lords, mercenaries, companions, or NPC templates f
 ```
 
 ## 3. Equipment Slots Contract
-Every `<EquipmentSet>` child uses `<equipment slot="..." id="Item.item_id" />`.
+For inline troop equipment, each `<EquipmentRoster>` child uses `<equipment slot="..." id="Item.item_id" />`. `ForgeTroopBuilder` emits this inline `EquipmentRoster` shape. Do not use `<EquipmentSet>` as an inline roster wrapper; preserve any `EquipmentSet` reference form only where the target game's schema explicitly defines it.
 Valid engine slots are:
 - **`Item0`, `Item1`, `Item2`, `Item3`**: Weapons, shields, bows, crossbows, and ammo (maximum 4 slots).
 - **`Head`**: Helmets, coifs, hoods.
@@ -67,9 +67,13 @@ Valid engine slots are:
 - **`Horse`**: Mount animal (required for `Cavalry` and `HorseArcher`).
 - **`HorseHarness`**: Saddle or horse armor.
 
-### Equipment Randomization & Civilian Sets:
-- **Multiple Sets:** Multiple `<EquipmentSet>` entries (without `civilian="true"`) are treated by the engine as random equipment variations spawned per individual soldier.
-- **Civilian Set:** Always provide one `<EquipmentSet civilian="true">` for any character or troop that can enter towns, keeps, or taverns.
+### Equipment Variants & Civilian Rosters:
+- **Inline variants:** Represent inline equipment rosters with `<EquipmentRoster>` elements. Do not infer randomization semantics from element names; verify variant behavior against the target game's schema and runtime conventions.
+- **Reference variants:** Use `<EquipmentSet>` only in the reference form documented by the target game's schema; do not replace such references with inline roster markup.
+- **Civilian roster:** When defining an inline civilian loadout, use `<EquipmentRoster civilian="true">` and validate that shape against the target game's schema.
+
+### Target-version schema validation
+- Validate generated `NPCCharacters` XML against `XmlSchemas/NPCCharacters.xsd` from the exact Bannerlord version being targeted. A schema pass confirms structural compatibility only; it does not prove that the game loads the troop or applies its equipment as intended.
 
 ## 4. Upgrade Trees (`<upgrade_targets>`)
 - Soldiers upgrade to subsequent tiers via `<upgrade_targets>`.
@@ -86,5 +90,5 @@ Valid formation categories for tactical deployment:
 
 ## 6. Critical Engine Constraints & Crash Guards
 - **The Integer Age Trap:** The `age` attribute MUST be an integer (e.g. `age="25"`). Passing a decimal or float (e.g. `age="25.4"`) will cause TaleWorlds' XML deserializer to throw an unhandled exception and crash to desktop during the loading screen.
-- **XML Comment Sensitivity:** Avoid inserting XML comments inside `<Equipments>` or between `<EquipmentSet>` nodes. The native streaming XML reader can silently truncate the equipment array when encountering inline comments in character blocks.
+- **XML Comment Sensitivity:** Avoid inserting XML comments inside `<Equipments>` or between inline `<EquipmentRoster>` nodes. Validate parser-sensitive details against the target game's version; a schema check alone does not establish runtime behavior.
 - **Skill Balancing:** Never leave combat troops with 0 in their primary weapon skills; doing so causes AI agents to fail animation blend trees in battle.

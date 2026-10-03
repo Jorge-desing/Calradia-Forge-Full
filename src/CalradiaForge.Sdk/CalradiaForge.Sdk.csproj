@@ -1,1 +1,25 @@
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFrameworks>net472;net8.0</TargetFrameworks><GenerateDocumentationFile>true</GenerateDocumentationFile><NoWarn>1591</NoWarn><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net472;net8.0</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>1591</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <PackageId>CalradiaForge.Sdk</PackageId>
+    <PackageVersion>$(CalradiaForgeVersion)</PackageVersion>
+    <Authors>Calradia Forge Team</Authors>
+    <Company>Calradia Forge Team</Company>
+    <Description>Compile-time SDK contracts and builders for Mount &amp; Blade II: Bannerlord mods.</Description>
+    <PackageTags>Bannerlord;modding;SDK</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Jorge-desing/Calradia-Forge-Full</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <IncludeSymbols>false</IncludeSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="README.md" Pack="true" PackagePath="README.md" />
+  </ItemGroup>
+</Project>
