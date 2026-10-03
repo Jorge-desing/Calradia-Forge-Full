@@ -520,7 +520,7 @@ internal static class ReleaseTests
                 }
             }
         });
-        test("Forge hook registration rejects shared duplicate IDs and open generic targets",()=>{
+        test("Forge hook registration rejects duplicate IDs and open generic targets while accepting runtime-prefix-shaped IDs",()=>{
             var engine=new TestEngine();
             engine.Register(new MutableTest());
             Throws(()=>engine.Register(new ForgeHookDefinition {Id="mutable",Owner="fixture",Target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)}),Prefix=_=>{}}));
@@ -528,6 +528,9 @@ internal static class ReleaseTests
             Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.generic",Owner="fixture",Target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Generic)),Prefix=_=>{}}));
             var byRef=typeof(int).GetMethod("TryParse",new[]{typeof(string),typeof(int).MakeByRefType()});
             Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.byref",Owner="fixture",Target=byRef,Prefix=_=>{}}));
+            const string prefixedId="CalradiaForge.Hook.fixture.prefixed";
+            service.Register(new ForgeHookDefinition {Id=prefixedId,Owner="fixture",Target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)}),Prefix=_=>{}});
+            Assert(service.GetSnapshots().Single(snapshot=>snapshot.Id==prefixedId).State==ForgeHookState.Registered);
         });
         test("Forge hook ordering rejects prefixed self references, normalized duplicates, and contradictions",()=>{
             var service=new ForgeHookService(()=>true);
@@ -538,6 +541,20 @@ internal static class ReleaseTests
             Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.padded-self ",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"fixture.padded-self"}}));
             Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.duplicate",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"fixture.other","CalradiaForge.Hook.fixture.other"}}));
             Throws(()=>service.Register(new ForgeHookDefinition {Id="fixture.contradiction",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"fixture.other"},After=new List<string>{"CalradiaForge.Hook.fixture.other"}}));
+        });
+        test("Forge hook self-order validation accepts an opaque ID with the runtime prefix",()=>{
+            const string prefixedId="CalradiaForge.Hook.fixture.prefixed-self";
+            var service=new ForgeHookService(()=>true);
+            var target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)});
+            Throws(()=>service.Register(new ForgeHookDefinition {Id=prefixedId,Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"CalradiaForge.Hook."+prefixedId}}));
+        });
+        test("Forge hook graph resolves fully qualified tags for prefix-shaped IDs and rejects cycles",()=>{
+            var service=new ForgeHookService(()=>true);
+            var target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)});
+            const string prefixedTargetId="CalradiaForge.Hook.fixture.prefixed-target";
+            service.Register(new ForgeHookDefinition {Id="fixture.prefixed-source",Owner="fixture",Target=target,Prefix=_=>{},After=new List<string>{"CalradiaForge.Hook."+prefixedTargetId}});
+            Throws(()=>service.Register(new ForgeHookDefinition {Id=prefixedTargetId,Owner="fixture",Target=target,Prefix=_=>{},After=new List<string>{"fixture.prefixed-source"}}));
+            Assert(!service.GetSnapshots().Any(snapshot=>snapshot.Id==prefixedTargetId));
         });
         test("Patch console controls are explicit and absent from the read-only IPC action list",()=>{
             var help=ForgeCommands.Help(new List<string>());

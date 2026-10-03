@@ -18,6 +18,8 @@ namespace CalradiaForge.Core
     /// <remarks>Registration is inert. On the Bannerlord target, Apply and Revert explicitly update the MonoMod detour chain; upstream documents synchronized chain edits, including removal from the hook currently executing. The disposable fixture covers serial self-removal only and is not a full host-lifecycle or general concurrency certification. These guarantees do not apply to raw ForgeDetour writes. No arbitrary target data is exposed over IPC.</remarks>
     public sealed partial class ForgeHookService : IForgeHookService, IForgeHookServiceLifecycle, IForgeHookServiceDisconnectGuard
     {
+        const string RuntimeHookIdPrefix = "CalradiaForge.Hook.";
+
         sealed class Entry
         {
             internal string Id;
@@ -349,7 +351,7 @@ namespace CalradiaForge.Core
 
         static string LocalOrderId(string id)
         {
-            const string prefix = "CalradiaForge.Hook.";
+            const string prefix = RuntimeHookIdPrefix;
             return id != null && id.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
                 ? id.Substring(prefix.Length)
                 : id;
@@ -399,7 +401,7 @@ namespace CalradiaForge.Core
                     string dispatchId = Guid.NewGuid().ToString("N");
                     activation = new DispatchActivation(this, entry, dispatchId,
                         entry.Transpiler == null ? BuildOriginalInvoker(entry.Target) : null);
-                    var configId = "CalradiaForge.Hook." + entry.Id;
+                    var configId = RuntimeHookIdPrefix + entry.Id;
                     var config = new DetourConfig(configId, entry.Priority,
                         PrefixIds(entry.Before), PrefixIds(entry.After));
                     entry.Activation = activation;
@@ -950,9 +952,9 @@ namespace CalradiaForge.Core
             }
         }
 
-        static string EffectiveHookId(string id) => "CalradiaForge.Hook." + id;
-        static string EffectiveOrderId(string id) => id.StartsWith("CalradiaForge.Hook.", StringComparison.OrdinalIgnoreCase)
-            ? id : "CalradiaForge.Hook." + id;
+        static string EffectiveHookId(string id) => RuntimeHookIdPrefix + id;
+        static string EffectiveOrderId(string id) => RuntimeHookIdPrefix +
+            (id.StartsWith(RuntimeHookIdPrefix, StringComparison.OrdinalIgnoreCase) ? id.Substring(RuntimeHookIdPrefix.Length) : id);
 
         static void ValidateNoContradictoryOrder(IEnumerable<string> before, IEnumerable<string> after)
         {
@@ -963,7 +965,7 @@ namespace CalradiaForge.Core
         }
 
 #if NETFRAMEWORK
-        static string[] PrefixIds(IEnumerable<string> ids) => ids.Select(id => id.StartsWith("CalradiaForge.Hook.", StringComparison.OrdinalIgnoreCase) ? id : "CalradiaForge.Hook." + id).ToArray();
+        static string[] PrefixIds(IEnumerable<string> ids) => ids.Select(EffectiveOrderId).ToArray();
 
         static Type GetOriginalDelegateType(MethodInfo target)
         {

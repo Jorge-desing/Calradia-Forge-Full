@@ -65,3 +65,13 @@ This is a separate follow-up run on version 25.2.0; the product version and publ
 - `CalradiaForge-Modules-25.2.0.zip`: `CE75B6B186D4D26DD1113BB2A02294317EF5B9353929EAF805DAEF8AEA868E48`
 - `CalradiaForge-Source-SDK-25.2.0.zip`: `417C8215289EE64319E4C9F838CEE4B17C640D8903ECDE32B4BD3A59119660FF`
 - `CalradiaForge-Desktop-25.2.0.zip`: `B49CA3A85944DCCAA2580DF3819C842B8DB95174FC4AD92CAB603C74FF3F71B5`
+
+## Follow-up hook ID normalization correction — 2026-10-02
+
+A code review caught a potential compatibility regression in rejecting public hook IDs that begin with `CalradiaForge.Hook.`. Registration continues to accept printable IDs in that shape. The runtime prefix is prepended exactly once; unqualified order references are local IDs and prefixed values are fully qualified runtime tags. Regression tests cover registration, self-reference detection, cycle detection and console order diagnostics for prefix-shaped IDs.
+
+- `dotnet build CalradiaForge.sln -c Release -v:minimal`: succeeded with 0 warnings and 0 errors.
+- `cmd.exe /c "tools\Run-CalradiaForge-Core-Tests.bat --no-pause <nul"`: Core 416 passed, 0 failed; the BAT also completed the serial x64 DetourFixture and hook/IL lifecycle scenarios successfully.
+- `cmd.exe /c "tools\Run-CalradiaForge-Python-Checks.bat --ledger --no-pause <nul"`: ledger chain, playbooks, code-smell audit, and docs parity command passed; the audit reports 12 older English-only docs without Spanish counterparts.
+- The full master test BAT was unavailable because it was already deleted in the working tree before this correction; no deleted file was restored or staged.
+- Live application of the owned menu hook fixture remains pending at the user's request. Computer Use selected Bannerlord's window ID but returned a Rogue Command screenshot, so no game input or hook application was sent under that ambiguous capture.

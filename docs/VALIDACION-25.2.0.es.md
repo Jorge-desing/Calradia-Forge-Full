@@ -65,3 +65,13 @@ Esta es una ejecución de seguimiento separada en la versión 25.2.0; no cambiar
 - `CalradiaForge-Modules-25.2.0.zip`: `CE75B6B186D4D26DD1113BB2A02294317EF5B9353929EAF805DAEF8AEA868E48`
 - `CalradiaForge-Source-SDK-25.2.0.zip`: `417C8215289EE64319E4C9F838CEE4B17C640D8903ECDE32B4BD3A59119660FF`
 - `CalradiaForge-Desktop-25.2.0.zip`: `B49CA3A85944DCCAA2580DF3819C842B8DB95174FC4AD92CAB603C74FF3F71B5`
+
+## Corrección de seguimiento de normalización de IDs de hooks — 2026-10-02
+
+La revisión de código señaló que rechazar IDs públicos que comenzaran con `CalradiaForge.Hook.` podía romper compatibilidad. El registro sigue aceptando IDs imprimibles con esa forma. El prefijo de ejecución se agrega exactamente una vez; las referencias de orden sin prefijo son IDs locales y las referencias con prefijo son etiquetas de ejecución completas. Las pruebas de regresión cubren registro, detección de autorreferencias y ciclos, y el diagnóstico de orden en consola con IDs que tienen forma de prefijo.
+
+- `dotnet build CalradiaForge.sln -c Release -v:minimal`: terminó con 0 advertencias y 0 errores.
+- `cmd.exe /c "tools\Run-CalradiaForge-Core-Tests.bat --no-pause <nul"`: Core 416 superadas, 0 fallidas; el BAT también completó correctamente la fixture serial x64 DetourFixture y los escenarios de ciclo de vida de hooks/IL.
+- `cmd.exe /c "tools\Run-CalradiaForge-Python-Checks.bat --ledger --no-pause <nul"`: pasaron la cadena de integridad, playbooks, auditoría de code smells y comando de paridad documental; la auditoría informa 12 documentos antiguos solo en inglés sin contraparte española.
+- El BAT maestro de pruebas no estaba disponible porque ya aparecía eliminado en el árbol de trabajo antes de esta corrección; no se restauró ni se preparó ningún archivo eliminado.
+- La aplicación en vivo de la fixture de hooks propios del menú sigue pendiente a petición del usuario. Computer Use seleccionó el ID de ventana de Bannerlord, pero devolvió una captura de Rogue Command; no se enviaron teclas ni se aplicaron hooks con esa captura ambigua.

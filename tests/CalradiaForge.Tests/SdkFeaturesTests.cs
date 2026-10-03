@@ -1372,6 +1372,21 @@ namespace CalradiaForge.Tests
                     !order.Contains("does not prove effective dispatch order"))
                     throw new Exception("Hook order diagnostics must classify current same-target Forge references and unresolved/external declarations without claiming actual order.");
 
+                const string prefixShapedLocalId = "CalradiaForge.Hook.console.prefixed-local";
+                string prefixShapedRuntimeId = "CalradiaForge.Hook." + prefixShapedLocalId;
+                ForgeApi.Hooks.Register(new ForgeHookDefinition
+                {
+                    Id = prefixShapedLocalId, Owner = "console.owner", Target = original, Prefix = _ => { }
+                });
+                ForgeApi.Hooks.Register(new ForgeHookDefinition
+                {
+                    Id = "console.hook.references-prefixed-local", Owner = "console.owner", Target = original, Prefix = _ => { },
+                    Before = new List<string> { prefixShapedRuntimeId }
+                });
+                string prefixShapedOrder = ForgeCommands.HookOrder(new List<string> { "console.owner", "TargetMethod" });
+                if (!prefixShapedOrder.Contains("[Forge-known, same target] " + prefixShapedRuntimeId))
+                    throw new Exception("Hook order diagnostics must resolve the exact runtime tag for a prefix-shaped public hook ID.");
+
                 MethodInfo[] genericNameTargets = typeof(SdkFeaturesTests).GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
                     .Where(method => method.Name == nameof(GenericIdentityTarget)).ToArray();
                 MethodInfo plainGenericNameTarget = genericNameTargets.Single(method => !method.IsGenericMethod);
