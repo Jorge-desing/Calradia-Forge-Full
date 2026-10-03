@@ -1,0 +1,18 @@
+# Traducción
+
+El inglés es el idioma fuente canónico. `localization/en.xml` contiene las claves en inglés y el texto predeterminado; `localization/es.xml` contiene la traducción al español. Los nombres de archivo, identificadores de código, registros, campos del protocolo y contratos del SDK se mantienen en inglés.
+
+## Orden de contribución
+
+1. Implementa y revisa la función en inglés, incluidos los nombres de archivo, espacios de nombres, clases, métodos, variables, comentarios escritos, textos de interfaz, ejemplos y documentación principal.
+2. Añade el texto en inglés a `localization/en.xml`.
+3. Añade la traducción al español latinoamericano a `localization/es.xml`, conservando la clave en inglés.
+4. Regenera los recursos de idioma del juego y verifica ambos idiomas. Los documentos en español usan un sufijo de idioma, como `README.es.md`; los archivos fuente no se duplican ni se renombran para traducirlos.
+
+El panel nativo sigue automáticamente `BannerlordConfig.Language`, sin una lista de idiomas permitidos. Las etiquetas nativas usan `TaleWorlds TextObject` y la búsqueda del idioma actual del juego. Se actualiza al abrirse y cuando cambia el idioma del juego; una configuración de idioma anterior de Forge no puede reemplazarlo. La aplicación de escritorio inicia en inglés y su selector explícito muestra los mismos 13 idiomas instalados de Bannerlord: inglés, español latinoamericano, portugués brasileño, alemán, francés, italiano, polaco, ruso, turco, chino simplificado, chino tradicional, japonés y coreano. Si falta una traducción, se usa el valor alternativo en inglés del token; detectar un idioma personalizado no implica afirmar silenciosamente que existe una traducción que no está presente.
+
+Los 13 catálogos de Desktop están integrados en Core. El inglés y el español se mantienen como catálogos fuente; los otros 11 catálogos se generan a partir de las filas revisadas de `localization/native-menu.json` y conservan el inglés para las frases de diagnóstico que no forman parte del conjunto del menú nativo. El generador valida que las filas del menú estén completas, escribe los catálogos XML de escritorio y crea recursos de ModuleData/Languages con los ID `forge_` más los primeros 12 caracteres hexadecimales en minúsculas del SHA-256 de cada clave inglesa codificada en UTF-8. Las etiquetas nativas usan los recursos del juego, mientras Desktop usa los catálogos integrados. El idioma de voz y la configuración regional de Windows no cambian el panel nativo; el selector de Desktop es explícito.
+
+Traduce los valores y conserva las claves y los marcadores de posición. El valor en inglés es la alternativa para las claves desconocidas. Las cargas de diagnóstico y las excepciones de módulos de terceros o del sistema operativo se conservan en su idioma original; son evidencia, no etiquetas de interfaz.
+
+Para añadir un idioma nativo, agrega su ID exacto de idioma del juego, carpeta, valor ISO y fila traducida del menú a `native-menu.json`; luego regenera los recursos. No se requiere ningún cambio en C#. Los módulos de traducción de la comunidad también pueden proporcionar los mismos ID de cadenas mediante los recursos de idioma de Bannerlord. Verifica la disposición y las fuentes en el idioma seleccionado del juego. Los catálogos generados cubren cada etiqueta literal del panel, texto de ayuda y mensaje operativo conocido declarado por `PanelViewModel`; la salida arbitraria del SDK, los registros y las cargas de diagnóstico técnico siguen siendo evidencia de origen. No traduzcas los ID de objetos del juego, nombres de API, ID de comandos ni nombres de propiedades JSON.

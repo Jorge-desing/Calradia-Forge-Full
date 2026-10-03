@@ -276,7 +276,7 @@ src/CalradiaForge.Sdk/
 ## 📊 Performance Considerations
 
 ### Gauntlet UI Performance
-- **Time-slicing**: Update analytics every second, not every frame
+- **Time-slicing**: For periodic analytics that can safely be deferred, consider `ForgeTimeSlicer.ShouldProcess` with stable entity IDs. Bucket assignment can be uneven, filtering still scans the collection, and performance claims require measuring the complete callback.
 - **Collection optimization**: Reuse `MBBindingList` instances
 - **Lazy loading**: Only load UI when needed
 - **Memory management**: Clear collections when not in use
