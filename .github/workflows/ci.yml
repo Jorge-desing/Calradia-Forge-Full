@@ -2,7 +2,9 @@ name: Calradia Forge CI - Build & Quality Gates
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - 'codex/**'
   pull_request:
     branches: [ main ]
   workflow_dispatch:
