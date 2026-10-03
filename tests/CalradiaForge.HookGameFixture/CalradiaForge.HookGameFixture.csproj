@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>CalradiaForge.HookGameFixture</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/CalradiaForge.Sdk/CalradiaForge.Sdk.csproj" Private="false" />
+    <Reference Include="$(GameBin)\TaleWorlds.MountAndBlade.dll">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

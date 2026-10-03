@@ -80,3 +80,9 @@ A code review caught a potential compatibility regression in rejecting public ho
 
 - Repository inspection found no in-game Forge-owned hook provider registered by the product or examples. `tests/CalradiaForge.DetourFixture` is an isolated x64 test host, not a Bannerlord module, and cannot prove menu integration.
 - No owned hook fixture is currently deployed in Bannerlord. A dedicated test module/provider must be created and loaded before a main-menu smoke test can verify apply, verify, and revert in the game. This remains deferred at the user's request; no game input or in-game hook operation was performed.
+
+## Hook fixture source and staging follow-up — 2026-10-02
+
+- A later source review found the existing guarded, Forge-owned in-game fixture in `src/CalradiaForge.Mod/HookMenuFixture.cs`. `cf.hook_fixture register` registers its own callback and IL targets without applying them; the fixture result documents expected values for inactive, callback-only, IL-only, and combined states. This corrects the earlier source-level statement that no in-game provider existed.
+- `cmd.exe /c "tools\Build-CalradiaForge-HookGameFixture.bat <nul"` succeeded with zero warnings/errors and staged a separate test-only SDK consumer module under ignored `artifacts\hook-game-fixture-*`. It contains only `SubModule.xml` and the fixture DLL; it was not installed or loaded into Bannerlord.
+- The user asked to leave the live check pending. No game input was sent and no Apply/Verify/Revert operation was performed. The source fixture and staged module are preparation only, not evidence of in-game registration, execution, or integration.

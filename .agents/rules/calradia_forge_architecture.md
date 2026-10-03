@@ -453,8 +453,8 @@ public void TestInternalMethod()
 | ModRuleAuditor | Static analysis validation | Core |
 | ForgeLogger | Logging system | Core |
 | ForgeConfig | Configuration management | Core |
-| ForgeBootstrapper | Harmony patch initialization | Core |
-| ForgeWeaveEngine | Patch management | Core |
+| ForgeBootstrapper | Obsolete no-op compatibility entry point; does not scan or auto-apply hooks | Core |
+| ForgeWeaveEngine | Deterministic event and replay dispatch | Core |
 
 ### Core Extension Points
 ```csharp

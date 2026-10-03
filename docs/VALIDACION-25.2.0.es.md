@@ -80,3 +80,9 @@ La revisión de código señaló que rechazar IDs públicos que comenzaran con `
 
 - La inspección del repositorio no encontró un proveedor de hooks propios de Forge registrado dentro del juego por el producto o sus ejemplos. `tests/CalradiaForge.DetourFixture` es un host de prueba x64 aislado, no un módulo de Bannerlord, y no demuestra la integración con el menú.
 - Actualmente no hay una fixture propia desplegada en Bannerlord. Antes del smoke test del menú principal habrá que crear y cargar un módulo/proveedor de prueba dedicado para verificar aplicar, verificar y revertir dentro del juego. Sigue aplazado a petición del usuario; no se enviaron entradas ni se aplicaron hooks en el juego.
+
+## Seguimiento de fuente y preparación de la fixture de hooks — 2026-10-02
+
+- Una revisión posterior del código encontró la fixture propia y protegida que ya existe en `src/CalradiaForge.Mod/HookMenuFixture.cs`. `cf.hook_fixture register` registra sus destinos de callback e IL sin aplicarlos; el resultado de la fixture documenta los valores esperados en estados inactivo, solo callback, solo IL y combinado. Esto corrige la afirmación anterior a nivel de fuente de que no existía un proveedor en el juego.
+- `cmd.exe /c "tools\Build-CalradiaForge-HookGameFixture.bat <nul"` terminó correctamente, con cero advertencias y errores, y preparó un módulo consumidor SDK de prueba en `artifacts\hook-game-fixture-*`, una ruta ignorada. Contiene únicamente `SubModule.xml` y la DLL de la fixture; no se instaló ni cargó en Bannerlord.
+- El usuario pidió dejar pendiente la comprobación en vivo. No se enviaron entradas al juego ni se ejecutó Apply/Verify/Revert. La fixture fuente y el módulo preparado son solo preparación, no evidencia de registro, ejecución o integración dentro del juego.
