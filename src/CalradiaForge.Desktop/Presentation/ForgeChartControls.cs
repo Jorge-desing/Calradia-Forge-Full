@@ -120,53 +120,21 @@ namespace CalradiaForge.Desktop.Presentation
             DependencyProperty.Register(nameof(FormatString), typeof(string), typeof(ForgeSparkline),
                 new PropertyMetadata("N0"));
 
-        public IReadOnlyList<double> DataPoints
-        {
-            get => (IReadOnlyList<double>)GetValue(DataPointsProperty);
-            set => SetValue(DataPointsProperty, value);
-        }
+        public IReadOnlyList<double> DataPoints { get => (IReadOnlyList<double>)GetValue(DataPointsProperty); set => SetValue(DataPointsProperty, value); }
 
-        public Brush Stroke
-        {
-            get => (Brush)GetValue(StrokeProperty);
-            set => SetValue(StrokeProperty, value);
-        }
+        public Brush Stroke { get => (Brush)GetValue(StrokeProperty); set => SetValue(StrokeProperty, value); }
 
-        public Brush Fill
-        {
-            get => (Brush)GetValue(FillProperty);
-            set => SetValue(FillProperty, value);
-        }
+        public Brush Fill { get => (Brush)GetValue(FillProperty); set => SetValue(FillProperty, value); }
 
-        public double StrokeThickness
-        {
-            get => (double)GetValue(StrokeThicknessProperty);
-            set => SetValue(StrokeThicknessProperty, value);
-        }
+        public double StrokeThickness { get => (double)GetValue(StrokeThicknessProperty); set => SetValue(StrokeThicknessProperty, value); }
 
-        public bool ShowGridLines
-        {
-            get => (bool)GetValue(ShowGridLinesProperty);
-            set => SetValue(ShowGridLinesProperty, value);
-        }
+        public bool ShowGridLines { get => (bool)GetValue(ShowGridLinesProperty); set => SetValue(ShowGridLinesProperty, value); }
 
-        public Brush GridBrush
-        {
-            get => (Brush)GetValue(GridBrushProperty);
-            set => SetValue(GridBrushProperty, value);
-        }
+        public Brush GridBrush { get => (Brush)GetValue(GridBrushProperty); set => SetValue(GridBrushProperty, value); }
 
-        public string ValueUnit
-        {
-            get => (string)GetValue(ValueUnitProperty);
-            set => SetValue(ValueUnitProperty, value);
-        }
+        public string ValueUnit { get => (string)GetValue(ValueUnitProperty); set => SetValue(ValueUnitProperty, value); }
 
-        public string FormatString
-        {
-            get => (string)GetValue(FormatStringProperty);
-            set => SetValue(FormatStringProperty, value);
-        }
+        public string FormatString { get => (string)GetValue(FormatStringProperty); set => SetValue(FormatStringProperty, value); }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
@@ -322,59 +290,23 @@ namespace CalradiaForge.Desktop.Presentation
 
         static readonly Typeface LabelTypeface = new("Segoe UI");
 
-        public IReadOnlyList<string> AxisLabels
-        {
-            get => (IReadOnlyList<string>)GetValue(AxisLabelsProperty);
-            set => SetValue(AxisLabelsProperty, value);
-        }
+        public IReadOnlyList<string> AxisLabels { get => (IReadOnlyList<string>)GetValue(AxisLabelsProperty); set => SetValue(AxisLabelsProperty, value); }
 
-        public IReadOnlyList<double> Values
-        {
-            get => (IReadOnlyList<double>)GetValue(ValuesProperty);
-            set => SetValue(ValuesProperty, value);
-        }
+        public IReadOnlyList<double> Values { get => (IReadOnlyList<double>)GetValue(ValuesProperty); set => SetValue(ValuesProperty, value); }
 
-        public IReadOnlyList<double> ComparisonValues
-        {
-            get => (IReadOnlyList<double>)GetValue(ComparisonValuesProperty);
-            set => SetValue(ComparisonValuesProperty, value);
-        }
+        public IReadOnlyList<double> ComparisonValues { get => (IReadOnlyList<double>)GetValue(ComparisonValuesProperty); set => SetValue(ComparisonValuesProperty, value); }
 
-        public Brush Stroke
-        {
-            get => (Brush)GetValue(StrokeProperty);
-            set => SetValue(StrokeProperty, value);
-        }
+        public Brush Stroke { get => (Brush)GetValue(StrokeProperty); set => SetValue(StrokeProperty, value); }
 
-        public Brush Fill
-        {
-            get => (Brush)GetValue(FillProperty);
-            set => SetValue(FillProperty, value);
-        }
+        public Brush Fill { get => (Brush)GetValue(FillProperty); set => SetValue(FillProperty, value); }
 
-        public Brush ComparisonStroke
-        {
-            get => (Brush)GetValue(ComparisonStrokeProperty);
-            set => SetValue(ComparisonStrokeProperty, value);
-        }
+        public Brush ComparisonStroke { get => (Brush)GetValue(ComparisonStrokeProperty); set => SetValue(ComparisonStrokeProperty, value); }
 
-        public Brush ComparisonFill
-        {
-            get => (Brush)GetValue(ComparisonFillProperty);
-            set => SetValue(ComparisonFillProperty, value);
-        }
+        public Brush ComparisonFill { get => (Brush)GetValue(ComparisonFillProperty); set => SetValue(ComparisonFillProperty, value); }
 
-        public Brush GridBrush
-        {
-            get => (Brush)GetValue(GridBrushProperty);
-            set => SetValue(GridBrushProperty, value);
-        }
+        public Brush GridBrush { get => (Brush)GetValue(GridBrushProperty); set => SetValue(GridBrushProperty, value); }
 
-        public Brush AxisLabelBrush
-        {
-            get => (Brush)GetValue(AxisLabelBrushProperty);
-            set => SetValue(AxisLabelBrushProperty, value);
-        }
+        public Brush AxisLabelBrush { get => (Brush)GetValue(AxisLabelBrushProperty); set => SetValue(AxisLabelBrushProperty, value); }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
@@ -533,65 +465,25 @@ namespace CalradiaForge.Desktop.Presentation
         static readonly Typeface BoldTypeface = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
         static readonly Typeface NormalTypeface = new("Segoe UI");
 
-        public double Value
-        {
-            get => (double)GetValue(ValueProperty);
-            set => SetValue(ValueProperty, value);
-        }
+        public double Value { get => (double)GetValue(ValueProperty); set => SetValue(ValueProperty, value); }
 
-        public double Maximum
-        {
-            get => (double)GetValue(MaximumProperty);
-            set => SetValue(MaximumProperty, value);
-        }
+        public double Maximum { get => (double)GetValue(MaximumProperty); set => SetValue(MaximumProperty, value); }
 
-        public double Threshold
-        {
-            get => (double)GetValue(ThresholdProperty);
-            set => SetValue(ThresholdProperty, value);
-        }
+        public double Threshold { get => (double)GetValue(ThresholdProperty); set => SetValue(ThresholdProperty, value); }
 
-        public double StrokeThickness
-        {
-            get => (double)GetValue(StrokeThicknessProperty);
-            set => SetValue(StrokeThicknessProperty, value);
-        }
+        public double StrokeThickness { get => (double)GetValue(StrokeThicknessProperty); set => SetValue(StrokeThicknessProperty, value); }
 
-        public Brush AccentBrush
-        {
-            get => (Brush)GetValue(AccentBrushProperty);
-            set => SetValue(AccentBrushProperty, value);
-        }
+        public Brush AccentBrush { get => (Brush)GetValue(AccentBrushProperty); set => SetValue(AccentBrushProperty, value); }
 
-        public Brush BackgroundBrush
-        {
-            get => (Brush)GetValue(BackgroundBrushProperty);
-            set => SetValue(BackgroundBrushProperty, value);
-        }
+        public Brush BackgroundBrush { get => (Brush)GetValue(BackgroundBrushProperty); set => SetValue(BackgroundBrushProperty, value); }
 
-        public Brush ThresholdBrush
-        {
-            get => (Brush)GetValue(ThresholdBrushProperty);
-            set => SetValue(ThresholdBrushProperty, value);
-        }
+        public Brush ThresholdBrush { get => (Brush)GetValue(ThresholdBrushProperty); set => SetValue(ThresholdBrushProperty, value); }
 
-        public string CenterText
-        {
-            get => (string)GetValue(CenterTextProperty);
-            set => SetValue(CenterTextProperty, value);
-        }
+        public string CenterText { get => (string)GetValue(CenterTextProperty); set => SetValue(CenterTextProperty, value); }
 
-        public string SubText
-        {
-            get => (string)GetValue(SubTextProperty);
-            set => SetValue(SubTextProperty, value);
-        }
+        public string SubText { get => (string)GetValue(SubTextProperty); set => SetValue(SubTextProperty, value); }
 
-        public Brush TextBrush
-        {
-            get => (Brush)GetValue(TextBrushProperty);
-            set => SetValue(TextBrushProperty, value);
-        }
+        public Brush TextBrush { get => (Brush)GetValue(TextBrushProperty); set => SetValue(TextBrushProperty, value); }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
@@ -735,59 +627,23 @@ namespace CalradiaForge.Desktop.Presentation
         static readonly Typeface LabelTypeface = new("Segoe UI");
         static readonly Typeface ValueTypeface = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
 
-        public IReadOnlyList<ForgeBarDataPoint> Bars
-        {
-            get => (IReadOnlyList<ForgeBarDataPoint>)GetValue(BarsProperty);
-            set => SetValue(BarsProperty, value);
-        }
+        public IReadOnlyList<ForgeBarDataPoint> Bars { get => (IReadOnlyList<ForgeBarDataPoint>)GetValue(BarsProperty); set => SetValue(BarsProperty, value); }
 
-        public Brush BarBrush
-        {
-            get => (Brush)GetValue(BarBrushProperty);
-            set => SetValue(BarBrushProperty, value);
-        }
+        public Brush BarBrush { get => (Brush)GetValue(BarBrushProperty); set => SetValue(BarBrushProperty, value); }
 
-        public Brush BackgroundBarBrush
-        {
-            get => (Brush)GetValue(BackgroundBarBrushProperty);
-            set => SetValue(BackgroundBarBrushProperty, value);
-        }
+        public Brush BackgroundBarBrush { get => (Brush)GetValue(BackgroundBarBrushProperty); set => SetValue(BackgroundBarBrushProperty, value); }
 
-        public Brush LabelBrush
-        {
-            get => (Brush)GetValue(LabelBrushProperty);
-            set => SetValue(LabelBrushProperty, value);
-        }
+        public Brush LabelBrush { get => (Brush)GetValue(LabelBrushProperty); set => SetValue(LabelBrushProperty, value); }
 
-        public Brush ValueBrush
-        {
-            get => (Brush)GetValue(ValueBrushProperty);
-            set => SetValue(ValueBrushProperty, value);
-        }
+        public Brush ValueBrush { get => (Brush)GetValue(ValueBrushProperty); set => SetValue(ValueBrushProperty, value); }
 
-        public double Maximum
-        {
-            get => (double)GetValue(MaximumProperty);
-            set => SetValue(MaximumProperty, value);
-        }
+        public double Maximum { get => (double)GetValue(MaximumProperty); set => SetValue(MaximumProperty, value); }
 
-        public double BarThickness
-        {
-            get => (double)GetValue(BarThicknessProperty);
-            set => SetValue(BarThicknessProperty, value);
-        }
+        public double BarThickness { get => (double)GetValue(BarThicknessProperty); set => SetValue(BarThicknessProperty, value); }
 
-        public string ValueUnit
-        {
-            get => (string)GetValue(ValueUnitProperty);
-            set => SetValue(ValueUnitProperty, value);
-        }
+        public string ValueUnit { get => (string)GetValue(ValueUnitProperty); set => SetValue(ValueUnitProperty, value); }
 
-        public string FormatString
-        {
-            get => (string)GetValue(FormatStringProperty);
-            set => SetValue(FormatStringProperty, value);
-        }
+        public string FormatString { get => (string)GetValue(FormatStringProperty); set => SetValue(FormatStringProperty, value); }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
@@ -906,41 +762,17 @@ namespace CalradiaForge.Desktop.Presentation
 
         static readonly Typeface HeaderTypeface = new("Segoe UI");
 
-        public IReadOnlyList<IReadOnlyList<double>> Matrix
-        {
-            get => (IReadOnlyList<IReadOnlyList<double>>)GetValue(MatrixProperty);
-            set => SetValue(MatrixProperty, value);
-        }
+        public IReadOnlyList<IReadOnlyList<double>> Matrix { get => (IReadOnlyList<IReadOnlyList<double>>)GetValue(MatrixProperty); set => SetValue(MatrixProperty, value); }
 
-        public IReadOnlyList<string> RowHeaders
-        {
-            get => (IReadOnlyList<string>)GetValue(RowHeadersProperty);
-            set => SetValue(RowHeadersProperty, value);
-        }
+        public IReadOnlyList<string> RowHeaders { get => (IReadOnlyList<string>)GetValue(RowHeadersProperty); set => SetValue(RowHeadersProperty, value); }
 
-        public IReadOnlyList<string> ColumnHeaders
-        {
-            get => (IReadOnlyList<string>)GetValue(ColumnHeadersProperty);
-            set => SetValue(ColumnHeadersProperty, value);
-        }
+        public IReadOnlyList<string> ColumnHeaders { get => (IReadOnlyList<string>)GetValue(ColumnHeadersProperty); set => SetValue(ColumnHeadersProperty, value); }
 
-        public Brush BaseBrush
-        {
-            get => (Brush)GetValue(BaseBrushProperty);
-            set => SetValue(BaseBrushProperty, value);
-        }
+        public Brush BaseBrush { get => (Brush)GetValue(BaseBrushProperty); set => SetValue(BaseBrushProperty, value); }
 
-        public Brush HotBrush
-        {
-            get => (Brush)GetValue(HotBrushProperty);
-            set => SetValue(HotBrushProperty, value);
-        }
+        public Brush HotBrush { get => (Brush)GetValue(HotBrushProperty); set => SetValue(HotBrushProperty, value); }
 
-        public double CellRadius
-        {
-            get => (double)GetValue(CellRadiusProperty);
-            set => SetValue(CellRadiusProperty, value);
-        }
+        public double CellRadius { get => (double)GetValue(CellRadiusProperty); set => SetValue(CellRadiusProperty, value); }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
@@ -1102,83 +934,31 @@ namespace CalradiaForge.Desktop.Presentation
         public static readonly DependencyProperty SweepAngleProperty = ChartPropertyRegistration.Render(
             nameof(SweepAngle), typeof(double), typeof(ForgeArcGauge), 270.0);
 
-        public double Value
-        {
-            get => (double)GetValue(ValueProperty);
-            set => SetValue(ValueProperty, value);
-        }
+        public double Value { get => (double)GetValue(ValueProperty); set => SetValue(ValueProperty, value); }
 
-        public double MinValue
-        {
-            get => (double)GetValue(MinValueProperty);
-            set => SetValue(MinValueProperty, value);
-        }
+        public double MinValue { get => (double)GetValue(MinValueProperty); set => SetValue(MinValueProperty, value); }
 
-        public double MaxValue
-        {
-            get => (double)GetValue(MaxValueProperty);
-            set => SetValue(MaxValueProperty, value);
-        }
+        public double MaxValue { get => (double)GetValue(MaxValueProperty); set => SetValue(MaxValueProperty, value); }
 
-        public double ArcThickness
-        {
-            get => (double)GetValue(ArcThicknessProperty);
-            set => SetValue(ArcThicknessProperty, value);
-        }
+        public double ArcThickness { get => (double)GetValue(ArcThicknessProperty); set => SetValue(ArcThicknessProperty, value); }
 
-        public Brush? TrackBrush
-        {
-            get => (Brush?)GetValue(TrackBrushProperty);
-            set => SetValue(TrackBrushProperty, value);
-        }
+        public Brush? TrackBrush { get => (Brush?)GetValue(TrackBrushProperty); set => SetValue(TrackBrushProperty, value); }
 
-        public Brush? ProgressBrush
-        {
-            get => (Brush?)GetValue(ProgressBrushProperty);
-            set => SetValue(ProgressBrushProperty, value);
-        }
+        public Brush? ProgressBrush { get => (Brush?)GetValue(ProgressBrushProperty); set => SetValue(ProgressBrushProperty, value); }
 
-        public Brush? ValueBrush
-        {
-            get => (Brush?)GetValue(ValueBrushProperty);
-            set => SetValue(ValueBrushProperty, value);
-        }
+        public Brush? ValueBrush { get => (Brush?)GetValue(ValueBrushProperty); set => SetValue(ValueBrushProperty, value); }
 
-        public Brush? UnitsBrush
-        {
-            get => (Brush?)GetValue(UnitsBrushProperty);
-            set => SetValue(UnitsBrushProperty, value);
-        }
+        public Brush? UnitsBrush { get => (Brush?)GetValue(UnitsBrushProperty); set => SetValue(UnitsBrushProperty, value); }
 
-        public string ValueFormat
-        {
-            get => (string)GetValue(ValueFormatProperty);
-            set => SetValue(ValueFormatProperty, value);
-        }
+        public string ValueFormat { get => (string)GetValue(ValueFormatProperty); set => SetValue(ValueFormatProperty, value); }
 
-        public string UnitsText
-        {
-            get => (string)GetValue(UnitsTextProperty);
-            set => SetValue(UnitsTextProperty, value);
-        }
+        public string UnitsText { get => (string)GetValue(UnitsTextProperty); set => SetValue(UnitsTextProperty, value); }
 
-        public string GaugeTitle
-        {
-            get => (string)GetValue(GaugeTitleProperty);
-            set => SetValue(GaugeTitleProperty, value);
-        }
+        public string GaugeTitle { get => (string)GetValue(GaugeTitleProperty); set => SetValue(GaugeTitleProperty, value); }
 
-        public double StartAngle
-        {
-            get => (double)GetValue(StartAngleProperty);
-            set => SetValue(StartAngleProperty, value);
-        }
+        public double StartAngle { get => (double)GetValue(StartAngleProperty); set => SetValue(StartAngleProperty, value); }
 
-        public double SweepAngle
-        {
-            get => (double)GetValue(SweepAngleProperty);
-            set => SetValue(SweepAngleProperty, value);
-        }
+        public double SweepAngle { get => (double)GetValue(SweepAngleProperty); set => SetValue(SweepAngleProperty, value); }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
@@ -1322,83 +1102,31 @@ namespace CalradiaForge.Desktop.Presentation
             DependencyProperty.Register(nameof(FormatString), typeof(string), typeof(ForgeAreaChart),
                 new PropertyMetadata("N0"));
 
-        public IReadOnlyList<double> DataPoints
-        {
-            get => (IReadOnlyList<double>)GetValue(DataPointsProperty);
-            set => SetValue(DataPointsProperty, value);
-        }
+        public IReadOnlyList<double> DataPoints { get => (IReadOnlyList<double>)GetValue(DataPointsProperty); set => SetValue(DataPointsProperty, value); }
 
-        public Brush Stroke
-        {
-            get => (Brush)GetValue(StrokeProperty);
-            set => SetValue(StrokeProperty, value);
-        }
+        public Brush Stroke { get => (Brush)GetValue(StrokeProperty); set => SetValue(StrokeProperty, value); }
 
-        public Brush Fill
-        {
-            get => (Brush)GetValue(FillProperty);
-            set => SetValue(FillProperty, value);
-        }
+        public Brush Fill { get => (Brush)GetValue(FillProperty); set => SetValue(FillProperty, value); }
 
-        public double StrokeThickness
-        {
-            get => (double)GetValue(StrokeThicknessProperty);
-            set => SetValue(StrokeThicknessProperty, value);
-        }
+        public double StrokeThickness { get => (double)GetValue(StrokeThicknessProperty); set => SetValue(StrokeThicknessProperty, value); }
 
-        public bool ShowGridLines
-        {
-            get => (bool)GetValue(ShowGridLinesProperty);
-            set => SetValue(ShowGridLinesProperty, value);
-        }
+        public bool ShowGridLines { get => (bool)GetValue(ShowGridLinesProperty); set => SetValue(ShowGridLinesProperty, value); }
 
-        public Brush GridBrush
-        {
-            get => (Brush)GetValue(GridBrushProperty);
-            set => SetValue(GridBrushProperty, value);
-        }
+        public Brush GridBrush { get => (Brush)GetValue(GridBrushProperty); set => SetValue(GridBrushProperty, value); }
 
-        public Brush AxisLabelBrush
-        {
-            get => (Brush)GetValue(AxisLabelBrushProperty);
-            set => SetValue(AxisLabelBrushProperty, value);
-        }
+        public Brush AxisLabelBrush { get => (Brush)GetValue(AxisLabelBrushProperty); set => SetValue(AxisLabelBrushProperty, value); }
 
-        public bool ShowMinMaxLabels
-        {
-            get => (bool)GetValue(ShowMinMaxLabelsProperty);
-            set => SetValue(ShowMinMaxLabelsProperty, value);
-        }
+        public bool ShowMinMaxLabels { get => (bool)GetValue(ShowMinMaxLabelsProperty); set => SetValue(ShowMinMaxLabelsProperty, value); }
 
-        public bool ShowBaseline
-        {
-            get => (bool)GetValue(ShowBaselineProperty);
-            set => SetValue(ShowBaselineProperty, value);
-        }
+        public bool ShowBaseline { get => (bool)GetValue(ShowBaselineProperty); set => SetValue(ShowBaselineProperty, value); }
 
-        public bool ShowDataPoints
-        {
-            get => (bool)GetValue(ShowDataPointsProperty);
-            set => SetValue(ShowDataPointsProperty, value);
-        }
+        public bool ShowDataPoints { get => (bool)GetValue(ShowDataPointsProperty); set => SetValue(ShowDataPointsProperty, value); }
 
-        public Brush HighlightPointBrush
-        {
-            get => (Brush)GetValue(HighlightPointBrushProperty);
-            set => SetValue(HighlightPointBrushProperty, value);
-        }
+        public Brush HighlightPointBrush { get => (Brush)GetValue(HighlightPointBrushProperty); set => SetValue(HighlightPointBrushProperty, value); }
 
-        public string ValueUnit
-        {
-            get => (string)GetValue(ValueUnitProperty);
-            set => SetValue(ValueUnitProperty, value);
-        }
+        public string ValueUnit { get => (string)GetValue(ValueUnitProperty); set => SetValue(ValueUnitProperty, value); }
 
-        public string FormatString
-        {
-            get => (string)GetValue(FormatStringProperty);
-            set => SetValue(FormatStringProperty, value);
-        }
+        public string FormatString { get => (string)GetValue(FormatStringProperty); set => SetValue(FormatStringProperty, value); }
 
         static readonly Typeface LabelTypeface = new(new FontFamily("Consolas, Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
 
@@ -1667,65 +1395,25 @@ namespace CalradiaForge.Desktop.Presentation
         public static readonly DependencyProperty OrientationProperty = ChartPropertyRegistration.Render(
             nameof(Orientation), typeof(Orientation), typeof(ForgeStepProgress), Orientation.Horizontal);
 
-        public IReadOnlyList<ForgeStepItem> Steps
-        {
-            get => (IReadOnlyList<ForgeStepItem>)GetValue(StepsProperty);
-            set => SetValue(StepsProperty, value);
-        }
+        public IReadOnlyList<ForgeStepItem> Steps { get => (IReadOnlyList<ForgeStepItem>)GetValue(StepsProperty); set => SetValue(StepsProperty, value); }
 
-        public Brush ActiveBrush
-        {
-            get => (Brush)GetValue(ActiveBrushProperty);
-            set => SetValue(ActiveBrushProperty, value);
-        }
+        public Brush ActiveBrush { get => (Brush)GetValue(ActiveBrushProperty); set => SetValue(ActiveBrushProperty, value); }
 
-        public Brush CompletedBrush
-        {
-            get => (Brush)GetValue(CompletedBrushProperty);
-            set => SetValue(CompletedBrushProperty, value);
-        }
+        public Brush CompletedBrush { get => (Brush)GetValue(CompletedBrushProperty); set => SetValue(CompletedBrushProperty, value); }
 
-        public Brush PendingBrush
-        {
-            get => (Brush)GetValue(PendingBrushProperty);
-            set => SetValue(PendingBrushProperty, value);
-        }
+        public Brush PendingBrush { get => (Brush)GetValue(PendingBrushProperty); set => SetValue(PendingBrushProperty, value); }
 
-        public Brush FailedBrush
-        {
-            get => (Brush)GetValue(FailedBrushProperty);
-            set => SetValue(FailedBrushProperty, value);
-        }
+        public Brush FailedBrush { get => (Brush)GetValue(FailedBrushProperty); set => SetValue(FailedBrushProperty, value); }
 
-        public Brush ConnectorBrush
-        {
-            get => (Brush)GetValue(ConnectorBrushProperty);
-            set => SetValue(ConnectorBrushProperty, value);
-        }
+        public Brush ConnectorBrush { get => (Brush)GetValue(ConnectorBrushProperty); set => SetValue(ConnectorBrushProperty, value); }
 
-        public Brush TextBrush
-        {
-            get => (Brush)GetValue(TextBrushProperty);
-            set => SetValue(TextBrushProperty, value);
-        }
+        public Brush TextBrush { get => (Brush)GetValue(TextBrushProperty); set => SetValue(TextBrushProperty, value); }
 
-        public Brush SubtitleBrush
-        {
-            get => (Brush)GetValue(SubtitleBrushProperty);
-            set => SetValue(SubtitleBrushProperty, value);
-        }
+        public Brush SubtitleBrush { get => (Brush)GetValue(SubtitleBrushProperty); set => SetValue(SubtitleBrushProperty, value); }
 
-        public double NodeRadius
-        {
-            get => (double)GetValue(NodeRadiusProperty);
-            set => SetValue(NodeRadiusProperty, value);
-        }
+        public double NodeRadius { get => (double)GetValue(NodeRadiusProperty); set => SetValue(NodeRadiusProperty, value); }
 
-        public Orientation Orientation
-        {
-            get => (Orientation)GetValue(OrientationProperty);
-            set => SetValue(OrientationProperty, value);
-        }
+        public Orientation Orientation { get => (Orientation)GetValue(OrientationProperty); set => SetValue(OrientationProperty, value); }
 
         static readonly Typeface TitleTypeface = new(new FontFamily("Segoe UI, Arial"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
         static readonly Typeface SubtitleTypeface = new(new FontFamily("Segoe UI, Arial"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
@@ -2024,71 +1712,27 @@ namespace CalradiaForge.Desktop.Presentation
             DefaultLabel.Freeze();
         }
 
-        public double TotalDuration
-        {
-            get => (double)GetValue(TotalDurationProperty);
-            set => SetValue(TotalDurationProperty, value);
-        }
+        public double TotalDuration { get => (double)GetValue(TotalDurationProperty); set => SetValue(TotalDurationProperty, value); }
 
-        public double CurrentTime
-        {
-            get => (double)GetValue(CurrentTimeProperty);
-            set => SetValue(CurrentTimeProperty, value);
-        }
+        public double CurrentTime { get => (double)GetValue(CurrentTimeProperty); set => SetValue(CurrentTimeProperty, value); }
 
-        public double MajorInterval
-        {
-            get => (double)GetValue(MajorIntervalProperty);
-            set => SetValue(MajorIntervalProperty, value);
-        }
+        public double MajorInterval { get => (double)GetValue(MajorIntervalProperty); set => SetValue(MajorIntervalProperty, value); }
 
-        public double MinorInterval
-        {
-            get => (double)GetValue(MinorIntervalProperty);
-            set => SetValue(MinorIntervalProperty, value);
-        }
+        public double MinorInterval { get => (double)GetValue(MinorIntervalProperty); set => SetValue(MinorIntervalProperty, value); }
 
-        public string UnitLabel
-        {
-            get => (string)GetValue(UnitLabelProperty);
-            set => SetValue(UnitLabelProperty, value);
-        }
+        public string UnitLabel { get => (string)GetValue(UnitLabelProperty); set => SetValue(UnitLabelProperty, value); }
 
-        public bool ShowLabels
-        {
-            get => (bool)GetValue(ShowLabelsProperty);
-            set => SetValue(ShowLabelsProperty, value);
-        }
+        public bool ShowLabels { get => (bool)GetValue(ShowLabelsProperty); set => SetValue(ShowLabelsProperty, value); }
 
-        public Brush RulerBrush
-        {
-            get => (Brush)GetValue(RulerBrushProperty);
-            set => SetValue(RulerBrushProperty, value);
-        }
+        public Brush RulerBrush { get => (Brush)GetValue(RulerBrushProperty); set => SetValue(RulerBrushProperty, value); }
 
-        public Brush TickBrush
-        {
-            get => (Brush)GetValue(TickBrushProperty);
-            set => SetValue(TickBrushProperty, value);
-        }
+        public Brush TickBrush { get => (Brush)GetValue(TickBrushProperty); set => SetValue(TickBrushProperty, value); }
 
-        public Brush MarkerBrush
-        {
-            get => (Brush)GetValue(MarkerBrushProperty);
-            set => SetValue(MarkerBrushProperty, value);
-        }
+        public Brush MarkerBrush { get => (Brush)GetValue(MarkerBrushProperty); set => SetValue(MarkerBrushProperty, value); }
 
-        public Brush LabelBrush
-        {
-            get => (Brush)GetValue(LabelBrushProperty);
-            set => SetValue(LabelBrushProperty, value);
-        }
+        public Brush LabelBrush { get => (Brush)GetValue(LabelBrushProperty); set => SetValue(LabelBrushProperty, value); }
 
-        public string MarkerLabel
-        {
-            get => (string)GetValue(MarkerLabelProperty);
-            set => SetValue(MarkerLabelProperty, value);
-        }
+        public string MarkerLabel { get => (string)GetValue(MarkerLabelProperty); set => SetValue(MarkerLabelProperty, value); }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {

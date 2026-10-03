@@ -152,23 +152,11 @@ internal sealed class WorkshopEnterpriseItemViewModel
         };
         double economicCycleTimelineDays = 18.0;
 
-        public IReadOnlyList<ForgeStepItem> ProductionChainPipelineSteps
-        {
-            get => productionChainPipelineSteps;
-            set => Set(ref productionChainPipelineSteps, value);
-        }
+        public IReadOnlyList<ForgeStepItem> ProductionChainPipelineSteps { get => productionChainPipelineSteps; set => Set(ref productionChainPipelineSteps, value); }
 
-        public IReadOnlyList<double> EnterpriseProfitMarginTrajectory
-        {
-            get => enterpriseProfitMarginTrajectory;
-            set => Set(ref enterpriseProfitMarginTrajectory, value);
-        }
+        public IReadOnlyList<double> EnterpriseProfitMarginTrajectory { get => enterpriseProfitMarginTrajectory; set => Set(ref enterpriseProfitMarginTrajectory, value); }
 
-        public double EconomicCycleTimelineDays
-        {
-            get => economicCycleTimelineDays;
-            set => Set(ref economicCycleTimelineDays, value);
-        }
+        public double EconomicCycleTimelineDays { get => economicCycleTimelineDays; set => Set(ref economicCycleTimelineDays, value); }
 
         void RecalculateEconomy()
         {
@@ -991,23 +979,11 @@ internal sealed class WorkshopEnterpriseItemViewModel
         };
         double episodicTimelineHours = 24.0;
 
-        public IReadOnlyList<ForgeStepItem> CognitiveConsolidationPipelineSteps
-        {
-            get => cognitiveConsolidationPipelineSteps;
-            set => Set(ref cognitiveConsolidationPipelineSteps, value);
-        }
+        public IReadOnlyList<ForgeStepItem> CognitiveConsolidationPipelineSteps { get => cognitiveConsolidationPipelineSteps; set => Set(ref cognitiveConsolidationPipelineSteps, value); }
 
-        public IReadOnlyList<double> MemoryUtilityDecayCurve
-        {
-            get => memoryUtilityDecayCurve;
-            set => Set(ref memoryUtilityDecayCurve, value);
-        }
+        public IReadOnlyList<double> MemoryUtilityDecayCurve { get => memoryUtilityDecayCurve; set => Set(ref memoryUtilityDecayCurve, value); }
 
-        public double EpisodicTimelineHours
-        {
-            get => episodicTimelineHours;
-            set => Set(ref episodicTimelineHours, value);
-        }
+        public double EpisodicTimelineHours { get => episodicTimelineHours; set => Set(ref episodicTimelineHours, value); }
 
         void UpdateDecayTrajectory()
         {

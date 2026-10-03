@@ -70,24 +70,12 @@ internal sealed class SecurityRuleCheckViewModel
             98.5, 99.0, 99.2, 99.5, 99.8, 100.0, 100.0, 100.0, 99.9, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0
         };
 
-        public IReadOnlyList<ForgeStepItem> SecurityAuditPipelineSteps
-        {
-            get => securityAuditPipelineSteps;
-            set => Set(ref securityAuditPipelineSteps, value);
-        }
+        public IReadOnlyList<ForgeStepItem> SecurityAuditPipelineSteps { get => securityAuditPipelineSteps; set => Set(ref securityAuditPipelineSteps, value); }
 
-        public IReadOnlyList<double> SecurityRiskDensityTrajectory
-        {
-            get => securityRiskDensityTrajectory;
-            set => Set(ref securityRiskDensityTrajectory, value);
-        }
+        public IReadOnlyList<double> SecurityRiskDensityTrajectory { get => securityRiskDensityTrajectory; set => Set(ref securityRiskDensityTrajectory, value); }
 
         double auditScanElapsedMs = 84.5;
-        public double AuditScanElapsedMs
-        {
-            get => auditScanElapsedMs;
-            set => Set(ref auditScanElapsedMs, value);
-        }
+        public double AuditScanElapsedMs { get => auditScanElapsedMs; set => Set(ref auditScanElapsedMs, value); }
 
         public SecurityRuleCheckViewModel RuleACheck { get; private set; }
         public SecurityRuleCheckViewModel RuleBCheck { get; private set; }
@@ -332,24 +320,12 @@ internal sealed class SecurityRuleCheckViewModel
             12.4, 14.8, 15.2, 13.5, 16.0, 15.8, 18.2, 22.4, 21.0, 24.5, 23.8, 25.1, 26.0, 28.4, 27.5, 29.0
         };
 
-        public IReadOnlyList<ForgeStepItem> ModuleResolutionPipelineSteps
-        {
-            get => moduleResolutionPipelineSteps;
-            set => Set(ref moduleResolutionPipelineSteps, value);
-        }
+        public IReadOnlyList<ForgeStepItem> ModuleResolutionPipelineSteps { get => moduleResolutionPipelineSteps; set => Set(ref moduleResolutionPipelineSteps, value); }
 
-        public IReadOnlyList<double> ModuleLoadLatencyTrajectory
-        {
-            get => moduleLoadLatencyTrajectory;
-            set => Set(ref moduleLoadLatencyTrajectory, value);
-        }
+        public IReadOnlyList<double> ModuleLoadLatencyTrajectory { get => moduleLoadLatencyTrajectory; set => Set(ref moduleLoadLatencyTrajectory, value); }
 
         double bootSequenceElapsedMs = 460.0;
-        public double BootSequenceElapsedMs
-        {
-            get => bootSequenceElapsedMs;
-            set => Set(ref bootSequenceElapsedMs, value);
-        }
+        public double BootSequenceElapsedMs { get => bootSequenceElapsedMs; set => Set(ref bootSequenceElapsedMs, value); }
 
         public ModulePipelineNodeViewModel SelectedModule
         {
@@ -710,23 +686,11 @@ internal sealed class SecurityRuleCheckViewModel
         };
         double treatyTruceTimelineDays = 45.0;
 
-        public IReadOnlyList<ForgeStepItem> DiplomaticResolutionPipelineSteps
-        {
-            get => diplomaticResolutionPipelineSteps;
-            set => Set(ref diplomaticResolutionPipelineSteps, value);
-        }
+        public IReadOnlyList<ForgeStepItem> DiplomaticResolutionPipelineSteps { get => diplomaticResolutionPipelineSteps; set => Set(ref diplomaticResolutionPipelineSteps, value); }
 
-        public IReadOnlyList<double> GeopoliticalTensionTrajectory
-        {
-            get => geopoliticalTensionTrajectory;
-            set => Set(ref geopoliticalTensionTrajectory, value);
-        }
+        public IReadOnlyList<double> GeopoliticalTensionTrajectory { get => geopoliticalTensionTrajectory; set => Set(ref geopoliticalTensionTrajectory, value); }
 
-        public double TreatyTruceTimelineDays
-        {
-            get => treatyTruceTimelineDays;
-            set => Set(ref treatyTruceTimelineDays, value);
-        }
+        public double TreatyTruceTimelineDays { get => treatyTruceTimelineDays; set => Set(ref treatyTruceTimelineDays, value); }
 
         void RecalculateDiplomacy()
         {

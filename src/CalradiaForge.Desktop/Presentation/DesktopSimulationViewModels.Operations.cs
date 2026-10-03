@@ -102,24 +102,12 @@ internal sealed class BlueprintNodeViewModel
             18.0, 22.5, 25.0, 28.4, 30.2, 35.0, 42.0, 45.8, 50.2, 54.0, 60.5, 62.0, 68.4, 72.0, 75.5, 80.0
         };
 
-        public IReadOnlyList<ForgeStepItem> BlueprintSynthesisPipelineSteps
-        {
-            get => blueprintSynthesisPipelineSteps;
-            set => Set(ref blueprintSynthesisPipelineSteps, value);
-        }
+        public IReadOnlyList<ForgeStepItem> BlueprintSynthesisPipelineSteps { get => blueprintSynthesisPipelineSteps; set => Set(ref blueprintSynthesisPipelineSteps, value); }
 
-        public IReadOnlyList<double> SynthesisThroughputTrajectory
-        {
-            get => synthesisThroughputTrajectory;
-            set => Set(ref synthesisThroughputTrajectory, value);
-        }
+        public IReadOnlyList<double> SynthesisThroughputTrajectory { get => synthesisThroughputTrajectory; set => Set(ref synthesisThroughputTrajectory, value); }
 
         double synthesisElapsedMs = 28.5;
-        public double SynthesisElapsedMs
-        {
-            get => synthesisElapsedMs;
-            set => Set(ref synthesisElapsedMs, value);
-        }
+        public double SynthesisElapsedMs { get => synthesisElapsedMs; set => Set(ref synthesisElapsedMs, value); }
 
         public string MixerCategoryStatus => "Mixer Buses: ui (2D Interface), mission_combat (3D Combat) & ambient";
         public string FormatCompliance => "Vorbis .OGG / 16-bit 44.1kHz PCM Zero-Latency Decoding";
@@ -136,17 +124,9 @@ internal sealed class BlueprintNodeViewModel
             }
         }
 
-        public string GeneratedXmlPreview
-        {
-            get => generatedXmlPreview;
-            set => Set(ref generatedXmlPreview, value);
-        }
+        public string GeneratedXmlPreview { get => generatedXmlPreview; set => Set(ref generatedXmlPreview, value); }
 
-        public string XmlCopyFeedback
-        {
-            get => xmlCopyFeedback;
-            set => Set(ref xmlCopyFeedback, value);
-        }
+        public string XmlCopyFeedback { get => xmlCopyFeedback; set => Set(ref xmlCopyFeedback, value); }
 
         public BlueprintNodeViewModel SelectedBlueprint
         {
@@ -591,23 +571,11 @@ internal sealed class BlueprintNodeViewModel
         public double SiegeBreachGaugeValue { get => siegeBreachGaugeValue; private set => Set(ref siegeBreachGaugeValue, value); }
         public double CombatReadinessGauge => 89.2;
 
-        public IReadOnlyList<ForgeStepItem> BattleDoctrinePipelineSteps
-        {
-            get => battleDoctrinePipelineSteps;
-            set => Set(ref battleDoctrinePipelineSteps, value);
-        }
+        public IReadOnlyList<ForgeStepItem> BattleDoctrinePipelineSteps { get => battleDoctrinePipelineSteps; set => Set(ref battleDoctrinePipelineSteps, value); }
 
-        public double BattlePhaseElapsedMinutes
-        {
-            get => battlePhaseElapsedMinutes;
-            set => Set(ref battlePhaseElapsedMinutes, value);
-        }
+        public double BattlePhaseElapsedMinutes { get => battlePhaseElapsedMinutes; set => Set(ref battlePhaseElapsedMinutes, value); }
 
-        public IReadOnlyList<double> CombatPressureTrajectory
-        {
-            get => combatPressureTrajectory;
-            set => Set(ref combatPressureTrajectory, value);
-        }
+        public IReadOnlyList<double> CombatPressureTrajectory { get => combatPressureTrajectory; set => Set(ref combatPressureTrajectory, value); }
 
         public void CycleScenario(int index)
         {
@@ -805,23 +773,11 @@ internal sealed class BlueprintNodeViewModel
         public double RouteSecurityGauge => 84.5;
         public double MarketLiquidityGauge => 78.0;
 
-        public IReadOnlyList<ForgeStepItem> CaravanExpeditionPipelineSteps
-        {
-            get => caravanExpeditionPipelineSteps;
-            set => Set(ref caravanExpeditionPipelineSteps, value);
-        }
+        public IReadOnlyList<ForgeStepItem> CaravanExpeditionPipelineSteps { get => caravanExpeditionPipelineSteps; set => Set(ref caravanExpeditionPipelineSteps, value); }
 
-        public double RouteTransitDays
-        {
-            get => routeTransitDays;
-            set => Set(ref routeTransitDays, value);
-        }
+        public double RouteTransitDays { get => routeTransitDays; set => Set(ref routeTransitDays, value); }
 
-        public IReadOnlyList<double> ArbitrageYieldTrajectory
-        {
-            get => arbitrageYieldTrajectory;
-            set => Set(ref arbitrageYieldTrajectory, value);
-        }
+        public IReadOnlyList<double> ArbitrageYieldTrajectory { get => arbitrageYieldTrajectory; set => Set(ref arbitrageYieldTrajectory, value); }
 
         public void CycleScenario(int index)
         {
@@ -1343,23 +1299,11 @@ internal sealed class BlueprintNodeViewModel
         };
         double currentPacketTimestamp = 42.5;
 
-        public IReadOnlyList<ForgeStepItem> PipeConnectionPipelineSteps
-        {
-            get => pipeConnectionPipelineSteps;
-            set => Set(ref pipeConnectionPipelineSteps, value);
-        }
+        public IReadOnlyList<ForgeStepItem> PipeConnectionPipelineSteps { get => pipeConnectionPipelineSteps; set => Set(ref pipeConnectionPipelineSteps, value); }
 
-        public IReadOnlyList<double> PipeEventThroughputTrajectory
-        {
-            get => pipeEventThroughputTrajectory;
-            set => Set(ref pipeEventThroughputTrajectory, value);
-        }
+        public IReadOnlyList<double> PipeEventThroughputTrajectory { get => pipeEventThroughputTrajectory; set => Set(ref pipeEventThroughputTrajectory, value); }
 
-        public double CurrentPacketTimestamp
-        {
-            get => currentPacketTimestamp;
-            set => Set(ref currentPacketTimestamp, value);
-        }
+        public double CurrentPacketTimestamp { get => currentPacketTimestamp; set => Set(ref currentPacketTimestamp, value); }
 
         public double MemoryGaugeValue { get => memoryGaugeValue; private set => Set(ref memoryGaugeValue, value); }
         public double RingBufferGaugeValue { get => ringBufferGaugeValue; private set => Set(ref ringBufferGaugeValue, value); }

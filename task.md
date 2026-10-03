@@ -743,4 +743,5 @@
 - [x] Fase 3 (Core/SDK): Compactar constructores y diccionarios declarativos en `ForgeAnalysisCatalog.cs` y `ForgeNoviceHub.cs`.
 - [x] Fase 4 (Validación): Verificar compilación Release (0 advertencias/errores), gate stateless (4/4) y suites completas BAT (Core 420/420, ForgeWeave 73/73, Desktop 67/67, Render 296/296).
 - [x] Fase 4 (Auditoría): Verificar autoría estricta de sesión en `git status` y cumplir con el flujo de entrega.
+- [x] Fase 5 (Reducción Neta Efectiva): Refactorizar y compactar `EngineReflectionProbe.cs`, `ForgeChartControls.cs`, `PanelViewModel.cs`, y ViewModels de Desktop (`Operations.cs`, `Security.cs`, `Workshop.cs`) logrando una reducción neta de -600 líneas de código (236 adiciones frente a 836 eliminaciones) preservando el 100% de características, bindings de Gauntlet y APIs públicas.
 
