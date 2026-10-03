@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>CalradiaForge.LegacySdkV12.Consumer</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../CalradiaForge.LegacySdkV12.Contracts/CalradiaForge.LegacySdkV12.Contracts.csproj" />
+  </ItemGroup>
+</Project>

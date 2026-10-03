@@ -87,6 +87,7 @@ namespace CalradiaForge.Desktop.Presentation
         public bool IsBusy { get => isBusy; private set { if (Set(ref isBusy, value)) RefreshCommandStates(); } }
         public bool IsConfirmationChecked { get => isConfirmationChecked; set { if (Set(ref isConfirmationChecked, value)) ConfirmPlanCommand.NotifyCanExecuteChanged(); } }
         public bool HasPendingPlan => pendingPlan != null;
+        public bool CanChangeSelection => !disposed && !IsBusy && !HasPendingPlan;
         public bool IsConnected => session.IsConnected;
         public bool SupportsHookProtocol => RequiredCapabilities.All(session.Supports);
         public int SelectedCount => hooks.Count(item => item.IsSelected);
@@ -156,7 +157,18 @@ namespace CalradiaForge.Desktop.Presentation
         bool CanConfirmPlan() => !disposed && !IsBusy && IsConnected && pendingPlan != null &&
             pendingPlan.ExpiresAtUtc > DateTimeOffset.UtcNow && IsConfirmationChecked &&
             string.Equals(pendingPlan.Session, SessionId, StringComparison.Ordinal) &&
-            pendingPlan.RequiresConfirmation && pendingPlan.Token.Length > 0;
+            pendingPlan.RequiresConfirmation && pendingPlan.Token.Length > 0 &&
+            SelectionMatchesPlan(hooks.Where(item => item.IsSelected).Select(item => item.Id), pendingPlan.HookIds);
+
+        internal static bool SelectionMatchesPlan(IEnumerable<string> selectedIds, IReadOnlyList<string> plannedIds)
+        {
+            if (selectedIds == null || plannedIds == null) return false;
+            var selected = selectedIds.ToArray();
+            return selected.Length > 0 && selected.Length == plannedIds.Count &&
+                   selected.Distinct(StringComparer.Ordinal).Count() == selected.Length &&
+                   plannedIds.Distinct(StringComparer.Ordinal).Count() == plannedIds.Count &&
+                   new HashSet<string>(plannedIds, StringComparer.Ordinal).SetEquals(selected);
+        }
 
         bool CanVerifySelected() => !disposed && !IsBusy && !HasPendingPlan && !requiresSnapshotRefresh &&
             IsConnected && IsEligible && session.Supports("hook-verify") && SelectedCount > 0 && SelectedCount <= 32;
@@ -314,6 +326,7 @@ namespace CalradiaForge.Desktop.Presentation
                 foreach (var item in planned) plannedHooks.Add(item);
                 IsConfirmationChecked = false;
                 Raise(nameof(HasPendingPlan));
+                Raise(nameof(CanChangeSelection));
                 Raise(nameof(PendingOperation));
                 Raise(nameof(IsApplyPlan));
                 Raise(nameof(PlanWarning));
@@ -452,6 +465,7 @@ namespace CalradiaForge.Desktop.Presentation
             Raise(nameof(SupportsHookProtocol));
             Raise(nameof(CapabilityMessage));
             Raise(nameof(EligibilityText));
+            Raise(nameof(CanChangeSelection));
         }
 
         public void NotifyConnectionChanged()
@@ -536,6 +550,7 @@ namespace CalradiaForge.Desktop.Presentation
             plannedHooks.Clear();
             IsConfirmationChecked = false;
             Raise(nameof(HasPendingPlan));
+            Raise(nameof(CanChangeSelection));
             Raise(nameof(PendingOperation));
             Raise(nameof(IsApplyPlan));
             Raise(nameof(PlanWarning));

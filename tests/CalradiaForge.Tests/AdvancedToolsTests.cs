@@ -373,6 +373,7 @@ namespace CalradiaForge.Tests
             test("Gauntlet output comparison is deterministic, filtered, paged, and bounded", TestGauntletOutputComparison);
             test("Gauntlet test-results explorer parses individual and bounded batch results", TestGauntletTestResultsExplorerParser);
             test("Gauntlet test-results explorer bindings and dismissal lifecycle", TestGauntletTestResultsExplorerContracts);
+            test("Gauntlet hook picker selects only registered inventory IDs", TestGauntletHookPickerContracts);
             test("Desktop & In-Game UI error corrections (panel overlap, glyph fallback, action parity)", TestUiErrorCorrectionsAndSafety);
             test("Zero-Scroll Desktop Navigation (Accordion, ZenMode, CategoryPicker, Breadcrumbs, Recent)", TestZeroScrollDesktopInterface);
             test("Desktop Top and Bottom Panel Typography Upgrades (TitleBar, Header, Breadcrumbs, StatusBar)", TestDesktopPanelFontSizesAndLayout);
@@ -2573,6 +2574,181 @@ namespace MyCustomMod.QuestBehaviors
                         if (!generated.TryGetValue(generatedId, out string generatedValue) || generatedValue != translated)
                             throw new Exception("Generated test-results localization is stale for " + locale.Item1 + ": " + key + ".");
                     }
+                }
+            }
+        }
+
+        private static void TestGauntletHookPickerContracts()
+        {
+            string prefabPath = Path.GetFullPath("modules/CalradiaForge/GUI/Prefabs/CalradiaForge.xml");
+            string hookSource = File.ReadAllText(Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.Hooks.cs"));
+            string panelSource = File.ReadAllText(Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.cs"));
+            XDocument document = XDocument.Load(prefabPath);
+
+            var widgetIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (XElement element in document.Root.DescendantsAndSelf())
+            {
+                string id = (string)element.Attribute("Id");
+                if (!string.IsNullOrWhiteSpace(id) && !widgetIds.Add(id))
+                    throw new Exception("Gauntlet hook picker introduces duplicate widget ID " + id + ".");
+            }
+
+            XElement workbench = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeHookWorkbench");
+            XElement selectButton = document.Descendants("ButtonWidget").SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeHookSelect");
+            XElement overlay = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeHookPickerOverlay");
+            XElement navigationOverlay = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "NavigationPaletteOverlay");
+            XElement surface = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeHookPickerSurface");
+            XElement pickerPanel = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeHookPickerPanel");
+            XElement hookList = document.Descendants("ListPanel").SingleOrDefault(element => (string)element.Attribute("DataSource") == "{HookPickerItems}");
+            XElement emptyState = document.Descendants().SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeHookPickerEmptyState");
+            bool pickerReceivesAndPassesEvents = overlay != null && pickerPanel != null &&
+                !string.Equals((string)overlay.Attribute("DoNotAcceptEvents"), "true", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals((string)overlay.Attribute("DoNotPassEventsToChildren"), "true", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals((string)pickerPanel.Attribute("DoNotAcceptEvents"), "true", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals((string)pickerPanel.Attribute("DoNotPassEventsToChildren"), "true", StringComparison.OrdinalIgnoreCase);
+            if (workbench == null || (string)workbench.Attribute("IsVisible") != "@IsHookWorkbenchVisible" ||
+                selectButton == null || (string)selectButton.Attribute("Command.Click") != "ExecuteHookSelect" ||
+                (string)selectButton.Attribute("IsDisabled") != "@IsHookPickerDisabled" ||
+                overlay == null || (string)overlay.Attribute("IsVisible") != "@IsHookPickerOpen" ||
+                navigationOverlay == null || overlay.Parent == null || navigationOverlay.Parent != overlay.Parent ||
+                overlay.Parent.Elements().TakeWhile(element => element != navigationOverlay).LastOrDefault() != overlay ||
+                overlay.Parent.Elements().LastOrDefault() != navigationOverlay ||
+                !pickerReceivesAndPassesEvents ||
+                surface == null || (string)surface.Attribute("DoNotAcceptEvents") != "true" ||
+                hookList == null || emptyState == null || (string)emptyState.Attribute("IsVisible") != "@IsHookPickerEmpty" ||
+                (string)emptyState.Attribute("DoNotAcceptEvents") != "true")
+                throw new Exception("The hook picker must receive events, allow child controls, sit below the topmost navigation palette, and expose an empty state on its exclusive route.");
+
+            XElement closeButton = document.Descendants("ButtonWidget").SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeHookPickerClose");
+            XElement nextButton = document.Descendants("ButtonWidget").SingleOrDefault(element => (string)element.Attribute("Id") == "ForgeHookPickerNext");
+            XElement itemTemplate = hookList.Elements().SingleOrDefault(element => element.Name.LocalName == "ItemTemplate");
+            XElement rowButton = itemTemplate?.Descendants("ButtonWidget").SingleOrDefault();
+            if (closeButton == null || (string)closeButton.Attribute("Command.Click") != "ExecuteHookClosePicker" ||
+                nextButton == null || (string)nextButton.Attribute("Command.Click") != "ExecuteHookNext" ||
+                (string)nextButton.Attribute("IsDisabled") != "@IsHookSelectionDisabled" ||
+                itemTemplate == null || rowButton == null || (string)rowButton.Attribute("Command.Click") != "ExecuteSelect" ||
+                (string)rowButton.Attribute("IsSelected") != "@IsSelected")
+                throw new Exception("The picker needs an explicit close action and selectable registered-hook item rows.");
+            foreach (string binding in new[] { "@Id", "@Details" })
+                if (!itemTemplate.DescendantsAndSelf().Attributes().Any(attribute => attribute.Value == binding))
+                    throw new Exception("The hook item template must display binding " + binding + ".");
+
+            Type panelType = typeof(PanelViewModel);
+            foreach (string propertyName in new[] { "IsHookWorkbenchVisible", "IsHookPickerDisabled", "IsHookPickerOpen", "IsHookPickerHasItems", "IsHookPickerEmpty", "HookPickerItems" })
+            {
+                var property = panelType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (property == null || !property.GetCustomAttributesData().Any(attribute => attribute.AttributeType.Name == "DataSourceProperty"))
+                    throw new Exception("PanelViewModel must expose the hook picker binding " + propertyName + " as a Gauntlet DataSourceProperty.");
+            }
+
+            Type itemType = panelType.Assembly.GetType("CalradiaForge.Mod.HookPickerItemVM", false);
+            if (itemType == null || itemType.GetMethod("ExecuteSelect", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) == null)
+                throw new Exception("HookPickerItemVM must resolve in the mod assembly and provide the ExecuteSelect command.");
+            foreach (string propertyName in new[] { "Id", "Details", "IsSelected" })
+            {
+                var property = itemType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (property == null || !property.GetCustomAttributesData().Any(attribute => attribute.AttributeType.Name == "DataSourceProperty"))
+                    throw new Exception("HookPickerItemVM binding " + propertyName + " must be a Gauntlet DataSourceProperty.");
+            }
+
+            int selectStart = hookSource.IndexOf("internal void SelectRegisteredHookFromPicker(string id)", StringComparison.Ordinal);
+            int selectEnd = hookSource.IndexOf("internal bool IsHookPickerSelection", selectStart, StringComparison.Ordinal);
+            if (selectStart < 0 || selectEnd <= selectStart)
+                throw new Exception("Could not isolate the registered-hook picker selection guard.");
+            string selectionFlow = hookSource.Substring(selectStart, selectEnd - selectStart);
+            int registeredCheck = selectionFlow.IndexOf("HasRegisteredHookSelection(hookStatus, id)", StringComparison.Ordinal);
+            int cancellationCheck = selectionFlow.IndexOf("CancelHookPlan()", StringComparison.Ordinal);
+            int assignment = selectionFlow.IndexOf("selectedHookId = id", StringComparison.Ordinal);
+            if (!selectionFlow.Contains("!IsHookPickerOpen") || !selectionFlow.Contains("!IsHookWorkbenchVisible") ||
+                registeredCheck < 0 || cancellationCheck < 0 || assignment <= registeredCheck || assignment <= cancellationCheck)
+                throw new Exception("Picker selection must reject hidden, wrong-route, unregistered, or uncancellable selections before changing the selected ID.");
+
+            if (!hookSource.Contains("public void ExecuteHookSelect()") ||
+                !hookSource.Contains("ExecuteHookInventory();") ||
+                !hookSource.Contains("if (hookStatus == null || hookPlan != null || !IsHookWorkbenchVisible) return;") ||
+                !hookSource.Contains("IsHookPickerDisabled => !IsHookWorkbenchVisible || hookPlan != null"))
+                throw new Exception("Opening the picker must use a fresh inventory and remain unavailable while a plan is pending or the route is inactive.");
+
+            int navigationStart = panelSource.IndexOf("void SelectSection(string section, bool executeOnSelect)", StringComparison.Ordinal);
+            int navigationEnd = panelSource.IndexOf("private void RenderNavigationPaletteLanding", navigationStart, StringComparison.Ordinal);
+            if (navigationStart < 0 || navigationEnd <= navigationStart)
+                throw new Exception("Could not isolate route changes for hook-picker dismissal.");
+            string navigationFlow = panelSource.Substring(navigationStart, navigationEnd - navigationStart);
+            int routeClose = navigationFlow.IndexOf("CloseHookPickerForRouteChange();", StringComparison.Ordinal);
+            int routeChange = navigationFlow.IndexOf("current = section;", StringComparison.Ordinal);
+            if (!navigationFlow.Contains("previousSection, \"patch-preflight\"") || routeClose < 0 || routeChange <= routeClose)
+                throw new Exception("Leaving Patch Preflight must close the hook picker before the active route changes.");
+            int paletteOpenStart = panelSource.IndexOf("public void OpenNavigationPalette()", StringComparison.Ordinal);
+            int paletteOpenEnd = panelSource.IndexOf("public void CloseNavigationPalette()", paletteOpenStart, StringComparison.Ordinal);
+            if (paletteOpenStart < 0 || paletteOpenEnd <= paletteOpenStart ||
+                !panelSource.Substring(paletteOpenStart, paletteOpenEnd - paletteOpenStart).Contains("ExecuteHookClosePicker();"))
+                throw new Exception("Opening navigation must close the hook picker so the modal overlays remain mutually exclusive.");
+            int assemblyWorkbenchStart = panelSource.IndexOf("public void ExecuteOpenAssemblyWorkbench()", StringComparison.Ordinal);
+            int assemblyWorkbenchEnd = panelSource.IndexOf("public void ExecuteAssemblyList()", assemblyWorkbenchStart, StringComparison.Ordinal);
+            if (assemblyWorkbenchStart < 0 || assemblyWorkbenchEnd <= assemblyWorkbenchStart ||
+                !panelSource.Substring(assemblyWorkbenchStart, assemblyWorkbenchEnd - assemblyWorkbenchStart)
+                    .Contains("SelectSection(\"extensions\", executeOnSelect: false);"))
+                throw new Exception("Opening the assembly workbench must use the shared route transition so it dismisses the hook picker.");
+
+            int cancelStart = hookSource.IndexOf("bool CancelHookPlan()", StringComparison.Ordinal);
+            int cancelEnd = hookSource.IndexOf("void CloseHookPickerForRouteChange()", cancelStart, StringComparison.Ordinal);
+            if (cancelStart < 0 || cancelEnd <= cancelStart)
+                throw new Exception("Could not isolate hook-plan cancellation to verify fail-closed behavior.");
+            string cancelFlow = hookSource.Substring(cancelStart, cancelEnd - cancelStart);
+            int unconfirmed = cancelFlow.IndexOf("!result.Cancelled", StringComparison.Ordinal);
+            int expiryValidation = cancelFlow.IndexOf("expiry > DateTimeOffset.UtcNow", StringComparison.Ordinal);
+            int clearPlan = cancelFlow.IndexOf("hookPlan = null", StringComparison.Ordinal);
+            if (unconfirmed < 0 || expiryValidation <= unconfirmed || clearPlan <= expiryValidation)
+                throw new Exception("An unconfirmed cancellation must retain the plan lock unless its validated expiry has passed.");
+
+            var registered = new HookIpcSnapshot { Id = "fixture.hook", Owner = "fixture", TargetMethod = "Fixture.Target", State = "Registered", HasPrefix = true };
+            var status = new HookIpcStatus { Session = "fixture-session", ServiceAvailable = true, CanManage = true, Hooks = new List<HookIpcSnapshot> { registered } };
+            var registeredSelection = panelType.GetMethod("HasRegisteredHookSelection", BindingFlags.Static | BindingFlags.NonPublic);
+            if (registeredSelection == null)
+                throw new Exception("The exact registered-hook selection predicate must remain directly testable.");
+            Func<HookIpcStatus, string, bool> canSelect = (inventory, id) =>
+                (bool)registeredSelection.Invoke(null, new object[] { inventory, id });
+            if (!canSelect(status, "fixture.hook") || canSelect(status, "arbitrary.hook"))
+                throw new Exception("The selection predicate must accept an exact registered ID and reject arbitrary IDs.");
+            status.Hooks.Add(new HookIpcSnapshot { Id = "fixture.hook", Owner = "other", TargetMethod = "Fixture.Other", State = "Registered" });
+            if (canSelect(status, "fixture.hook"))
+                throw new Exception("Duplicate registered IDs must not become selectable.");
+            status.Hooks.RemoveAt(1);
+            status.CanManage = false;
+            if (canSelect(status, "fixture.hook"))
+                throw new Exception("A read-only hook inventory must not enable selection for management operations.");
+
+            string[] languages = { "en", "es", "pt", "de", "fr", "it", "pl", "ru", "tr", "zh-HANS", "zh-HANT", "ja", "ko" };
+            string labelSource = File.ReadAllText(Path.GetFullPath("localization/hook-workbench.json"));
+            string[] requiredLabels = { "Choose hook", "Choose a registered hook", "No registered hooks are available." };
+            foreach (string key in requiredLabels)
+            {
+                int keyStart = labelSource.IndexOf("\"" + key + "\"", StringComparison.Ordinal);
+                int objectStart = keyStart < 0 ? -1 : labelSource.IndexOf('{', keyStart);
+                int objectEnd = objectStart < 0 ? -1 : labelSource.IndexOf('}', objectStart);
+                string translationBlock = objectStart >= 0 && objectEnd > objectStart
+                    ? labelSource.Substring(objectStart, objectEnd - objectStart + 1)
+                    : string.Empty;
+                if (string.IsNullOrEmpty(translationBlock) ||
+                    !translationBlock.Contains("\"en\": \"" + key + "\"") ||
+                    languages.Any(language => !translationBlock.Contains("\"" + language + "\": \"")))
+                    throw new Exception("Hook picker localization must preserve the English source and all 13 supported languages for " + key + ".");
+                foreach (string language in languages)
+                {
+                    XDocument sourceDocument = XDocument.Load(Path.GetFullPath("localization/" + language + ".xml"));
+                    XElement sourceLabel = sourceDocument.Root.Elements("string").SingleOrDefault(element => (string)element.Attribute("key") == key);
+                    string translated = sourceLabel == null ? null : (string)sourceLabel.Attribute("value");
+                    if (string.IsNullOrWhiteSpace(translated) || !translationBlock.Contains("\"" + language + "\": \"" + translated + "\""))
+                        throw new Exception("Hook picker source localization is missing " + language + ": " + key + ".");
+
+                    string folder = language == "zh-HANS" ? "CNs" : language == "zh-HANT" ? "CNt" :
+                        language == "pt" ? "BR" : language == "es" ? "SP" : language == "ja" ? "JP" : language.ToUpperInvariant();
+                    XDocument generatedDocument = XDocument.Load(Path.GetFullPath("modules/CalradiaForge/ModuleData/Languages/" + folder + "/forge_strings.xml"));
+                    string id;
+                    using (SHA256 sha = SHA256.Create())
+                        id = "forge_" + BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(key))).Replace("-", string.Empty).ToLowerInvariant().Substring(0, 12);
+                    if (!generatedDocument.Descendants("string").Any(element => (string)element.Attribute("id") == id && (string)element.Attribute("text") == translated))
+                        throw new Exception("Generated Gauntlet localization is stale for " + language + ": " + key + ".");
                 }
             }
         }

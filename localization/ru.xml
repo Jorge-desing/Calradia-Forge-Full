@@ -275,6 +275,9 @@
   <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. Для замены метода Forge требуется отдельный явный запрос; объявленные типы хуков, не поддерживаемые backend, остаются метаданными. Patch Preflight работает только для чтения и не вызывает код обратных вызовов. Используйте AddNonSerializedListener, чтобы обработчики событий ForgeWeave не сериализовались." />
   <string key="Hook inventory" value="Список хуков" />
   <string key="Next hook" value="Следующий хук" />
+  <string key="Choose hook" value="Выбрать хук" />
+  <string key="Choose a registered hook" value="Выберите зарегистрированный хук" />
+  <string key="No registered hooks are available." value="Нет доступных зарегистрированных хуков." />
   <string key="Verify selected" value="Проверить выбранные" />
   <string key="Preview apply" value="Предпросмотр применения" />
   <string key="Preview revert" value="Предпросмотр отмены" />

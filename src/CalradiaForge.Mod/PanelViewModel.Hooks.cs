@@ -12,6 +12,8 @@ namespace CalradiaForge.Mod
         HookIpcStatus hookStatus;
         HookIpcPlan hookPlan;
         string selectedHookId;
+        readonly MBBindingList<HookPickerItemVM> hookPickerItems = new MBBindingList<HookPickerItemVM>();
+        bool hookPickerOpen;
         bool hookConfirmationChecked;
         string hookPlanPreview;
         float hookExpiryCheckSeconds;
@@ -20,6 +22,11 @@ namespace CalradiaForge.Mod
         [DataSourceProperty] public bool HasHookPlan => hookPlan != null;
         [DataSourceProperty] public bool HasNoHookPlan => hookPlan == null;
         [DataSourceProperty] public bool IsHookSelectionDisabled => !IsHookWorkbenchVisible || hookPlan != null || !HasRegisteredHookSelection(hookStatus, selectedHookId);
+        [DataSourceProperty] public bool IsHookPickerDisabled => !IsHookWorkbenchVisible || hookPlan != null;
+        [DataSourceProperty] public bool IsHookPickerOpen => hookPickerOpen && IsHookWorkbenchVisible;
+        [DataSourceProperty] public bool IsHookPickerHasItems => hookPickerItems.Count > 0;
+        [DataSourceProperty] public bool IsHookPickerEmpty => hookPickerItems.Count == 0;
+        [DataSourceProperty] public MBBindingList<HookPickerItemVM> HookPickerItems => hookPickerItems;
         [DataSourceProperty] public bool IsHookConfirmDisabled => !CanConfirmHookPlan();
         [DataSourceProperty] public bool HookConfirmationChecked
         {
@@ -28,6 +35,9 @@ namespace CalradiaForge.Mod
         }
         [DataSourceProperty] public string HookStatusLabel => T("Hook inventory");
         [DataSourceProperty] public string HookNextLabel => T("Next hook");
+        [DataSourceProperty] public string HookSelectLabel => T("Choose hook");
+        [DataSourceProperty] public string HookPickerTitleLabel => T("Choose a registered hook");
+        [DataSourceProperty] public string HookPickerEmptyLabel => T("No registered hooks are available.");
         [DataSourceProperty] public string HookVerifyLabel => T("Verify selected");
         [DataSourceProperty] public string HookApplyLabel => T("Preview apply");
         [DataSourceProperty] public string HookRevertLabel => T("Preview revert");
@@ -64,9 +74,47 @@ namespace CalradiaForge.Mod
             if (TryReadHookStatus(response))
             {
                 if (!hookStatus.Hooks.Any(item => item.Id == selectedHookId)) selectedHookId = hookStatus.Hooks.FirstOrDefault()?.Id;
+                NotifyHookPickerSelection();
                 response.Data = T("Selected hook") + ": " + (selectedHookId ?? "-") + "\n" + response.Data;
             }
             ShowHookResponse(response);
+        }
+
+        public void ExecuteHookSelect()
+        {
+            if (IsHookPickerDisabled) return;
+            ExecuteHookInventory();
+            if (hookStatus == null || hookPlan != null || !IsHookWorkbenchVisible) return;
+            hookPickerOpen = true;
+            OnPropertyChangedWithValue(true, nameof(IsHookPickerOpen));
+            OnPropertyChanged(nameof(IsHookPickerEmpty));
+        }
+
+        public void ExecuteHookClosePicker()
+        {
+            if (!hookPickerOpen) return;
+            hookPickerOpen = false;
+            OnPropertyChangedWithValue(false, nameof(IsHookPickerOpen));
+        }
+
+        internal void SelectRegisteredHookFromPicker(string id)
+        {
+            if (!IsHookPickerOpen || !IsHookWorkbenchVisible ||
+                !HasRegisteredHookSelection(hookStatus, id) || !CancelHookPlan()) return;
+
+            selectedHookId = id;
+            NotifyHookPickerSelection();
+            ExecuteHookClosePicker();
+            ShowHookResponse(new Response { Success = true, Data = T("Selected hook") + ": " + id });
+        }
+
+        internal bool IsHookPickerSelection(string id) =>
+            string.Equals(selectedHookId, id, StringComparison.Ordinal);
+
+        void NotifyHookPickerSelection()
+        {
+            for (int i = 0; i < hookPickerItems.Count; i++)
+                hookPickerItems[i].NotifySelectionChanged();
         }
 
         public void ExecuteHookNext()
@@ -77,6 +125,7 @@ namespace CalradiaForge.Mod
             var items = hookStatus.Hooks;
             if (items.Count != 0) selectedHookId = items[(items.FindIndex(item => item.Id == selectedHookId) + 1) % items.Count].Id;
             else selectedHookId = null;
+            NotifyHookPickerSelection();
             response.Data = T("Selected hook") + ": " + (selectedHookId ?? "-") + "\n" + response.Data;
             ShowHookResponse(response);
         }
@@ -135,6 +184,10 @@ namespace CalradiaForge.Mod
         bool TryReadHookStatus(Response response)
         {
             hookStatus = null;
+            hookPickerItems.Clear();
+            OnPropertyChanged(nameof(HookPickerItems));
+            OnPropertyChanged(nameof(IsHookPickerHasItems));
+            OnPropertyChanged(nameof(IsHookPickerEmpty));
             if (!response.Success) return false;
             try
             {
@@ -144,6 +197,12 @@ namespace CalradiaForge.Mod
                     status.Hooks.Select(item => item.Id).Distinct(StringComparer.Ordinal).Count() != status.Hooks.Count)
                     throw new InvalidOperationException("The hook inventory is missing its session or unique registered IDs.");
                 hookStatus = status;
+                hookPickerItems.Clear();
+                foreach (var item in status.Hooks)
+                    hookPickerItems.Add(new HookPickerItemVM(this, item));
+                OnPropertyChanged(nameof(HookPickerItems));
+                OnPropertyChanged(nameof(IsHookPickerHasItems));
+                OnPropertyChanged(nameof(IsHookPickerEmpty));
                 return true;
             }
             catch (Exception error) { response.Success = false; response.Error = error.Message; return false; }
@@ -190,6 +249,13 @@ namespace CalradiaForge.Mod
                     var result = Json.Deserialize<HookIpcCancelPlanResult>(response.Data);
                     if (result == null || !string.Equals(result.Session, plan.Session, StringComparison.Ordinal))
                         throw new InvalidOperationException("Hook plan cancellation did not match the preview session.");
+                    if (!result.Cancelled &&
+                        (!DateTimeOffset.TryParse(plan.ExpiresAtUtc, CultureInfo.InvariantCulture,
+                            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var expiry) ||
+                         expiry > DateTimeOffset.UtcNow))
+                        throw new InvalidOperationException("The host did not confirm cancellation; the displayed hook plan remains locked.");
+                    // A false cancellation outcome is safe to clear only after the preview's own
+                    // verified expiry. Until then, retain the token and block selection changes.
                     hookPlan = null;
                     hookPlanPreview = null;
                 }
@@ -198,5 +264,37 @@ namespace CalradiaForge.Mod
             ShowHookResponse(response);
             return hookPlan == null;
         }
+
+        void CloseHookPickerForRouteChange()
+        {
+            ExecuteHookClosePicker();
+            if (hookPlan != null) CancelHookPlan();
+        }
+    }
+
+    internal sealed class HookPickerItemVM : ViewModel
+    {
+        readonly PanelViewModel parent;
+
+        internal HookPickerItemVM(PanelViewModel owner, HookIpcSnapshot snapshot)
+        {
+            parent = owner;
+            Id = snapshot?.Id ?? string.Empty;
+            var kinds = new System.Collections.Generic.List<string>(4);
+            if (snapshot?.HasPrefix == true) kinds.Add("Prefix");
+            if (snapshot?.HasPostfix == true) kinds.Add("Postfix");
+            if (snapshot?.HasFinalizer == true) kinds.Add("Finalizer");
+            if (snapshot?.HasTranspiler == true) kinds.Add("Transpiler");
+            Details = string.Join(" · ", new[] { snapshot?.Owner ?? string.Empty, snapshot?.TargetMethod ?? string.Empty,
+                string.Join("/", kinds), snapshot?.State ?? string.Empty });
+        }
+
+        [DataSourceProperty] public string Id { get; }
+        [DataSourceProperty] public string Details { get; }
+        [DataSourceProperty] public bool IsSelected => parent != null && parent.IsHookPickerSelection(Id);
+
+        public void ExecuteSelect() => parent?.SelectRegisteredHookFromPicker(Id);
+
+        internal void NotifySelectionChanged() => OnPropertyChanged(nameof(IsSelected));
     }
 }

@@ -256,6 +256,8 @@ namespace CalradiaForge.Mod
             if (_isNavigationPaletteOpen)
                 return;
 
+            ExecuteHookClosePicker();
+
             _navigationPaletteFocusSearchRequested = false;
             OnPropertyChanged(nameof(NavigationPaletteFocusSearchRequested));
             _isNavigationPaletteOpen = true;
@@ -1603,7 +1605,7 @@ namespace CalradiaForge.Mod
 
         private static readonly string[] LayoutStatePropertyNames = new[]
         {
-            nameof(NavigationLabel), nameof(CurrentSectionLabel), nameof(SectionHelpLabel), nameof(InputLabel), nameof(IsSummaryActive), nameof(IsModulesActive),
+            nameof(NavigationLabel), nameof(CurrentSectionLabel), nameof(SectionHelpLabel), nameof(InputLabel), nameof(IsHookWorkbenchVisible), nameof(IsHookPickerOpen), nameof(IsSummaryActive), nameof(IsModulesActive),
             nameof(IsLogsActive), nameof(IsInspectorActive), nameof(IsTestsActive), nameof(IsMetricsActive),
             nameof(IsFrameworkActive), nameof(IsExtensionsActive), nameof(IsCategoryOverviewActive),
             nameof(CategoryOverviewLabel), nameof(CategoryOverviewHint), nameof(IsCategoryInspectorActive),
@@ -1632,7 +1634,7 @@ namespace CalradiaForge.Mod
 
         void Labels()
         {
-            foreach (var name in new[] { nameof(IsHookWorkbenchVisible), nameof(HookStatusLabel), nameof(HookNextLabel), nameof(HookVerifyLabel), nameof(HookApplyLabel), nameof(HookRevertLabel), nameof(HookConfirmLabel), nameof(HookCancelLabel), nameof(HookApprovalLabel) }) OnPropertyChanged(name);
+            foreach (var name in new[] { nameof(IsHookWorkbenchVisible), nameof(HookStatusLabel), nameof(HookNextLabel), nameof(HookSelectLabel), nameof(HookPickerTitleLabel), nameof(HookPickerEmptyLabel), nameof(HookVerifyLabel), nameof(HookApplyLabel), nameof(HookRevertLabel), nameof(HookConfirmLabel), nameof(HookCancelLabel), nameof(HookApprovalLabel) }) OnPropertyChanged(name);
             for (int i = 0; i < LabelPropertyNames.Length; i++)
                 OnPropertyChanged(LabelPropertyNames[i]);
             OnPropertyChanged(nameof(NavigationPaletteSearchPlaceholder));
@@ -2029,6 +2031,9 @@ namespace CalradiaForge.Mod
         void SelectSection(string section, bool executeOnSelect)
         {
             string previousSection = current;
+            if (string.Equals(previousSection, "patch-preflight", StringComparison.Ordinal) &&
+                !string.Equals(section, previousSection, StringComparison.Ordinal))
+                CloseHookPickerForRouteChange();
             if (_isTestResultsExplorerOpen && !string.Equals(current, section, StringComparison.Ordinal))
                 ExecuteCloseTestResultsExplorer();
             if (string.Equals(previousSection, "novice-gauntlet-composer", StringComparison.Ordinal)
@@ -2700,7 +2705,7 @@ namespace CalradiaForge.Mod
         public void ExecuteExtensions() => SelectSection("extensions");
         public void ExecuteOpenAssemblyWorkbench()
         {
-            current = "extensions";
+            SelectSection("extensions", executeOnSelect: false);
             currentCategory = "weave";
             _isAssemblyWorkbench = true;
             _assemblyFiles.Clear();

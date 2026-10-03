@@ -58,7 +58,18 @@
         <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="6,5" Margin="0,1">
          <Grid>
           <Grid.ColumnDefinitions><ColumnDefinition Width="34"/><ColumnDefinition Width="1.15*"/><ColumnDefinition Width="0.8*"/><ColumnDefinition Width="1.8*"/><ColumnDefinition Width="1.7*"/><ColumnDefinition Width="0.65*"/></Grid.ColumnDefinitions>
-          <CheckBox AutomationProperties.Name="{Binding Id}" IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding IsSelectable}" IsTabStop="True" VerticalAlignment="Top" HorizontalAlignment="Center" ToolTip="{Binding Id}"/>
+          <CheckBox AutomationProperties.Name="{Binding Id}" IsChecked="{Binding IsSelected, Mode=TwoWay}" IsTabStop="True" VerticalAlignment="Top" HorizontalAlignment="Center" ToolTip="{Binding Id}">
+           <CheckBox.Style>
+            <Style TargetType="{x:Type CheckBox}">
+             <Setter Property="IsEnabled" Value="{Binding IsSelectable}"/>
+             <Style.Triggers>
+              <DataTrigger Binding="{Binding DataContext.CanChangeSelection, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" Value="False">
+               <Setter Property="IsEnabled" Value="False"/>
+              </DataTrigger>
+             </Style.Triggers>
+            </Style>
+           </CheckBox.Style>
+          </CheckBox>
           <StackPanel Grid.Column="1">
            <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Id}" TextWrapping="Wrap"/>
            <TextBlock FontSize="9" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding HookKinds}" TextWrapping="Wrap"/>

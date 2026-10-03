@@ -43,6 +43,12 @@ internal static class HookWorkbenchUtilityTests
         vm.TypeFilter = "transpiler";
         Require(vm.FilteredHooks.Single().Id == "one", "Type filter must include Transpiler.");
         Require(!vm.VerifySelectedCommand.CanExecute(null), "Disconnected Verify must be disabled.");
+        Require(vm.CanChangeSelection, "Selection must remain editable before a plan is created.");
+        Require(HookWorkbenchViewModel.SelectionMatchesPlan(["one"], ["one"]), "The exact selected-ID set must match its plan.");
+        Require(!HookWorkbenchViewModel.SelectionMatchesPlan(["two"], ["one"]), "Confirmation must reject a selection that differs from the plan IDs.");
+        Require(!HookWorkbenchViewModel.SelectionMatchesPlan(["one", "two"], ["one"]), "Confirmation must reject additional selected IDs.");
+        vm.Hooks[1].IsSelected = false;
+        vm.Hooks[0].IsSelected = true;
 
         var expiry = DateTimeOffset.UtcNow.AddSeconds(40).ToString("O");
         var plan = JsonSerializer.Serialize(new { operation = "apply", session = "test", token = "one-use",
@@ -66,7 +72,8 @@ internal static class HookWorkbenchUtilityTests
                 null, [], [], "Registered", ""));
         typeof(HookWorkbenchViewModel).GetField("pendingPlan", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(vm,
             new HookPlan("apply", "test", "preview-only", DateTimeOffset.UtcNow.AddSeconds(40), true,
-                vm.PlannedHooks.Select(row => row.Id).ToArray()));
+                ["one"]));
+        Require(!vm.CanChangeSelection, "A pending plan must lock selection changes.");
         var control = new HookWorkbenchControl { DataContext = vm };
         control.Measure(new Size(960, 600));
         control.Arrange(new Rect(0, 0, 960, 600));
@@ -84,6 +91,13 @@ internal static class HookWorkbenchUtilityTests
         foreach (var text in new[] { longId + "0", longOwner, longTarget })
             Require(elements.OfType<TextBlock>().Any(item => item.Text == text && item.TextWrapping == TextWrapping.Wrap),
                 "Preview must retain and wrap complete ID, owner, and target metadata.");
+        var registeredSelection = elements.OfType<CheckBox>().SingleOrDefault(item => AutomationProperties.GetName(item) == "one");
+        Require(registeredSelection != null && !registeredSelection.IsEnabled,
+            "The registered-hook selector must be disabled while its plan is pending.");
+        typeof(HookWorkbenchViewModel).GetMethod("ClearPendingPlan", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(vm, null);
+        control.UpdateLayout();
+        Require(vm.CanChangeSelection && registeredSelection.IsEnabled,
+            "Clearing a pending plan must notify the view and re-enable registered-hook selection.");
         typeof(HookWorkbenchViewModel).GetMethod("ReplaceHooks", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(vm, [Array.Empty<HookWorkbenchRow>()]);
         Require(vm.EmptyInventoryMessage == "No registered hooks are available in this session.", "An empty inventory must retain its explicit empty state.");
     }

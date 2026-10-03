@@ -436,9 +436,10 @@ button(quick_actions,'Run','@RunLabel','@PrimaryActionButtonWidth',height=42,bru
 hook_host=E.SubElement(E.SubElement(quick_host,'Children'),'Widget',Id='ForgeHookWorkbench',IsVisible='@IsHookWorkbenchVisible',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent')
 hook_children=E.SubElement(hook_host,'Children')
 hook_actions=E.SubElement(E.SubElement(hook_children,'ListPanel',Id='ForgeHookActions',IsVisible='@HasNoHookPlan',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
-for cmd,label in [('HookInventory','HookStatus'),('HookNext','HookNext'),('HookVerify','HookVerify'),('HookApplyPlan','HookApply'),('HookRevertPlan','HookRevert')]:
+for cmd,label in [('HookInventory','HookStatus'),('HookSelect','HookSelect'),('HookVerify','HookVerify'),('HookApplyPlan','HookApply'),('HookRevertPlan','HookRevert')]:
     hook_button=button(hook_actions,cmd,'@'+label+'Label','@PrimaryActionButtonWidth',height=42)
-    if cmd not in ('HookInventory','HookNext'): hook_button.set('IsDisabled','@IsHookSelectionDisabled')
+    if cmd == 'HookSelect': hook_button.set('IsDisabled','@IsHookPickerDisabled')
+    elif cmd != 'HookInventory': hook_button.set('IsDisabled','@IsHookSelectionDisabled')
 hook_confirm=E.SubElement(E.SubElement(hook_children,'ListPanel',Id='ForgeHookConfirmation',IsVisible='@HasHookPlan',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',**{'StackLayout.LayoutMethod':'HorizontalLeftToRight'}),'Children')
 hook_check=E.SubElement(hook_confirm,'ToggleButtonWidget',Id='ForgeHookApproval',IsSelected='@HookConfirmationChecked',IsFocusable='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='240',SuggestedHeight='42',Brush='CalradiaForge.TacticalButton')
 E.SubElement(E.SubElement(hook_check,'Children'),'TextWidget',Text='@HookApprovalLabel',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.ButtonText',HorizontalAlignment='Center',VerticalAlignment='Center')
@@ -965,6 +966,30 @@ E.SubElement(results_list_children,'TextWidget',Id='TestResultsExplorerEmptyMess
 scrollbar(results_detail_children,'TestResultsExplorerDetailScrollBar',54,12,4)
 
 
+hook_picker_overlay=E.SubElement(children,'Widget',Id='ForgeHookPickerOverlay',IsVisible='@IsHookPickerOpen',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Sprite='BlankWhiteSquare_9',Color='#000000C8')
+hook_picker_panel=E.SubElement(E.SubElement(hook_picker_overlay,'Children'),'Widget',Id='ForgeHookPickerPanel',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',SuggestedWidth='980',SuggestedHeight='780',MaxWidth='1100',MaxHeight='860',HorizontalAlignment='Center',VerticalAlignment='Center',MarginLeft='42',MarginRight='42',MarginTop='42',MarginBottom='42',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
+hook_picker_surface=E.SubElement(E.SubElement(hook_picker_panel,'Children'),'Widget',Id='ForgeHookPickerSurface',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginRight='1',MarginTop='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0D1511FF')
+hook_picker_children=E.SubElement(hook_picker_surface,'Children')
+hook_picker_header=E.SubElement(hook_picker_children,'Widget',Id='ForgeHookPickerHeader',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='48',MarginLeft='22',MarginRight='22',MarginTop='16')
+hook_picker_header_children=E.SubElement(hook_picker_header,'Children')
+E.SubElement(hook_picker_header_children,'TextWidget',Id='ForgeHookPickerTitle',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginRight='216',Brush='CalradiaForge.HeaderGold',Text='@HookPickerTitleLabel',VerticalAlignment='Center',**{'Brush.FontSize':'25'})
+hook_picker_next=E.SubElement(hook_picker_header_children,'ButtonWidget',Id='ForgeHookPickerNext',IsFocusable='true',IsDisabled='@IsHookSelectionDisabled',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='150',SuggestedHeight='42',HorizontalAlignment='Right',VerticalAlignment='Center',MarginRight='52',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteHookNext','Hint.HintText':'@HookNextLabel'})
+E.SubElement(E.SubElement(hook_picker_next,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.ButtonText',Text='@HookNextLabel',HorizontalAlignment='Center',VerticalAlignment='Center',**{'Brush.FontSize':'14'})
+hook_picker_close=E.SubElement(hook_picker_header_children,'ButtonWidget',Id='ForgeHookPickerClose',IsFocusable='true',DoNotPassEventsToChildren='true',WidthSizePolicy='Fixed',HeightSizePolicy='Fixed',SuggestedWidth='46',SuggestedHeight='42',HorizontalAlignment='Right',VerticalAlignment='Center',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteHookClosePicker','Hint.HintText':'@HookCancelLabel'})
+E.SubElement(E.SubElement(hook_picker_close,'Children'),'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Brush='CalradiaForge.ButtonText',Text='×',HorizontalAlignment='Center',VerticalAlignment='Center',**{'Brush.FontSize':'22'})
+hook_picker_scroll=E.SubElement(hook_picker_children,'ScrollablePanel',Id='ForgeHookPickerScroll',IsVisible='@IsHookPickerHasItems',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',AutoHideScrollBars='true',MarginLeft='22',MarginRight='32',MarginTop='78',MarginBottom='24',ClipRect='ForgeHookPickerClip',InnerPanel='ForgeHookPickerClip\\ForgeHookPickerItems',VerticalScrollbar='..\\ForgeHookPickerScrollBar')
+hook_picker_scroll_children=E.SubElement(hook_picker_scroll,'Children')
+hook_picker_clip=E.SubElement(hook_picker_scroll_children,'Widget',Id='ForgeHookPickerClip',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',ClipContents='true')
+hook_picker_list=E.SubElement(E.SubElement(hook_picker_clip,'Children'),'ListPanel',Id='ForgeHookPickerItems',DataSource='{HookPickerItems}',WidthSizePolicy='StretchToParent',HeightSizePolicy='CoverChildren',**{'StackLayout.LayoutMethod':'VerticalTopToBottom'})
+hook_picker_template=E.SubElement(hook_picker_list,'ItemTemplate')
+hook_picker_row=E.SubElement(hook_picker_template,'ButtonWidget',IsFocusable='true',IsSelected='@IsSelected',DoNotPassEventsToChildren='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='66',MarginBottom='5',Brush='CalradiaForge.TacticalButton',**{'Command.Click':'ExecuteSelect'})
+hook_picker_row_children=E.SubElement(hook_picker_row,'Children')
+E.SubElement(hook_picker_row_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='27',MarginLeft='14',MarginRight='14',MarginTop='5',Brush='CalradiaForge.HeaderGold',Text='@Id',VerticalAlignment='Center',**{'Brush.FontSize':'17'})
+E.SubElement(hook_picker_row_children,'TextWidget',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='25',MarginLeft='14',MarginRight='14',MarginTop='34',Brush='CalradiaForge.Muted',Text='@Details',VerticalAlignment='Center',ClipContents='true',**{'Brush.FontSize':'13'})
+scrollbar(hook_picker_children,'ForgeHookPickerScrollBar',78,24,22,10)
+hook_picker_empty=E.SubElement(hook_picker_children,'Widget',Id='ForgeHookPickerEmptyState',IsVisible='@IsHookPickerEmpty',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='22',MarginRight='32',MarginTop='78',MarginBottom='24')
+E.SubElement(E.SubElement(hook_picker_empty,'Children'),'TextWidget',Id='ForgeHookPickerEmptyMessage',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='56',Brush='CalradiaForge.Muted',Text='@HookPickerEmptyLabel',HorizontalAlignment='Center',VerticalAlignment='Center',**{'Brush.FontSize':'17'})
+
 palette_overlay=E.SubElement(children,'Widget',Id='NavigationPaletteOverlay',IsVisible='@IsNavigationPaletteOpen',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',Sprite='BlankWhiteSquare_9',Color='#000000B8')
 palette_panel=E.SubElement(E.SubElement(palette_overlay,'Children'),'Widget',Id='NavigationPalettePanel',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',SuggestedWidth='920',SuggestedHeight='760',MaxWidth='980',MaxHeight='780',HorizontalAlignment='Center',VerticalAlignment='Center',MarginLeft='48',MarginRight='48',MarginTop='48',MarginBottom='48',Sprite='BlankWhiteSquare_9',Color='#C7A45AFF')
 palette_surface=E.SubElement(E.SubElement(palette_panel,'Children'),'Widget',Id='NavigationPaletteSurface',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='StretchToParent',MarginLeft='1',MarginRight='1',MarginTop='1',MarginBottom='1',Sprite='BlankWhiteSquare_9',Color='#0D1511FF')
@@ -1003,13 +1028,11 @@ palette_empty=E.SubElement(palette_children,'Widget',Id='NavigationPaletteEmptyS
 E.SubElement(E.SubElement(palette_empty,'Children'),'TextWidget',Id='NavigationPaletteEmptyMessage',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='54',Brush='CalradiaForge.Muted',Text='@NavigationPaletteEmptyLabel',HorizontalAlignment='Center',VerticalAlignment='Center',**{'Brush.FontSize':'17'})
 E.SubElement(palette_children,'TextWidget',Id='NavigationPaletteKeyboardHint',DoNotAcceptEvents='true',WidthSizePolicy='StretchToParent',HeightSizePolicy='Fixed',SuggestedHeight='28',MarginLeft='20',MarginRight='20',MarginBottom='12',VerticalAlignment='Bottom',Brush='CalradiaForge.Muted',Text='@NavigationPaletteNavigationHint',**{'Brush.FontSize':'14'})
 
-
 write_xml(ROOT/'modules/CalradiaForge/GUI/Prefabs/CalradiaForge.xml',root)
 
 if PREFAB_ONLY:
-    print('Generated the Calradia Forge Gauntlet prefab only.')
-    sys.exit(0)
-if GAUNTLET_ONLY:
+    print('Generated the Gauntlet prefab; refreshing generated language catalogs without touching sprite assets.')
+elif GAUNTLET_ONLY:
     print('Generated Calradia Forge Gauntlet textures and prefab.')
 else:
     print('Generated manifests and the Calradia Forge Gauntlet prefab.')

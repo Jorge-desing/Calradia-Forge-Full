@@ -947,6 +947,16 @@ internal static class Program
               xaml.Contains("AutomationProperties.AutomationId=\"HookApplyPartialWarning\"") &&
               viewModel.Contains("Ui.HooksApplyPartialWarning"),
             "The hook workbench must disclose callback lifetime and sequential partial Apply, and allow recovery planning for uncertain hook states.");
+        var clearPlanStart = viewModel.IndexOf("void ClearPendingPlan()", StringComparison.Ordinal);
+        var clearPlanEnd = viewModel.IndexOf("void OnExpiryTick", clearPlanStart, StringComparison.Ordinal);
+        var clearPlan = clearPlanStart >= 0 && clearPlanEnd > clearPlanStart
+            ? viewModel.Substring(clearPlanStart, clearPlanEnd - clearPlanStart)
+            : string.Empty;
+        Check(viewModel.Contains("CanChangeSelection => !disposed && !IsBusy && !HasPendingPlan") &&
+              xaml.Contains("DataContext.CanChangeSelection") &&
+              viewModel.Contains("SelectionMatchesPlan(hooks.Where(item => item.IsSelected).Select(item => item.Id), pendingPlan.HookIds)") &&
+              clearPlan.Contains("Raise(nameof(CanChangeSelection));"),
+            "A pending hook plan must lock selection, confirmation must match its exact registered IDs, and clearing it must notify the UI.");
         Check(viewModel.Contains("ReadStrings(root, \"notAttemptedIds\")") &&
               viewModel.Contains("TryGetStringInsensitive(\"stopReason\"") &&
               viewModel.Contains("commit.RequiresReconciliation") && viewModel.Contains("requiresSnapshotRefresh") &&

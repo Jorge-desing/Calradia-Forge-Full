@@ -49,6 +49,10 @@ namespace CalradiaForge.Sdk
         private static readonly ConcurrentDictionary<string, long> SettingsVersions =
             new ConcurrentDictionary<string, long>(StringComparer.OrdinalIgnoreCase);
 
+        // Internal test seam: keep SDK contract tests out of a developer's real Documents folder.
+        // Production callers leave this unset and retain the Bannerlord configuration path.
+        internal static string SettingsDocumentsRootOverrideForTests { get; set; }
+
         public static Func<object, string> DefaultSerializer { get; set; }
         public static Func<string, Type, object> DefaultDeserializer { get; set; }
 
@@ -287,8 +291,14 @@ namespace CalradiaForge.Sdk
         {
             ValidateModId(modId);
 
+            var documentsRoot = SettingsDocumentsRootOverrideForTests;
+            if (string.IsNullOrWhiteSpace(documentsRoot))
+            {
+                documentsRoot = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            }
+
             var settingsDirectory = Path.GetFullPath(Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                documentsRoot,
                 "Mount and Blade II Bannerlord",
                 "Configs",
                 "ModSettings"));

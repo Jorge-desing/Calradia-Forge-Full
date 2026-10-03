@@ -299,9 +299,60 @@ namespace CalradiaForge.Core
                     CanInvoke = mayMutate,
                     State = ForgeHookState.Registered, Detail = "Registered only; no detour has been applied."
                 };
+                ValidateRegisteredOrderAcyclic(entry);
                 entries.Add(entry.Id, entry);
                 return new Handle(this, entry.Id);
             }
+        }
+
+        void ValidateRegisteredOrderAcyclic(Entry candidate)
+        {
+            var proposed = entries.Values.Concat(new[] { candidate }).ToArray();
+            var byId = proposed.ToDictionary(entry => entry.Id, StringComparer.OrdinalIgnoreCase);
+            var outgoing = proposed.ToDictionary(entry => entry.Id, _ => new List<string>(), StringComparer.OrdinalIgnoreCase);
+            var incomingCounts = proposed.ToDictionary(entry => entry.Id, _ => 0, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var entry in proposed)
+            {
+                foreach (var id in entry.Before ?? Array.Empty<string>())
+                    AddKnownOrderEdge(entry, id, byId, outgoing, incomingCounts, before: true);
+                foreach (var id in entry.After ?? Array.Empty<string>())
+                    AddKnownOrderEdge(entry, id, byId, outgoing, incomingCounts, before: false);
+            }
+
+            var ready = new Queue<string>(incomingCounts.Where(pair => pair.Value == 0).Select(pair => pair.Key));
+            var visited = 0;
+            while (ready.Count > 0)
+            {
+                var current = ready.Dequeue();
+                visited++;
+                foreach (var next in outgoing[current])
+                    if (--incomingCounts[next] == 0) ready.Enqueue(next);
+            }
+
+            if (visited != proposed.Length)
+                throw new InvalidOperationException("Registered hook ordering constraints contain a cycle for the same target method.");
+        }
+
+        static void AddKnownOrderEdge(Entry source, string referencedId,
+            IDictionary<string, Entry> byId, IDictionary<string, List<string>> outgoing,
+            IDictionary<string, int> incomingCounts, bool before)
+        {
+            var localId = LocalOrderId(referencedId);
+            if (!byId.TryGetValue(localId, out var referenced) || !source.Target.Equals(referenced.Target)) return;
+            var from = before ? source.Id : referenced.Id;
+            var to = before ? referenced.Id : source.Id;
+            if (outgoing[from].Contains(to, StringComparer.OrdinalIgnoreCase)) return;
+            outgoing[from].Add(to);
+            incomingCounts[to]++;
+        }
+
+        static string LocalOrderId(string id)
+        {
+            const string prefix = "CalradiaForge.Hook.";
+            return id != null && id.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                ? id.Substring(prefix.Length)
+                : id;
         }
 
         public IReadOnlyList<ForgeHookSnapshot> GetSnapshots(string owner = null)
@@ -1225,8 +1276,36 @@ namespace CalradiaForge.Core
 #endif
         }
 
-        static string Identity(MethodInfo method) => method.DeclaringType.FullName + "." + method.Name + "(" +
-            string.Join(",", method.GetParameters().Select(parameter => parameter.ParameterType.FullName ?? parameter.ParameterType.Name)) + ")";
+        static string Identity(MethodInfo method)
+        {
+            if (method == null) return string.Empty;
+            Type declaringType = method.DeclaringType;
+            string typeIdentity = declaringType == null
+                ? "<global>"
+                : (declaringType.AssemblyQualifiedName ?? declaringType.FullName ?? declaringType.Name);
+            string genericArguments = method.IsGenericMethod
+                ? "<" + string.Join(",", method.GetGenericArguments().Select(TypeIdentity)) + ">"
+                : string.Empty;
+            string parameters = string.Join(",", method.GetParameters().Select(ParameterIdentity));
+            ParameterInfo returnParameter = method.ReturnParameter;
+            string dispatch = method.IsStatic ? "static" : "instance";
+            return typeIdentity + "." + method.Name + genericArguments + "[" + dispatch + ";" + method.CallingConvention + "](" + parameters + ")->" +
+                TypeIdentity(method.ReturnType) + CustomModifiersIdentity(returnParameter.GetRequiredCustomModifiers(), returnParameter.GetOptionalCustomModifiers());
+        }
+
+        static string ParameterIdentity(ParameterInfo parameter) =>
+            TypeIdentity(parameter.ParameterType) + CustomModifiersIdentity(parameter.GetRequiredCustomModifiers(), parameter.GetOptionalCustomModifiers());
+
+        static string CustomModifiersIdentity(Type[] required, Type[] optional)
+        {
+            IEnumerable<string> modifiers = (required ?? Type.EmptyTypes).Select(type => "modreq(" + TypeIdentity(type) + ")")
+                .Concat((optional ?? Type.EmptyTypes).Select(type => "modopt(" + TypeIdentity(type) + ")"));
+            string[] materialized = modifiers.ToArray();
+            return materialized.Length == 0 ? string.Empty : "[" + string.Join(",", materialized) + "]";
+        }
+        static string TypeIdentity(Type type) => type == null
+            ? "<unknown>"
+            : type.AssemblyQualifiedName ?? type.FullName ?? type.Name;
         static string Bound(string value, int maximum) => string.IsNullOrEmpty(value) || value.Length <= maximum ? value ?? string.Empty : value.Substring(0, maximum);
 
         sealed class Handle : IForgeHookHandle

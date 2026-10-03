@@ -275,6 +275,9 @@
   <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. Forge yönteminin değiştirilmesi için ayrı ve açık bir istek gerekir; backend’in desteklemediği bildirilen hook türleri meta veri olarak kalır. Patch Preflight salt okunurdur ve callback kodunu çağırmaz. ForgeWeave olay dinleyicilerini AddNonSerializedListener ile serileştirilmeyen durumda tutun." />
   <string key="Hook inventory" value="Hook envanteri" />
   <string key="Next hook" value="Sonraki hook" />
+  <string key="Choose hook" value="Hook seç" />
+  <string key="Choose a registered hook" value="Kayıtlı bir hook seçin" />
+  <string key="No registered hooks are available." value="Kullanılabilir kayıtlı hook yok." />
   <string key="Verify selected" value="Seçilenleri doğrula" />
   <string key="Preview apply" value="Uygulamayı önizle" />
   <string key="Preview revert" value="Geri almayı önizle" />

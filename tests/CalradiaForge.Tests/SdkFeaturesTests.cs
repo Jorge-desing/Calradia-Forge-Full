@@ -194,10 +194,13 @@ namespace CalradiaForge.Tests
         {
             var previousSerializer=ModSettings.DefaultSerializer;
             var previousDeserializer=ModSettings.DefaultDeserializer;
+            var previousDocumentsRoot=ModSettings.SettingsDocumentsRootOverrideForTests;
+            var temporaryDocumentsRoot=Path.Combine(Path.GetTempPath(),"CalradiaForgeModSettingsTests-"+Guid.NewGuid().ToString("N"));
+            ModSettings.SettingsDocumentsRootOverrideForTests=temporaryDocumentsRoot;
             var id="cf_safe_save_"+Guid.NewGuid().ToString("N");
             var noSerializerId="cf_no_serializer_"+Guid.NewGuid().ToString("N");
             var blockedId="cf_blocked_save_"+Guid.NewGuid().ToString("N");
-            var settingsDirectory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            var settingsDirectory=Path.Combine(temporaryDocumentsRoot,
                 "Mount and Blade II Bannerlord","Configs","ModSettings");
             var path=Path.Combine(settingsDirectory,id+".json");
             var noSerializerPath=Path.Combine(settingsDirectory,noSerializerId+".json");
@@ -305,10 +308,14 @@ namespace CalradiaForge.Tests
             {
                 ModSettings.DefaultSerializer=previousSerializer;
                 ModSettings.DefaultDeserializer=previousDeserializer;
+                ModSettings.SettingsDocumentsRootOverrideForTests=previousDocumentsRoot;
                 if(File.Exists(path))File.Delete(path);
                 if(File.Exists(noSerializerPath))File.Delete(noSerializerPath);
                 if(Directory.Exists(blockedPath))Directory.Delete(blockedPath,true);
                 if(File.Exists(blockedPath))File.Delete(blockedPath);
+                var temporarySettingsDirectory=Path.Combine(temporaryDocumentsRoot,"Mount and Blade II Bannerlord","Configs","ModSettings");
+                if(Directory.Exists(temporarySettingsDirectory))Directory.Delete(temporarySettingsDirectory,true);
+                if(Directory.Exists(temporaryDocumentsRoot))Directory.Delete(temporaryDocumentsRoot,true);
             }
         }
 
@@ -1327,19 +1334,119 @@ namespace CalradiaForge.Tests
                 if (!ForgeCommands.PatchStatus(new List<string> { "console.owner", "ignored" }).StartsWith("Usage: cf.patch_status", StringComparison.Ordinal) ||
                     !ForgeCommands.PatchStatus(new List<string> { " " }).StartsWith("Usage: cf.patch_status", StringComparison.Ordinal) ||
                     !ForgeCommands.HookStatus(new List<string> { "console.owner", "ignored", "prefix", "extra" }).StartsWith("Usage: cf.hook_status", StringComparison.Ordinal) ||
-                    !ForgeCommands.HookStatus(new List<string> { " " }).StartsWith("Usage: cf.hook_status", StringComparison.Ordinal))
+                    !ForgeCommands.HookStatus(new List<string> { " " }).StartsWith("Usage: cf.hook_status", StringComparison.Ordinal) ||
+                    !ForgeCommands.HookOrder(new List<string> { "console.owner", "ignored", "extra" }).StartsWith("Usage: cf.hook_order", StringComparison.Ordinal) ||
+                    !ForgeCommands.HookOrder(new List<string> { " " }).StartsWith("Usage: cf.hook_order", StringComparison.Ordinal))
                     throw new Exception("Optional status commands must reject missing/extra owner arguments instead of silently widening the query.");
-                ForgeApi.Hooks.Register(new ForgeHookDefinition { Id = "console.hook.prefix", Owner = "console.owner", Target = original, Prefix = _ => { } });
-                ForgeApi.Hooks.Register(new ForgeHookDefinition { Id = "console.hook.finalizer", Owner = "other.owner", Target = original, Finalizer = _ => { } });
+                ForgeApi.Hooks.Register(new ForgeHookDefinition
+                {
+                    Id = "console.hook.prefix", Owner = "console.owner", Target = original, Prefix = _ => { }, Priority = 15,
+                    Before = new List<string> { "console.hook.finalizer", "ExternalMod.Hook.after" }
+                });
+                ForgeApi.Hooks.Register(new ForgeHookDefinition
+                {
+                    Id = "console.hook.finalizer", Owner = "other.owner", Target = original, Finalizer = _ => { }, Priority = -10,
+                    After = new List<string> { "CalradiaForge.Hook.console.hook.prefix", "UnloadedMod.Hook" }
+                });
                 string prefixInventory = ForgeCommands.HookStatus(new List<string> { "console.owner", "TargetMethod", "prefix" });
                 string finalizerInventory = ForgeCommands.HookStatus(new List<string> { "-", "TargetMethod", "finalizer" });
-                if (!prefixInventory.Contains("console.hook.prefix") || prefixInventory.Contains("console.hook.finalizer") ||
-                    !finalizerInventory.Contains("console.hook.finalizer") || finalizerInventory.Contains("console.hook.prefix") ||
-                    !ForgeCommands.HookStatus(new List<string> { "-", "-", "arbitrary" }).StartsWith("Usage:", StringComparison.Ordinal) ||
-                    !ForgeCommands.HookStatus(new List<string> { "-", "no-such-target", "prefix" }).Contains("No registered"))
-                    throw new Exception("Hook inventory must compose owner, target and type filters without applying registered declarations.");
-                if (ForgeApi.Hooks.GetSnapshots().Any(item => item.State != ForgeHookState.Registered))
-                    throw new Exception("Read-only console inventory must not apply hooks.");
+                var hookInventoryFailures = new List<string>();
+                if (!prefixInventory.Contains("- [Registered] console.hook.prefix owner=")) hookInventoryFailures.Add("owner/type filter omitted prefix record");
+                if (prefixInventory.Contains("- [Registered] console.hook.finalizer owner=")) hookInventoryFailures.Add("owner/type filter included finalizer record");
+                if (!finalizerInventory.Contains("- [Registered] console.hook.finalizer owner=")) hookInventoryFailures.Add("target/type filter omitted finalizer record");
+                if (finalizerInventory.Contains("- [Registered] console.hook.prefix owner=")) hookInventoryFailures.Add("target/type filter included prefix record");
+                if (!prefixInventory.Contains("priority=15")) hookInventoryFailures.Add("prefix priority missing");
+                if (!prefixInventory.Contains("before=[console.hook.finalizer, ExternalMod.Hook.after]")) hookInventoryFailures.Add("prefix Before metadata missing");
+                if (!finalizerInventory.Contains("priority=-10")) hookInventoryFailures.Add("finalizer priority missing");
+                if (!finalizerInventory.Contains("after=[CalradiaForge.Hook.console.hook.prefix, UnloadedMod.Hook]")) hookInventoryFailures.Add("finalizer After metadata missing");
+                if (!ForgeCommands.HookStatus(new List<string> { "-", "-", "arbitrary" }).StartsWith("Usage:", StringComparison.Ordinal)) hookInventoryFailures.Add("invalid type was accepted");
+                string missingTarget = ForgeCommands.HookStatus(new List<string> { "-", "no-such-target", "prefix" });
+                if (!missingTarget.Contains("No registered")) hookInventoryFailures.Add("missing target did not report an empty inventory: " + missingTarget);
+                if (hookInventoryFailures.Count != 0)
+                    throw new Exception("Hook inventory must compose owner, target and type filters without applying registered declarations. Failures: " + string.Join("; ", hookInventoryFailures) + " Prefix inventory: " + prefixInventory + " Finalizer inventory: " + finalizerInventory);
+                string order = ForgeCommands.HookOrder(new List<string> { "-", "TargetMethod" });
+                if (!order.Contains("[Forge-known, same target] console.hook.finalizer") ||
+                    !order.Contains("[Forge-known, same target] CalradiaForge.Hook.console.hook.prefix") ||
+                    !order.Contains("[unresolved/external] ExternalMod.Hook.after") ||
+                    !order.Contains("[unresolved/external] UnloadedMod.Hook") ||
+                    !order.Contains("does not prove effective dispatch order"))
+                    throw new Exception("Hook order diagnostics must classify current same-target Forge references and unresolved/external declarations without claiming actual order.");
+
+                MethodInfo[] genericNameTargets = typeof(SdkFeaturesTests).GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+                    .Where(method => method.Name == nameof(GenericIdentityTarget)).ToArray();
+                MethodInfo plainGenericNameTarget = genericNameTargets.Single(method => !method.IsGenericMethod);
+                MethodInfo genericNameTargetDefinition = genericNameTargets.Single(method => method.IsGenericMethodDefinition);
+                MethodInfo closedGenericNameTarget = genericNameTargetDefinition.MakeGenericMethod(typeof(int));
+                ForgeApi.Hooks.Register(new ForgeHookDefinition
+                {
+                    Id = "console.identity.plain", Owner = "console.owner", Target = plainGenericNameTarget, Prefix = _ => { }
+                });
+                ForgeApi.Hooks.Register(new ForgeHookDefinition
+                {
+                    Id = "console.identity.generic", Owner = "console.owner", Target = closedGenericNameTarget, Prefix = _ => { },
+                    Before = new List<string> { "console.identity.plain" }
+                });
+                ForgeHookSnapshot plainIdentity = ForgeApi.Hooks.GetSnapshots("console.owner").Single(snapshot => snapshot.Id == "console.identity.plain");
+                ForgeHookSnapshot genericIdentity = ForgeApi.Hooks.GetSnapshots("console.owner").Single(snapshot => snapshot.Id == "console.identity.generic");
+                string genericIdentityOrder = ForgeCommands.HookOrder(new List<string> { "console.owner", "GenericIdentityTarget" });
+                if (string.Equals(plainIdentity.TargetMethod, genericIdentity.TargetMethod, StringComparison.Ordinal) ||
+                    !genericIdentityOrder.Contains("[unresolved/Forge ID targets another method] console.identity.plain"))
+                    throw new Exception("Hook ordering diagnostics must distinguish generic and non-generic overload identities.");
+
+                MethodInfo[] returnOverloadTargets = BuildReturnOnlyOverloadTargets();
+                MethodInfo intReturnTarget = returnOverloadTargets.Single(method => method.ReturnType == typeof(int));
+                MethodInfo stringReturnTarget = returnOverloadTargets.Single(method => method.ReturnType == typeof(string));
+                ForgeApi.Hooks.Register(new ForgeHookDefinition
+                {
+                    Id = "console.identity.int-return", Owner = "console.owner", Target = intReturnTarget, Prefix = _ => { },
+                    Before = new List<string> { "console.identity.string-return" }
+                });
+                ForgeApi.Hooks.Register(new ForgeHookDefinition
+                {
+                    Id = "console.identity.string-return", Owner = "console.owner", Target = stringReturnTarget, Prefix = _ => { }
+                });
+                ForgeHookSnapshot intReturnIdentity = ForgeApi.Hooks.GetSnapshots("console.owner").Single(snapshot => snapshot.Id == "console.identity.int-return");
+                ForgeHookSnapshot stringReturnIdentity = ForgeApi.Hooks.GetSnapshots("console.owner").Single(snapshot => snapshot.Id == "console.identity.string-return");
+                string returnIdentityOrder = ForgeCommands.HookOrder(new List<string> { "console.owner", "SelectReturn" });
+                if (intReturnIdentity.TargetMethod == stringReturnIdentity.TargetMethod ||
+                    !returnIdentityOrder.Contains("[unresolved/Forge ID targets another method] console.identity.string-return"))
+                    throw new Exception("Hook ordering diagnostics must distinguish IL methods with identical names and parameters but different return types.");
+                MethodInfo[] dispatchTargets = BuildStaticInstanceOverloadTargets();
+                MethodInfo staticDispatchTarget = dispatchTargets.Single(method => method.IsStatic);
+                MethodInfo instanceDispatchTarget = dispatchTargets.Single(method => !method.IsStatic);
+                ForgeApi.Hooks.Register(new ForgeHookDefinition
+                {
+                    Id = "console.identity.static-dispatch", Owner = "console.owner", Target = staticDispatchTarget, Prefix = _ => { },
+                    Before = new List<string> { "console.identity.instance-dispatch" }
+                });
+                ForgeApi.Hooks.Register(new ForgeHookDefinition
+                {
+                    Id = "console.identity.instance-dispatch", Owner = "console.owner", Target = instanceDispatchTarget, Prefix = _ => { }
+                });
+                ForgeHookSnapshot staticDispatchIdentity = ForgeApi.Hooks.GetSnapshots("console.owner").Single(snapshot => snapshot.Id == "console.identity.static-dispatch");
+                ForgeHookSnapshot instanceDispatchIdentity = ForgeApi.Hooks.GetSnapshots("console.owner").Single(snapshot => snapshot.Id == "console.identity.instance-dispatch");
+                string dispatchIdentityOrder = ForgeCommands.HookOrder(new List<string> { "console.owner", "SelectDispatch" });
+                if (staticDispatchIdentity.TargetMethod == instanceDispatchIdentity.TargetMethod ||
+                    !dispatchIdentityOrder.Contains("[unresolved/Forge ID targets another method] console.identity.instance-dispatch"))
+                    throw new Exception("Hook ordering diagnostics must distinguish IL methods with identical signatures but different static/instance calling conventions.");                MethodInfo[] modifierTargets = BuildCustomModifierOverloadTargets();
+                MethodInfo plainModifierTarget = modifierTargets.Single(method => method.ReturnParameter.GetRequiredCustomModifiers().Length == 0);
+                MethodInfo requiredModifierTarget = modifierTargets.Single(method => method.ReturnParameter.GetRequiredCustomModifiers().Length == 1);
+                ForgeApi.Hooks.Register(new ForgeHookDefinition
+                {
+                    Id = "console.identity.plain-modifier", Owner = "console.owner", Target = plainModifierTarget, Prefix = _ => { },
+                    Before = new List<string> { "console.identity.required-modifier" }
+                });
+                ForgeApi.Hooks.Register(new ForgeHookDefinition
+                {
+                    Id = "console.identity.required-modifier", Owner = "console.owner", Target = requiredModifierTarget, Prefix = _ => { }
+                });
+                ForgeHookSnapshot plainModifierIdentity = ForgeApi.Hooks.GetSnapshots("console.owner").Single(snapshot => snapshot.Id == "console.identity.plain-modifier");
+                ForgeHookSnapshot requiredModifierIdentity = ForgeApi.Hooks.GetSnapshots("console.owner").Single(snapshot => snapshot.Id == "console.identity.required-modifier");
+                string modifierIdentityOrder = ForgeCommands.HookOrder(new List<string> { "console.owner", "SelectModifier" });
+                if (plainModifierIdentity.TargetMethod == requiredModifierIdentity.TargetMethod ||
+                    !modifierIdentityOrder.Contains("[unresolved/Forge ID targets another method] console.identity.required-modifier"))
+                    throw new Exception("Hook ordering diagnostics must distinguish IL methods that differ by a required return custom modifier.");                if (ForgeApi.Hooks.GetSnapshots().Any(item => item.State != ForgeHookState.Registered))
+                    throw new Exception("Read-only console inventory and order diagnostics must not apply hooks.");
                 ForgeDetour.Patch(original, replacement, "console.patch.id", "console.owner");
                 string status = ForgeCommands.PatchStatus(new List<string> { "console.owner" });
                 if (!status.Contains("console.patch.id") || !status.Contains("Applied"))
@@ -1611,6 +1718,78 @@ namespace CalradiaForge.Tests
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static string TargetMethodTwo() => "Original two";
 
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static string GenericIdentityTarget() => "Non-generic target";
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static string GenericIdentityTarget<T>() => typeof(T).FullName;
+
+        private static MethodInfo[] BuildReturnOnlyOverloadTargets()
+        {
+            var assemblyName = new AssemblyName("CalradiaForge.Tests.ReturnOnlyOverloads." + Guid.NewGuid().ToString("N"));
+            var assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            var module = assembly.DefineDynamicModule(assemblyName.Name);
+            var type = module.DefineType("CalradiaForge.Tests.DynamicReturnOnlyOverloads", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
+
+            var integerMethod = type.DefineMethod("SelectReturn", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+            var integerIl = integerMethod.GetILGenerator();
+            integerIl.Emit(OpCodes.Ldc_I4, 7);
+            integerIl.Emit(OpCodes.Ret);
+
+            var stringMethod = type.DefineMethod("SelectReturn", MethodAttributes.Public | MethodAttributes.Static, typeof(string), Type.EmptyTypes);
+            var stringIl = stringMethod.GetILGenerator();
+            stringIl.Emit(OpCodes.Ldstr, "fixture");
+            stringIl.Emit(OpCodes.Ret);
+
+            Type generatedType = type.CreateType();
+            return generatedType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                .Where(method => method.Name == "SelectReturn").ToArray();
+        }
+
+        private static MethodInfo[] BuildStaticInstanceOverloadTargets()
+        {
+            var assemblyName = new AssemblyName("CalradiaForge.Tests.DispatchOverloads." + Guid.NewGuid().ToString("N"));
+            var assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            var module = assembly.DefineDynamicModule(assemblyName.Name);
+            var type = module.DefineType("CalradiaForge.Tests.DynamicDispatchOverloads", TypeAttributes.Public | TypeAttributes.Class);
+
+            var staticMethod = type.DefineMethod("SelectDispatch", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+            var staticIl = staticMethod.GetILGenerator();
+            staticIl.Emit(OpCodes.Ldc_I4, 7);
+            staticIl.Emit(OpCodes.Ret);
+
+            var instanceMethod = type.DefineMethod("SelectDispatch", MethodAttributes.Public, typeof(int), Type.EmptyTypes);
+            var instanceIl = instanceMethod.GetILGenerator();
+            instanceIl.Emit(OpCodes.Ldc_I4, 8);
+            instanceIl.Emit(OpCodes.Ret);
+
+            Type generatedType = type.CreateType();
+            return generatedType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Where(method => method.Name == "SelectDispatch").ToArray();
+        }
+        private static MethodInfo[] BuildCustomModifierOverloadTargets()
+        {
+            var assemblyName = new AssemblyName("CalradiaForge.Tests.CustomModifierOverloads." + Guid.NewGuid().ToString("N"));
+            var assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            var module = assembly.DefineDynamicModule(assemblyName.Name);
+            var type = module.DefineType("CalradiaForge.Tests.DynamicCustomModifierOverloads", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
+
+            var plainMethod = type.DefineMethod("SelectModifier", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+            var plainIl = plainMethod.GetILGenerator();
+            plainIl.Emit(OpCodes.Ldc_I4, 1);
+            plainIl.Emit(OpCodes.Ret);
+
+            var requiredMethod = type.DefineMethod("SelectModifier", MethodAttributes.Public | MethodAttributes.Static,
+                CallingConventions.Standard, typeof(int), new[] { typeof(System.Runtime.CompilerServices.IsVolatile) },
+                Type.EmptyTypes, Type.EmptyTypes, new Type[0][], new Type[0][]);
+            var requiredIl = requiredMethod.GetILGenerator();
+            requiredIl.Emit(OpCodes.Ldc_I4, 2);
+            requiredIl.Emit(OpCodes.Ret);
+
+            Type generatedType = type.CreateType();
+            return generatedType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                .Where(method => method.Name == "SelectModifier").ToArray();
+        }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static string ReplacementMethodTwo() => "Replacement two";
 
@@ -3248,6 +3427,7 @@ namespace CalradiaForge.Tests
                 !help.Contains("cf.underworld.smuggling") ||
                 !help.Contains("cf.character.succession_score") ||
                 !help.Contains("cf.character.perk_role") ||
+                !help.Contains("cf.hook_order") ||
                 !help.Contains("cf.settlement.security_delta") ||
                 !help.Contains("cf.settlement.loyalty_delta"))
             {

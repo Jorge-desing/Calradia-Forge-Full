@@ -27,6 +27,7 @@ namespace CalradiaForge.Mod.Commands
                    "cf.patch_status [owner] - Shows explicit experimental patch records\n" +
                    "cf.patch_revert <id|owner|all> - Explicitly reverts tracked patches\n" +
                    "cf.hook_status [owner|-] [target|-] [prefix|postfix|finalizer|transpiler] - Filters registered hook metadata\n" +
+                   "cf.hook_order [owner|-] [target|-] - Classifies declared order references against Forge's current inventory\n" +
                    "cf.hook_verify <id|owner|all> - Checks backend hook state, not raw bytes\n" +
                    "cf.hook_export - Exports snapshot JSON to console output\n" +
                    "cf.hook_fixture <register|run> - Own-target main-menu fixture; registration is inert\n" +
@@ -140,7 +141,71 @@ namespace CalradiaForge.Mod.Commands
             if (snapshots.Length == 0) return "No registered hook records match the filters.";
             return "Forge hook status (" + snapshots.Length + "):\n" + string.Join("\n", snapshots.Select(hook =>
                 "- [" + hook.State + "] " + hook.Id + " owner=" + hook.Owner + " target=" + hook.TargetMethod +
-                " prefix=" + hook.HasPrefix + " postfix=" + hook.HasPostfix + " finalizer=" + hook.HasFinalizer + " transpiler=" + hook.HasTranspiler + " — " + hook.Detail));
+                " prefix=" + hook.HasPrefix + " postfix=" + hook.HasPostfix + " finalizer=" + hook.HasFinalizer + " transpiler=" + hook.HasTranspiler +
+                " priority=" + (hook.Priority.HasValue ? hook.Priority.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "default") +
+                " before=[" + string.Join(", ", hook.Before ?? Array.Empty<string>()) + "] after=[" + string.Join(", ", hook.After ?? Array.Empty<string>()) + "] — " + hook.Detail));
+        }
+
+        /// <summary>Reports declared Before/After metadata against the current Forge inventory; it does not compute or prove MonoMod's effective dispatch order.</summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("hook_order", "cf")]
+        public static string HookOrder(List<string> args)
+        {
+            const string usage = "Usage: cf.hook_order [owner|-] [target|-]";
+            if (args != null && (args.Count > 2 || args.Any(string.IsNullOrWhiteSpace))) return usage;
+            string owner = args != null && args.Count > 0 && args[0] != "-" ? args[0].Trim() : null;
+            string target = args != null && args.Count > 1 && args[1] != "-" ? args[1].Trim() : null;
+            IForgeHookService service = ForgeApi.Hooks;
+            if (service == null) return "Hook service is unavailable.";
+
+            ForgeHookSnapshot[] all = (service.GetSnapshots() ?? Array.Empty<ForgeHookSnapshot>())
+                .Where(snapshot => snapshot != null && !string.IsNullOrWhiteSpace(snapshot.Id)).ToArray();
+            ForgeHookSnapshot[] selected = all.Where(snapshot =>
+                (owner == null || string.Equals(snapshot.Owner, owner, StringComparison.OrdinalIgnoreCase)) &&
+                (target == null || (snapshot.TargetMethod ?? string.Empty).IndexOf(target, StringComparison.OrdinalIgnoreCase) >= 0)).ToArray();
+            if (selected.Length == 0) return "No registered hook records match the filters.";
+
+            var byId = all.GroupBy(snapshot => snapshot.Id, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.OrdinalIgnoreCase);
+            var lines = new List<string>
+            {
+                "Forge declared hook ordering (" + selected.Length + "):",
+                "Forge-known means one current Forge registration has the same target method. Other references are unresolved/external; this is metadata only and does not prove effective dispatch order."
+            };
+            foreach (ForgeHookSnapshot hook in selected)
+            {
+                lines.Add("- " + hook.Id + " owner=" + hook.Owner + " target=" + hook.TargetMethod +
+                    " priority=" + (hook.Priority.HasValue ? hook.Priority.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "default"));
+                lines.Add("  Before: " + FormatOrderReferences(hook.Before, hook, byId));
+                lines.Add("  After: " + FormatOrderReferences(hook.After, hook, byId));
+            }
+            return string.Join("\n", lines);
+        }
+
+        static string FormatOrderReferences(IEnumerable<string> references, ForgeHookSnapshot source,
+            IDictionary<string, ForgeHookSnapshot[]> byId)
+        {
+            string[] items = (references ?? Enumerable.Empty<string>()).Select(reference =>
+            {
+                if (string.IsNullOrWhiteSpace(reference)) return "[invalid] <empty reference>";
+                string id = LocalHookOrderId(reference);
+                if (byId.TryGetValue(id, out ForgeHookSnapshot[] matches))
+                {
+                    if (matches.Length != 1) return "[unresolved/ambiguous Forge ID] " + reference;
+                    return string.Equals(matches[0].TargetMethod, source.TargetMethod, StringComparison.Ordinal)
+                        ? "[Forge-known, same target] " + reference
+                        : "[unresolved/Forge ID targets another method] " + reference;
+                }
+                return "[unresolved/external] " + reference;
+            }).ToArray();
+            return items.Length == 0 ? "(none declared)" : string.Join("; ", items);
+        }
+
+        static string LocalHookOrderId(string id)
+        {
+            const string prefix = "CalradiaForge.Hook.";
+            return !string.IsNullOrEmpty(id) && id.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                ? id.Substring(prefix.Length)
+                : id;
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("hook_verify", "cf")]

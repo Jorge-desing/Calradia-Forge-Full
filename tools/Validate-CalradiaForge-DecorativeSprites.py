@@ -38,6 +38,7 @@ DECORATIONS = tuple(DECORATION_SIZES)
 OCCLUDING_PANEL_IDS = {
     "ForgeKeyHelpPanel",
     "ForgeSdkCatalogPanel",
+    "ForgeHookPickerPanel",
     "NavigationPalettePanel",
     "ForgePlaybookPanel",
     "TestResultsExplorerPanel",
@@ -1189,6 +1190,54 @@ def validate_prefab(errors: List[str]) -> None:
             # The results window is an opaque inset frame, but the scrim and
             # panel are intentionally below NavigationPaletteOverlay. The
             # latter remains the final interactive modal in the shell.
+            visible_binding = overlay.get("IsVisible", "")
+        elif panel_id == "ForgeHookPickerPanel":
+            overlay = direct_widget_parent(root, panel)
+            shell_parent = direct_widget_parent(root, overlay) if overlay is not None else None
+            overlay_placement = placed.get(id(overlay)) if overlay is not None else None
+            overlay_rect = overlay_placement[0] if overlay_placement is not None else None
+            shell_children = next((child for child in shell_parent
+                                   if local_name(child.tag) == "Children"), None) if shell_parent is not None else None
+            shell_siblings = list(shell_children) if shell_children is not None else []
+            navigation_overlay = next((node for node in shell_siblings
+                                       if node.get("Id") == "NavigationPaletteOverlay"), None)
+            picker_surface = next((node for node in root.iter()
+                                   if node.get("Id") == "ForgeHookPickerSurface"), None)
+            picker_below_navigation = (
+                overlay in shell_siblings
+                and navigation_overlay is not None
+                and shell_siblings.index(overlay) < shell_siblings.index(navigation_overlay)
+            )
+            event_flow_ok = (
+                overlay is not None
+                and overlay.get("DoNotAcceptEvents", "false").lower() != "true"
+                and overlay.get("DoNotPassEventsToChildren", "false").lower() != "true"
+                and panel.get("DoNotPassEventsToChildren", "false").lower() != "true"
+                and panel.get("DoNotAcceptEvents", "false").lower() != "true"
+                and picker_surface is not None
+                and picker_surface.get("DoNotAcceptEvents", "false").lower() == "true"
+                and picker_surface.get("DoNotPassEventsToChildren", "false").lower() != "true"
+            )
+            modal_contract_ok = (
+                overlay is not None
+                and overlay.get("Id") == "ForgeHookPickerOverlay"
+                and local_name(overlay.tag) == "Widget"
+                and overlay.get("IsVisible") == "@IsHookPickerOpen"
+                and overlay.get("WidthSizePolicy") == "StretchToParent"
+                and overlay.get("HeightSizePolicy") == "StretchToParent"
+                and shell_parent is not None
+                and shell_parent.get("Id") == "ForgeWorkbenchShell"
+                and picker_below_navigation
+                and event_flow_ok
+                and overlay_rect is not None
+                and overlay_rect == workbench_rect
+                and panel_rect is not None
+                and overlay_rect.contains(panel_rect)
+            )
+            if not modal_contract_ok:
+                errors.append("ForgeHookPickerPanel occlusion requires an opaque panel in the shell-sized, event-receiving @IsHookPickerOpen overlay below NavigationPaletteOverlay")
+                continue
+            # The picker sits above the shell but below NavigationPaletteOverlay.
             visible_binding = overlay.get("IsVisible", "")
         else:
             visible_binding = panel.get("IsVisible", "")

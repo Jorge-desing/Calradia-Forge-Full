@@ -275,6 +275,9 @@
   <string key="1. Forge method replacement requires a separate explicit request; declared hook kinds unsupported by the backend remain metadata. Patch Preflight is read-only and does not invoke callback code. Keep ForgeWeave event listeners non-serialized with AddNonSerializedListener." value="1. 替换 Forge 方法需要单独明确请求；后端不支持的已声明 Hook 类型仅保留为元数据。Patch Preflight 为只读操作，不会调用回调代码。请使用 AddNonSerializedListener，让 ForgeWeave 事件监听器不参与序列化。" />
   <string key="Hook inventory" value="钩子清单" />
   <string key="Next hook" value="下一个钩子" />
+  <string key="Choose hook" value="选择钩子" />
+  <string key="Choose a registered hook" value="选择已注册的钩子" />
+  <string key="No registered hooks are available." value="没有可用的已注册钩子。" />
   <string key="Verify selected" value="验证所选项" />
   <string key="Preview apply" value="预览应用" />
   <string key="Preview revert" value="预览还原" />

@@ -845,7 +845,7 @@ def visible_in_evidence_state(
                 return False
         elif visibility in {
             "@IsSdkCatalogOpen", "@IsHistoryVisible", "@IsKeyHelpOpen",
-            "@IsToastVisible", "@IsNavigationPaletteOpen", "@IsTestResultsExplorerOpen",
+            "@IsToastVisible", "@IsHookPickerOpen", "@IsNavigationPaletteOpen", "@IsTestResultsExplorerOpen",
             "@IsCategoryCommandsOpen",
         }:
             return False
@@ -883,6 +883,7 @@ EXPECTED_SCROLL_PANELS = {
     "TestResultsExplorerScroll": "TestResultsExplorerScrollBar",
     "TestResultsExplorerDetailScroll": "TestResultsExplorerDetailScrollBar",
     "NavigationPaletteScroll": "NavigationPaletteScrollBar",
+    "ForgeHookPickerScroll": "ForgeHookPickerScrollBar",
     "ForgeComposerLeftScroll": "ForgeComposerLeftScrollBar",
     "ForgeComposerRightScroll": "ForgeComposerRightScrollBar",
     "ForgeCampaignRuleLeftScroll": "ForgeCampaignRuleLeftScrollbar",
@@ -2449,6 +2450,105 @@ def validate_test_results_explorer_geometry(
         audit.error("Test-results rows must be focusable selection controls with ExecuteSelect")
 
 
+def validate_hook_picker_geometry(
+    audit: Audit,
+    prefab: ET.Element,
+    shell: ET.Element,
+    vm_source: str,
+    viewport: tuple[int, int],
+) -> None:
+    """Audit the registered-hook picker independently from the resting shell."""
+    viewport_name = f"{viewport[0]}x{viewport[1]}"
+    required_ids = (
+        "ForgeHookPickerOverlay", "ForgeHookPickerPanel", "ForgeHookPickerSurface",
+        "ForgeHookPickerHeader", "ForgeHookPickerTitle", "ForgeHookPickerNext",
+        "ForgeHookPickerClose", "ForgeHookPickerScroll", "ForgeHookPickerScrollBar",
+        "ForgeHookPickerEmptyState", "ForgeHookPickerItems",
+    )
+    nodes = {element_id: find_by_id(prefab, element_id) for element_id in required_ids}
+    missing = [element_id for element_id, node in nodes.items() if node is None]
+    if missing:
+        audit.error(f"Hook picker is missing {', '.join(missing)} in {viewport_name}")
+        return
+
+    overlay = nodes["ForgeHookPickerOverlay"]
+    panel = nodes["ForgeHookPickerPanel"]
+    surface = nodes["ForgeHookPickerSurface"]
+    parents = descendant_map(prefab)
+    if overlay.attrib.get("IsVisible") != "@IsHookPickerOpen":
+        audit.error("ForgeHookPickerOverlay must bind visibility to @IsHookPickerOpen")
+    if direct_parent(overlay, parents) is not shell:
+        audit.error("ForgeHookPickerOverlay must be a direct child of ForgeWorkbenchShell")
+    if overlay.attrib.get("WidthSizePolicy") != "StretchToParent" or overlay.attrib.get("HeightSizePolicy") != "StretchToParent":
+        audit.error("ForgeHookPickerOverlay must cover the workbench shell")
+    if overlay.attrib.get("DoNotAcceptEvents", "false").lower() == "true" or \
+            overlay.attrib.get("DoNotPassEventsToChildren", "false").lower() == "true":
+        audit.error("ForgeHookPickerOverlay must receive modal input and pass it to child controls")
+    shell_children = shell.find("Children")
+    siblings = list(shell_children) if shell_children is not None else []
+    navigation_overlay = find_by_id(prefab, "NavigationPaletteOverlay")
+    if overlay not in siblings or navigation_overlay not in siblings or siblings.index(overlay) >= siblings.index(navigation_overlay):
+        audit.error("ForgeHookPickerOverlay must remain below the topmost NavigationPaletteOverlay")
+
+    if direct_parent(panel, parents) is not overlay:
+        audit.error("ForgeHookPickerPanel must be a direct child of ForgeHookPickerOverlay")
+    if direct_parent(surface, parents) is not panel:
+        audit.error("ForgeHookPickerSurface must be a direct child of ForgeHookPickerPanel")
+    if panel.attrib.get("Sprite") != "BlankWhiteSquare_9" or not panel.attrib.get("Color", "").endswith("FF"):
+        audit.error("ForgeHookPickerPanel must retain its opaque inset frame")
+    if panel.attrib.get("DoNotAcceptEvents", "false").lower() == "true" or \
+            panel.attrib.get("DoNotPassEventsToChildren", "false").lower() == "true":
+        audit.error("ForgeHookPickerPanel must preserve pointer and keyboard delivery to its child controls")
+    if surface.attrib.get("DoNotAcceptEvents") != "true" or \
+            surface.attrib.get("DoNotPassEventsToChildren", "false").lower() == "true":
+        audit.error("ForgeHookPickerSurface must stay passive while allowing its interactive children")
+    if re.search(r"\bIsHookPickerOpen\s*=>\s*hookPickerOpen\s*&&\s*IsHookWorkbenchVisible", vm_source) is None:
+        audit.error("PanelViewModel must scope the hook picker to the active Patch Preflight workbench route")
+
+    rectangles = shell_layout(shell, vm_source, False, viewport)
+    shell_rect = rectangles.get(shell)
+    overlay_rect = rectangles.get(overlay)
+    panel_rect = rectangles.get(panel)
+    surface_rect = rectangles.get(surface)
+    if shell_rect is None or overlay_rect is None or panel_rect is None or surface_rect is None:
+        audit.error(f"Cannot resolve hook picker modal geometry in {viewport_name}")
+        return
+    if overlay_rect != shell_rect:
+        audit.error(f"ForgeHookPickerOverlay must cover the workbench shell in {viewport_name}")
+    if panel_rect.width <= 0 or panel_rect.height <= 0 or not contained(overlay_rect, panel_rect):
+        audit.error(f"ForgeHookPickerPanel exceeds its modal overlay in {viewport_name}")
+    if panel_rect.width > 1100 or panel_rect.height > 860:
+        audit.error(f"ForgeHookPickerPanel exceeds its 1100x860 size cap in {viewport_name}")
+    if surface_rect.width <= 0 or surface_rect.height <= 0 or not contained(panel_rect, surface_rect):
+        audit.error(f"ForgeHookPickerSurface exceeds its panel in {viewport_name}")
+
+    content_ids = (
+        "ForgeHookPickerHeader", "ForgeHookPickerScroll", "ForgeHookPickerEmptyState",
+        "ForgeHookPickerScrollBar",
+    )
+    for element_id in content_ids:
+        node = nodes[element_id]
+        rect = rectangles.get(node)
+        if rect is None or rect.width <= 0 or rect.height <= 0 or not contained(surface_rect, rect):
+            audit.error(f"{element_id} exceeds ForgeHookPickerSurface in {viewport_name}")
+    if direct_parent(nodes["ForgeHookPickerHeader"], parents) is not surface:
+        audit.error("ForgeHookPickerHeader must be a direct child of ForgeHookPickerSurface")
+    for element_id in ("ForgeHookPickerScroll", "ForgeHookPickerEmptyState", "ForgeHookPickerScrollBar"):
+        if direct_parent(nodes[element_id], parents) is not nodes["ForgeHookPickerSurface"]:
+            audit.error(f"{element_id} must be a direct child of ForgeHookPickerSurface")
+    scroll_rect = rectangles.get(nodes["ForgeHookPickerScroll"])
+    empty_rect = rectangles.get(nodes["ForgeHookPickerEmptyState"])
+    if scroll_rect is not None and empty_rect is not None and scroll_rect != empty_rect:
+        audit.error(f"Hook picker results and empty state must share a viewport in {viewport_name}")
+    header_rect = rectangles.get(nodes["ForgeHookPickerHeader"])
+    if header_rect is not None:
+        for element_id in ("ForgeHookPickerTitle", "ForgeHookPickerNext", "ForgeHookPickerClose"):
+            node = nodes[element_id]
+            rect = rectangles.get(node)
+            if direct_parent(node, parents) is not nodes["ForgeHookPickerHeader"] or rect is None or not contained(header_rect, rect):
+                audit.error(f"{element_id} must remain inside ForgeHookPickerHeader in {viewport_name}")
+
+
 def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
     shell = find_by_id(prefab, "ForgeWorkbenchShell")
     if shell is None or local_name(shell.tag) != "Widget":
@@ -2595,6 +2695,7 @@ def validate_geometry(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
         if shell_rect.width <= 0 or shell_rect.height <= 0:
             audit.error(f"Viewport {viewport[0]}x{viewport[1]} leaves no room for the workbench shell")
             continue
+        validate_hook_picker_geometry(audit, prefab, shell, vm_source, viewport)
         validate_navigation_palette_geometry(audit, prefab, shell, vm_source, viewport)
         validate_test_results_explorer_geometry(audit, prefab, shell, vm_source, viewport)
         validate_output_comparison_geometry(audit, prefab, shell, vm_source, viewport)

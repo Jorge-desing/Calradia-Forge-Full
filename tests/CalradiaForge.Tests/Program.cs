@@ -47,13 +47,16 @@ class Program
             Test("JSON roundtrip with unicode and HTML",()=>{var r=new Request{Argument="Español <script>\n"};Equal(Json.Deserialize<Request>(Json.Serialize(r)).Argument,r.Argument);});
             Test("Atomic settings replacement",()=>{
                 var p=Path.Combine(temp,"settings.json");
-                Json.Save(p,new Settings{Language="en"});
+                try { Json.Save(p,new Settings{Language="en"}); }
+                catch(Exception error) when(error is IOException || error is UnauthorizedAccessException) {
+                    throw new IOException("Atomic settings initial save failed; destination="+p+"; HRESULT="+error.HResult.ToString("X8")+".",error);
+                }
                 try { Json.Save(p,new Settings{Language="es"}); }
-                catch(IOException error) {
+                catch(Exception error) when(error is IOException || error is UnauthorizedAccessException) {
                     string retainedLanguage;
                     try { retainedLanguage=Json.Deserialize<Settings>(File.ReadAllText(p)).Language; }
                     catch(Exception inspectionError) { retainedLanguage="unavailable ("+inspectionError.GetType().Name+")"; }
-                    throw new IOException("Atomic settings replacement failed; HRESULT="+error.HResult.ToString("X8")+
+                    throw new IOException("Atomic settings replacement failed; destination="+p+"; HRESULT="+error.HResult.ToString("X8")+
                         "; retained language="+retainedLanguage+".",error);
                 }
                 Equal(Json.Deserialize<Settings>(File.ReadAllText(p)).Language,"es");
@@ -109,7 +112,13 @@ class Program
             Test("English is default and Spanish available",()=>{Equal(Localization.Text("Summary","en"),"Summary");Equal(Localization.Text("Summary","es"),"Resumen");});
             Test("Named pipe roundtrip and reconnect",()=>PipeRoundtrip());
             if(args.Length>0 && Directory.Exists(args[0])) Test("Installed modules can be scanned",()=>{var d=ModuleValidator.Inspect(args[0]);True(d.Modules.Any(m=>m.Id=="Native" && m.Version=="v1.4.8"));Console.WriteLine("Installed modules: "+d.Modules.Count+"; findings: "+d.Findings.Count);Json.Save(Path.Combine("artifacts","installed-module-scan.json"),d);});
-        } finally {Directory.Delete(temp,true);}
+        } finally {
+            try { if(Directory.Exists(temp))Directory.Delete(temp,true); }
+            catch(Exception cleanupError) {
+                failed++;
+                Console.Error.WriteLine("FAIL test output cleanup: "+cleanupError);
+            }
+        }
         Console.WriteLine("RESULT: "+passed+" passed, "+failed+" failed");Environment.ExitCode=failed==0?0:1;
     }
     static void PipeRoundtrip()

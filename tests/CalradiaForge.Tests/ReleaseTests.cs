@@ -166,6 +166,104 @@ internal static class ReleaseTests
                 applyCalls.SequenceEqual(new[]{"first","failed"})&&verifyCalls.SequenceEqual(new[]{"first","failed"}));
             applyBehavior=null;
         });
+        test("Hook revert coordinator reverses order and reports cancellation and partial failures",()=>{
+            var utcNow=new DateTime(2026,10,1,12,0,0,DateTimeKind.Utc);
+            var screen=new object();
+            const string token="fixture-revert-confirmation-token";
+            var service=new ForgeHookService(()=>true);
+            var reverted=new List<string>();
+            var verified=new List<string>();
+            Func<string,ForgeHookOperationResult> revertBehavior=null;
+            Action<string> afterVerify=null;
+
+            Runtime.PendingHookPlan NewPlan(params string[] ids)
+            {
+                var hooks=ids.Select(id=>new HookIpcSnapshot {Id=id,Owner="fixture",TargetMethod="Fixture.Target",State="Applied"}).ToList();
+                return new Runtime.PendingHookPlan("revert","session-a",token,utcNow.AddSeconds(60),service,hooks,screen,4);
+            }
+            HookIpcCommit Commit(ref Runtime.PendingHookPlan pending,CancellationToken cancellationToken=default(CancellationToken))
+            {
+                return Runtime.CommitHookPlanCore(ref pending,"revert",token,()=>"session-a",()=>utcNow,()=>screen,()=>4,()=>true,()=>{},()=>service,
+                    (plan,activeService)=>null,cancellationToken,
+                    (activeService,id)=>throw new Exception("A revert plan must never apply a hook."),
+                    (activeService,id)=>{reverted.Add(id);return revertBehavior==null?new ForgeHookOperationResult(id,ForgeHookState.Reverted,true,"reverted"):revertBehavior(id);},
+                    (activeService,id)=>{verified.Add(id);afterVerify?.Invoke(id);return new ForgeHookOperationResult(id,ForgeHookState.Reverted,id!="middle-failure","verified");});
+            }
+
+            Runtime.PendingHookPlan pending=NewPlan("first","middle","last");
+            var success=Commit(ref pending);
+            Assert(success.Succeeded&&success.TokenConsumed&&pending==null&&success.Results.Select(item=>item.Id).SequenceEqual(new[]{"last","middle","first"})&&
+                reverted.SequenceEqual(new[]{"last","middle","first"})&&verified.SequenceEqual(reverted)&&success.NotAttemptedIds.Count==0);
+
+            reverted.Clear();verified.Clear();
+            pending=NewPlan("first","middle","last");
+            using(var cancellation=new CancellationTokenSource())
+            {
+                afterVerify=id=>{if(id=="last")cancellation.Cancel();};
+                var cancelled=Commit(ref pending,cancellation.Token);
+                Assert(cancelled.Cancelled&&!cancelled.Succeeded&&cancelled.Partial&&cancelled.Results.Count==1&&
+                    cancelled.Results[0].Id=="last"&&cancelled.Results[0].Succeeded&&cancelled.Results[0].Verified&&
+                    cancelled.NotAttemptedIds.SequenceEqual(new[]{"middle","first"})&&reverted.SequenceEqual(new[]{"last"})&&
+                    verified.SequenceEqual(new[]{"last"}));
+            }
+            afterVerify=null;
+
+            reverted.Clear();verified.Clear();
+            revertBehavior=id=>id=="middle"
+                ?new ForgeHookOperationResult(id,ForgeHookState.Failed,false,"fixture revert failure")
+                :new ForgeHookOperationResult(id,ForgeHookState.Reverted,true,"reverted");
+            pending=NewPlan("first","middle","last");
+            var partial=Commit(ref pending);
+            Assert(!partial.Succeeded&&partial.Partial&&!partial.Cancelled&&partial.Results.Count==3&&
+                partial.Results[0].Id=="last"&&partial.Results[1].Id=="middle"&&!partial.Results[1].Succeeded&&
+                partial.Results[2].Id=="first"&&partial.Results[2].Succeeded&&partial.NotAttemptedIds.Count==0&&
+                reverted.SequenceEqual(new[]{"last","middle","first"})&&verified.SequenceEqual(reverted));
+        });
+        test("A consumer binary compiled against the v12 registry can load on SDK v13",()=>{
+            var path=Environment.GetEnvironmentVariable("CALRADIAFORGE_LEGACY_V12_CLIENT_DLL");
+            Assert(!string.IsNullOrWhiteSpace(path)&&File.Exists(path));
+            var assembly=Assembly.LoadFrom(path);
+            var clientType=assembly.GetType("CalradiaForge.LegacySdkV12.LegacyRegistryProvider",true);
+            var client=Activator.CreateInstance(clientType);
+            Assert(client is IForgeRegistry);
+            var sdkReference=assembly.GetReferencedAssemblies().Single(name=>name.Name=="CalradiaForge.Sdk");
+            Assert(sdkReference.Version==new Version(25,2,0,0)&&
+                (int)clientType.GetMethod("GetCompiledForgeApiVersion").Invoke(client,null)==12&&ForgeApi.Version==13);
+            var legacyRegistry=new TestEngine();
+            clientType.GetMethod("RegisterLegacyContracts").Invoke(client,new object[]{legacyRegistry});
+            Assert(legacyRegistry.TestCount==1&&legacyRegistry.CommandCount==1);
+            var legacyServices=(ITestServices)clientType.GetMethod("CreateTestServices").Invoke(client,null);
+            Assert(legacyRegistry.Execute("legacy.v12.test",legacyServices,148,CancellationToken.None).Status=="Passed"&&
+                legacyRegistry.ExecuteCommand("legacy.v12.command",string.Empty,legacyServices,CancellationToken.None)=="legacy-v12-command"&&
+                legacyRegistry.Diagnose(legacyServices).Single().Code=="legacy-v12-provider");
+            ForgeApi.Connect((IForgeRegistry)client);
+            try
+            {
+                Assert(ReferenceEquals(ForgeApi.Registry,client)&&ForgeApi.Hooks==null&&ForgeApi.Patches==null);
+            }
+            finally { ForgeApi.Disconnect(); }
+        });
+        test("Hook registration rejects ordering cycles among known hooks on the same target",()=>{
+            var service=new ForgeHookService(()=>true);
+            var target=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(int)});
+            service.Register(new ForgeHookDefinition {Id="order.a",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"CalradiaForge.Hook.order.b"},After=new List<string>{"order.c"}});
+            service.Register(new ForgeHookDefinition {Id="order.b",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"order.c"}});
+            Exception observed=null;
+            try
+            {
+                service.Register(new ForgeHookDefinition {Id="order.c",Owner="fixture",Target=target,Prefix=_=>{}});
+            }
+            catch(Exception error) { observed=error; }
+            Assert(observed is InvalidOperationException&&observed.Message.Contains("cycle")&&
+                service.GetSnapshots().Select(item=>item.Id).OrderBy(id=>id,StringComparer.Ordinal).SequenceEqual(new[]{"order.a","order.b"}));
+
+            var otherTargetService=new ForgeHookService(()=>true);
+            var otherTarget=typeof(PatchTargetFixture).GetMethod(nameof(PatchTargetFixture.Overload),new[]{typeof(string)});
+            otherTargetService.Register(new ForgeHookDefinition {Id="order.cross.a",Owner="fixture",Target=target,Prefix=_=>{},Before=new List<string>{"order.cross.b"}});
+            otherTargetService.Register(new ForgeHookDefinition {Id="order.cross.b",Owner="fixture",Target=otherTarget,Prefix=_=>{},After=new List<string>{"order.cross.a"}});
+            Assert(otherTargetService.GetSnapshots().Count==2);
+
+        });
         test("Hook console Apply and Revert require the Runtime single-use plan confirmation",()=>{
             var source=ReadForgeCommandsSource();
             var applyStart=source.IndexOf("public static string HookApply(",StringComparison.Ordinal);
