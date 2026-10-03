@@ -2720,7 +2720,7 @@ namespace MyCustomMod.QuestBehaviors
 
             string[] languages = { "en", "es", "pt", "de", "fr", "it", "pl", "ru", "tr", "zh-HANS", "zh-HANT", "ja", "ko" };
             string labelSource = File.ReadAllText(Path.GetFullPath("localization/hook-workbench.json"));
-            string[] requiredLabels = { "Choose hook", "Choose a registered hook", "No registered hooks are available." };
+            string[] requiredLabels = { "Choose hook", "Choose a registered hook", "No registered hooks are available.", "Cancel" };
             foreach (string key in requiredLabels)
             {
                 int keyStart = labelSource.IndexOf("\"" + key + "\"", StringComparison.Ordinal);

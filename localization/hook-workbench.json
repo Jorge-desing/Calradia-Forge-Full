@@ -163,5 +163,20 @@
     "zh-HANT": "所選掛鉤",
     "ja": "選択したフック",
     "ko": "선택한 후크"
+  },
+  "Cancel": {
+    "en": "Cancel",
+    "es": "Cancelar",
+    "pt": "Cancelar",
+    "de": "Abbrechen",
+    "fr": "Annuler",
+    "it": "Annulla",
+    "pl": "Anuluj",
+    "ru": "Отмена",
+    "tr": "İptal",
+    "zh-HANS": "取消",
+    "zh-HANT": "取消",
+    "ja": "キャンセル",
+    "ko": "취소"
   }
 }
