@@ -6,7 +6,32 @@ artifacts/
 
 /docs-site/api/
 **/__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.tox/
 *.pyc
 *.pyo
 *.pyd
 .venv/
+venv/
+
+# Local output from Desktop render harnesses (never source assets)
+/--skip-build
+/--skip-build*.png
+/desktop-render-tests-en-*-current.png
+
+# Local diagnostics, crash dumps, and test reports
+*.log
+*.cfcrash
+*.dmp
+**/TestResults/
+
+# Platform and IDE noise
+Thumbs.db
+.DS_Store
+desktop.ini
+*.suo
+
+# Installed JavaScript tool dependencies
+node_modules/
