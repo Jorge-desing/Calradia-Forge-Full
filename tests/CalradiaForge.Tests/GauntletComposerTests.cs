@@ -77,10 +77,12 @@ namespace CalradiaForge.Tests
             var escaped = GauntletComposerKinds.Create("text");
             escaped.Label = "A&B <T> \"Ω\"";
             escaped.Text = "line one\nline two \\ end";
+            var field = GauntletComposerKinds.Create("field");
+            field.Label = "Display name";
             var draft = new GauntletComposerDraft
             {
                 Title = "A&B <Page> \"Ω\"",
-                Components = { escaped }
+                Components = { escaped, field }
             };
             True(GauntletComposerGenerator.TryGenerate(draft, out var package, out var errors));
             Equal(0, errors.Count);
@@ -95,6 +97,11 @@ namespace CalradiaForge.Tests
             True(ReferenceEquals(generatedScrollPanel.Parent, generatedScrollBar.Parent));
             True(generatedPrefab.Descendants("TextWidget").Any(widget => (string)widget.Attribute("IsVisible") == "@IsText" && (string)widget.Attribute("Text") == "@Text"));
             True(generatedPrefab.Descendants("TextWidget").Any(widget => (string)widget.Attribute("Text") == "@SampleButtonLabel"));
+            var fieldRow = generatedPrefab.Descendants("ListPanel").Single(widget => (string)widget.Attribute("IsVisible") == "@IsField");
+            True(fieldRow.Descendants("TextWidget").Any(widget => (string)widget.Attribute("Text") == "@Label"));
+            var editableField = fieldRow.Descendants("EditableTextWidget").Single();
+            Equal("@Text", (string)editableField.Attribute("Text"));
+            Equal("true", (string)editableField.Attribute("UpdateTextOnTyping"));
             True(package.ViewModelCode.Contains("MBBindingList<GauntletPageComponentViewModel> Components"));
             True(package.ViewModelCode.Contains("MBBindingList<GauntletPageOptionViewModel> Options"));
             True(package.ViewModelCode.Contains("SampleButtonLabel"));

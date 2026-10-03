@@ -624,7 +624,6 @@ namespace CalradiaForge.Mod
         protected override void OnEndMission()
         {
             runtime?.NotifyMissionEnded();
-            CalradiaForge.Sdk.ForgeAgentMemory.ClearAll();
             base.OnEndMission();
         }
     }

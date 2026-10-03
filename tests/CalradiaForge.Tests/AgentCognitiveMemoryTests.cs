@@ -20,6 +20,7 @@ namespace CalradiaForge.Tests
             test("AgentCognitiveMemory: SubModule.OnGameStart registers behavior via AddBehavior()", TestSubModuleRegistration);
             test("AgentCognitiveMemory: Hooks into verified TaleWorlds CampaignEvents declaratively", TestCampaignEventsCoverage);
             test("AgentCognitiveMemory: HourlyTick uses the stable SDK time-slicing helper", TestModulo24TimeSlicing);
+            test("AgentCognitiveMemory: Clears volatile memory on campaign start/load, not mission end", TestMemoryLifecycleCleanup);
             test("AgentCognitiveMemory: Live volatile memory integration with ForgeAgentMemory", TestLiveForgeAgentMemoryIntegration);
             test("AgentCognitiveMemory: Telemetry counts only writes accepted by bounded memory", TestTelemetryCountsOnlyAcceptedWrites);
             test("AgentCognitiveMemory: Universal cognitive dialogue flows and token chaining", TestCognitiveDialogueRegistrationAndTokens);
@@ -234,6 +235,55 @@ namespace CalradiaForge.Tests
             {
                 throw new Exception("AgentCognitiveMemoryBehavior must use ForgeTimeSlicer with the stable Hero.StringId in its hourly maintenance loop.");
             }
+        }
+
+        private static void TestMemoryLifecycleCleanup()
+        {
+            string root = FindWorkspaceRoot();
+            string dataBehavior = File.ReadAllText(Path.Combine(root, "src", "CalradiaForge.Mod", "CampaignBehaviors", "DataBehavior.cs"));
+            string registerEvents = GetMethodBlock(dataBehavior, "public override void RegisterEvents()");
+            string newGame = GetMethodBlock(dataBehavior, "private void OnNewGameCreated(CampaignGameStarter starter)");
+            string loadedGame = GetMethodBlock(dataBehavior, "private void OnGameLoaded(CampaignGameStarter starter)");
+
+            if (!registerEvents.Contains("CampaignEvents.OnNewGameCreatedEvent.AddNonSerializedListener") ||
+                !registerEvents.Contains("CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener"))
+            {
+                throw new Exception("DataBehavior must subscribe to both new-game and loaded-game lifecycle events.");
+            }
+
+            if (!newGame.Contains("ForgeAgentMemory.ClearAll()") || !loadedGame.Contains("ForgeAgentMemory.ClearAll()"))
+            {
+                throw new Exception("DataBehavior must clear volatile agent memory when creating or loading a campaign.");
+            }
+
+            string subModule = File.ReadAllText(Path.Combine(root, "src", "CalradiaForge.Mod", "SubModule.cs"));
+            string onGameStart = GetMethodBlock(subModule, "protected override void OnGameStart(");
+            string unload = GetMethodBlock(subModule, "protected override void OnSubModuleUnloaded()");
+            string missionEnd = GetMethodBlock(subModule, "protected override void OnEndMission()");
+            if (!onGameStart.Contains("campaignStarter.AddBehavior(new CalradiaForge.Mod.DataExtensions.DataBehavior())"))
+                throw new Exception("SubModule.OnGameStart must register DataBehavior so campaign memory lifecycle cleanup is active.");
+            if (!unload.Contains("ForgeAgentMemory.ClearAll()"))
+                throw new Exception("SubModule unload must retain cleanup of volatile agent memory.");
+            if (missionEnd.Contains("ForgeAgentMemory.ClearAll()"))
+                throw new Exception("Ending a mission must not clear campaign-wide volatile agent memory.");
+        }
+
+        private static string GetMethodBlock(string source, string signature)
+        {
+            int start = source.IndexOf(signature, StringComparison.Ordinal);
+            if (start < 0) throw new Exception("Could not find method " + signature + ".");
+            int open = source.IndexOf('{', start);
+            if (open < 0) throw new Exception("Could not find method body for " + signature + ".");
+
+            int depth = 0;
+            for (int index = open; index < source.Length; index++)
+            {
+                if (source[index] == '{') depth++;
+                else if (source[index] == '}' && --depth == 0)
+                    return source.Substring(start, index - start + 1);
+            }
+
+            throw new Exception("Could not find method end for " + signature + ".");
         }
 
         private static void TestLiveForgeAgentMemoryIntegration()

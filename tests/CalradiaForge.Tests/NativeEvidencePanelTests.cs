@@ -16,6 +16,7 @@ namespace CalradiaForge.Tests
             test("Native briefing decorations cannot intercept buttons", Decorations);
             test("Native panel exposes enriched category metadata and curated commands", CategoryEnrichment);
             test("Native panel supports modder role preset cycling and command pinning", ModderRoleCustomization);
+            test("Native memory labels distinguish ForgeAgentMemory from CoALA and are localized", MemoryLabelsAreLocalized);
             test("Native periodic-work guidance uses stable buckets and localized deferral limits", StableTimeSlicingGuidance);
         }
 
@@ -192,6 +193,54 @@ namespace CalradiaForge.Tests
             Check(!(bool)hasPinnedProp.GetValue(panel), "HasPinnedCommands should be false after unpinning");
         }
 
+        static void MemoryLabelsAreLocalized()
+        {
+            string[] englishKeys =
+            {
+                "Advanced Developer SDK: Surface contracts for 110+ SDK tools, bounded NPC memory inspired by CoALA concepts, and decoupled engine API bridges.",
+                "1. Never mutate engine entities during render ticks.\n2. Never store raw Hero, Settlement, or MobileParty pointers in persistent fields; resolve by StringId via MBObjectManager.\n3. Inspection queries must be read-only; measure the complete query path before making performance claims.\n4. ForgeAgentMemory queries bounded NPC memory data; it is not a CoALA language-agent runtime.",
+                "2. Query ForgeAgentMemory: Execute cf.agent_memory_query to inspect semantic and episodic memory data.",
+                "Query ForgeAgentMemory fact counts and decay status"
+            };
+            string[] obsoleteLabels =
+            {
+                "CoALA cognitive memory agents",
+                "CoALA memory inspector queries",
+                "Query CoALA Memory",
+                "Query CoALA cognitive memory fact count"
+            };
+            string panel = File.ReadAllText("src/CalradiaForge.Mod/PanelViewModel.cs");
+            foreach (string key in englishKeys)
+                Check(panel.Contains(key.Replace("\n", "\\n")), "PanelViewModel is missing the factual memory label: " + key);
+            foreach (string obsolete in obsoleteLabels)
+                Check(!panel.Contains(obsolete), "PanelViewModel retains a CoALA-as-runtime label: " + obsolete);
+
+            string regeneration = File.ReadAllText("tools/regenerate_language_resources.py");
+            string assetGenerator = File.ReadAllText("tools/generate_assets.py");
+            foreach (string key in englishKeys)
+            {
+                string sourceLiteral = key.Replace("\n", "\\n");
+                Check(regeneration.Contains(sourceLiteral), "The resource generator must classify this text as localized: " + key);
+                Check(assetGenerator.Contains(sourceLiteral), "The asset generator must classify this text as localized: " + key);
+            }
+
+            string[] languages = { "en", "es", "pt", "de", "fr", "it", "pl", "ru", "tr", "zh-HANS", "zh-HANT", "ja", "ko" };
+            foreach (string language in languages)
+            {
+                XDocument catalog = XDocument.Load(Path.Combine("localization", language + ".xml"));
+                foreach (string key in englishKeys)
+                {
+                    XElement entry = catalog.Root.Elements("string")
+                        .SingleOrDefault(item => (string)item.Attribute("key") == key);
+                    Check(entry != null && !string.IsNullOrWhiteSpace((string)entry.Attribute("value")),
+                        language + " is missing a translation for: " + key);
+                    if (language != "en")
+                        Check((string)entry.Attribute("value") != key,
+                            language + " leaves this memory label untranslated: " + key);
+                }
+            }
+        }
+
         static void StableTimeSlicingGuidance()
         {
             const string guidance = "2. For optional periodic hero work, use ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour) for stable buckets. Defer only work that can wait up to 24 in-game hours, and measure before claiming a performance gain.";
@@ -200,6 +249,14 @@ namespace CalradiaForge.Tests
             Check(panelSource.Contains(guidance), "The simulation guidance must use the stable SDK helper and state when deferral is safe.");
             Check(!panelSource.Contains("hero.Id.GetHashCode() % 24"), "The UI must not recommend process-dependent hero bucketing.");
             Check(File.ReadAllText("tools/regenerate_language_resources.py").Contains(guidance), "The resource generator must classify the new panel key as source-localized.");
+            string assetGenerator = File.ReadAllText("tools/generate_assets.py");
+            string[] localizedKeyBlock = assetGenerator.Split(new[] { "source_localized_panel_keys=(" }, StringSplitOptions.None);
+            int localizedKeyBlockEnd = localizedKeyBlock.Length == 2
+                ? localizedKeyBlock[1].IndexOf("\n)", StringComparison.Ordinal)
+                : -1;
+            Check(localizedKeyBlockEnd >= 0 && localizedKeyBlock[1].Substring(0, localizedKeyBlockEnd).Contains(guidance)
+                && assetGenerator.Contains("for key in source_localized_panel_keys:"),
+                "The asset generator must emit the stable time-slicing guidance from localized source catalogs.");
 
             var sourceCatalogs = new[]
             {

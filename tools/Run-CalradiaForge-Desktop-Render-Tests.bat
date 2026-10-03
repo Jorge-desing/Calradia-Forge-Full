@@ -15,6 +15,15 @@ if /I "%~1"=="--no-pause" (
     goto parseArgs
 )
 if /I "%~1"=="--output" goto parseOutput
+set "CURRENT_ARGUMENT=%~1"
+setlocal EnableDelayedExpansion
+if "!CURRENT_ARGUMENT:~0,2!"=="--" (
+    endlocal
+    echo ERROR: Unknown option. Use --no-pause, --output, or one positional JSON path.
+    set "RESULT=2"
+    goto finish
+)
+endlocal
 if defined RENDER_OUTPUT (
     echo ERROR: Specify only one render output path.
     set "RESULT=2"

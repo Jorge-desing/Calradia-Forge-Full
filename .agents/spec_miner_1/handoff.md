@@ -62,10 +62,10 @@
 | 43 | Character Progression | `PerkResetEvent` | Fired when a hero resets/refunds a perk. | `Hero hero, PerkObject perk` | `void` | `hero.GetPerkValue(perk)` returns false. | `CampaignEvents.PerkResetEvent` |
 | 44 | Character Progression | `PlayerTraitChangedEvent` | Fired when player character traits change (Honor, Valor, Mercy, etc.). | `TraitObject trait, int changeAmount` | `void` | `changeAmount` can be negative. | `CampaignEvents.PlayerTraitChangedEvent` |
 | 45 | Character Progression | `RenownGained` | Fired when a hero earns renown for their clan. | `Hero hero, int gainedRenown, bool doNotNotify` | `void` | `hero.Clan` can be null for unaffiliated notables or wanderers. | `CampaignEvents.RenownGained` |
-| 46 | Periodic Ticks | `DailyTickHeroEvent` | Global daily tick executed once per game day for every hero. | `Hero hero` | `void` | Evaluated for thousands of heroes; ZERO heap allocations allowed. | `CampaignEvents.DailyTickHeroEvent` |
+| 46 | Periodic Ticks | `DailyTickHeroEvent` | Global daily tick executed once per game day for every hero. | `Hero hero` | `void` | Measure the complete callback under a representative workload before setting allocation or latency expectations. | `CampaignEvents.DailyTickHeroEvent` |
 | 47 | Periodic Ticks | `DailyTickClanEvent` | Global daily tick executed once per game day for every clan. | `Clan clan` | `void` | Must check `!clan.IsEliminated` and `clan.Leader != null`. | `CampaignEvents.DailyTickClanEvent` |
 | 48 | Periodic Ticks | `HourlyTickPartyEvent` | Hourly tick executed for each mobile party. | `MobileParty mobileParty` | `void` | High frequency; guard `mobileParty.IsActive`. | `CampaignEvents.HourlyTickPartyEvent` |
-| 49 | Periodic Ticks | `HourlyTickEvent` | Global hourly heartbeat of the campaign simulation. | `none` | `void` | Ideal for modulo-24 anti-lag time slicing (`CampaignTime.Now.ToHours % 24`). | `CampaignEvents.HourlyTickEvent` |
+| 49 | Periodic Ticks | `HourlyTickEvent` | Global hourly heartbeat of the campaign simulation. | `none` | `void` | Optional work may be deferred by a stable-ID bucket only when event semantics allow it; measure the complete callback before claiming a performance gain. | `CampaignEvents.HourlyTickEvent` |
 | 50 | Periodic Ticks | `DailyTickEvent` | Global midnight daily heartbeat. | `none` | `void` | Clean hook for daily stateless assessments and evaluations. | `CampaignEvents.DailyTickEvent` |
 | 51 | Periodic Ticks | `WeeklyTickEvent` | Global weekly heartbeat. | `none` | `void` | Used for weekly dynastic succession evaluations and companion audits. | `CampaignEvents.WeeklyTickEvent` |
 
@@ -88,7 +88,7 @@
 | 11 | `ChangeRomanticStateAction` | `RomanceLevelEnum` is `Rejection` (-1) or `Ended` (-2) | Negative integer enum values; range comparisons must account for negative values. |
 | 12 | `HeroPrisonerReleased` | `party == null` (escaped from castle dungeon or settlement without active mobile party) | NRE if inspecting `party.LeaderHero`. Check `if (party != null)`. |
 | 13 | `OnClanChangedKingdomEvent` | `oldKingdom == null` or `newKingdom == null` (independent clan becoming vassal or vice versa) | NRE if reading kingdom name without null check. Check `if (newKingdom != null)`. |
-| 14 | `DailyTickHeroEvent` | Called for ~3,000+ heroes across Calradia every single game day | If listener uses LINQ or allocates heap memory, massive GC hitches occur. Must use zero-allocation loops. |
+| 14 | `DailyTickHeroEvent` | Historical estimate of ~3,000+ heroes; the count and callback cost were not measured or independently verified in this report. | Treat callback cost as workload-dependent; measure the complete callback before making GC or frame-time claims. Do not assume a zero-allocation loop is required without evidence. |
 | 15 | `HeroComesOfAgeEvent` | Hero comes of age while captive or displaced | `hero.PartyBelongedTo` might be null or in dungeon; `hero.HeroState` can be `Prisoner`. |
 
 ---
@@ -104,9 +104,10 @@
 3. **Stateless Dynamic Evaluation Pattern**:
    - All necessary state already exists in the TaleWorlds engine objects: `Hero` (age, skills, perks, clan, spouse, children, gold), `Clan` (tier, renown, influence, leader, companions, fiefs), and `Kingdom`.
    - Instead of maintaining duplicate tables, the behavior inspects live properties on-the-fly when events occur, or periodically during ticks.
-4. **Anti-Lag Time-Slicing**:
-   - With 3,000+ heroes and 100+ clans in active simulation, iterating over all entities in a single tick causes frame drops.
-   - By hashing the entity's `StringId` against 24 hourly buckets (`(entity.StringId.GetHashCode() & 0x7FFFFFFF) % 24 == (int)CampaignTime.Now.ToHours % 24`), the evaluation is partitioned evenly across the 24 campaign hours, evaluating exactly 1/24th of entities per hourly tick.
+4. **Optional Time-Slicing (performance outcome unverified)**:
+   - The earlier estimate of 3,000+ heroes and the claim that a full traversal causes frame drops were not measured in this report; they are historical hypotheses, not established workload facts.
+   - The current `ForgeTimeSlicer` computes a deterministic 32-bit hash from the supplied ID (seed 23, multiply by 31 and add each character), masks it positive, and takes modulo the bucket count. It does not use `StringId.GetHashCode()`, guarantee even bucket sizes, or select exactly 1/N entities.
+   - `ShouldProcess` filters one entity at a time. A caller that loops over all entities still traverses the full collection and computes each ID's bucket; time-slicing only defers eligible work. Use it only when deferral preserves event semantics and measure the complete callback before claiming reduced frame time, latency, or allocations.
 5. **SubModule Integration**:
    - In `SubModule.OnGameStart(Game game, IGameStarter gameStarterObject)`:
      ```csharp

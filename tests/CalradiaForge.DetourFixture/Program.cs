@@ -52,6 +52,9 @@ namespace CalradiaForge.DetourFixture
             int voidHookFixture = RunVoidPrefixFixture();
             if (voidHookFixture != 0) return voidHookFixture;
 
+            int emptyArgumentHookFixture = RunEmptyArgumentHookFixture();
+            if (emptyArgumentHookFixture != 0) return emptyArgumentHookFixture;
+
             int typedInvokerFixture = RunTypedInvokerFixture();
             if (typedInvokerFixture != 0) return typedInvokerFixture;
 
@@ -445,7 +448,80 @@ namespace CalradiaForge.DetourFixture
             if (result != 0) return result;
             result = RunHookBenchmarkScenario("il_only", "BenchmarkIlTarget", false, false,
                 warmupIterations, measuredIterations, sampleCount, includeTranspiler: true);
-            return result;
+            if (result != 0) return result;
+            return RunNoArgumentHookBenchmarkScenario(warmupIterations, measuredIterations, sampleCount);
+        }
+
+        private static int RunNoArgumentHookBenchmarkScenario(int warmupIterations, int measuredIterations, int sampleCount)
+        {
+            const string scenario = "prefix_no_arguments";
+            MethodInfo target = typeof(Program).GetMethod("BenchmarkNoArgumentTarget", BindingFlags.Static | BindingFlags.NonPublic);
+            if (target == null) return BenchmarkFailure(scenario, "target method could not be resolved");
+            RuntimeHelpers.PrepareMethod(target.MethodHandle);
+            var call = (Func<int>)Delegate.CreateDelegate(typeof(Func<int>), target);
+
+            BenchmarkSample[] directSamples = MeasureNoArgumentBenchmarkPhase(scenario, "direct", call,
+                warmupIterations, measuredIterations, sampleCount);
+            var service = new ForgeHookService(() => true);
+            IForgeHookHandle handle = service.Register(new ForgeHookDefinition
+            {
+                Id = "benchmark-prefix-no-arguments",
+                Owner = "DetourFixture.Benchmark",
+                Target = target,
+                Prefix = NoOpHookCallback
+            });
+
+            ForgeHookOperationResult applied = handle.Apply();
+            if (!applied.Succeeded)
+            {
+                service.Disconnect();
+                return BenchmarkFailure(scenario, "explicit apply failed: " + applied.Detail);
+            }
+
+            BenchmarkSample[] hookedSamples = MeasureNoArgumentBenchmarkPhase(scenario, "hooked", call,
+                warmupIterations, measuredIterations, sampleCount);
+            WriteBenchmarkSummary(scenario, "direct", directSamples);
+            WriteBenchmarkSummary(scenario, "hooked", hookedSamples);
+
+            ForgeHookOperationResult reverted = handle.Revert();
+            if (!reverted.Succeeded || call() != 23)
+            {
+                service.Disconnect();
+                return BenchmarkFailure(scenario, "revert did not restore the direct target");
+            }
+            service.Disconnect();
+            return 0;
+        }
+
+        private static BenchmarkSample[] MeasureNoArgumentBenchmarkPhase(string scenario, string phase,
+            Func<int> call, int warmupIterations, int measuredIterations, int sampleCount)
+        {
+            int checksum = 0;
+            for (int i = 0; i < warmupIterations; i++) checksum += call();
+            Console.WriteLine("# " + scenario + " " + phase + " warmup_checksum=" + checksum.ToString(CultureInfo.InvariantCulture));
+
+            var samples = new BenchmarkSample[sampleCount];
+            for (int sample = 0; sample < sampleCount; sample++)
+            {
+                samples[sample] = MeasureNoArgumentLoop(call, measuredIterations);
+                WriteBenchmarkRow("call", scenario, phase, sample + 1, measuredIterations, samples[sample]);
+            }
+            return samples;
+        }
+
+        private static BenchmarkSample MeasureNoArgumentLoop(Func<int> call, int iterations)
+        {
+            long allocatedBefore = AppDomain.CurrentDomain.MonitoringTotalAllocatedMemorySize;
+            int gen0Before = GC.CollectionCount(0);
+            long start = Stopwatch.GetTimestamp();
+            int checksum = 0;
+            for (int i = 0; i < iterations; i++) checksum += call();
+            long stop = Stopwatch.GetTimestamp();
+            long allocated = AppDomain.CurrentDomain.MonitoringTotalAllocatedMemorySize - allocatedBefore;
+            int gen0 = GC.CollectionCount(0) - gen0Before;
+            double elapsedMs = (stop - start) * 1000.0 / Stopwatch.Frequency;
+            return new BenchmarkSample(elapsedMs, elapsedMs * 1000000.0 / iterations,
+                allocated, (double)allocated / iterations, gen0, checksum);
         }
 
         private static int RunHookBenchmarkScenario(string scenario, string targetName, bool includePrefix,
@@ -735,6 +811,52 @@ namespace CalradiaForge.DetourFixture
 
                 service.Disconnect();
                 Console.WriteLine("PASS: void Prefix cancellation and verified restoration.");
+                return 0;
+            }
+            finally
+            {
+                service.Disconnect();
+            }
+        }
+
+        private static int RunEmptyArgumentHookFixture()
+        {
+            MethodInfo target = typeof(Program).GetMethod("EmptyArgumentHookTarget", BindingFlags.Static | BindingFlags.NonPublic);
+            if (target == null) return Fail("empty-argument hook target lookup", 0, 1);
+            RuntimeHelpers.PrepareMethod(target.MethodHandle);
+
+            bool receivedSharedEmptyArguments = false;
+            int callbackCount = 0;
+            var service = new ForgeHookService(() => true);
+            IForgeHookHandle handle = service.Register(new ForgeHookDefinition
+            {
+                Id = "fixture-empty-argument-prefix",
+                Owner = "DetourFixture",
+                Target = target,
+                Prefix = invocation =>
+                {
+                    callbackCount++;
+                    receivedSharedEmptyArguments = ReferenceEquals(invocation.Arguments, Array.Empty<object>());
+                }
+            });
+
+            try
+            {
+                ForgeHookOperationResult applied = handle.Apply();
+                if (!applied.Succeeded) return Fail("empty-argument hook apply", 0, 1);
+                int actual = EmptyArgumentHookTarget();
+                if (actual != 23 || callbackCount != 1 || !receivedSharedEmptyArguments)
+                {
+                    Console.Error.WriteLine("FAIL: a zero-parameter Prefix did not receive the shared empty argument array exactly once while preserving the target result.");
+                    return 1;
+                }
+
+                ForgeHookOperationResult reverted = handle.Revert();
+                if (!reverted.Succeeded || EmptyArgumentHookTarget() != 23 || callbackCount != 1)
+                    return Fail("empty-argument hook revert", 0, 1);
+
+                service.Disconnect();
+                Console.WriteLine("PASS: zero-parameter Prefix reuses the shared immutable empty argument array and preserves target behavior.");
                 return 0;
             }
             finally
@@ -1865,6 +1987,18 @@ namespace CalradiaForge.DetourFixture
         private static int BenchmarkIlTarget(int value)
         {
             return value * 2 + 1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int BenchmarkNoArgumentTarget()
+        {
+            return 23;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private static int EmptyArgumentHookTarget()
+        {
+            return 23;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]

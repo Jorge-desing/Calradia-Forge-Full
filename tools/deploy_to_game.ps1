@@ -19,6 +19,7 @@ $preservedRuntimeTpacRelativePath = 'CalradiaForge\Assets\GauntletUI\ui_calradia
 $moduleIds = @('CalradiaForge', 'CalradiaForgeExamples', 'CalradiaForgePriceProvider', 'CalradiaForgePriceConsumer')
 $releaseBuildCompleted = $false
 $changes = [Collections.Generic.List[object]]::new()
+$script:deploymentOriginals = @{}
 $backupRoot = ''
 $preservedRuntimeTpacHash = ''
 $preservedRuntimeTpacBackupPath = ''
@@ -41,10 +42,22 @@ function Copy-WithBackup([string]$source, [string]$destination, [string]$relativ
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destination) | Out-Null
     $backupPath = ''
     $hadDestination = Test-Path -LiteralPath $destination -PathType Leaf
-    if ($hadDestination) {
-        $backupPath = Join-Path $backupRoot $relativePath
-        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $backupPath) | Out-Null
-        Copy-Item -LiteralPath $destination -Destination $backupPath -Force
+    $resolvedDestination = [IO.Path]::GetFullPath($destination)
+    if ($script:deploymentOriginals.ContainsKey($resolvedDestination)) {
+        $backupPath = [string]$script:deploymentOriginals[$resolvedDestination]
+    }
+    else {
+        if ($hadDestination) {
+            $backupPath = Join-Path $backupRoot $relativePath
+            if (Test-Path -LiteralPath $backupPath -PathType Leaf) {
+                throw "Deployment backup path already exists; refusing to overwrite it: $backupPath"
+            }
+            New-Item -ItemType Directory -Force -Path (Split-Path -Parent $backupPath) | Out-Null
+            $originalHash = Get-Sha256 $destination
+            Copy-Item -LiteralPath $destination -Destination $backupPath -Force
+            if ((Get-Sha256 $backupPath) -ne $originalHash) { throw "Deployment backup hash mismatch: $relativePath" }
+        }
+        $script:deploymentOriginals[$resolvedDestination] = $backupPath
     }
 
     $changes.Add([pscustomobject]@{ Destination = $destination; Backup = $backupPath; HadDestination = $hadDestination })

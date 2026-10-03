@@ -1207,6 +1207,70 @@ def validate_playbook_text_contracts(audit: Audit, prefab: ET.Element, vm_source
         audit.error("ForgeRunMacro must remain the final bounded control inside the scrollable Playbook flow")
 
 
+def csharp_method_body(source: str, signature: str) -> str | None:
+    """Return one simple C# method body for source-contract validation."""
+    start = source.find(signature)
+    if start < 0:
+        return None
+    opening = source.find("{", start + len(signature))
+    if opening < 0:
+        return None
+    depth = 1
+    cursor = opening + 1
+    while cursor < len(source) and depth:
+        if source[cursor] == "{":
+            depth += 1
+        elif source[cursor] == "}":
+            depth -= 1
+        cursor += 1
+    return source[opening + 1:cursor - 1] if depth == 0 else None
+
+
+def validate_hook_workbench_notifications(audit: Audit, prefab: ET.Element, vm_source: str) -> None:
+    """Keep the exclusive Hook Workbench visibility and gating bindings current."""
+    workbench = find_by_id(prefab, "ForgeHookWorkbench")
+    if workbench is None or workbench.attrib.get("IsVisible") != "@IsHookWorkbenchVisible":
+        audit.error("ForgeHookWorkbench must use the exclusive @IsHookWorkbenchVisible route binding")
+
+    if re.search(
+        r"public\s+bool\s+IsHookWorkbenchVisible\s*=>\s*IsPatchPreflightActive\s*&&\s*ShowCommandDeck\s*;",
+        vm_source,
+    ) is None:
+        audit.error("Hook Workbench visibility must require both the Patch Preflight route and the visible command deck")
+    if re.search(
+        r"public\s+bool\s+IsHookSelectionDisabled\s*=>\s*!IsHookWorkbenchVisible\s*\|\|\s*hookPlan\s*!=\s*null\s*\|\|\s*!HasRegisteredHookSelection\(hookStatus,\s*selectedHookId\)\s*;",
+        vm_source,
+    ) is None:
+        audit.error("Hook selection must remain disabled while its exclusive workbench route is hidden")
+
+    layout = re.search(
+        r"LayoutStatePropertyNames\s*=\s*new\s*\[\s*\]\s*\{(?P<body>.*?)\};",
+        vm_source,
+        re.DOTALL,
+    )
+    layout_body = layout.group("body") if layout is not None else ""
+    for property_name in (
+        "IsPatchPreflightActive",
+        "IsHookWorkbenchVisible",
+        "IsHookSelectionDisabled",
+        "IsHookConfirmDisabled",
+    ):
+        if f"nameof({property_name})" not in layout_body:
+            audit.error(f"NotifyLayout must refresh {property_name} after route changes")
+
+    section_body = csharp_method_body(vm_source, "void SelectSection(string section, bool executeOnSelect)")
+    if section_body is None or "NotifyLayout();" not in section_body:
+        audit.error("SelectSection must notify route-derived layout bindings")
+
+    focus_body = csharp_method_body(vm_source, "void SetEvidenceFocus(bool focused)")
+    if focus_body is None:
+        audit.error("SetEvidenceFocus method could not be inspected for hook visibility notifications")
+    else:
+        for property_name in ("ShowCommandDeck", "IsHookWorkbenchVisible", "IsHookSelectionDisabled", "IsHookConfirmDisabled"):
+            if f"nameof({property_name})" not in focus_body:
+                audit.error(f"SetEvidenceFocus must refresh {property_name} when evidence focus changes")
+
+
 def validate_contracts(
     audit: Audit,
     prefab: ET.Element,
@@ -1217,6 +1281,7 @@ def validate_contracts(
 ) -> None:
     validate_scrollbar_contracts(audit, prefab)
     validate_playbook_text_contracts(audit, prefab, viewmodel_source)
+    validate_hook_workbench_notifications(audit, prefab, viewmodel_source)
     props = data_source_properties(viewmodel_source)
     methods = public_command_methods(viewmodel_source)
     list_types = item_list_types(viewmodel_source)

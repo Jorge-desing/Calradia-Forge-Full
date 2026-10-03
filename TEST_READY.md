@@ -18,7 +18,7 @@
 | 4 | GEMINI Anti-Shadowing: 0 folders, namespaces, or classes named `Campaign` | `GEMINI.md`, `R2` | Directory & Regex Scanner in `tools/verify_stateless_behavior.*` | **PASS** |
 | 5 | SubModule Registration: `SubModule.OnGameStart` registers behavior via `AddBehavior()` | `ORIGINAL_REQUEST.md §R2, §Acceptance` | AST/Regex & Unit Test in `ClanCharacterProgressionTests.cs` | **PASS** |
 | 6 | Engine Crash Guard: `RegisterEvents()` solely declarative, no startup entity queries | `ORIGINAL_REQUEST.md §R2`, `bannerlord_mission_lifecycle.md` | AST inspection in `ClanCharacterProgressionTests.cs` | **PASS** |
-| 7 | Modulo-24 Hash Time-Slicing: Prevents Midnight Freeze in periodic ticks | Performance Architecture | AST inspection in `ClanCharacterProgressionTests.cs` | **PASS** |
+| 7 | Modulo-24 hash selection gates eligible periodic work; this source check does not establish lower in-game latency | Scheduling contract | AST inspection in `ClanCharacterProgressionTests.cs` | **PASS** |
 | 8 | Defensive Null & Boundary Guards: Handles 15 mined edge cases | Spec Mining (§Spec Miner 1) | AST inspection in `ClanCharacterProgressionTests.cs` | **PASS** |
 
 ---
@@ -49,7 +49,7 @@
 - **ClanCharacterProgression Unit Tests (12/12 Passed)**:
   1. `ClanProgression: Source file exists and adheres to namespace naming rules` -> **PASS**
   2. `ClanProgression: Inherits from CampaignBehaviorBase via reflection` -> **PASS**
-  3. `ClanProgression: Decorated with AutoRegisterBehaviorAttribute` -> **PASS**
+  3. `ClanProgression: Decorated with AutoRegisterBehaviorAttribute` -> **PASS** *(historical baseline; superseded by the explicit-only registration contract below)*
   4. `ClanProgression: Parameterless constructor for ForgeBehaviorLoader compatibility` -> **PASS**
   5. `ClanProgression: 100% Stateless - SyncData is no-op with zero saved fields` -> **PASS**
   6. `ClanProgression: Zero SaveableTypeDefiner classes in codebase and assembly` -> **PASS**
@@ -57,8 +57,14 @@
   8. `ClanProgression: SubModule.OnGameStart registers behavior via AddBehavior()` -> **PASS**
   9. `ClanProgression: Hooks into 35+ verified TaleWorlds CampaignEvents` -> **PASS**
   10. `ClanProgression: Engine crash guard - declarative RegisterEvents without early queries` -> **PASS**
-  11. `ClanProgression: Modulo-24 time-slicing prevents UI stutter in periodic ticks` -> **PASS**
+  11. `ClanProgression: modulo-24 selection gates eligible IDs; no UI-stutter performance claim` -> **PASS**
   12. `ClanProgression: Defensive null and boundary guards for game edge cases` -> **PASS**
+
+## Evidence scope clarification — 2026-10-02
+The time-slicing test checks source structure and selection behavior; it does not profile the full `Hero.AllAliveHeroes` traversal, callback allocations, or Bannerlord frame latency. Empty behavior-owned `SyncData` and absence of `SaveableTypeDefiner` establish that this behavior adds no custom save fields; they do not certify compatibility of the complete save format or mod set.
+
+### Current registration contract correction — 2026-10-02
+The numbered test output above is a historical 2026-09-22 record. Its AutoRegisterBehavior result is obsolete for the current source: `ClanCharacterProgressionBehavior` is registered explicitly by `SubModule.OnGameStart` and must not carry that attribute, because the Forge behavior loader would add a duplicate instance. The current regression asserts that the attribute is absent. The historical certification paragraph below records that earlier run only; it does not certify the current source or in-game application behavior.
 
 ### 2.4 Desktop UI Test Suite
 - **Command**: `tools\Run-CalradiaForge-Desktop-Tests.bat`
@@ -78,6 +84,4 @@ The implementation was verified to hook into all 45+ TaleWorlds campaign events 
 ---
 
 ## 4. Conclusion & Certification
-All test artifacts and verification scripts have been implemented, executed, and verified.
-The code compiles cleanly in Release mode, adheres to all architectural constraints, and meets 100% of the acceptance criteria.
-The implementation is certified **TEST_READY** for Milestone 4 (Gate Verification & Audit) and Milestone 5 (Packaging & Distribution).
+Historical 2026-09-22 report: the test artifacts and verification scripts listed in that snapshot had been executed and verified. The result is not a current certification; use current BAT runs and source contracts for present acceptance.

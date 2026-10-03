@@ -19,11 +19,13 @@ namespace CalradiaForge.Mod.DataExtensions
         private void OnNewGameCreated(CampaignGameStarter starter)
         {
             ForgeData.ClearAll();
+            ForgeAgentMemory.ClearAll();
         }
 
         private void OnGameLoaded(CampaignGameStarter starter)
         {
             ForgeData.ClearAll();
+            ForgeAgentMemory.ClearAll();
         }
 
         public override void SyncData(IDataStore dataStore)

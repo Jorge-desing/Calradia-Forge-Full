@@ -1106,6 +1106,14 @@ namespace CalradiaForge.Core
 
         static void EmitObjectArray(ILGenerator il, int length, int firstArg, Type[] types)
         {
+            if (length == 0)
+            {
+                // A zero-parameter detour runs on every target call; reuse the runtime's
+                // immutable empty array instead of allocating a new zero-length array.
+                il.Emit(OpCodes.Call, typeof(Array).GetMethod("Empty").MakeGenericMethod(typeof(object)));
+                return;
+            }
+
             il.Emit(OpCodes.Ldc_I4, length);
             il.Emit(OpCodes.Newarr, typeof(object));
             for (int i = 0; i < length; i++)
@@ -1140,7 +1148,9 @@ namespace CalradiaForge.Core
                 if (!activation.Service.CallbackAllowed(entry)) return InvokeOriginal(originalInvoker, original, instance, callbackArgs);
                 if (entry.Finalizer != null)
                     return DispatchWithFinalizer(activation, originalInvoker, original, instance, callbackArgs);
-                object[] originalArgs = entry.Prefix == null ? callbackArgs : (object[])callbackArgs.Clone();
+                object[] originalArgs = entry.Prefix == null || callbackArgs.Length == 0
+                    ? callbackArgs
+                    : (object[])callbackArgs.Clone();
                 var invocation = new ForgeHookInvocation(instance, callbackArgs);
                 try
                 {
@@ -1203,7 +1213,9 @@ namespace CalradiaForge.Core
         {
             Entry entry = activation.Entry;
             var invocation = new ForgeHookInvocation(instance, args);
-            object[] originalArgs = entry.Prefix == null ? args : (object[])args.Clone();
+            object[] originalArgs = entry.Prefix == null || args.Length == 0
+                ? args
+                : (object[])args.Clone();
             object result = null;
             ExceptionDispatchInfo pending = null;
             try

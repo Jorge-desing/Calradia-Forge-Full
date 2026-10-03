@@ -156,7 +156,8 @@ namespace CalradiaForge.Mod.CampaignBehaviors
         #region Time-Slicing Utility
 
         /// <summary>
-        /// Stable-ID time-slicing helper. Partitions entities across 24 hourly simulation slices.
+        /// Stable-ID predicate for hourly work. It selects whether the caller's entity belongs to the current bucket;
+        /// it does not enqueue or partition entities, and filtering a collection still scans that collection.
         /// </summary>
         public static bool ShouldProcessInCurrentHour(string stringId)
         {

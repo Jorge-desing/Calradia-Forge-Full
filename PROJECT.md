@@ -6,12 +6,12 @@
 - **Lifecycle & Engine Crash Guard**: 
   - Declarative `RegisterEvents()`: solely attaches `CampaignEvents.*.AddNonSerializedListener(this, delegate)`.
   - Session Deferral: world scanning deferred to `OnSessionLaunchedEvent` or campaign ticks.
-  - Modulo-24 Time-Slicing: partitions tick evaluations across campaign hours using hash modulus to prevent the "Midnight Freeze" stutter.
-- **Zero Save Footprint**:
+  - Modulo-24 Work Selection: selects eligible entities across campaign-hour buckets, but still scans the source hero collection on each callback. No in-game performance benefit is claimed without profiling the complete callback.
+- **No Behavior-Owned Save Fields**:
   - Zero classes inheriting from `TaleWorlds.SaveSystem.SaveableTypeDefiner`.
-  - `SyncData(IDataStore dataStore)` override is deliberately empty (no-op).
+  - `SyncData(IDataStore dataStore)` is deliberately empty because this behavior owns no custom serialized state; this alone does not certify whole-save or mod-set compatibility.
   - All character and clan progression dynamics derived statelessly on-the-fly from live TaleWorlds engine state (`Hero`, `Clan`, `HeroDeveloper`, `MobileParty`).
-- **Registration**: Registered in `MBSubModuleBase.OnGameStart` via `campaignStarter.AddBehavior(new ClanCharacterProgressionBehavior())` and decorated with `[AutoRegisterBehavior]`.
+- **Registration**: Registered explicitly in `MBSubModuleBase.OnGameStart` via `campaignStarter.AddBehavior(new ClanCharacterProgressionBehavior())`; it must not carry `[AutoRegisterBehavior]`, which would cause ForgeBehaviorLoader to add a duplicate instance.
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
@@ -23,9 +23,9 @@
 | 5 | Companion & Party Hooks | Handle `NewCompanionAdded`, `CompanionRemoved`, `OnHeroJoinedPartyEvent`, `OnPartyLeaderChangedEvent`, `OnGovernorChangedEvent` | M2 | Spec Miner 1 |
 | 6 | Marriage & Pregnancy Hooks | Handle `OnMarriageOfferedToPlayerEvent`, `OnMarriageOfferCanceledEvent`, `BeforeHeroesMarried`, `RomanticStateChanged`, `OnGivenBirthEvent` | M2 | Spec Miner 1 |
 | 7 | Character Progression Hooks | Handle `HeroGainedSkill`, `HeroLevelledUp`, `PerkOpenedEvent`, `PerkResetEvent`, `PlayerTraitChangedEvent`, `RenownGained` | M2 | Spec Miner 1 |
-| 8 | Periodic Simulation Ticks & Anti-Lag | Handle `DailyTickHeroEvent`, `DailyTickClanEvent`, `HourlyTickPartyEvent`, `HourlyTickEvent`, `DailyTickEvent`, `WeeklyTickEvent` with modulo-24 hash time-slicing | M2 | Spec Miner 1 |
+| 8 | Periodic Tick Scheduling | Handle `DailyTickHeroEvent`, `DailyTickClanEvent`, `HourlyTickPartyEvent`, `HourlyTickEvent`, `DailyTickEvent`, `WeeklyTickEvent`; use modulo-24 hash selection for eligible work without claiming reduced scan complexity | M2 | Spec Miner 1 |
 | 9 | Defensive Null & Boundary Guards | Guard against null killers, null old/new leaders, empty alive children lists, null clans, uninitialized hero developers, and dead heroes | M2 | Spec Miner 1, Spec Miner 2 |
-| 10 | 100% Stateless Save Safety | Ensure zero `SaveableTypeDefiner` classes and an empty `SyncData(IDataStore dataStore)` method | M2, M1 | `ORIGINAL_REQUEST.md`, Spec Miner 2 |
+| 10 | No Custom Behavior Save State | Ensure zero `SaveableTypeDefiner` classes and no behavior-owned `SyncData(IDataStore dataStore)` serialization calls; this is not whole-save compatibility certification | M2, M1 | `ORIGINAL_REQUEST.md`, Spec Miner 2 |
 | 11 | SubModule OnGameStart Registration | Register behavior in `SubModule.OnGameStart` via `campaignStarter.AddBehavior(...)` for new and loaded games | M3 | `ORIGINAL_REQUEST.md`, Explorer 1 |
 | 12 | Automated Verification Scripts | Programmatic PowerShell & Python test scripts validating Release build, AST/regex statelessness, anti-shadowing, and registration | M1 | `ORIGINAL_REQUEST.md`, Spec Miner 2 |
 | 13 | Multi-Agent Review & Challenge | Comprehensive review (2 Reviewers), stress testing & corner-case challenge (2 Challengers), and forensic audit (1 Auditor) | M4 | System Instructions |
@@ -43,7 +43,7 @@
 ## Interface Contracts
 ### `CalradiaForge.Mod.CampaignBehaviors.ClanCharacterProgressionBehavior`
 - Inherits: `TaleWorlds.CampaignSystem.CampaignBehaviorBase`
-- Attributes: `[CalradiaForge.Core.CampaignExtensions.AutoRegisterBehavior]`
+- Attributes: No `[AutoRegisterBehavior]`; registration is explicit in `SubModule.OnGameStart`.
 - Constructor: `public ClanCharacterProgressionBehavior()` (parameterless, zero entity access)
 - `RegisterEvents()`: Attaches non-serialized listeners to `CampaignEvents`
 - `SyncData(IDataStore dataStore)`: Empty method (no serialization)
