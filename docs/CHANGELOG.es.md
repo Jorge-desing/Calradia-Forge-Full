@@ -1,5 +1,18 @@
 # Lista de cambios
 
+## Análisis de resumen unittest Python — 02-10-2026 (Registro Rev131)
+
+- La corrección CI Rev130 usaba una fixture sin la línea vacía que el `unittest` estándar de Python puede imprimir entre `Ran N tests` y `OK`. La revisión final detectó que la primera expresión regular aún omitía ese formato antes de confirmar la corrección.
+- El parser ahora acepta uno o más saltos de línea y las formas `test` y `tests`; la regresión cubre LF, separador vacío y CRLF con conteo singular. El BAT local de CI Python pasó después del cambio. La suite opcional de agentes Antigravity requiere la repetición hospedada porque el perfil local de dependencias no está disponible.
+- Las versiones del producto/API y el comportamiento runtime de Forge, Harmony y el juego no cambian; esto no valida Bannerlord en vivo.
+
+## Corrección de regresiones CI de agentes Python — 02-10-2026 (Registro Rev130)
+
+- La ejecución Windows hospedada en `7cb521be249a88a1ef8150d5e74eb7094e06b7ae` instaló el perfil opcional de Antigravity y aprobó compilación/pruebas portables y el gate stateless, pero detectó tres aserciones obsoletas en `tests/test_forge_agents.py`. Fallaban por la redacción de roles offline, el reporte actual de paridad bilingüe y un conteo de pruebas de assets ausente.
+- `agents/compactor.py` ahora reconoce el resumen estándar de éxito de `unittest` cuando `OK` aparece en la línea posterior a `Ran N tests`, conservando ese conteo verificado. Las pruebas de agentes comprueban los contratos actuales del modo offline y del reporte de paridad sin llamar activos a roles configurados.
+- `tools\\Run-CalradiaForge-Python-Checks.bat --ci --no-pause` pasó localmente tras la corrección, con Ruff, pruebas de assets/imágenes, comprobaciones offline y validación estructural de sprites/marcador TPAC. No se pudo instalar localmente el perfil opcional por un `InvalidChunkLength` de pip; la repetición hospedada posterior a este arreglo está pendiente.
+- La versión del producto, Forge API, independencia de Harmony y comportamiento del juego no cambian. Esta corrección de herramientas/pruebas no afirma validación en Bannerlord.
+
 ## Validación final de la evolución del SDK y límites de evidencia — 02-10-2026 (Registro Rev129)
 
 - Se volvió a validar la suite local completa con `tools\Run-CalradiaForge-Tests.bat`: compilaciones limpias `net472`, `net8.0` y Desktop, con cero advertencias/errores; Core 416/416, ForgeWeave 73/73, Desktop 65/65 y 295 casos WPF con 320 pases de layout/render. Los 19.288 ms corresponden al arnés, no a latencia observada de la aplicación.

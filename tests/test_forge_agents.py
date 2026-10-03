@@ -176,7 +176,8 @@ class TestForgeTools(unittest.TestCase):
     def test_audit_documentation_parity(self) -> None:
         report = audit_documentation_parity()
         self.assertIn("Documentation Parity Audit", report)
-        self.assertIn("matched", report)
+        self.assertRegex(report, r"100% parity across \d+ English guides")
+        self.assertIn("matching Spanish counterparts", report)
 
     def test_audit_ledger_integrity(self) -> None:
         report = audit_ledger_integrity()
@@ -549,7 +550,9 @@ class TestForgeOrchestrator(unittest.TestCase):
         report = orch.run_task_sync("Audit stateless behaviors, bug hunter smells, and verify documentation parity")
 
         self.assertIn(f"=== {MASTER_AGENT_NAME} Multi-Agent Orchestration Report ===", report)
-        self.assertIn("Active Subagents: 5 registered", report)
+        self.assertIn("Configured Specialist Roles: 5 (", report)
+        self.assertIn("Cloud-Agent Execution: not used on this route.", report)
+        self.assertNotIn("Active Subagents:", report)
         self.assertIn("--- Orchestration & Delegation Steps ---", report)
         self.assertIn("Stateless_Behavior", report)
         self.assertIn("Docs_Parity", report)

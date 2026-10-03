@@ -1,5 +1,18 @@
 # Changelog
 
+## Python unittest summary parsing — 2026-10-02 (Registry Rev131)
+
+- The Rev130 CI repair used a fixture without the blank line that Python's standard `unittest` runner can emit between `Ran N tests` and `OK`. A final review caught that the first regex still missed that normal output shape before the repair was committed.
+- The parser now accepts one or more line breaks and both `test` and `tests`; regression coverage includes LF, a blank separator, and CRLF with a singular count. The local Python CI BAT passed after the change. The optional Antigravity agent suite still requires the hosted CI rerun because its local dependency profile is unavailable.
+- Product/API versions, Forge runtime behavior, Harmony independence, and game behavior remain unchanged; this is not live Bannerlord validation.
+
+## Python agent CI regression repair — 2026-10-02 (Registry Rev130)
+
+- The hosted Windows run at `7cb521be249a88a1ef8150d5e74eb7094e06b7ae` installed the optional Antigravity profile and passed the portable build/test and stateless gates, then exposed three stale assertions in `tests/test_forge_agents.py`. The failures concerned offline role wording, the current bilingual-audit report, and a missing asset test count.
+- `agents/compactor.py` now recognizes the standard `unittest` success summary when `OK` appears on the line after `Ran N tests`, preserving that verified count. Agent tests now assert the current offline and parity-report contracts without calling configured roles active.
+- `tools\\Run-CalradiaForge-Python-Checks.bat --ci --no-pause` passed locally after the correction, including Ruff, asset/image tests, offline tool checks, and decorative-sprite/TPAC-marker validation. The optional dependency-backed agent suite could not be installed locally because pip returned `InvalidChunkLength`; the hosted rerun after this correction is pending.
+- Product version, Forge API, Harmony independence, and game behavior are unchanged. This checks/tools repair does not claim live Bannerlord validation.
+
 ## Final SDK evolution validation and evidence boundaries — 2026-10-02 (Registry Rev129)
 
 - Revalidated the complete local suite through `tools\Run-CalradiaForge-Tests.bat`: clean `net472`, `net8.0`, and Desktop builds with zero warnings/errors; Core 416/416, ForgeWeave 73/73, Desktop 65/65, and 295 WPF render cases with 320 layout/render passes. The 19,288 ms figure is harness time, not observed application latency.

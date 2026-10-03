@@ -129,6 +129,24 @@ class CodeSmellsReportTests(unittest.TestCase):
 
 
 class CompactorOutputEvidenceTests(unittest.TestCase):
+    def test_unittest_asset_count_is_preserved_when_ok_is_on_the_next_line(self):
+        outputs = (
+            (8, "Ran 8 tests in 0.066s\nOK\nAll selected Calradia Forge test suites passed."),
+            (8, "Ran 8 tests in 0.066s\n\nOK\nAll selected Calradia Forge test suites passed."),
+            (1, "Ran 1 test in 0.066s\r\n\r\nOK\r\nAll selected Calradia Forge test suites passed."),
+        )
+
+        for expected_count, raw_output in outputs:
+            with self.subTest(raw_output=raw_output):
+                report, stats = ForgeTokenCompactor.distill(
+                    "run_solution_tests",
+                    raw_output,
+                    save_raw=False,
+                )
+
+                self.assertFalse(stats.has_errors)
+                self.assertIn(f"Asset Pipeline: {expected_count} tests passed", report)
+
     def test_success_marker_without_suite_metrics_does_not_invent_counts(self):
         report, stats = ForgeTokenCompactor.distill(
             "run_solution_tests",

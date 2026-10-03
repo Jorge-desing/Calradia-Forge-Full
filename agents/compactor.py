@@ -198,7 +198,10 @@ def _distill_solution_tests(raw: str) -> Tuple[str, bool, int, int]:
     )
 
     # Extract suite numbers
-    assets_match = re.search(r"Ran (\d+) tests.*OK", raw)
+    assets_match = re.search(
+        r"Ran (\d+) tests?[^\r\n]*(?:\r?\n[ \t]*)+OK\b",
+        raw,
+    )
     assets_count = assets_match.group(1) if assets_match else None
 
     core_match = re.search(r"CalradiaForge\.Tests:\s*(\d+)\s*passed", raw)
