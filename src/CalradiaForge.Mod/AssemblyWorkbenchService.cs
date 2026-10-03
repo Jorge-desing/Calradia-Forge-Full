@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading;
 using AsmResolver.DotNet;
 using CalradiaForge.Core;
+using CalradiaForge.Shared;
 
 namespace CalradiaForge.Mod
 {
@@ -45,10 +45,10 @@ namespace CalradiaForge.Mod
         {
             var input = ValidateInput(path);
             cancellation.ThrowIfCancellationRequested();
-            var inputHash = HashFile(input, cancellation);
+            var inputHash = AssemblyFileIntegrity.HashFile(input, cancellation);
             var assembly = AssemblyDefinition.FromFile(input);
             cancellation.ThrowIfCancellationRequested();
-            if (!string.Equals(inputHash, HashFile(input, cancellation), StringComparison.Ordinal))
+            if (!string.Equals(inputHash, AssemblyFileIntegrity.HashFile(input, cancellation), StringComparison.Ordinal))
                 throw new IOException("The selected assembly changed during inspection; inspect a stable file copy.");
             var module = assembly.ManifestModule ?? throw new InvalidDataException("The managed file has no manifest module.");
             var typeCount = 0;
@@ -91,10 +91,10 @@ namespace CalradiaForge.Mod
             if (!Version.TryParse(parts[1].Trim(), out var requested) || requested.Build < 0 || requested.Revision < 0)
                 throw new InvalidDataException("Version must have four numeric components, for example 1.2.3.0.");
             cancellation.ThrowIfCancellationRequested();
-            var inputHash = HashFile(input, cancellation);
+            var inputHash = AssemblyFileIntegrity.HashFile(input, cancellation);
             var source = AssemblyDefinition.FromFile(input);
             cancellation.ThrowIfCancellationRequested();
-            if (!string.Equals(inputHash, HashFile(input, cancellation), StringComparison.Ordinal))
+            if (!string.Equals(inputHash, AssemblyFileIntegrity.HashFile(input, cancellation), StringComparison.Ordinal))
                 throw new IOException("The source changed while its metadata was being read; no output copy was created.");
             var module = source.ManifestModule ?? throw new InvalidDataException("The managed file has no manifest module.");
             if (module.IsStrongNameSigned) throw new InvalidDataException("Signed assemblies are rejected; this transformation cannot retain a valid strong-name signature.");
@@ -133,9 +133,9 @@ namespace CalradiaForge.Mod
                 var verified = AssemblyDefinition.FromFile(temp);
                 if (verified.ManifestModule == null || verified.Version != requested || verified.ManifestModule.IsStrongNameSigned || !verified.ManifestModule.IsILOnly)
                     throw new InvalidDataException("The generated PE failed version or format verification.");
-                outputHash = HashFile(temp, cancellation);
+                outputHash = AssemblyFileIntegrity.HashFile(temp, cancellation);
                 cancellation.ThrowIfCancellationRequested();
-                var copiedSourceHash = CopyAndHash(input, backupTemp, cancellation);
+                var copiedSourceHash = AssemblyFileIntegrity.CopyAndHash(input, backupTemp, cancellation, TryDelete);
                 if (!string.Equals(inputHash, copiedSourceHash, StringComparison.Ordinal))
                     throw new IOException("The source changed before the backup completed; no backup or output copy was committed.");
                 cancellation.ThrowIfCancellationRequested();
@@ -180,55 +180,6 @@ namespace CalradiaForge.Mod
             return fullPath;
         }
 
-        static string HashFile(string path, CancellationToken cancellation)
-        {
-            using (var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
-            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 128 * 1024, FileOptions.SequentialScan))
-            {
-                var buffer = new byte[128 * 1024];
-                int read;
-                while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    cancellation.ThrowIfCancellationRequested();
-                    hash.AppendData(buffer, 0, read);
-                }
-                cancellation.ThrowIfCancellationRequested();
-                return BitConverter.ToString(hash.GetHashAndReset()).Replace("-", string.Empty);
-            }
-        }
-
-        static string CopyAndHash(string source, string destination, CancellationToken cancellation)
-        {
-            var destinationCreated = false;
-            try
-            {
-                using (var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
-                using (var input = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read, 128 * 1024, FileOptions.SequentialScan))
-                {
-                    using (var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None, 128 * 1024, FileOptions.SequentialScan))
-                    {
-                        destinationCreated = true;
-                        var buffer = new byte[128 * 1024];
-                        int read;
-                        while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            cancellation.ThrowIfCancellationRequested();
-                            output.Write(buffer, 0, read);
-                            hash.AppendData(buffer, 0, read);
-                        }
-                        cancellation.ThrowIfCancellationRequested();
-                        output.Flush(true);
-                        return BitConverter.ToString(hash.GetHashAndReset()).Replace("-", string.Empty);
-                    }
-                }
-            }
-            catch
-            {
-                if (destinationCreated) TryDelete(destination);
-                throw;
-            }
-        }
-
         static void TryDelete(string path)
         {
             try { if (File.Exists(path)) File.Delete(path); }
@@ -240,7 +191,7 @@ namespace CalradiaForge.Mod
             if (string.IsNullOrEmpty(expectedHash)) return;
             try
             {
-                if (File.Exists(path) && string.Equals(HashFile(path, CancellationToken.None), expectedHash, StringComparison.Ordinal))
+                if (File.Exists(path) && string.Equals(AssemblyFileIntegrity.HashFile(path, CancellationToken.None), expectedHash, StringComparison.Ordinal))
                     File.Delete(path);
             }
             catch (Exception) { /* Best-effort hash cleanup on locked files */ }

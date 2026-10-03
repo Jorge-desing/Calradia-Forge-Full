@@ -12,6 +12,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../CalradiaForge.Core/CalradiaForge.Core.csproj" />
+    <Compile Include="../CalradiaForge.Shared/AssemblyFileIntegrity.cs" Link="Shared/AssemblyFileIntegrity.cs" />
     <None Remove="Resources/Textures/**/*.png" />
     <Resource Include="Resources/Textures/Optimized/war-table-illustrated-cloth.png" />
     <Resource Include="Resources/Textures/Optimized/parchment-cartographic-paper.png" />

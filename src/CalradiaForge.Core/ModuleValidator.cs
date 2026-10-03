@@ -308,6 +308,7 @@ namespace CalradiaForge.Core
         {
             var pending = new Stack<Tuple<string,int>>();
             pending.Push(Tuple.Create(directory,1));
+            Func<bool> tryConsumeEntry = budget.TryEntry;
             while (pending.Count > 0 && !budget.EntryLimitReached)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -316,12 +317,14 @@ namespace CalradiaForge.Core
                 {
                     foreach (var entry in Directory.EnumerateFileSystemEntries(current.Item1, "*", SearchOption.TopDirectoryOnly))
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        if (!budget.TryEntry()) break;
-                        FileAttributes attributes;
-                        try { attributes = File.GetAttributes(entry); }
-                        catch (Exception error) when (IsPathAccessError(error)) { budget.Unreadable = true; continue; }
-                        if ((attributes & FileAttributes.ReparsePoint) != 0)
+                        var probe = DirectoryEntryProbe.Inspect(entry, cancellationToken, tryConsumeEntry, out var attributes);
+                        if (probe == DirectoryEntryProbeResult.EntryLimitReached) break;
+                        if (probe == DirectoryEntryProbeResult.Unreadable)
+                        {
+                            budget.Unreadable = true;
+                            continue;
+                        }
+                        if (probe == DirectoryEntryProbeResult.ReparsePoint)
                         {
                             budget.SkippedReparsePoint = true;
                             continue;

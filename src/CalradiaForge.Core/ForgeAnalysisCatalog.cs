@@ -253,7 +253,13 @@ namespace CalradiaForge.Core
                 // Keep offsets and line breaks stable while excluding comments and literal text
                 // from the source-only structural heuristics below.
                 request.CancellationToken.ThrowIfCancellationRequested();
-                var code = MaskCSharpCommentsAndLiterals(text);
+                if (!TryMaskCSharpCommentsAndLiterals(text, out var code))
+                {
+                    AddIncompleteSourceFinding(result, file,
+                        "C# source could not be masked completely because a comment or literal was unterminated or exceeded the bounded nesting depth.",
+                        "Correct the C# source or simplify nested interpolations, then rerun the source analysis.");
+                    continue;
+                }
                 request.CancellationToken.ThrowIfCancellationRequested();
                 if (Regex.IsMatch(code, @"\bnamespace\s+[A-Za-z0-9_\.]*\.Campaign\s*[;\{]"))
                     Add(result, "campaign_namespace_shadowing", "Error", file, LineOf(code, ".Campaign", request.CancellationToken), null,
@@ -1534,6 +1540,12 @@ namespace CalradiaForge.Core
             var directories = new Stack<Tuple<string, int>>();
             var discoveredDirectories = 1;
             var inspectedEntries = 0;
+            Func<bool> tryConsumeEntry = () =>
+            {
+                if (inspectedEntries >= MaximumAnalysisDirectoryEntries) return false;
+                inspectedEntries++;
+                return true;
+            };
             try
             {
                 if ((File.GetAttributes(request.TargetPath) & FileAttributes.ReparsePoint) != 0)
@@ -1559,23 +1571,18 @@ namespace CalradiaForge.Core
                 {
                     foreach (var entry in Directory.EnumerateFileSystemEntries(directory.Item1, "*", SearchOption.TopDirectoryOnly))
                     {
-                        request.CancellationToken.ThrowIfCancellationRequested();
-                        if (inspectedEntries >= MaximumAnalysisDirectoryEntries)
+                        var probe = DirectoryEntryProbe.Inspect(entry, request.CancellationToken, tryConsumeEntry, out var attributes);
+                        if (probe == DirectoryEntryProbeResult.EntryLimitReached)
                         {
                             incomplete = true;
                             break;
                         }
-                        inspectedEntries++;
-
-                        FileAttributes attributes;
-                        try { attributes = File.GetAttributes(entry); }
-                        catch (Exception error) when (error is IOException || error is UnauthorizedAccessException || error is System.Security.SecurityException)
+                        if (probe == DirectoryEntryProbeResult.Unreadable)
                         {
                             unreadable = true;
                             continue;
                         }
-
-                        if ((attributes & FileAttributes.ReparsePoint) != 0)
+                        if (probe == DirectoryEntryProbeResult.ReparsePoint)
                         {
                             skippedReparsePoint = true;
                             continue;
@@ -1743,8 +1750,16 @@ namespace CalradiaForge.Core
             return count == 3 && prefix[0] == 0xEF && prefix[1] == 0xBB && prefix[2] == 0xBF;
         }
 
-        static string MaskCSharpCommentsAndLiterals(string source)
+        internal static string MaskCSharpCommentsAndLiterals(string source)
         {
+            if (!TryMaskCSharpCommentsAndLiterals(source, out var masked))
+                throw new InvalidDataException("C# comments and literals could not be masked completely within the bounded nesting depth.");
+            return masked;
+        }
+
+        internal static bool TryMaskCSharpCommentsAndLiterals(string source, out string masked)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
             var characters = source.ToCharArray();
             var index = 0;
             while (index < source.Length)
@@ -1761,34 +1776,52 @@ namespace CalradiaForge.Core
                 {
                     var start = index;
                     index += 2;
+                    var closed = false;
                     while (index < source.Length)
                     {
                         if (source[index] == '*' && index + 1 < source.Length && source[index + 1] == '/')
                         {
                             index += 2;
+                            closed = true;
                             break;
                         }
                         index++;
+                    }
+                    if (!closed)
+                    {
+                        masked = null;
+                        return false;
                     }
                     MaskCSharpRange(source, characters, start, index);
                     continue;
                 }
                 if (source[index] == '"' || source[index] == '\'')
                 {
-                    var end = FindCSharpLiteralEnd(source, index, 0);
+                    var complete = true;
+                    var end = FindCSharpLiteralEnd(source, index, 0, ref complete);
+                    if (!complete)
+                    {
+                        masked = null;
+                        return false;
+                    }
                     MaskCSharpRange(source, characters, index, end);
                     index = end;
                     continue;
                 }
                 index++;
             }
-            return new string(characters);
+            masked = new string(characters);
+            return true;
         }
 
-        static int FindCSharpLiteralEnd(string source, int quoteIndex, int nestingDepth)
+        static int FindCSharpLiteralEnd(string source, int quoteIndex, int nestingDepth, ref bool complete)
         {
-            if (nestingDepth >= 32) return source.Length;
-            if (source[quoteIndex] == '\'') return FindQuotedCharacterEnd(source, quoteIndex);
+            if (nestingDepth >= 32)
+            {
+                complete = false;
+                return source.Length;
+            }
+            if (source[quoteIndex] == '\'') return FindQuotedCharacterEnd(source, quoteIndex, ref complete);
 
             var quoteCount = 0;
             while (quoteIndex + quoteCount < source.Length && source[quoteIndex + quoteCount] == '"') quoteCount++;
@@ -1796,29 +1829,44 @@ namespace CalradiaForge.Core
             {
                 var dollarCount = CountPrecedingCharacters(source, quoteIndex, '$');
                 return dollarCount == 0
-                    ? FindRawStringEnd(source, quoteIndex, quoteCount)
-                    : FindRawInterpolatedStringEnd(source, quoteIndex, quoteCount, dollarCount, nestingDepth);
+                    ? FindRawStringEnd(source, quoteIndex, quoteCount, ref complete)
+                    : FindRawInterpolatedStringEnd(source, quoteIndex, quoteCount, dollarCount, nestingDepth, ref complete);
             }
 
             var verbatim = IsVerbatimStringPrefix(source, quoteIndex);
             var interpolated = IsInterpolatedStringPrefix(source, quoteIndex);
             return interpolated
-                ? FindInterpolatedStringEnd(source, quoteIndex, verbatim, nestingDepth)
-                : FindQuotedStringEnd(source, quoteIndex, verbatim);
+                ? FindInterpolatedStringEnd(source, quoteIndex, verbatim, nestingDepth, ref complete)
+                : FindQuotedStringEnd(source, quoteIndex, verbatim, ref complete);
         }
 
-        static int FindQuotedCharacterEnd(string source, int quoteIndex)
+        static int FindQuotedCharacterEnd(string source, int quoteIndex, ref bool complete)
         {
             var index = quoteIndex + 1;
             while (index < source.Length)
             {
-                if (source[index] == '\\' && index + 1 < source.Length) { index += 2; continue; }
-                if (source[index++] == '\'') break;
+                if (source[index] == '\r' || source[index] == '\n')
+                {
+                    complete = false;
+                    return index;
+                }
+                if (source[index] == '\\')
+                {
+                    if (index + 1 >= source.Length)
+                    {
+                        complete = false;
+                        return source.Length;
+                    }
+                    index += 2;
+                    continue;
+                }
+                if (source[index++] == '\'') return index;
             }
-            return index;
+            complete = false;
+            return source.Length;
         }
 
-        static int FindQuotedStringEnd(string source, int quoteIndex, bool verbatim)
+        static int FindQuotedStringEnd(string source, int quoteIndex, bool verbatim, ref bool complete)
         {
             var index = quoteIndex + 1;
             while (index < source.Length)
@@ -1829,12 +1877,18 @@ namespace CalradiaForge.Core
                     return index + 1;
                 }
                 if (!verbatim && source[index] == '\\' && index + 1 < source.Length) { index += 2; continue; }
+                if (!verbatim && (source[index] == '\r' || source[index] == '\n'))
+                {
+                    complete = false;
+                    return index;
+                }
                 index++;
             }
+            complete = false;
             return source.Length;
         }
 
-        static int FindInterpolatedStringEnd(string source, int quoteIndex, bool verbatim, int nestingDepth)
+        static int FindInterpolatedStringEnd(string source, int quoteIndex, bool verbatim, int nestingDepth, ref bool complete)
         {
             var index = quoteIndex + 1;
             while (index < source.Length)
@@ -1848,16 +1902,18 @@ namespace CalradiaForge.Core
                 if (source[index] == '{')
                 {
                     if (index + 1 < source.Length && source[index + 1] == '{') { index += 2; continue; }
-                    index = FindInterpolationExpressionEnd(source, index + 1, 1, nestingDepth + 1);
+                    index = FindInterpolationExpressionEnd(source, index + 1, 1, nestingDepth + 1, ref complete);
+                    if (!complete) return source.Length;
                     continue;
                 }
                 if (source[index] == '}' && index + 1 < source.Length && source[index + 1] == '}') { index += 2; continue; }
                 index++;
             }
+            complete = false;
             return source.Length;
         }
 
-        static int FindRawStringEnd(string source, int quoteIndex, int delimiterLength)
+        static int FindRawStringEnd(string source, int quoteIndex, int delimiterLength, ref bool complete)
         {
             var index = quoteIndex + delimiterLength;
             while (index < source.Length)
@@ -1867,10 +1923,11 @@ namespace CalradiaForge.Core
                 if (runLength >= delimiterLength) return index + runLength;
                 index += runLength;
             }
+            complete = false;
             return source.Length;
         }
 
-        static int FindRawInterpolatedStringEnd(string source, int quoteIndex, int quoteDelimiterLength, int braceDelimiterLength, int nestingDepth)
+        static int FindRawInterpolatedStringEnd(string source, int quoteIndex, int quoteDelimiterLength, int braceDelimiterLength, int nestingDepth, ref bool complete)
         {
             var index = quoteIndex + quoteDelimiterLength;
             while (index < source.Length)
@@ -1887,7 +1944,8 @@ namespace CalradiaForge.Core
                     var braceRun = CountForwardCharacters(source, index, '{');
                     if (braceRun >= braceDelimiterLength)
                     {
-                        index = FindInterpolationExpressionEnd(source, index + braceDelimiterLength, braceDelimiterLength, nestingDepth + 1);
+                        index = FindInterpolationExpressionEnd(source, index + braceDelimiterLength, braceDelimiterLength, nestingDepth + 1, ref complete);
+                        if (!complete) return source.Length;
                         continue;
                     }
                     index += braceRun;
@@ -1895,12 +1953,17 @@ namespace CalradiaForge.Core
                 }
                 index++;
             }
+            complete = false;
             return source.Length;
         }
 
-        static int FindInterpolationExpressionEnd(string source, int expressionStart, int closeBraceCount, int nestingDepth)
+        static int FindInterpolationExpressionEnd(string source, int expressionStart, int closeBraceCount, int nestingDepth, ref bool complete)
         {
-            if (nestingDepth >= 32) return source.Length;
+            if (nestingDepth >= 32)
+            {
+                complete = false;
+                return source.Length;
+            }
             var braceDepth = 1;
             var index = expressionStart;
             while (index < source.Length)
@@ -1914,16 +1977,23 @@ namespace CalradiaForge.Core
                 if (source[index] == '/' && index + 1 < source.Length && source[index + 1] == '*')
                 {
                     index += 2;
+                    var closed = false;
                     while (index < source.Length)
                     {
-                        if (source[index] == '*' && index + 1 < source.Length && source[index + 1] == '/') { index += 2; break; }
+                        if (source[index] == '*' && index + 1 < source.Length && source[index + 1] == '/') { index += 2; closed = true; break; }
                         index++;
+                    }
+                    if (!closed)
+                    {
+                        complete = false;
+                        return source.Length;
                     }
                     continue;
                 }
                 if (source[index] == '"' || source[index] == '\'')
                 {
-                    index = FindCSharpLiteralEnd(source, index, nestingDepth + 1);
+                    index = FindCSharpLiteralEnd(source, index, nestingDepth + 1, ref complete);
+                    if (!complete) return source.Length;
                     continue;
                 }
                 if (source[index] == '{') { braceDepth++; index++; continue; }
@@ -1937,6 +2007,7 @@ namespace CalradiaForge.Core
                 }
                 index++;
             }
+            complete = false;
             return source.Length;
         }
 
@@ -1985,6 +2056,27 @@ namespace CalradiaForge.Core
         {
             if (result.Findings.Count >= 1000) { result.Truncated = true; return; }
             result.Findings.Add(new ForgeDiagnosticFinding { RuleId = rule, Severity = severity, SourcePath = path, Line = line, Column = column, Evidence = evidence, Recommendation = recommendation });
+        }
+
+        static void AddIncompleteSourceFinding(ForgeAnalysisResult result, string path, string evidence, string recommendation)
+        {
+            const string rule = "source_lex_incomplete";
+            result.Truncated = true;
+            if (result.Findings.Count >= 1000)
+            {
+                // Keep the diagnostic cap while ensuring a bounded/incomplete parse cannot look clean.
+                if (result.Findings.Any(finding => finding != null && string.Equals(finding.RuleId, rule, StringComparison.Ordinal))) return;
+                result.Findings[result.Findings.Count - 1] = new ForgeDiagnosticFinding
+                {
+                    RuleId = rule,
+                    Severity = "Error",
+                    SourcePath = path,
+                    Evidence = evidence,
+                    Recommendation = recommendation
+                };
+                return;
+            }
+            Add(result, rule, "Error", path, null, null, evidence, recommendation);
         }
     }
 

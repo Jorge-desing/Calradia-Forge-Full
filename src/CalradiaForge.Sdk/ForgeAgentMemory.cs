@@ -100,6 +100,51 @@ namespace CalradiaForge.Sdk
             return false;
         }
 
+        private static bool TryGetStoreBucket<T>(
+            Dictionary<string, Dictionary<string, T>> store,
+            string agentId,
+            string key,
+            int maximumEntries,
+            out Dictionary<string, T> entries,
+            out bool keyExists)
+        {
+            bool hasEntries = store.TryGetValue(agentId, out entries);
+            keyExists = hasEntries && entries.ContainsKey(key);
+            if (keyExists) return true;
+            if (hasEntries && entries.Count >= maximumEntries) return false;
+            if (!TryRegisterAgentLocked(agentId)) return false;
+            if (hasEntries) return true;
+
+            entries = new Dictionary<string, T>(StringComparer.Ordinal);
+            store.Add(agentId, entries);
+            return true;
+        }
+
+        private static ForgeMemoryReadResult<T> CreateReadResult<T>(bool found, object value, bool expired)
+        {
+            if (!found) return new ForgeMemoryReadResult<T>(ForgeMemoryReadState.Missing, default(T));
+            if (expired) return new ForgeMemoryReadResult<T>(ForgeMemoryReadState.Expired, default(T));
+            return TryCastValue(value, out T typedValue)
+                ? new ForgeMemoryReadResult<T>(ForgeMemoryReadState.Found, typedValue)
+                : new ForgeMemoryReadResult<T>(ForgeMemoryReadState.TypeMismatch, default(T));
+        }
+
+        private static IReadOnlyList<string> GetKeysLocked<T>(
+            Dictionary<string, Dictionary<string, T>> store, string agentId)
+        {
+            if (!store.TryGetValue(agentId, out var entries)) return Array.Empty<string>();
+            var keys = new string[entries.Count];
+            entries.Keys.CopyTo(keys, 0);
+            return keys;
+        }
+
+        private static int CountEntriesLocked<T>(Dictionary<string, Dictionary<string, T>> store)
+        {
+            int count = 0;
+            foreach (Dictionary<string, T> entries in store.Values) count += entries.Count;
+            return count;
+        }
+
         /// <summary>Remove one agent's data from all three tiers and release its global slot.</summary>
         public static void ClearAgent(string agentId)
         {
@@ -204,33 +249,10 @@ namespace CalradiaForge.Sdk
                 lock (SyncRoot)
                 {
                     PurgeExpiredLocked(agentId, DateTimeOffset.UtcNow);
-
-                    Dictionary<string, Entry> facts;
-                    bool hasFacts = _data.TryGetValue(agentId, out facts);
-                    Entry existing;
-                    if (hasFacts && facts.TryGetValue(key, out existing))
-                    {
-                        facts[key] = CreateEntry(content, ttl);
-                        return true;
-                    }
-
-                    if (hasFacts && facts.Count >= MaximumSemanticEntriesPerAgent)
-                    {
-                        return false;
-                    }
-
-                    if (!TryRegisterAgentLocked(agentId))
-                    {
-                        return false;
-                    }
-
-                    if (!hasFacts)
-                    {
-                        facts = new Dictionary<string, Entry>(StringComparer.Ordinal);
-                        _data.Add(agentId, facts);
-                    }
-
-                    facts.Add(key, CreateEntry(content, ttl));
+                    if (!TryGetStoreBucket(_data, agentId, key, MaximumSemanticEntriesPerAgent,
+                        out Dictionary<string, Entry> facts, out bool keyExists)) return false;
+                    if (keyExists) facts[key] = CreateEntry(content, ttl);
+                    else facts.Add(key, CreateEntry(content, ttl));
                     return true;
                 }
             }
@@ -255,23 +277,8 @@ namespace CalradiaForge.Sdk
                     Dictionary<string, Entry> facts;
                     Entry entry = null;
                     bool hasEntry = _data.TryGetValue(agentId, out facts) && facts.TryGetValue(key, out entry);
-                    ForgeMemoryReadResult<T> result;
-                    if (!hasEntry)
-                    {
-                        result = new ForgeMemoryReadResult<T>(ForgeMemoryReadState.Missing, default(T));
-                    }
-                    else if (entry.HasTtl && now >= entry.ExpiresAt)
-                    {
-                        result = new ForgeMemoryReadResult<T>(ForgeMemoryReadState.Expired, default(T));
-                    }
-                    else if (TryCastValue(entry.Value, out T typedValue))
-                    {
-                        result = new ForgeMemoryReadResult<T>(ForgeMemoryReadState.Found, typedValue);
-                    }
-                    else
-                    {
-                        result = new ForgeMemoryReadResult<T>(ForgeMemoryReadState.TypeMismatch, default(T));
-                    }
+                    bool expired = hasEntry && entry.HasTtl && now >= entry.ExpiresAt;
+                    ForgeMemoryReadResult<T> result = CreateReadResult<T>(hasEntry, entry?.Value, expired);
 
                     // Preserve the existing lazy cleanup behavior for every expired key owned by
                     // this agent while retaining the requested key's pre-purge outcome above.
@@ -287,12 +294,7 @@ namespace CalradiaForge.Sdk
                 lock (SyncRoot)
                 {
                     PurgeExpiredLocked(agentId, DateTimeOffset.UtcNow);
-                    Dictionary<string, Entry> facts;
-                    if (!_data.TryGetValue(agentId, out facts)) return Array.Empty<string>();
-
-                    var keys = new string[facts.Count];
-                    facts.Keys.CopyTo(keys, 0);
-                    return keys;
+                    return GetKeysLocked(_data, agentId);
                 }
             }
 
@@ -385,12 +387,7 @@ namespace CalradiaForge.Sdk
 
             internal int GetEntryCountLocked()
             {
-                int count = 0;
-                foreach (Dictionary<string, Entry> facts in _data.Values)
-                {
-                    count += facts.Count;
-                }
-                return count;
+                return CountEntriesLocked(_data);
             }
 
             internal void ClearAgentLocked(string agentId)
@@ -588,31 +585,10 @@ namespace CalradiaForge.Sdk
 
                 lock (SyncRoot)
                 {
-                    Dictionary<string, object> tasks;
-                    bool hasTasks = _data.TryGetValue(agentId, out tasks);
-                    if (hasTasks && tasks.ContainsKey(task))
-                    {
-                        tasks[task] = instructions;
-                        return true;
-                    }
-
-                    if (hasTasks && tasks.Count >= MaximumProceduralEntriesPerAgent)
-                    {
-                        return false;
-                    }
-
-                    if (!TryRegisterAgentLocked(agentId))
-                    {
-                        return false;
-                    }
-
-                    if (!hasTasks)
-                    {
-                        tasks = new Dictionary<string, object>(StringComparer.Ordinal);
-                        _data.Add(agentId, tasks);
-                    }
-
-                    tasks.Add(task, instructions);
+                    if (!TryGetStoreBucket(_data, agentId, task, MaximumProceduralEntriesPerAgent,
+                        out Dictionary<string, object> tasks, out bool keyExists)) return false;
+                    if (keyExists) tasks[task] = instructions;
+                    else tasks.Add(task, instructions);
                     return true;
                 }
             }
@@ -634,14 +610,9 @@ namespace CalradiaForge.Sdk
                 lock (SyncRoot)
                 {
                     Dictionary<string, object> tasks;
-                    object value;
-                    if (_data.TryGetValue(agentId, out tasks) && tasks.TryGetValue(task, out value))
-                    {
-                        return TryCastValue(value, out T typedValue)
-                            ? new ForgeMemoryReadResult<T>(ForgeMemoryReadState.Found, typedValue)
-                            : new ForgeMemoryReadResult<T>(ForgeMemoryReadState.TypeMismatch, default(T));
-                    }
-                    return new ForgeMemoryReadResult<T>(ForgeMemoryReadState.Missing, default(T));
+                    object value = null;
+                    bool found = _data.TryGetValue(agentId, out tasks) && tasks.TryGetValue(task, out value);
+                    return CreateReadResult<T>(found, value, expired: false);
                 }
             }
 
@@ -649,14 +620,7 @@ namespace CalradiaForge.Sdk
             public IReadOnlyList<string> GetTaskNames(string agentId)
             {
                 if (agentId == null) return Array.Empty<string>();
-                lock (SyncRoot)
-                {
-                    Dictionary<string, object> tasks;
-                    if (!_data.TryGetValue(agentId, out tasks)) return Array.Empty<string>();
-                    var names = new string[tasks.Count];
-                    tasks.Keys.CopyTo(names, 0);
-                    return names;
-                }
+                lock (SyncRoot) return GetKeysLocked(_data, agentId);
             }
 
             public void ClearAgent(string agentId)
@@ -676,12 +640,7 @@ namespace CalradiaForge.Sdk
 
             internal int GetEntryCountLocked()
             {
-                int count = 0;
-                foreach (Dictionary<string, object> tasks in _data.Values)
-                {
-                    count += tasks.Count;
-                }
-                return count;
+                return CountEntriesLocked(_data);
             }
 
             internal void ClearAgentLocked(string agentId)

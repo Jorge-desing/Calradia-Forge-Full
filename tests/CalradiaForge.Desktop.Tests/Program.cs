@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using CalradiaForge.Core;
 using CalradiaForge.Desktop;
+using CalradiaForge.Desktop.Presentation;
 using CalradiaForge.Desktop.Services;
 using CalradiaForge.Sdk;
 
@@ -68,6 +69,8 @@ internal static class Program
             ("Desktop generators state their template limit", TemplateSurface),
             ("Desktop live tools require an advertised session capability", LiveCapabilitySurface),
             ("Desktop hook workbench uses a confirmed one-use plan over registered IDs only", HookWorkbenchSurface),
+            ("Desktop preset cycling preserves route sequences, evidence, and notifications", PresetDispatchBehavior),
+            ("Desktop hook snapshot projections preserve aliases and optional flags", HookSnapshotProjectionSemantics),
             ("Desktop hook confirmation reconciles snapshots without clearing its busy state", HookWorkbenchReconciliationRefresh),
             ("Desktop keeps guarded state-changing work unavailable", WriterGateSurface),
             ("Desktop command seal is mathematically centered", MarkGeometry),
@@ -927,6 +930,140 @@ internal static class Program
         }
         string service = ReadSourceText(FindDesktopFile("Services/DesktopLocalizationService.cs"));
         Check(service.Contains("MergedDictionaries") && service.Contains("activeDictionary"), "Language changes must swap only the active Forge dictionary");
+        return Task.CompletedTask;
+    }
+
+    static Task PresetDispatchBehavior()
+    {
+        var catalog = new ToolCatalog();
+        var expectations = new (DesktopStudioKind Studio, string Property, string Source, string[] Labels,
+            Func<ToolPageViewModel, int, string> Detail)[]
+        {
+            (DesktopStudioKind.TroopTree, nameof(ToolPageViewModel.TroopTreeDashboard), "Troop Tree / Preset",
+                ["⟳ Ver Árbol Imperial Base", "⟳ Ver Línea Dinástica Noble", "⟳ Ver Árbol Imperial Base"],
+                (_, index) => index % 2 == 1 ? "Switched to Noble Dynastic Cataphract Line (T2-T6)." : "Restored Imperial Core Combined Arms Tree (T1-T4)."),
+            (DesktopStudioKind.AudioMixer, nameof(ToolPageViewModel.AudioStudioDashboard), "Audio / Preset",
+                ["⟳ Cargar Muestra Combate", "⟳ Cargar Fanfarria UI", "⟳ Cargar Muestra Combate"],
+                (_, index) => index % 2 == 1 ? "Loaded UI Fanfare (custom_quest_complete_jingle.ogg, -3.2 dBFS)." : "Restored Combat Shield Clash (custom_iron_shield_clash.wav, -1.4 dBFS)."),
+            (DesktopStudioKind.Workshop, nameof(ToolPageViewModel.WorkshopDashboard), "Economy / Preset",
+                ["⟳ Ver Escenario Marunath", "⟳ Ver Escenario Epicrotea", "⟳ Ver Escenario Marunath"],
+                (_, index) => index % 2 == 1 ? "Switched market scope to Epicrotea (Iron Smithy + Brewery, 6120 prosperity)." : "Restored Marunath market scope (Silversmith + Smithy, 5420 prosperity)."),
+            (DesktopStudioKind.AgentMemory, nameof(ToolPageViewModel.AgentMemoryDashboard), "Agent Memory / Preset",
+                ["⟳ Decaimiento Temporal (T+24h)", "⟳ Poda y Consolidación (T+72h)", "⟳ Estado Base (T=0h)"],
+                (page, _) => { var hero = page.AgentMemoryDashboard.SelectedAgent; return $"Switched hero to {hero?.Name} ({hero?.HeroId}) · Decay Stage: {hero?.DecayState} ({hero?.SummaryBadge})."; }),
+            (DesktopStudioKind.CodeSecurity, nameof(ToolPageViewModel.CodeSecurityDashboard), "Security / Preset",
+                ["⟳ Auditar Motor Nativo", "⟳ Preflight de Módulo", "⟳ Auditar Mod Ensamblado"],
+                (page, index) => $"Loaded scenario #{index % 3 + 1}: {page.CodeSecurityDashboard?.TargetAssembly}"),
+            (DesktopStudioKind.ModuleHierarchy, nameof(ToolPageViewModel.ModuleHierarchyDashboard), "Module / Preset",
+                ["⟳ Matriz Sandbox Mínima", "⟳ Matriz Multimódulo", "⟳ Matriz Modular Estándar"],
+                (page, index) => $"Loaded topology #{index % 3 + 1}: {page.ModuleHierarchyDashboard?.SubModuleXmlStatus}"),
+            (DesktopStudioKind.KingdomDiplomacy, nameof(ToolPageViewModel.KingdomDiplomacyDashboard), "Diplomacy / Preset",
+                ["⟳ Imperio Occidental (Garios)", "⟳ Reino de Vlandia (Derthert)", "⟳ Imperio del Sur (Rhagaea)"],
+                (page, index) => $"Loaded geopolitical stance #{index % 3 + 1}: {page.KingdomDiplomacyDashboard?.FactionName}"),
+            (DesktopStudioKind.ComponentGenerator, nameof(ToolPageViewModel.ComponentGeneratorDashboard), "Generator / Preset",
+                ["⟳ Prefab Gauntlet", "⟳ Definición Tropas", "⟳ Manifiesto Sonidos"],
+                (page, index) => $"Loaded synthesis template #{index % 3 + 1}: {page.ComponentGeneratorDashboard?.TargetOutput}"),
+            (DesktopStudioKind.CombatStudio, nameof(ToolPageViewModel.CombatStudioDashboard), "Combat / Preset",
+                ["⟳ Doctrina Contraataque", "⟳ Doctrina Muro de Escudos", "⟳ Doctrina Contraataque"],
+                (page, index) => $"Cycled combat formation preset #{index % 2 + 1}: {page.CombatStudioDashboard?.RegimentName}"),
+            (DesktopStudioKind.CaravanTrade, nameof(ToolPageViewModel.CaravanTradeDashboard), "Trade / Preset",
+                ["⟳ Ruta Terrestre Secundaria", "⟳ Corredor de la Plata", "⟳ Ruta Terrestre Secundaria"],
+                (page, index) => $"Cycled caravan route preset #{index % 2 + 1}: {page.CaravanTradeDashboard?.RouteName}"),
+            (DesktopStudioKind.GauntletStudio, nameof(ToolPageViewModel.GauntletStudio), "Gauntlet / Preset",
+                ["⟳ HUD Minimalista", "⟳ HUD Táctico Completo", "⟳ HUD Minimalista"],
+                (page, index) => $"Cycled Gauntlet HUD preset #{index % 2 + 1}: {page.GauntletStudio?.PrefabName}"),
+            (DesktopStudioKind.CampaignStudio, nameof(ToolPageViewModel.CampaignStudio), "Campaign / Preset",
+                ["⟳ Simulación Frontera Hostil", "⟳ Simulación Asentamiento Imperial", "⟳ Simulación Frontera Hostil"],
+                (page, index) => $"Cycled Campaign expedition preset #{index % 2 + 1}: {page.CampaignStudio?.ProvinceName}"),
+            (DesktopStudioKind.LiveSession, nameof(ToolPageViewModel.LiveSessionDashboard), "Live Session / Preset",
+                ["⟳ Modo Alta Concurrencia", "⟳ Sesión Interactiva Base", "⟳ Modo Alta Concurrencia"],
+                (page, index) => $"Cycled Live Session telemetry preset #{index % 3 + 1}: {page.LiveSessionDashboard?.SessionTitle}"),
+            (DesktopStudioKind.DeliveryStudio, nameof(ToolPageViewModel.DeliveryStudioDashboard), "Delivery / Preset",
+                ["⟳ Perfil Rápido CI/CD", "⟳ Perfil Estándar de Lanzamiento", "⟳ Perfil Rápido CI/CD"],
+                (page, index) => $"Cycled FastPackageEngine delivery preset #{index % 2 + 1}: {page.DeliveryStudioDashboard?.DistributionTitle}"),
+            (DesktopStudioKind.DiagnosticsStudio, nameof(ToolPageViewModel.DiagnosticsStudioDashboard), "Diagnostics / Preset",
+                ["⟳ Modo Sandbox & Crash Forense", "⟳ Auditoría Estricta de Producción", "⟳ Modo Sandbox & Crash Forense"],
+                (page, _) => $"Cycled diagnostics profile: {page.DiagnosticsStudioDashboard?.ActiveProfileLabel}"),
+            (DesktopStudioKind.Generic, nameof(ToolPageViewModel.GenericOperationDashboard), "Operation / Preset",
+                ["⟳ Modo Diagnóstico Exhaustivo", "⟳ Cargar Parámetros Canónicos", "⟳ Modo Diagnóstico Exhaustivo"],
+                (_, index) => "Switched execution mode: " + (index % 2 == 1 ? "Exhaustive Diagnostic Mode" : "Deterministic Bounded Route"))
+        };
+        var toolByStudio = catalog.Tools.GroupBy(tool => tool.Studio).ToDictionary(group => group.Key, group => group.First());
+        Check(expectations.Length == Enum.GetValues<DesktopStudioKind>().Length &&
+              expectations.All(expected => toolByStudio.ContainsKey(expected.Studio)),
+            "Every studio enum value must retain a catalog route and a preset expectation.");
+
+        foreach (var expected in expectations)
+        {
+            var page = new ToolPageViewModel(toolByStudio[expected.Studio], (_, _, _) => Task.FromResult(new WorkspaceExecutionResult()), export: _ => { });
+            var notifications = new List<string>();
+            page.PropertyChanged += (_, change) => notifications.Add(change.PropertyName);
+            for (var index = 1; index <= expected.Labels.Length; index++)
+            {
+                notifications.Clear();
+                page.LoadPresetCommand.Execute(null);
+                Check(page.Evidence.Count == index, expected.Studio + " must append one retained evidence record per preset.");
+                var evidence = page.Evidence[index - 1];
+                Check(evidence.Source == expected.Source && evidence.Status == "Loaded" && evidence.Detail == expected.Detail(page, index),
+                    expected.Studio + " changed its preset evidence contract at cycle " + index + ".");
+                Check(page.PresetActionLabel == expected.Labels[index - 1], expected.Studio + " changed its preset label at cycle " + index + ".");
+                Check(notifications.SequenceEqual(new[] { expected.Property, nameof(ToolPageViewModel.PresetActionLabel) }),
+                    expected.Studio + " must notify its dashboard before the preset label.");
+
+                if (expected.Studio == DesktopStudioKind.TroopTree)
+                    Check((index % 2 == 1) == page.TroopTreeDashboard.Culture.Contains("Noble Dynastic", StringComparison.Ordinal), "Troop preset must replace and initialize the selected lineage each cycle.");
+                else if (expected.Studio == DesktopStudioKind.AudioMixer)
+                    Check(page.AudioStudioDashboard.TargetAsset == (index % 2 == 1 ? "custom_quest_complete_jingle.ogg" : "custom_iron_shield_clash.wav"), "Audio preset must reinitialize the selected source asset each cycle.");
+                else if (expected.Studio == DesktopStudioKind.Workshop)
+                    Check(page.WorkshopDashboard.Settlement.StartsWith(index % 2 == 1 ? "Epicrotea" : "Marunath", StringComparison.Ordinal), "Workshop preset must restore the selected settlement each cycle.");
+            }
+            page.Dispose();
+        }
+
+        var genericTool = toolByStudio[DesktopStudioKind.Generic];
+        var observerPage = new ToolPageViewModel(genericTool, (_, _, _) => Task.FromResult(new WorkspaceExecutionResult()), export: _ => { });
+        var cyclingPage = new ToolPageViewModel(genericTool, (_, _, _) => Task.FromResult(new WorkspaceExecutionResult()), export: _ => { });
+        var canonical = GenericOperationDashboardViewModel.CanonicalInstance;
+        var canonicalMode = canonical.ExecutionMode;
+        Check(ReferenceEquals(observerPage.GenericOperationDashboard, canonical) && ReferenceEquals(cyclingPage.GenericOperationDashboard, canonical),
+            "New generic pages must still start from the canonical dashboard instance.");
+        cyclingPage.LoadPresetCommand.Execute(null);
+        Check(!ReferenceEquals(cyclingPage.GenericOperationDashboard, canonical) &&
+              ReferenceEquals(observerPage.GenericOperationDashboard, canonical) && canonical.ExecutionMode == canonicalMode,
+            "Cycling a generic page must copy-on-write without mutating another page's canonical dashboard.");
+        observerPage.Dispose();
+        cyclingPage.Dispose();
+        return Task.CompletedTask;
+    }
+
+    static Task HookSnapshotProjectionSemantics()
+    {
+        const string row = "{\"ID\":\"hook.alpha\",\"OWNER\":\"tests\",\"target\":\"Fixture.Run\",\"state\":\"Registered\",\"hasPostfix\":true,\"priority\":0,\"before\":[\"first\"],\"after\":[],\"detail\":\"retained\",\"hasFinalizer\":false}";
+        var inventoryJson = "{\"session\":\"fixture-session\",\"canManage\":true,\"hooks\":[" + row + "]}";
+        Check(HookWorkbenchViewModel.TryReadSnapshotEnvelope(inventoryJson, out var inventory, out var inventoryError), inventoryError);
+        var current = inventory.Hooks.Single();
+        Check(current.Id == "hook.alpha" && current.Owner == "tests" && current.Target == "Fixture.Run" && current.State == "Registered" &&
+              !current.HasPrefix && current.HasPostfix && current.Priority == 0 && current.Before.SequenceEqual(new[] { "first" }) &&
+              current.After.Count == 0 && current.Detail == "retained" && current.HasFinalizer == false && current.HasTranspiler == null,
+            "Inventory parsing must preserve case-insensitive aliases, false/default values, and absent nullable capability flags.");
+
+        var plannedRow = row.Replace("\"target\":\"Fixture.Run\"", "\"targetMethod\":\"Fixture.Run\",\"target\":\"wrong alias\"", StringComparison.Ordinal);
+        var expiry = DateTimeOffset.UtcNow.AddSeconds(30).ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+        var planJson = "{\"operation\":\"hook-apply-plan\",\"session\":\"fixture-session\",\"token\":\"one-use\",\"requiresConfirmation\":true,\"expiresAtUtc\":\"" + expiry + "\",\"selected\":[" + plannedRow + "]}";
+        Check(HookWorkbenchViewModel.TryReadPlan(planJson, "apply", "fixture-session", new[] { "hook.alpha" }, inventory.Hooks,
+            out _, out var planned, out var planError), planError);
+        var plannedHook = planned.Single();
+        Check(plannedHook.Target == "Fixture.Run" && plannedHook.HasFinalizer == false && plannedHook.HasTranspiler == null &&
+              HookWorkbenchViewModel.TryReadPlan(planJson.Replace("\"hasFinalizer\":false", "\"hasFinalizer\":false,\"hasTranspiler\":false", StringComparison.Ordinal),
+                  "apply", "fixture-session", new[] { "hook.alpha" }, inventory.Hooks, out _, out _, out _ ) == false,
+            "Plan parsing must share row projection while distinguishing an absent capability from an explicit false value.");
+
+        var fallbackJson = "{\"session\":\"fixture-session\",\"hooks\":[{\"id\":\"hook.beta\",\"owner\":\"tests\",\"targetMethod\":17,\"target\":\"Fixture.Fallback\",\"state\":\"Registered\"}]}";
+        Check(HookWorkbenchViewModel.TryReadSnapshotEnvelope(fallbackJson, out var fallback, out var fallbackError) &&
+              fallback.Hooks.Single().Target == "Fixture.Fallback", fallbackError);
+        var duplicateJson = "{\"session\":\"fixture-session\",\"hooks\":[" + row + "," + row + "]}";
+        Check(!HookWorkbenchViewModel.TryReadSnapshotEnvelope(duplicateJson, out _, out var duplicateError) &&
+              duplicateError.Contains("duplicate hook IDs", StringComparison.Ordinal), "Snapshot inventory must continue to reject duplicate IDs.");
         return Task.CompletedTask;
     }
 

@@ -71,6 +71,8 @@ namespace CalradiaForge.Tests
             if (!File.Exists(output) || !File.Exists(backup)) throw new Exception("The output copy or source backup is missing.");
             if (!result.Contains("VERSION PATCH COMPLETE") || Hash(input) != sourceHash || Hash(backup) != sourceHash)
                 throw new Exception("Original or backup integrity check failed. Input hash=" + Hash(input) + ", expected=" + sourceHash + ", backup hash=" + Hash(backup) + ".");
+            if (!result.Contains("Input SHA-256: " + sourceHash) || !result.Contains("Output SHA-256: " + Hash(output)))
+                throw new Exception("The workbench report did not preserve the uppercase, delimiter-free SHA-256 values.");
             if (AssemblyDefinition.FromFile(output).Version.ToString() != "1.2.3.4")
                 throw new Exception("The copy did not retain the requested assembly version.");
         }

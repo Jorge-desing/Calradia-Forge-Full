@@ -52,6 +52,7 @@ internal static class DesktopAssemblyServiceTests
             Check(File.Exists(output) && File.Exists(backup), "The output copy and backup must both exist after apply.");
             Check(Hash(source) == sourceHash && Hash(backup) == sourceHash, "The source and verified backup must retain identical bytes.");
             Check(AssemblyDefinition.FromFile(output).Version.ToString() == "1.2.3.4", "The output copy must have the requested metadata version.");
+            Check(result.Contains("Input SHA-256: " + sourceHash), "The input hash must retain its uppercase, delimiter-free SHA-256 representation.");
             Check(result.Contains("Output SHA-256: " + Hash(output)), "The report must contain the committed output hash.");
         }
         finally { Directory.Delete(root, true); }

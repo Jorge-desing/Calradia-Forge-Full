@@ -19,6 +19,7 @@ namespace CalradiaForge.Tests
             test("Unknown analyzer identifiers are not silently routed to XML", UnknownAnalyzerIsUnsupported);
             test("Desktop analyzer IDs use explicit Core mappings", DesktopAnalyzerAliases);
             test("Recursive source scans skip reparse points and stop at a depth bound", FileScanTraversal);
+            test("Bounded directory-entry inspection preserves cancellation budget unreadable and reparse states", DirectoryEntryInspectionStates);
             test("Module analyzer distinguishes a valid manifest from a missing dependency", ModuleFixtures);
             test("XML analyzer reports malformed and DTD inputs with line evidence", XmlFixtures);
             test("Source analyzer reports real campaign and save rules", SourceFixtures);
@@ -176,6 +177,55 @@ namespace CalradiaForge.Tests
                 var isReparsePoint = (File.GetAttributes(linkPath) & FileAttributes.ReparsePoint) != 0;
                 if (!isReparsePoint) Directory.Delete(linkPath, false);
                 return isReparsePoint;
+            }
+        }
+
+        static void DirectoryEntryInspectionStates()
+        {
+            var cancellationCalls = 0;
+            try
+            {
+                DirectoryEntryProbe.Inspect(Path.GetTempPath(), new CancellationToken(true), () =>
+                {
+                    cancellationCalls++;
+                    return true;
+                }, out _);
+                throw new Exception("A cancelled directory-entry inspection must throw.");
+            }
+            catch (OperationCanceledException)
+            {
+                Require(cancellationCalls == 0, "Cancellation must be checked before consuming the entry budget.");
+            }
+
+            var missingPath = Path.Combine(Path.GetTempPath(), "CalradiaForge-entry-probe-" + Guid.NewGuid().ToString("N"));
+            var budgetCalls = 0;
+            var exhausted = DirectoryEntryProbe.Inspect(missingPath, CancellationToken.None, () =>
+            {
+                budgetCalls++;
+                return false;
+            }, out _);
+            Require(exhausted == DirectoryEntryProbeResult.EntryLimitReached && budgetCalls == 1,
+                "An exhausted budget must stop before filesystem attribute access.");
+
+            var unreadable = DirectoryEntryProbe.Inspect(missingPath, CancellationToken.None, () => true, out _);
+            Require(unreadable == DirectoryEntryProbeResult.Unreadable,
+                "A path that disappears or cannot be read must retain the unreadable state.");
+
+            var root = Path.Combine(Path.GetTempPath(), "CalradiaForge-entry-probe-" + Guid.NewGuid().ToString("N"));
+            var target = Path.Combine(root, "target");
+            var junction = Path.Combine(root, "junction");
+            Directory.CreateDirectory(target);
+            try
+            {
+                Require(CreateJunction(junction, target), "The Windows fixture must create a junction to characterize reparse-point inspection.");
+                var reparse = DirectoryEntryProbe.Inspect(junction, CancellationToken.None, () => true, out var attributes);
+                Require(reparse == DirectoryEntryProbeResult.ReparsePoint && (attributes & FileAttributes.ReparsePoint) != 0,
+                    "A reparse point must be identified without being treated as an ordinary directory.");
+            }
+            finally
+            {
+                if (Directory.Exists(junction)) Directory.Delete(junction, false);
+                if (Directory.Exists(root)) Directory.Delete(root, true);
             }
         }
 

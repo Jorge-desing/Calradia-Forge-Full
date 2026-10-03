@@ -580,155 +580,97 @@ namespace CalradiaForge.Desktop.Presentation
         void CyclePreset()
         {
             if (disposed) return;
-            presetCycleIndex++;
-
-            if (IsTroopTreeVisualizer)
+            var index = ++presetCycleIndex;
+            switch (Tool.Studio)
             {
-                if (presetCycleIndex % 2 == 1)
-                {
+                case DesktopStudioKind.TroopTree:
                     TroopTreeDashboard = new TroopTreeDashboardViewModel();
-                    TroopTreeDashboard.SetDynasticNobleScenario();
-                    Evidence.Add(new("Troop Tree / Preset", "Loaded", "Switched to Noble Dynastic Cataphract Line (T2-T6)."));
-                }
-                else
-                {
-                    TroopTreeDashboard = new TroopTreeDashboardViewModel();
-                    Evidence.Add(new("Troop Tree / Preset", "Loaded", "Restored Imperial Core Combined Arms Tree (T1-T4)."));
-                }
-                Raise(nameof(TroopTreeDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsAudioMixerInspector)
-            {
-                if (presetCycleIndex % 2 == 1)
-                {
+                    var nobleLine = index % 2 == 1;
+                    if (nobleLine) TroopTreeDashboard.SetDynasticNobleScenario();
+                    RecordPreset("Troop Tree / Preset", nobleLine
+                        ? "Switched to Noble Dynastic Cataphract Line (T2-T6)."
+                        : "Restored Imperial Core Combined Arms Tree (T1-T4).", nameof(TroopTreeDashboard));
+                    break;
+                case DesktopStudioKind.AudioMixer:
                     AudioStudioDashboard = new AudioStudioDashboardViewModel();
-                    AudioStudioDashboard.SetUiFanfareSample();
-                    Evidence.Add(new("Audio / Preset", "Loaded", "Loaded UI Fanfare (custom_quest_complete_jingle.ogg, -3.2 dBFS)."));
-                }
-                else
-                {
-                    AudioStudioDashboard = new AudioStudioDashboardViewModel();
-                    Evidence.Add(new("Audio / Preset", "Loaded", "Restored Combat Shield Clash (custom_iron_shield_clash.wav, -1.4 dBFS)."));
-                }
-                Raise(nameof(AudioStudioDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsWorkshopSimulator)
-            {
-                if (presetCycleIndex % 2 == 1)
-                {
+                    var fanfare = index % 2 == 1;
+                    if (fanfare) AudioStudioDashboard.SetUiFanfareSample();
+                    RecordPreset("Audio / Preset", fanfare
+                        ? "Loaded UI Fanfare (custom_quest_complete_jingle.ogg, -3.2 dBFS)."
+                        : "Restored Combat Shield Clash (custom_iron_shield_clash.wav, -1.4 dBFS).", nameof(AudioStudioDashboard));
+                    break;
+                case DesktopStudioKind.Workshop:
                     WorkshopDashboard = new WorkshopDashboardViewModel();
-                    WorkshopDashboard.SetEpicroteaScenario();
-                    Evidence.Add(new("Economy / Preset", "Loaded", "Switched market scope to Epicrotea (Iron Smithy + Brewery, 6120 prosperity)."));
-                }
-                else
-                {
-                    WorkshopDashboard = new WorkshopDashboardViewModel();
-                    Evidence.Add(new("Economy / Preset", "Loaded", "Restored Marunath market scope (Silversmith + Smithy, 5420 prosperity)."));
-                }
-                Raise(nameof(WorkshopDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsAgentMemoryInspector)
-            {
-                if (AgentMemoryDashboard != null)
-                {
-                    AgentMemoryDashboard.CycleScenario(presetCycleIndex);
+                    var epicrotea = index % 2 == 1;
+                    if (epicrotea) WorkshopDashboard.SetEpicroteaScenario();
+                    RecordPreset("Economy / Preset", epicrotea
+                        ? "Switched market scope to Epicrotea (Iron Smithy + Brewery, 6120 prosperity)."
+                        : "Restored Marunath market scope (Silversmith + Smithy, 5420 prosperity).", nameof(WorkshopDashboard));
+                    break;
+                case DesktopStudioKind.AgentMemory:
+                    if (AgentMemoryDashboard == null) return;
+                    AgentMemoryDashboard.CycleScenario(index);
                     var activeHero = AgentMemoryDashboard.SelectedAgent;
-                    Evidence.Add(new("Agent Memory / Preset", "Loaded", $"Switched hero to {activeHero?.Name} ({activeHero?.HeroId}) · Decay Stage: {activeHero?.DecayState} ({activeHero?.SummaryBadge})."));
-                    Raise(nameof(AgentMemoryDashboard));
-                    Raise(nameof(PresetActionLabel));
-                }
+                    RecordPreset("Agent Memory / Preset", $"Switched hero to {activeHero?.Name} ({activeHero?.HeroId}) · Decay Stage: {activeHero?.DecayState} ({activeHero?.SummaryBadge}).", nameof(AgentMemoryDashboard));
+                    break;
+                case DesktopStudioKind.CodeSecurity:
+                    CodeSecurityDashboard?.CycleScenario(index);
+                    RecordPreset("Security / Preset", $"Loaded scenario #{index % 3 + 1}: {CodeSecurityDashboard?.TargetAssembly}", nameof(CodeSecurityDashboard));
+                    break;
+                case DesktopStudioKind.ModuleHierarchy:
+                    ModuleHierarchyDashboard?.CycleScenario(index);
+                    RecordPreset("Module / Preset", $"Loaded topology #{index % 3 + 1}: {ModuleHierarchyDashboard?.SubModuleXmlStatus}", nameof(ModuleHierarchyDashboard));
+                    break;
+                case DesktopStudioKind.KingdomDiplomacy:
+                    KingdomDiplomacyDashboard?.CycleScenario(index);
+                    RecordPreset("Diplomacy / Preset", $"Loaded geopolitical stance #{index % 3 + 1}: {KingdomDiplomacyDashboard?.FactionName}", nameof(KingdomDiplomacyDashboard));
+                    break;
+                case DesktopStudioKind.ComponentGenerator:
+                    ComponentGeneratorDashboard?.CycleScenario(index);
+                    RecordPreset("Generator / Preset", $"Loaded synthesis template #{index % 3 + 1}: {ComponentGeneratorDashboard?.TargetOutput}", nameof(ComponentGeneratorDashboard));
+                    break;
+                case DesktopStudioKind.CombatStudio:
+                    CombatStudioDashboard?.CycleScenario(index);
+                    RecordPreset("Combat / Preset", $"Cycled combat formation preset #{index % 2 + 1}: {CombatStudioDashboard?.RegimentName}", nameof(CombatStudioDashboard));
+                    break;
+                case DesktopStudioKind.CaravanTrade:
+                    CaravanTradeDashboard?.CycleScenario(index);
+                    RecordPreset("Trade / Preset", $"Cycled caravan route preset #{index % 2 + 1}: {CaravanTradeDashboard?.RouteName}", nameof(CaravanTradeDashboard));
+                    break;
+                case DesktopStudioKind.GauntletStudio:
+                    GauntletStudio?.CycleScenario(index);
+                    RecordPreset("Gauntlet / Preset", $"Cycled Gauntlet HUD preset #{index % 2 + 1}: {GauntletStudio?.PrefabName}", nameof(GauntletStudio));
+                    break;
+                case DesktopStudioKind.CampaignStudio:
+                    CampaignStudio?.CycleScenario(index);
+                    RecordPreset("Campaign / Preset", $"Cycled Campaign expedition preset #{index % 2 + 1}: {CampaignStudio?.ProvinceName}", nameof(CampaignStudio));
+                    break;
+                case DesktopStudioKind.LiveSession:
+                    LiveSessionDashboard?.CycleScenario(index);
+                    RecordPreset("Live Session / Preset", $"Cycled Live Session telemetry preset #{index % 3 + 1}: {LiveSessionDashboard?.SessionTitle}", nameof(LiveSessionDashboard));
+                    break;
+                case DesktopStudioKind.DeliveryStudio:
+                    DeliveryStudioDashboard?.CycleScenario(index);
+                    RecordPreset("Delivery / Preset", $"Cycled FastPackageEngine delivery preset #{index % 2 + 1}: {DeliveryStudioDashboard?.DistributionTitle}", nameof(DeliveryStudioDashboard));
+                    break;
+                case DesktopStudioKind.DiagnosticsStudio:
+                    DiagnosticsStudioDashboard?.CycleScenario(index);
+                    RecordPreset("Diagnostics / Preset", $"Cycled diagnostics profile: {DiagnosticsStudioDashboard?.ActiveProfileLabel}", nameof(DiagnosticsStudioDashboard));
+                    break;
+                default:
+                    if (ReferenceEquals(GenericOperationDashboard, GenericOperationDashboardViewModel.CanonicalInstance))
+                        GenericOperationDashboard = new GenericOperationDashboardViewModel();
+                    GenericOperationDashboard?.CycleScenario(index);
+                    RecordPreset("Operation / Preset", $"Switched execution mode: {GenericOperationDashboard?.ExecutionMode}", nameof(GenericOperationDashboard));
+                    break;
             }
-            else if (IsCodeSecurityAuditor)
-            {
-                CodeSecurityDashboard?.CycleScenario(presetCycleIndex);
-                Evidence.Add(new("Security / Preset", "Loaded", $"Loaded scenario #{presetCycleIndex % 3 + 1}: {CodeSecurityDashboard?.TargetAssembly}"));
-                Raise(nameof(CodeSecurityDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsModuleHierarchyValidator)
-            {
-                ModuleHierarchyDashboard?.CycleScenario(presetCycleIndex);
-                Evidence.Add(new("Module / Preset", "Loaded", $"Loaded topology #{presetCycleIndex % 3 + 1}: {ModuleHierarchyDashboard?.SubModuleXmlStatus}"));
-                Raise(nameof(ModuleHierarchyDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsKingdomDiplomacyStudio)
-            {
-                KingdomDiplomacyDashboard?.CycleScenario(presetCycleIndex);
-                Evidence.Add(new("Diplomacy / Preset", "Loaded", $"Loaded geopolitical stance #{presetCycleIndex % 3 + 1}: {KingdomDiplomacyDashboard?.FactionName}"));
-                Raise(nameof(KingdomDiplomacyDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsComponentGeneratorStudio)
-            {
-                ComponentGeneratorDashboard?.CycleScenario(presetCycleIndex);
-                Evidence.Add(new("Generator / Preset", "Loaded", $"Loaded synthesis template #{presetCycleIndex % 3 + 1}: {ComponentGeneratorDashboard?.TargetOutput}"));
-                Raise(nameof(ComponentGeneratorDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsCombatStudio)
-            {
-                CombatStudioDashboard?.CycleScenario(presetCycleIndex);
-                Evidence.Add(new("Combat / Preset", "Loaded", $"Cycled combat formation preset #{presetCycleIndex % 2 + 1}: {CombatStudioDashboard?.RegimentName}"));
-                Raise(nameof(CombatStudioDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsCaravanTrade)
-            {
-                CaravanTradeDashboard?.CycleScenario(presetCycleIndex);
-                Evidence.Add(new("Trade / Preset", "Loaded", $"Cycled caravan route preset #{presetCycleIndex % 2 + 1}: {CaravanTradeDashboard?.RouteName}"));
-                Raise(nameof(CaravanTradeDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsGauntletStudio)
-            {
-                GauntletStudio?.CycleScenario(presetCycleIndex);
-                Evidence.Add(new("Gauntlet / Preset", "Loaded", $"Cycled Gauntlet HUD preset #{presetCycleIndex % 2 + 1}: {GauntletStudio?.PrefabName}"));
-                Raise(nameof(GauntletStudio));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsCampaignStudio)
-            {
-                CampaignStudio?.CycleScenario(presetCycleIndex);
-                Evidence.Add(new("Campaign / Preset", "Loaded", $"Cycled Campaign expedition preset #{presetCycleIndex % 2 + 1}: {CampaignStudio?.ProvinceName}"));
-                Raise(nameof(CampaignStudio));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsLiveSession)
-            {
-                LiveSessionDashboard?.CycleScenario(presetCycleIndex);
-                Evidence.Add(new("Live Session / Preset", "Loaded", $"Cycled Live Session telemetry preset #{presetCycleIndex % 3 + 1}: {LiveSessionDashboard?.SessionTitle}"));
-                Raise(nameof(LiveSessionDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsDeliveryStudio)
-            {
-                DeliveryStudioDashboard?.CycleScenario(presetCycleIndex);
-                Evidence.Add(new("Delivery / Preset", "Loaded", $"Cycled FastPackageEngine delivery preset #{presetCycleIndex % 2 + 1}: {DeliveryStudioDashboard?.DistributionTitle}"));
-                Raise(nameof(DeliveryStudioDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
-            else if (IsDiagnosticsStudio)
-            {
-                DiagnosticsStudioDashboard?.CycleScenario(presetCycleIndex);
-                Evidence.Add(new("Diagnostics / Preset", "Loaded", $"Cycled diagnostics profile: {DiagnosticsStudioDashboard?.ActiveProfileLabel}"));
-                Raise(nameof(DiagnosticsStudioDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
-            else
-            {
-                if (ReferenceEquals(GenericOperationDashboard, GenericOperationDashboardViewModel.CanonicalInstance))
-                {
-                    GenericOperationDashboard = new GenericOperationDashboardViewModel();
-                }
-                GenericOperationDashboard?.CycleScenario(presetCycleIndex);
-                Evidence.Add(new("Operation / Preset", "Loaded", $"Switched execution mode: {GenericOperationDashboard?.ExecutionMode}"));
-                Raise(nameof(GenericOperationDashboard));
-                Raise(nameof(PresetActionLabel));
-            }
+        }
+
+        void RecordPreset(string source, string detail, string dashboardProperty)
+        {
+            Evidence.Add(new(source, "Loaded", detail));
+            Raise(dashboardProperty);
+            Raise(nameof(PresetActionLabel));
         }
 
         // public void Dispose() is the page lifecycle contract; the virtual implementation below lets routed pages add state.

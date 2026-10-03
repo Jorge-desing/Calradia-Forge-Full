@@ -1,15 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><UseAppHost>false</UseAppHost></PropertyGroup>
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWPF>true</UseWPF><UseAppHost>false</UseAppHost></PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/CalradiaForge.Core/CalradiaForge.Core.csproj" />
-    <Compile Include="../../src/CalradiaForge.Desktop/PipeClient.cs" Link="PipeClient.cs" />
-    <Compile Include="../../src/CalradiaForge.Desktop/BoundedLineReader.cs" Link="BoundedLineReader.cs" />
-    <Compile Include="../../src/CalradiaForge.Desktop/Services/DesktopReportExportService.cs" Link="Services/DesktopReportExportService.cs" />
-    <Compile Include="../../src/CalradiaForge.Desktop/Services/DesktopAnalysisService.cs" Link="Services/DesktopAnalysisService.cs" />
-    <Compile Include="../../src/CalradiaForge.Desktop/Services/DesktopAssemblyService.cs" Link="Services/DesktopAssemblyService.cs" />
+    <ProjectReference Include="../../src/CalradiaForge.Desktop/CalradiaForge.Desktop.csproj" />
     <PackageReference Include="AsmResolver.DotNet" Version="6.0.1" />
-    <Compile Include="../../src/CalradiaForge.Desktop/Services/DesktopSessionService.cs" Link="Services/DesktopSessionService.cs" />
-    <Compile Include="../../src/CalradiaForge.Desktop/Services/DesktopMetricsService.cs" Link="Services/DesktopMetricsService.cs" />
     <None Include="../../src/CalradiaForge.Desktop/MainWindow.xaml" Link="Ui/MainWindow.xaml" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../src/CalradiaForge.Desktop/MainWindow.xaml.cs" Link="Ui/MainWindow.xaml.cs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../localization/*.xml" Link="Ui/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />

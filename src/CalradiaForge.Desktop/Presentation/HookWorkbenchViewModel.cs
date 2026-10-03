@@ -610,23 +610,7 @@ namespace CalradiaForge.Desktop.Presentation
                 var blocked = root.TryGetStringInsensitive("blockedReason", out var blockedReason) ? blockedReason : string.Empty;
                 var rows = new List<HookWorkbenchRow>();
                 foreach (var element in hooksElement.EnumerateArray())
-                {
-                    if (element.ValueKind != JsonValueKind.Object || !element.TryGetStringInsensitive("id", out var id) || string.IsNullOrWhiteSpace(id) ||
-                        !element.TryGetStringInsensitive("owner", out var owner) ||
-                        !(element.TryGetStringInsensitive("targetMethod", out var target) || element.TryGetStringInsensitive("target", out target)) ||
-                        !element.TryGetPropertyInsensitive("state", out var stateElement))
-                        throw new JsonException("A hook snapshot omitted its stable ID, owner, target, or state.");
-                    var state = ReadState(stateElement);
-                    var priority = element.TryGetInt32Insensitive("priority", out var parsedPriority) ? parsedPriority : (int?)null;
-                    var before = ReadStrings(element, "before");
-                    var after = ReadStrings(element, "after");
-                    var hasPrefix = element.TryGetBooleanInsensitive("hasPrefix", out var prefix) && prefix;
-                    var hasPostfix = element.TryGetBooleanInsensitive("hasPostfix", out var postfix) && postfix;
-                    var detail = element.TryGetStringInsensitive("detail", out var note) ? note : string.Empty;
-                    var hasFinalizer = element.TryGetBooleanInsensitive("hasFinalizer", out var finalizer) ? finalizer : (bool?)null;
-                    var hasTranspiler = element.TryGetBooleanInsensitive("hasTranspiler", out var transpiler) ? transpiler : (bool?)null;
-                    rows.Add(new HookWorkbenchRow(id, owner, target, hasPrefix, hasPostfix, priority, before, after, state, detail, hasFinalizer, hasTranspiler));
-                }
+                    rows.Add(ReadHookSnapshot(element, "A hook snapshot omitted its stable ID, owner, target, or state."));
                 if (rows.Select(item => item.Id).Distinct(StringComparer.Ordinal).Count() != rows.Count)
                     throw new JsonException("Snapshot payload contained duplicate hook IDs.");
 
@@ -784,24 +768,24 @@ namespace CalradiaForge.Desktop.Presentation
             if (element.ValueKind != JsonValueKind.Array) throw new JsonException("Plan hook snapshots were not an array.");
             var rows = new List<HookWorkbenchRow>();
             foreach (var hook in element.EnumerateArray())
-            {
-                if (hook.ValueKind != JsonValueKind.Object || !hook.TryGetStringInsensitive("id", out var id) || string.IsNullOrWhiteSpace(id) ||
-                    !hook.TryGetStringInsensitive("owner", out var owner) ||
-                    !(hook.TryGetStringInsensitive("targetMethod", out var target) || hook.TryGetStringInsensitive("target", out target)) ||
-                    !hook.TryGetPropertyInsensitive("state", out var stateElement))
-                    throw new JsonException("A plan hook omitted its registered ID, owner, target, or state.");
-                var state = ReadState(stateElement);
-                var priority = hook.TryGetInt32Insensitive("priority", out var value) ? value : (int?)null;
-                var before = ReadStrings(hook, "before");
-                var after = ReadStrings(hook, "after");
-                var hasPrefix = hook.TryGetBooleanInsensitive("hasPrefix", out var prefix) && prefix;
-                var hasPostfix = hook.TryGetBooleanInsensitive("hasPostfix", out var postfix) && postfix;
-                var detail = hook.TryGetStringInsensitive("detail", out var note) ? note : string.Empty;
-                var hasFinalizer = hook.TryGetBooleanInsensitive("hasFinalizer", out var finalizer) ? finalizer : (bool?)null;
-                var hasTranspiler = hook.TryGetBooleanInsensitive("hasTranspiler", out var transpiler) ? transpiler : (bool?)null;
-                rows.Add(new HookWorkbenchRow(id, owner, target, hasPrefix, hasPostfix, priority, before, after, state, detail, hasFinalizer, hasTranspiler));
-            }
+                rows.Add(ReadHookSnapshot(hook, "A plan hook omitted its registered ID, owner, target, or state."));
             return rows;
+        }
+
+        static HookWorkbenchRow ReadHookSnapshot(JsonElement hook, string missingMemberMessage)
+        {
+            if (hook.ValueKind != JsonValueKind.Object || !hook.TryGetStringInsensitive("id", out var id) || string.IsNullOrWhiteSpace(id) ||
+                !hook.TryGetStringInsensitive("owner", out var owner) ||
+                !(hook.TryGetStringInsensitive("targetMethod", out var target) || hook.TryGetStringInsensitive("target", out target)) ||
+                !hook.TryGetPropertyInsensitive("state", out var stateElement))
+                throw new JsonException(missingMemberMessage);
+            var priority = hook.TryGetInt32Insensitive("priority", out var value) ? value : (int?)null;
+            var hasPrefix = hook.TryGetBooleanInsensitive("hasPrefix", out var prefix) && prefix;
+            var hasPostfix = hook.TryGetBooleanInsensitive("hasPostfix", out var postfix) && postfix;
+            var hasFinalizer = hook.TryGetBooleanInsensitive("hasFinalizer", out var finalizer) ? finalizer : (bool?)null;
+            var hasTranspiler = hook.TryGetBooleanInsensitive("hasTranspiler", out var transpiler) ? transpiler : (bool?)null;
+            return new HookWorkbenchRow(id, owner, target, hasPrefix, hasPostfix, priority, ReadStrings(hook, "before"), ReadStrings(hook, "after"),
+                ReadState(stateElement), hook.TryGetStringInsensitive("detail", out var note) ? note : string.Empty, hasFinalizer, hasTranspiler);
         }
 
         static bool SameSnapshot(HookWorkbenchRow left, HookWorkbenchRow right) =>

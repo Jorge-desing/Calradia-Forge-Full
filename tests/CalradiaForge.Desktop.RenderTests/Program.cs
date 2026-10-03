@@ -95,6 +95,7 @@ internal static class Program
             phaseTimer.Restart();
             app = new App { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             app.InitializeComponent();
+            AssertChartPropertyMetadata(records);
             AssertPackagedTextureResources();
             HookWorkbenchUtilityTests.Run();
             records.Add(new { test = "hook-workbench-metadata-filters-verification", passed = true });
@@ -2458,6 +2459,48 @@ internal static class Program
         }
     }
     static void Check(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
+
+    static void AssertChartPropertyMetadata(List<object> records)
+    {
+        var chartTypes = new[]
+        {
+            typeof(ForgeSparkline), typeof(ForgeRadarChart), typeof(ForgeRingGauge), typeof(ForgeBarChart),
+            typeof(ForgeHeatmapGrid), typeof(ForgeArcGauge), typeof(ForgeAreaChart), typeof(ForgeStepProgress),
+            typeof(ForgeTimelineRuler)
+        };
+        var properties = chartTypes.SelectMany(owner => owner.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+            .Where(field => field.FieldType == typeof(DependencyProperty)).Select(field => (owner, field))).ToArray();
+        Check(properties.Length == 89, "The chart controls must retain all 89 dependency properties.");
+
+        var renderCount = 0;
+        var nonVisualCount = 0;
+        foreach (var (owner, field) in properties)
+        {
+            var property = (DependencyProperty)field.GetValue(null);
+            var metadata = property.GetMetadata(owner);
+            if (metadata is FrameworkPropertyMetadata frameworkMetadata)
+            {
+                Check(frameworkMetadata.AffectsRender,
+                    owner.Name + "." + field.Name + " must invalidate rendering when changed.");
+                renderCount++;
+            }
+            else
+            {
+                Check(field.Name is "ValueUnitProperty" or "FormatStringProperty",
+                    owner.Name + "." + field.Name + " unexpectedly lost render metadata.");
+                nonVisualCount++;
+            }
+        }
+
+        Check(renderCount == 83 && nonVisualCount == 6,
+            "Chart render and tooltip dependency-property metadata counts must remain unchanged.");
+        Check(object.Equals(ForgeSparkline.DataPointsProperty.GetMetadata(typeof(ForgeSparkline)).DefaultValue, Array.Empty<double>())
+            && object.Equals(ForgeSparkline.StrokeThicknessProperty.GetMetadata(typeof(ForgeSparkline)).DefaultValue, 1.5)
+            && object.Equals(ForgeSparkline.ShowGridLinesProperty.GetMetadata(typeof(ForgeSparkline)).DefaultValue, true)
+            && object.Equals(ForgeSparkline.FormatStringProperty.GetMetadata(typeof(ForgeSparkline)).DefaultValue, "N0"),
+            "Representative chart dependency-property defaults must remain stable.");
+        records.Add(new { test = "chart-dependency-property-registration-preserves-types-defaults-and-render-invalidation", properties = properties.Length, renderProperties = renderCount, passed = true });
+    }
 
     sealed class PreferenceSnapshot
     {

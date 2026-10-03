@@ -2799,6 +2799,42 @@ namespace CalradiaForge.Tests
                     "// MinimumIntervalMilliseconds = 999\nclass Spoof { void Register() { var item = new ForgeEventSubscription { Event = ForgeEventKind.Pulse }; } }");
                 File.WriteAllText(Path.Combine(root, "CommentOnly.cs"),
                     "// ForgeEventKind.Pulse new ForgeEventSubscription { MinimumIntervalMilliseconds = 1 }");
+                File.WriteAllText(Path.Combine(root, "BlockCommentOnly.cs"),
+                    "/* ForgeEventKind.Pulse new ForgeEventSubscription { Event = ForgeEventKind.Pulse } */ class BlockCommentOnly {}");
+                File.WriteAllText(Path.Combine(root, "BlockCommentSpoof.cs"),
+                    "/* MinimumIntervalMilliseconds = 999 */ class BlockCommentSpoof { void Register() { var item = new ForgeEventSubscription { Event = ForgeEventKind.Pulse }; } }");
+
+                string rawDelimiter = new string('"', 3);
+                File.WriteAllText(Path.Combine(root, "RawStringOnly.cs"),
+                    "class RawOnly { void Register() { var text = " + rawDelimiter +
+                    "new ForgeEventSubscription { Event = ForgeEventKind.Pulse, MinimumIntervalMilliseconds = 999 }" +
+                    rawDelimiter + "; } }");
+                File.WriteAllText(Path.Combine(root, "RawStringActual.cs"),
+                    "class RawActual { void Register() { var text = " + rawDelimiter +
+                    "new ForgeEventSubscription { Event = ForgeEventKind.Pulse, MinimumIntervalMilliseconds = 999 }" +
+                    rawDelimiter + "; var item = new ForgeEventSubscription { Event = ForgeEventKind.Pulse }; } }");
+                File.WriteAllText(Path.Combine(root, "RawInterpolatedStringOnly.cs"),
+                    "class RawInterpolatedOnly { void Register() { var text = $" + rawDelimiter + " {Format(" +
+                    rawDelimiter + "new ForgeEventSubscription { Event = ForgeEventKind.Pulse }" +
+                    rawDelimiter + ")}" + rawDelimiter + "; } }");
+                File.WriteAllText(Path.Combine(root, "InterpolatedStringOnly.cs"),
+                    "class InterpolatedOnly { void Register() { var text = $\"{Format(\"new ForgeEventSubscription { Event = ForgeEventKind.Pulse }\")}\"; } }");
+                File.WriteAllText(Path.Combine(root, "InterpolatedStringActual.cs"),
+                    "class InterpolatedActual { void Register() { var text = $\"{Format(\"new ForgeEventSubscription { Event = ForgeEventKind.Pulse, MinimumIntervalMilliseconds = 999 }\")}\"; var item = new ForgeEventSubscription { Event = ForgeEventKind.Pulse }; } }");
+                File.WriteAllText(Path.Combine(root, "InterpolatedCommentOnly.cs"),
+                    "class InterpolatedCommentOnly { void Register() { var text = $\"{Format(/* new ForgeEventSubscription { Event = ForgeEventKind.Pulse } */ \"value\")}\"; } }");
+                string deeplyNestedInterpolation = "\"leaf\"";
+                for (int i = 0; i < 40; i++)
+                    deeplyNestedInterpolation = "$\"{" + deeplyNestedInterpolation + "}\"";
+                File.WriteAllText(Path.Combine(root, "DeepInterpolatedString.cs"),
+                    "class DeepInterpolated { void Register() { var text = " + deeplyNestedInterpolation +
+                    "; var item = new ForgeEventSubscription { Event = ForgeEventKind.Pulse }; } }");
+                File.WriteAllText(Path.Combine(root, "UnterminatedBlockComment.cs"),
+                    "class UnterminatedComment { /* comment never closes; var item = new ForgeEventSubscription { Event = ForgeEventKind.Pulse }; }");
+                File.WriteAllText(Path.Combine(root, "UnterminatedString.cs"),
+                    "class UnterminatedString { void Register() { var text = \"string never closes; var item = new ForgeEventSubscription { Event = ForgeEventKind.Pulse }; } }");
+                File.WriteAllText(Path.Combine(root, "ComputedEvent.cs"),
+                    "class ComputedEvent { void Register() { var item = new ForgeEventSubscription { Event = Resolve(ForgeEventKind.Pulse) }; } }");
                 File.WriteAllText(Path.Combine(root, "blocked.xml"), "<root />");
 
                 // Exceed the shared per-file bound with a sparse file so the audit rejects the
@@ -2825,6 +2861,25 @@ namespace CalradiaForge.Tests
                     throw new Exception("A 49 ms Pulse throttle was not rejected.");
                 if (!result.Findings.Any(f => f.RuleId == "FORGEWEAVE_UNTHROTTLED_PULSE" && f.FilePath.EndsWith("CommentSpoof.cs")))
                     throw new Exception("A comment did not incorrectly rescue an unthrottled Pulse subscription.");
+                if (result.Findings.Any(f => f.RuleId == "FORGEWEAVE_UNTHROTTLED_PULSE" &&
+                    (f.FilePath.EndsWith("BlockCommentOnly.cs") ||
+                    f.FilePath.EndsWith("RawStringOnly.cs") || f.FilePath.EndsWith("InterpolatedStringOnly.cs") ||
+                    f.FilePath.EndsWith("RawInterpolatedStringOnly.cs") ||
+                    f.FilePath.EndsWith("InterpolatedCommentOnly.cs"))))
+                    throw new Exception("Pulse source text found only in a block comment, raw string, or interpolated expression was treated as executable code.");
+                if (!result.Findings.Any(f => f.RuleId == "FORGEWEAVE_UNTHROTTLED_PULSE" && f.FilePath.EndsWith("RawStringActual.cs")))
+                    throw new Exception("A raw string caused an actual unthrottled Pulse subscription after it to be skipped.");
+                if (result.Findings.Count(f => f.RuleId == "FORGEWEAVE_UNTHROTTLED_PULSE" && f.FilePath.EndsWith("InterpolatedStringActual.cs")) != 1)
+                    throw new Exception("An interpolated expression either hid an actual unthrottled Pulse subscription or exposed its string decoy.");
+                if (!result.Findings.Any(f => f.RuleId == "FORGEWEAVE_UNTHROTTLED_PULSE" && f.FilePath.EndsWith("BlockCommentSpoof.cs")))
+                    throw new Exception("A block comment incorrectly rescued an actual unthrottled Pulse subscription.");
+                if (!result.Findings.Any(f => f.RuleId == "FORGEWEAVE_UNTHROTTLED_PULSE" && f.FilePath.EndsWith("ComputedEvent.cs")))
+                    throw new Exception("A computed Pulse event stopped failing closed after lexer reuse.");
+                if (!result.Findings.Any(f => f.RuleId == "AUDIT_CSHARP_LEX_INCOMPLETE" && f.FilePath.EndsWith("DeepInterpolatedString.cs")))
+                    throw new Exception("A deeply nested interpolation reached the lexer limit without an explicit incomplete-source error.");
+                if (!result.Findings.Any(f => f.RuleId == "AUDIT_CSHARP_LEX_INCOMPLETE" && f.FilePath.EndsWith("UnterminatedBlockComment.cs")) ||
+                    !result.Findings.Any(f => f.RuleId == "AUDIT_CSHARP_LEX_INCOMPLETE" && f.FilePath.EndsWith("UnterminatedString.cs")))
+                    throw new Exception("An unterminated C# comment or string was masked without an explicit incomplete-source error.");
                 if (result.Findings.Any(f => f.FilePath.EndsWith("AtThreshold.cs") && f.RuleId == "FORGEWEAVE_UNTHROTTLED_PULSE"))
                     throw new Exception("The explicit 50 ms Pulse threshold was rejected.");
                 if (result.Findings.Any(f => f.FilePath.EndsWith("CommentOnly.cs") && f.RuleId == "FORGEWEAVE_UNTHROTTLED_PULSE"))

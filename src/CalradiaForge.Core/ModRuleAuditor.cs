@@ -33,6 +33,7 @@ namespace CalradiaForge.Core
         const string InputUnreadableRule = "AUDIT_INPUT_UNREADABLE";
         const string InputLimitRule = "AUDIT_INPUT_LIMIT";
         const string InvalidXmlRule = "AUDIT_XML_INVALID";
+        const string CSharpLexIncompleteRule = "AUDIT_CSHARP_LEX_INCOMPLETE";
 
         sealed class AuditFile
         {
@@ -308,7 +309,13 @@ namespace CalradiaForge.Core
                 return;
             }
 
-            var code = MaskCommentsAndStrings(content);
+            if (!ForgeAnalysisCatalog.TryMaskCSharpCommentsAndLiterals(content, out var code))
+            {
+                AddFinding(result, CSharpLexIncompleteRule, "Error", csFile,
+                    "C# source could not be masked completely because a comment or literal was unterminated or exceeded the bounded nesting depth.",
+                    "Correct the C# source or simplify nested interpolations, then rerun the audit.");
+                return;
+            }
 
             // GEMINI.md Campaign namespace and class check
             if (Regex.IsMatch(code, @"\bnamespace\s+[A-Za-z0-9_\.]*\.Campaign[\s;\{]") ||
@@ -709,107 +716,6 @@ namespace CalradiaForge.Core
                 else if (source[index] == close && --depth == 0) return index;
             }
             return -1;
-        }
-
-        static string MaskCommentsAndStrings(string source)
-        {
-            var characters = source.ToCharArray();
-            var index = 0;
-            while (index < source.Length)
-            {
-                if (source[index] == '/' && index + 1 < source.Length && source[index + 1] == '/')
-                {
-                    index += 2;
-                    while (index < source.Length && source[index] != '\r' && source[index] != '\n')
-                        characters[index++] = ' ';
-                    continue;
-                }
-                if (source[index] == '/' && index + 1 < source.Length && source[index + 1] == '*')
-                {
-                    characters[index++] = ' ';
-                    characters[index++] = ' ';
-                    while (index < source.Length)
-                    {
-                        if (source[index] == '*' && index + 1 < source.Length && source[index + 1] == '/')
-                        {
-                            characters[index++] = ' ';
-                            characters[index++] = ' ';
-                            break;
-                        }
-                        if (source[index] != '\r' && source[index] != '\n') characters[index] = ' ';
-                        index++;
-                    }
-                    continue;
-                }
-                if (source[index] == '"' || source[index] == '\'')
-                {
-                    index = MaskLiteral(source, characters, index, source[index]);
-                    continue;
-                }
-                index++;
-            }
-            return new string(characters);
-        }
-
-        static int MaskLiteral(string source, char[] characters, int quoteIndex, char quote)
-        {
-            var verbatim = quote == '"' &&
-                ((quoteIndex > 0 && source[quoteIndex - 1] == '@') ||
-                 (quoteIndex > 1 && source[quoteIndex - 2] == '@' && source[quoteIndex - 1] == '$'));
-            var rawQuoteCount = 0;
-            if (quote == '"')
-            {
-                while (quoteIndex + rawQuoteCount < source.Length && source[quoteIndex + rawQuoteCount] == '"') rawQuoteCount++;
-                if (rawQuoteCount >= 3)
-                {
-                    var cursor = quoteIndex + rawQuoteCount;
-                    while (cursor < source.Length)
-                    {
-                        if (source[cursor] == '"')
-                        {
-                            var closingCount = 0;
-                            while (cursor + closingCount < source.Length && source[cursor + closingCount] == '"') closingCount++;
-                            if (closingCount >= rawQuoteCount)
-                            {
-                                MaskRange(source, characters, quoteIndex, cursor + rawQuoteCount);
-                                return cursor + rawQuoteCount;
-                            }
-                        }
-                        cursor++;
-                    }
-                    MaskRange(source, characters, quoteIndex, source.Length);
-                    return source.Length;
-                }
-            }
-
-            var index = quoteIndex + 1;
-            while (index < source.Length)
-            {
-                if (source[index] == quote)
-                {
-                    if (verbatim && index + 1 < source.Length && source[index + 1] == quote)
-                    {
-                        index += 2;
-                        continue;
-                    }
-                    index++;
-                    break;
-                }
-                if (!verbatim && source[index] == '\\' && index + 1 < source.Length)
-                {
-                    index += 2;
-                    continue;
-                }
-                index++;
-            }
-            MaskRange(source, characters, quoteIndex, index);
-            return index;
-        }
-
-        static void MaskRange(string source, char[] characters, int start, int end)
-        {
-            for (var index = start; index < end; index++)
-                if (source[index] != '\r' && source[index] != '\n') characters[index] = ' ';
         }
 
         static void AddPulseThrottleFinding(string filePath, RuleAuditResult result)

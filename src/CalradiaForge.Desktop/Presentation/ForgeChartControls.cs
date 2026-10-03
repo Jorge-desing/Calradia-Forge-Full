@@ -9,35 +9,36 @@ using System.Windows.Media;
 
 namespace CalradiaForge.Desktop.Presentation
 {
+    static class ChartPropertyRegistration
+    {
+        internal static DependencyProperty Render(string name, Type propertyType, Type ownerType, object? defaultValue) =>
+            DependencyProperty.Register(name, propertyType, ownerType,
+                new FrameworkPropertyMetadata(defaultValue, FrameworkPropertyMetadataOptions.AffectsRender));
+    }
+
     // =========================================================================
     // FORGE SPARKLINE CONTROL (LIGHTWEIGHT HARDWARE-ACCELERATED TIME-SERIES / AREA)
     // =========================================================================
 
     public sealed class ForgeSparkline : FrameworkElement
     {
-        public static readonly DependencyProperty DataPointsProperty =
-            DependencyProperty.Register(nameof(DataPoints), typeof(IReadOnlyList<double>), typeof(ForgeSparkline),
-                new FrameworkPropertyMetadata(Array.Empty<double>(), FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty DataPointsProperty = ChartPropertyRegistration.Render(
+            nameof(DataPoints), typeof(IReadOnlyList<double>), typeof(ForgeSparkline), Array.Empty<double>());
 
-        public static readonly DependencyProperty StrokeProperty =
-            DependencyProperty.Register(nameof(Stroke), typeof(Brush), typeof(ForgeSparkline),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty StrokeProperty = ChartPropertyRegistration.Render(
+            nameof(Stroke), typeof(Brush), typeof(ForgeSparkline), null);
 
-        public static readonly DependencyProperty FillProperty =
-            DependencyProperty.Register(nameof(Fill), typeof(Brush), typeof(ForgeSparkline),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty FillProperty = ChartPropertyRegistration.Render(
+            nameof(Fill), typeof(Brush), typeof(ForgeSparkline), null);
 
-        public static readonly DependencyProperty StrokeThicknessProperty =
-            DependencyProperty.Register(nameof(StrokeThickness), typeof(double), typeof(ForgeSparkline),
-                new FrameworkPropertyMetadata(1.5, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty StrokeThicknessProperty = ChartPropertyRegistration.Render(
+            nameof(StrokeThickness), typeof(double), typeof(ForgeSparkline), 1.5);
 
-        public static readonly DependencyProperty ShowGridLinesProperty =
-            DependencyProperty.Register(nameof(ShowGridLines), typeof(bool), typeof(ForgeSparkline),
-                new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ShowGridLinesProperty = ChartPropertyRegistration.Render(
+            nameof(ShowGridLines), typeof(bool), typeof(ForgeSparkline), true);
 
-        public static readonly DependencyProperty GridBrushProperty =
-            DependencyProperty.Register(nameof(GridBrush), typeof(Brush), typeof(ForgeSparkline),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty GridBrushProperty = ChartPropertyRegistration.Render(
+            nameof(GridBrush), typeof(Brush), typeof(ForgeSparkline), null);
 
         public static readonly DependencyProperty ValueUnitProperty =
             DependencyProperty.Register(nameof(ValueUnit), typeof(string), typeof(ForgeSparkline),
@@ -222,41 +223,32 @@ namespace CalradiaForge.Desktop.Presentation
 
     public sealed class ForgeRadarChart : FrameworkElement
     {
-        public static readonly DependencyProperty AxisLabelsProperty =
-            DependencyProperty.Register(nameof(AxisLabels), typeof(IReadOnlyList<string>), typeof(ForgeRadarChart),
-                new FrameworkPropertyMetadata(Array.Empty<string>(), FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty AxisLabelsProperty = ChartPropertyRegistration.Render(
+            nameof(AxisLabels), typeof(IReadOnlyList<string>), typeof(ForgeRadarChart), Array.Empty<string>());
 
-        public static readonly DependencyProperty ValuesProperty =
-            DependencyProperty.Register(nameof(Values), typeof(IReadOnlyList<double>), typeof(ForgeRadarChart),
-                new FrameworkPropertyMetadata(Array.Empty<double>(), FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ValuesProperty = ChartPropertyRegistration.Render(
+            nameof(Values), typeof(IReadOnlyList<double>), typeof(ForgeRadarChart), Array.Empty<double>());
 
-        public static readonly DependencyProperty ComparisonValuesProperty =
-            DependencyProperty.Register(nameof(ComparisonValues), typeof(IReadOnlyList<double>), typeof(ForgeRadarChart),
-                new FrameworkPropertyMetadata(Array.Empty<double>(), FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ComparisonValuesProperty = ChartPropertyRegistration.Render(
+            nameof(ComparisonValues), typeof(IReadOnlyList<double>), typeof(ForgeRadarChart), Array.Empty<double>());
 
-        public static readonly DependencyProperty StrokeProperty =
-            DependencyProperty.Register(nameof(Stroke), typeof(Brush), typeof(ForgeRadarChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty StrokeProperty = ChartPropertyRegistration.Render(
+            nameof(Stroke), typeof(Brush), typeof(ForgeRadarChart), null);
 
-        public static readonly DependencyProperty FillProperty =
-            DependencyProperty.Register(nameof(Fill), typeof(Brush), typeof(ForgeRadarChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty FillProperty = ChartPropertyRegistration.Render(
+            nameof(Fill), typeof(Brush), typeof(ForgeRadarChart), null);
 
-        public static readonly DependencyProperty ComparisonStrokeProperty =
-            DependencyProperty.Register(nameof(ComparisonStroke), typeof(Brush), typeof(ForgeRadarChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ComparisonStrokeProperty = ChartPropertyRegistration.Render(
+            nameof(ComparisonStroke), typeof(Brush), typeof(ForgeRadarChart), null);
 
-        public static readonly DependencyProperty ComparisonFillProperty =
-            DependencyProperty.Register(nameof(ComparisonFill), typeof(Brush), typeof(ForgeRadarChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ComparisonFillProperty = ChartPropertyRegistration.Render(
+            nameof(ComparisonFill), typeof(Brush), typeof(ForgeRadarChart), null);
 
-        public static readonly DependencyProperty GridBrushProperty =
-            DependencyProperty.Register(nameof(GridBrush), typeof(Brush), typeof(ForgeRadarChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty GridBrushProperty = ChartPropertyRegistration.Render(
+            nameof(GridBrush), typeof(Brush), typeof(ForgeRadarChart), null);
 
-        public static readonly DependencyProperty AxisLabelBrushProperty =
-            DependencyProperty.Register(nameof(AxisLabelBrush), typeof(Brush), typeof(ForgeRadarChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty AxisLabelBrushProperty = ChartPropertyRegistration.Render(
+            nameof(AxisLabelBrush), typeof(Brush), typeof(ForgeRadarChart), null);
 
         static readonly Typeface LabelTypeface = new("Segoe UI");
 
@@ -469,45 +461,35 @@ namespace CalradiaForge.Desktop.Presentation
 
     public sealed class ForgeRingGauge : FrameworkElement
     {
-        public static readonly DependencyProperty ValueProperty =
-            DependencyProperty.Register(nameof(Value), typeof(double), typeof(ForgeRingGauge),
-                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ValueProperty = ChartPropertyRegistration.Render(
+            nameof(Value), typeof(double), typeof(ForgeRingGauge), 0.0);
 
-        public static readonly DependencyProperty MaximumProperty =
-            DependencyProperty.Register(nameof(Maximum), typeof(double), typeof(ForgeRingGauge),
-                new FrameworkPropertyMetadata(100.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty MaximumProperty = ChartPropertyRegistration.Render(
+            nameof(Maximum), typeof(double), typeof(ForgeRingGauge), 100.0);
 
-        public static readonly DependencyProperty ThresholdProperty =
-            DependencyProperty.Register(nameof(Threshold), typeof(double), typeof(ForgeRingGauge),
-                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ThresholdProperty = ChartPropertyRegistration.Render(
+            nameof(Threshold), typeof(double), typeof(ForgeRingGauge), 0.0);
 
-        public static readonly DependencyProperty StrokeThicknessProperty =
-            DependencyProperty.Register(nameof(StrokeThickness), typeof(double), typeof(ForgeRingGauge),
-                new FrameworkPropertyMetadata(6.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty StrokeThicknessProperty = ChartPropertyRegistration.Render(
+            nameof(StrokeThickness), typeof(double), typeof(ForgeRingGauge), 6.0);
 
-        public static readonly DependencyProperty AccentBrushProperty =
-            DependencyProperty.Register(nameof(AccentBrush), typeof(Brush), typeof(ForgeRingGauge),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty AccentBrushProperty = ChartPropertyRegistration.Render(
+            nameof(AccentBrush), typeof(Brush), typeof(ForgeRingGauge), null);
 
-        public static readonly DependencyProperty BackgroundBrushProperty =
-            DependencyProperty.Register(nameof(BackgroundBrush), typeof(Brush), typeof(ForgeRingGauge),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty BackgroundBrushProperty = ChartPropertyRegistration.Render(
+            nameof(BackgroundBrush), typeof(Brush), typeof(ForgeRingGauge), null);
 
-        public static readonly DependencyProperty ThresholdBrushProperty =
-            DependencyProperty.Register(nameof(ThresholdBrush), typeof(Brush), typeof(ForgeRingGauge),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ThresholdBrushProperty = ChartPropertyRegistration.Render(
+            nameof(ThresholdBrush), typeof(Brush), typeof(ForgeRingGauge), null);
 
-        public static readonly DependencyProperty CenterTextProperty =
-            DependencyProperty.Register(nameof(CenterText), typeof(string), typeof(ForgeRingGauge),
-                new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty CenterTextProperty = ChartPropertyRegistration.Render(
+            nameof(CenterText), typeof(string), typeof(ForgeRingGauge), string.Empty);
 
-        public static readonly DependencyProperty SubTextProperty =
-            DependencyProperty.Register(nameof(SubText), typeof(string), typeof(ForgeRingGauge),
-                new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty SubTextProperty = ChartPropertyRegistration.Render(
+            nameof(SubText), typeof(string), typeof(ForgeRingGauge), string.Empty);
 
-        public static readonly DependencyProperty TextBrushProperty =
-            DependencyProperty.Register(nameof(TextBrush), typeof(Brush), typeof(ForgeRingGauge),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty TextBrushProperty = ChartPropertyRegistration.Render(
+            nameof(TextBrush), typeof(Brush), typeof(ForgeRingGauge), null);
 
         static readonly Typeface BoldTypeface = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
         static readonly Typeface NormalTypeface = new("Segoe UI");
@@ -686,33 +668,26 @@ namespace CalradiaForge.Desktop.Presentation
 
     public sealed class ForgeBarChart : FrameworkElement
     {
-        public static readonly DependencyProperty BarsProperty =
-            DependencyProperty.Register(nameof(Bars), typeof(IReadOnlyList<ForgeBarDataPoint>), typeof(ForgeBarChart),
-                new FrameworkPropertyMetadata(Array.Empty<ForgeBarDataPoint>(), FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty BarsProperty = ChartPropertyRegistration.Render(
+            nameof(Bars), typeof(IReadOnlyList<ForgeBarDataPoint>), typeof(ForgeBarChart), Array.Empty<ForgeBarDataPoint>());
 
-        public static readonly DependencyProperty BarBrushProperty =
-            DependencyProperty.Register(nameof(BarBrush), typeof(Brush), typeof(ForgeBarChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty BarBrushProperty = ChartPropertyRegistration.Render(
+            nameof(BarBrush), typeof(Brush), typeof(ForgeBarChart), null);
 
-        public static readonly DependencyProperty BackgroundBarBrushProperty =
-            DependencyProperty.Register(nameof(BackgroundBarBrush), typeof(Brush), typeof(ForgeBarChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty BackgroundBarBrushProperty = ChartPropertyRegistration.Render(
+            nameof(BackgroundBarBrush), typeof(Brush), typeof(ForgeBarChart), null);
 
-        public static readonly DependencyProperty LabelBrushProperty =
-            DependencyProperty.Register(nameof(LabelBrush), typeof(Brush), typeof(ForgeBarChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty LabelBrushProperty = ChartPropertyRegistration.Render(
+            nameof(LabelBrush), typeof(Brush), typeof(ForgeBarChart), null);
 
-        public static readonly DependencyProperty ValueBrushProperty =
-            DependencyProperty.Register(nameof(ValueBrush), typeof(Brush), typeof(ForgeBarChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ValueBrushProperty = ChartPropertyRegistration.Render(
+            nameof(ValueBrush), typeof(Brush), typeof(ForgeBarChart), null);
 
-        public static readonly DependencyProperty MaximumProperty =
-            DependencyProperty.Register(nameof(Maximum), typeof(double), typeof(ForgeBarChart),
-                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty MaximumProperty = ChartPropertyRegistration.Render(
+            nameof(Maximum), typeof(double), typeof(ForgeBarChart), 0.0);
 
-        public static readonly DependencyProperty BarThicknessProperty =
-            DependencyProperty.Register(nameof(BarThickness), typeof(double), typeof(ForgeBarChart),
-                new FrameworkPropertyMetadata(12.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty BarThicknessProperty = ChartPropertyRegistration.Render(
+            nameof(BarThickness), typeof(double), typeof(ForgeBarChart), 12.0);
 
         public static readonly DependencyProperty ValueUnitProperty =
             DependencyProperty.Register(nameof(ValueUnit), typeof(string), typeof(ForgeBarChart),
@@ -876,29 +851,23 @@ namespace CalradiaForge.Desktop.Presentation
 
     public sealed class ForgeHeatmapGrid : FrameworkElement
     {
-        public static readonly DependencyProperty MatrixProperty =
-            DependencyProperty.Register(nameof(Matrix), typeof(IReadOnlyList<IReadOnlyList<double>>), typeof(ForgeHeatmapGrid),
-                new FrameworkPropertyMetadata(Array.Empty<IReadOnlyList<double>>(), FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty MatrixProperty = ChartPropertyRegistration.Render(
+            nameof(Matrix), typeof(IReadOnlyList<IReadOnlyList<double>>), typeof(ForgeHeatmapGrid), Array.Empty<IReadOnlyList<double>>());
 
-        public static readonly DependencyProperty RowHeadersProperty =
-            DependencyProperty.Register(nameof(RowHeaders), typeof(IReadOnlyList<string>), typeof(ForgeHeatmapGrid),
-                new FrameworkPropertyMetadata(Array.Empty<string>(), FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty RowHeadersProperty = ChartPropertyRegistration.Render(
+            nameof(RowHeaders), typeof(IReadOnlyList<string>), typeof(ForgeHeatmapGrid), Array.Empty<string>());
 
-        public static readonly DependencyProperty ColumnHeadersProperty =
-            DependencyProperty.Register(nameof(ColumnHeaders), typeof(IReadOnlyList<string>), typeof(ForgeHeatmapGrid),
-                new FrameworkPropertyMetadata(Array.Empty<string>(), FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ColumnHeadersProperty = ChartPropertyRegistration.Render(
+            nameof(ColumnHeaders), typeof(IReadOnlyList<string>), typeof(ForgeHeatmapGrid), Array.Empty<string>());
 
-        public static readonly DependencyProperty BaseBrushProperty =
-            DependencyProperty.Register(nameof(BaseBrush), typeof(Brush), typeof(ForgeHeatmapGrid),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty BaseBrushProperty = ChartPropertyRegistration.Render(
+            nameof(BaseBrush), typeof(Brush), typeof(ForgeHeatmapGrid), null);
 
-        public static readonly DependencyProperty HotBrushProperty =
-            DependencyProperty.Register(nameof(HotBrush), typeof(Brush), typeof(ForgeHeatmapGrid),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty HotBrushProperty = ChartPropertyRegistration.Render(
+            nameof(HotBrush), typeof(Brush), typeof(ForgeHeatmapGrid), null);
 
-        public static readonly DependencyProperty CellRadiusProperty =
-            DependencyProperty.Register(nameof(CellRadius), typeof(double), typeof(ForgeHeatmapGrid),
-                new FrameworkPropertyMetadata(2.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty CellRadiusProperty = ChartPropertyRegistration.Render(
+            nameof(CellRadius), typeof(double), typeof(ForgeHeatmapGrid), 2.0);
 
         static readonly Typeface HeaderTypeface = new("Segoe UI");
 
@@ -1059,57 +1028,44 @@ namespace CalradiaForge.Desktop.Presentation
         private static readonly Typeface ValueTypeface = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
         private static readonly Typeface LabelTypeface = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
 
-        public static readonly DependencyProperty ValueProperty =
-            DependencyProperty.Register(nameof(Value), typeof(double), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ValueProperty = ChartPropertyRegistration.Render(
+            nameof(Value), typeof(double), typeof(ForgeArcGauge), 0.0);
 
-        public static readonly DependencyProperty MinValueProperty =
-            DependencyProperty.Register(nameof(MinValue), typeof(double), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty MinValueProperty = ChartPropertyRegistration.Render(
+            nameof(MinValue), typeof(double), typeof(ForgeArcGauge), 0.0);
 
-        public static readonly DependencyProperty MaxValueProperty =
-            DependencyProperty.Register(nameof(MaxValue), typeof(double), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata(100.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty MaxValueProperty = ChartPropertyRegistration.Render(
+            nameof(MaxValue), typeof(double), typeof(ForgeArcGauge), 100.0);
 
-        public static readonly DependencyProperty ArcThicknessProperty =
-            DependencyProperty.Register(nameof(ArcThickness), typeof(double), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata(6.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ArcThicknessProperty = ChartPropertyRegistration.Render(
+            nameof(ArcThickness), typeof(double), typeof(ForgeArcGauge), 6.0);
 
-        public static readonly DependencyProperty TrackBrushProperty =
-            DependencyProperty.Register(nameof(TrackBrush), typeof(Brush), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty TrackBrushProperty = ChartPropertyRegistration.Render(
+            nameof(TrackBrush), typeof(Brush), typeof(ForgeArcGauge), null);
 
-        public static readonly DependencyProperty ProgressBrushProperty =
-            DependencyProperty.Register(nameof(ProgressBrush), typeof(Brush), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ProgressBrushProperty = ChartPropertyRegistration.Render(
+            nameof(ProgressBrush), typeof(Brush), typeof(ForgeArcGauge), null);
 
-        public static readonly DependencyProperty ValueBrushProperty =
-            DependencyProperty.Register(nameof(ValueBrush), typeof(Brush), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ValueBrushProperty = ChartPropertyRegistration.Render(
+            nameof(ValueBrush), typeof(Brush), typeof(ForgeArcGauge), null);
 
-        public static readonly DependencyProperty UnitsBrushProperty =
-            DependencyProperty.Register(nameof(UnitsBrush), typeof(Brush), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty UnitsBrushProperty = ChartPropertyRegistration.Render(
+            nameof(UnitsBrush), typeof(Brush), typeof(ForgeArcGauge), null);
 
-        public static readonly DependencyProperty ValueFormatProperty =
-            DependencyProperty.Register(nameof(ValueFormat), typeof(string), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata("0", FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ValueFormatProperty = ChartPropertyRegistration.Render(
+            nameof(ValueFormat), typeof(string), typeof(ForgeArcGauge), "0");
 
-        public static readonly DependencyProperty UnitsTextProperty =
-            DependencyProperty.Register(nameof(UnitsText), typeof(string), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata("%", FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty UnitsTextProperty = ChartPropertyRegistration.Render(
+            nameof(UnitsText), typeof(string), typeof(ForgeArcGauge), "%");
 
-        public static readonly DependencyProperty GaugeTitleProperty =
-            DependencyProperty.Register(nameof(GaugeTitle), typeof(string), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty GaugeTitleProperty = ChartPropertyRegistration.Render(
+            nameof(GaugeTitle), typeof(string), typeof(ForgeArcGauge), string.Empty);
 
-        public static readonly DependencyProperty StartAngleProperty =
-            DependencyProperty.Register(nameof(StartAngle), typeof(double), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata(135.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty StartAngleProperty = ChartPropertyRegistration.Render(
+            nameof(StartAngle), typeof(double), typeof(ForgeArcGauge), 135.0);
 
-        public static readonly DependencyProperty SweepAngleProperty =
-            DependencyProperty.Register(nameof(SweepAngle), typeof(double), typeof(ForgeArcGauge),
-                new FrameworkPropertyMetadata(270.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty SweepAngleProperty = ChartPropertyRegistration.Render(
+            nameof(SweepAngle), typeof(double), typeof(ForgeArcGauge), 270.0);
 
         public double Value
         {
@@ -1300,49 +1256,38 @@ namespace CalradiaForge.Desktop.Presentation
 
     public sealed class ForgeAreaChart : FrameworkElement
     {
-        public static readonly DependencyProperty DataPointsProperty =
-            DependencyProperty.Register(nameof(DataPoints), typeof(IReadOnlyList<double>), typeof(ForgeAreaChart),
-                new FrameworkPropertyMetadata(Array.Empty<double>(), FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty DataPointsProperty = ChartPropertyRegistration.Render(
+            nameof(DataPoints), typeof(IReadOnlyList<double>), typeof(ForgeAreaChart), Array.Empty<double>());
 
-        public static readonly DependencyProperty StrokeProperty =
-            DependencyProperty.Register(nameof(Stroke), typeof(Brush), typeof(ForgeAreaChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty StrokeProperty = ChartPropertyRegistration.Render(
+            nameof(Stroke), typeof(Brush), typeof(ForgeAreaChart), null);
 
-        public static readonly DependencyProperty FillProperty =
-            DependencyProperty.Register(nameof(Fill), typeof(Brush), typeof(ForgeAreaChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty FillProperty = ChartPropertyRegistration.Render(
+            nameof(Fill), typeof(Brush), typeof(ForgeAreaChart), null);
 
-        public static readonly DependencyProperty StrokeThicknessProperty =
-            DependencyProperty.Register(nameof(StrokeThickness), typeof(double), typeof(ForgeAreaChart),
-                new FrameworkPropertyMetadata(1.8, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty StrokeThicknessProperty = ChartPropertyRegistration.Render(
+            nameof(StrokeThickness), typeof(double), typeof(ForgeAreaChart), 1.8);
 
-        public static readonly DependencyProperty ShowGridLinesProperty =
-            DependencyProperty.Register(nameof(ShowGridLines), typeof(bool), typeof(ForgeAreaChart),
-                new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ShowGridLinesProperty = ChartPropertyRegistration.Render(
+            nameof(ShowGridLines), typeof(bool), typeof(ForgeAreaChart), true);
 
-        public static readonly DependencyProperty GridBrushProperty =
-            DependencyProperty.Register(nameof(GridBrush), typeof(Brush), typeof(ForgeAreaChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty GridBrushProperty = ChartPropertyRegistration.Render(
+            nameof(GridBrush), typeof(Brush), typeof(ForgeAreaChart), null);
 
-        public static readonly DependencyProperty AxisLabelBrushProperty =
-            DependencyProperty.Register(nameof(AxisLabelBrush), typeof(Brush), typeof(ForgeAreaChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty AxisLabelBrushProperty = ChartPropertyRegistration.Render(
+            nameof(AxisLabelBrush), typeof(Brush), typeof(ForgeAreaChart), null);
 
-        public static readonly DependencyProperty ShowMinMaxLabelsProperty =
-            DependencyProperty.Register(nameof(ShowMinMaxLabels), typeof(bool), typeof(ForgeAreaChart),
-                new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ShowMinMaxLabelsProperty = ChartPropertyRegistration.Render(
+            nameof(ShowMinMaxLabels), typeof(bool), typeof(ForgeAreaChart), true);
 
-        public static readonly DependencyProperty ShowBaselineProperty =
-            DependencyProperty.Register(nameof(ShowBaseline), typeof(bool), typeof(ForgeAreaChart),
-                new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ShowBaselineProperty = ChartPropertyRegistration.Render(
+            nameof(ShowBaseline), typeof(bool), typeof(ForgeAreaChart), true);
 
-        public static readonly DependencyProperty ShowDataPointsProperty =
-            DependencyProperty.Register(nameof(ShowDataPoints), typeof(bool), typeof(ForgeAreaChart),
-                new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ShowDataPointsProperty = ChartPropertyRegistration.Render(
+            nameof(ShowDataPoints), typeof(bool), typeof(ForgeAreaChart), true);
 
-        public static readonly DependencyProperty HighlightPointBrushProperty =
-            DependencyProperty.Register(nameof(HighlightPointBrush), typeof(Brush), typeof(ForgeAreaChart),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty HighlightPointBrushProperty = ChartPropertyRegistration.Render(
+            nameof(HighlightPointBrush), typeof(Brush), typeof(ForgeAreaChart), null);
 
         public static readonly DependencyProperty ValueUnitProperty =
             DependencyProperty.Register(nameof(ValueUnit), typeof(string), typeof(ForgeAreaChart),
@@ -1678,45 +1623,35 @@ namespace CalradiaForge.Desktop.Presentation
 
     public sealed class ForgeStepProgress : FrameworkElement
     {
-        public static readonly DependencyProperty StepsProperty =
-            DependencyProperty.Register(nameof(Steps), typeof(IReadOnlyList<ForgeStepItem>), typeof(ForgeStepProgress),
-                new FrameworkPropertyMetadata(Array.Empty<ForgeStepItem>(), FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty StepsProperty = ChartPropertyRegistration.Render(
+            nameof(Steps), typeof(IReadOnlyList<ForgeStepItem>), typeof(ForgeStepProgress), Array.Empty<ForgeStepItem>());
 
-        public static readonly DependencyProperty ActiveBrushProperty =
-            DependencyProperty.Register(nameof(ActiveBrush), typeof(Brush), typeof(ForgeStepProgress),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ActiveBrushProperty = ChartPropertyRegistration.Render(
+            nameof(ActiveBrush), typeof(Brush), typeof(ForgeStepProgress), null);
 
-        public static readonly DependencyProperty CompletedBrushProperty =
-            DependencyProperty.Register(nameof(CompletedBrush), typeof(Brush), typeof(ForgeStepProgress),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty CompletedBrushProperty = ChartPropertyRegistration.Render(
+            nameof(CompletedBrush), typeof(Brush), typeof(ForgeStepProgress), null);
 
-        public static readonly DependencyProperty PendingBrushProperty =
-            DependencyProperty.Register(nameof(PendingBrush), typeof(Brush), typeof(ForgeStepProgress),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty PendingBrushProperty = ChartPropertyRegistration.Render(
+            nameof(PendingBrush), typeof(Brush), typeof(ForgeStepProgress), null);
 
-        public static readonly DependencyProperty FailedBrushProperty =
-            DependencyProperty.Register(nameof(FailedBrush), typeof(Brush), typeof(ForgeStepProgress),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty FailedBrushProperty = ChartPropertyRegistration.Render(
+            nameof(FailedBrush), typeof(Brush), typeof(ForgeStepProgress), null);
 
-        public static readonly DependencyProperty ConnectorBrushProperty =
-            DependencyProperty.Register(nameof(ConnectorBrush), typeof(Brush), typeof(ForgeStepProgress),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ConnectorBrushProperty = ChartPropertyRegistration.Render(
+            nameof(ConnectorBrush), typeof(Brush), typeof(ForgeStepProgress), null);
 
-        public static readonly DependencyProperty TextBrushProperty =
-            DependencyProperty.Register(nameof(TextBrush), typeof(Brush), typeof(ForgeStepProgress),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty TextBrushProperty = ChartPropertyRegistration.Render(
+            nameof(TextBrush), typeof(Brush), typeof(ForgeStepProgress), null);
 
-        public static readonly DependencyProperty SubtitleBrushProperty =
-            DependencyProperty.Register(nameof(SubtitleBrush), typeof(Brush), typeof(ForgeStepProgress),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty SubtitleBrushProperty = ChartPropertyRegistration.Render(
+            nameof(SubtitleBrush), typeof(Brush), typeof(ForgeStepProgress), null);
 
-        public static readonly DependencyProperty NodeRadiusProperty =
-            DependencyProperty.Register(nameof(NodeRadius), typeof(double), typeof(ForgeStepProgress),
-                new FrameworkPropertyMetadata(10.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty NodeRadiusProperty = ChartPropertyRegistration.Render(
+            nameof(NodeRadius), typeof(double), typeof(ForgeStepProgress), 10.0);
 
-        public static readonly DependencyProperty OrientationProperty =
-            DependencyProperty.Register(nameof(Orientation), typeof(Orientation), typeof(ForgeStepProgress),
-                new FrameworkPropertyMetadata(Orientation.Horizontal, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty OrientationProperty = ChartPropertyRegistration.Render(
+            nameof(Orientation), typeof(Orientation), typeof(ForgeStepProgress), Orientation.Horizontal);
 
         public IReadOnlyList<ForgeStepItem> Steps
         {
@@ -2026,49 +1961,38 @@ namespace CalradiaForge.Desktop.Presentation
     /// </summary>
     public sealed class ForgeTimelineRuler : FrameworkElement
     {
-        public static readonly DependencyProperty TotalDurationProperty =
-            DependencyProperty.Register(nameof(TotalDuration), typeof(double), typeof(ForgeTimelineRuler),
-                new FrameworkPropertyMetadata(100.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty TotalDurationProperty = ChartPropertyRegistration.Render(
+            nameof(TotalDuration), typeof(double), typeof(ForgeTimelineRuler), 100.0);
 
-        public static readonly DependencyProperty CurrentTimeProperty =
-            DependencyProperty.Register(nameof(CurrentTime), typeof(double), typeof(ForgeTimelineRuler),
-                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty CurrentTimeProperty = ChartPropertyRegistration.Render(
+            nameof(CurrentTime), typeof(double), typeof(ForgeTimelineRuler), 0.0);
 
-        public static readonly DependencyProperty MajorIntervalProperty =
-            DependencyProperty.Register(nameof(MajorInterval), typeof(double), typeof(ForgeTimelineRuler),
-                new FrameworkPropertyMetadata(20.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty MajorIntervalProperty = ChartPropertyRegistration.Render(
+            nameof(MajorInterval), typeof(double), typeof(ForgeTimelineRuler), 20.0);
 
-        public static readonly DependencyProperty MinorIntervalProperty =
-            DependencyProperty.Register(nameof(MinorInterval), typeof(double), typeof(ForgeTimelineRuler),
-                new FrameworkPropertyMetadata(5.0, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty MinorIntervalProperty = ChartPropertyRegistration.Render(
+            nameof(MinorInterval), typeof(double), typeof(ForgeTimelineRuler), 5.0);
 
-        public static readonly DependencyProperty UnitLabelProperty =
-            DependencyProperty.Register(nameof(UnitLabel), typeof(string), typeof(ForgeTimelineRuler),
-                new FrameworkPropertyMetadata("ms", FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty UnitLabelProperty = ChartPropertyRegistration.Render(
+            nameof(UnitLabel), typeof(string), typeof(ForgeTimelineRuler), "ms");
 
-        public static readonly DependencyProperty ShowLabelsProperty =
-            DependencyProperty.Register(nameof(ShowLabels), typeof(bool), typeof(ForgeTimelineRuler),
-                new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty ShowLabelsProperty = ChartPropertyRegistration.Render(
+            nameof(ShowLabels), typeof(bool), typeof(ForgeTimelineRuler), true);
 
-        public static readonly DependencyProperty RulerBrushProperty =
-            DependencyProperty.Register(nameof(RulerBrush), typeof(Brush), typeof(ForgeTimelineRuler),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty RulerBrushProperty = ChartPropertyRegistration.Render(
+            nameof(RulerBrush), typeof(Brush), typeof(ForgeTimelineRuler), null);
 
-        public static readonly DependencyProperty TickBrushProperty =
-            DependencyProperty.Register(nameof(TickBrush), typeof(Brush), typeof(ForgeTimelineRuler),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty TickBrushProperty = ChartPropertyRegistration.Render(
+            nameof(TickBrush), typeof(Brush), typeof(ForgeTimelineRuler), null);
 
-        public static readonly DependencyProperty MarkerBrushProperty =
-            DependencyProperty.Register(nameof(MarkerBrush), typeof(Brush), typeof(ForgeTimelineRuler),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty MarkerBrushProperty = ChartPropertyRegistration.Render(
+            nameof(MarkerBrush), typeof(Brush), typeof(ForgeTimelineRuler), null);
 
-        public static readonly DependencyProperty LabelBrushProperty =
-            DependencyProperty.Register(nameof(LabelBrush), typeof(Brush), typeof(ForgeTimelineRuler),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty LabelBrushProperty = ChartPropertyRegistration.Render(
+            nameof(LabelBrush), typeof(Brush), typeof(ForgeTimelineRuler), null);
 
-        public static readonly DependencyProperty MarkerLabelProperty =
-            DependencyProperty.Register(nameof(MarkerLabel), typeof(string), typeof(ForgeTimelineRuler),
-                new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.AffectsRender));
+        public static readonly DependencyProperty MarkerLabelProperty = ChartPropertyRegistration.Render(
+            nameof(MarkerLabel), typeof(string), typeof(ForgeTimelineRuler), string.Empty);
 
         static readonly Typeface RulerTypeface = new("Segoe UI");
         static readonly Typeface MarkerTypeface = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);

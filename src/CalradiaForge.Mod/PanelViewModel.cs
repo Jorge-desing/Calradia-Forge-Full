@@ -462,26 +462,7 @@ namespace CalradiaForge.Mod
             return _navigationPaletteRoutes.Any(route => string.Equals(route.Id, id, StringComparison.Ordinal))
                 && (id.StartsWith("sdk-", StringComparison.Ordinal)
                     ? _sdkTools.Any(tool => string.Equals(tool.Tag, id, StringComparison.Ordinal))
-                    : IsIntegratedNavigationRoute(id));
-        }
-
-        private static bool IsIntegratedNavigationRoute(string id)
-        {
-            switch (id)
-            {
-                case "project-wizard": case "summary": case "modules": case "dependencies": case "logs":
-                case "inspect": case "snapshots": case "metrics": case "console": case "tests": case "commands":
-                case "mod-settings": case "framework": case "extensions": case "patch-diagnostics": case "patch-preflight":
-                case "sim-diplomacy": case "sim-settlements": case "sim-economy": case "sim-tactics": case "sim-progression":
-                case "sim-dynasty": case "sim-crime": case "sim-parties": case "sim-audio": case "sim-trade":
-                case "siege-tactics": case "casus-belli": case "rule-auditor": case "model-audit": case "dump-diagnostics":
-                case "audit-localization": case "audit-save": case "audit-audio": case "novice-behavior": case "novice-troop":
-                case "novice-quest": case "novice-item": case "novice-submodule": case "novice-checklist": case "novice-events":
-                case "novice-hint": case "novice-gauntlet": case "novice-gauntlet-composer": case "novice-campaign-rule-builder": case "novice-workshop": case "novice-party": case "novice-building": case "novice-combat":
-                    return true;
-                default:
-                    return false;
-            }
+                    : true);
         }
 
         private NavigationPaletteTarget FindNavigationPaletteRoute(string id)
@@ -1586,7 +1567,7 @@ namespace CalradiaForge.Mod
 
         private static readonly string[] LayoutStatePropertyNames = new[]
         {
-            nameof(NavigationLabel), nameof(CurrentSectionLabel), nameof(SectionHelpLabel), nameof(InputLabel), nameof(IsSummaryActive), nameof(IsModulesActive),
+            nameof(NavigationLabel), nameof(CurrentSectionLabel), nameof(SectionHelpLabel), nameof(InputLabel), nameof(IsSummaryOverview), nameof(ShowResults), nameof(IsSummaryActive), nameof(IsModulesActive),
             nameof(IsLogsActive), nameof(IsInspectorActive), nameof(IsTestsActive), nameof(IsMetricsActive),
             nameof(IsFrameworkActive), nameof(IsExtensionsActive), nameof(IsPatchPreflightActive), nameof(IsHookWorkbenchVisible), nameof(IsHookSelectionDisabled), nameof(IsHookConfirmDisabled), nameof(IsCategoryOverviewActive),
             nameof(CategoryOverviewLabel), nameof(CategoryOverviewHint), nameof(IsCategoryInspectorActive),
@@ -1645,6 +1626,16 @@ namespace CalradiaForge.Mod
             for (int i = 0; i < LayoutStatePropertyNames.Length; i++)
                 OnPropertyChanged(LayoutStatePropertyNames[i]);
         }
+
+        void ShowReport(string report)
+        {
+            overview = false;
+            full = report;
+            page = 0;
+            Render();
+            NotifyLayout();
+        }
+
         void Send(string action, string arg = null)
         {
             if (string.Equals(action, "novice-gauntlet-composer", StringComparison.Ordinal)
@@ -2167,13 +2158,9 @@ namespace CalradiaForge.Mod
         private void RenderNavigationPaletteLanding(string section)
         {
             var route = FindNavigationPaletteRoute(section);
-            overview = false;
-            full = route == null
+            ShowReport(route == null
                 ? T(CurrentName)
-                : route.Title + "\n" + route.Description + "\n\n" + T("Use this view's controls to run actions.");
-            page = 0;
-            Render();
-            NotifyLayout();
+                : route.Title + "\n" + route.Description + "\n\n" + T("Use this view's controls to run actions."));
         }
         public void ExecuteCategoryOverview() { currentCategory = "overview"; RebuildCategoryCommands(); NotifyLayout(); }
         public void ExecuteCategoryInspector() { currentCategory = "inspector"; RebuildCategoryCommands(); NotifyLayout(); }
@@ -2552,15 +2539,11 @@ namespace CalradiaForge.Mod
             long freed = Math.Max(0, before - after);
             double freedMb = freed / (1024.0 * 1024.0);
             double afterMb = after / (1024.0 * 1024.0);
-            full = $"{T("Heap Memory Cleaned")}\n" +
-                   $"{T("Before")}: {(before / (1024.0 * 1024.0)):F2} MB\n" +
-                   $"{T("After")}: {afterMb:F2} MB\n" +
-                   $"{T("Reclaimed")}: {freedMb:F2} MB\n" +
-                   $"GC Gen0: {GC.CollectionCount(0)} | Gen1: {GC.CollectionCount(1)} | Gen2: {GC.CollectionCount(2)}";
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport($"{T("Heap Memory Cleaned")}\n" +
+                       $"{T("Before")}: {(before / (1024.0 * 1024.0)):F2} MB\n" +
+                       $"{T("After")}: {afterMb:F2} MB\n" +
+                       $"{T("Reclaimed")}: {freedMb:F2} MB\n" +
+                       $"GC Gen0: {GC.CollectionCount(0)} | Gen1: {GC.CollectionCount(1)} | Gen2: {GC.CollectionCount(2)}");
             ShowToast(string.Format(T("Heap trimmed: reclaimed {0:F1} MB"), freedMb));
         }
         public void ExecuteQuickState()
@@ -2638,11 +2621,7 @@ namespace CalradiaForge.Mod
                 }
             }
             catch (Exception) { /* Non-campaign session or entity resolution fallback */ }
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
         }
         public void ExecuteInspectPlayer()
         {
@@ -2936,7 +2915,8 @@ namespace CalradiaForge.Mod
             long sequence;
             if (!long.TryParse((Argument ?? "").Trim(), out sequence) || sequence < 1)
             {
-                overview = false; full = T("Select a retained event sequence."); page = 0; Render(); NotifyLayout(); return;
+                ShowReport(T("Select a retained event sequence."));
+                return;
             }
             Send("replay", sequence.ToString());
         }
@@ -3213,37 +3193,8 @@ namespace CalradiaForge.Mod
                     {
                         var getGameModelsMethod = modelsObj.GetType().GetMethod("GetGameModels");
                         var modelsList = getGameModelsMethod?.Invoke(modelsObj, null) as System.Collections.IEnumerable;
-                        if (modelsList != null)
-                        {
-                            foreach (var m in modelsList)
-                            {
-                                if (m == null) continue;
-                                totalModels++;
-                                var mType = m.GetType();
-                                var asmName = mType.Assembly.GetName().Name;
-                                var isNative = asmName.StartsWith("TaleWorlds", StringComparison.OrdinalIgnoreCase) ||
-                                               asmName.StartsWith("SandBox", StringComparison.OrdinalIgnoreCase) ||
-                                               asmName.StartsWith("StoryMode", StringComparison.OrdinalIgnoreCase);
-                                var decoratorChain = DetectDecoratorChain(m);
-                                bool isDecorated = !string.IsNullOrEmpty(decoratorChain);
-                                if (isDecorated) decoratedModels++;
-                                string baseModelName = mType.BaseType != null && mType.BaseType != typeof(object) ? mType.BaseType.Name : "GameModel";
-                                string line = $"  • {mType.Name} [{baseModelName}] ({asmName})";
-                                if (isDecorated)
-                                {
-                                    line += $"\n      └── Wraps: {decoratorChain}";
-                                }
-                                if (!isNative || isDecorated)
-                                {
-                                    modModels++;
-                                    modModelDetails.Add(line + (isDecorated ? " [DECORATED]" : " [CUSTOM OVERRIDE]"));
-                                }
-                                else
-                                {
-                                    nativeModelDetails.Add(line);
-                                }
-                            }
-                        }
+                        AppendGameModelGroup(modelsList, true, ref totalModels, ref modModels, ref decoratedModels,
+                            modModelDetails, nativeModelDetails);
                     }
                     var cbmProp = campaignType.GetProperty("CampaignBehaviorManager", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
                     var cbm = cbmProp?.GetValue(currentCampaign, null);
@@ -3293,33 +3244,8 @@ namespace CalradiaForge.Mod
                         {
                             var getGameModelsMethod = basicModelsObj.GetType().GetMethod("GetGameModels");
                             var modelsList = getGameModelsMethod?.Invoke(basicModelsObj, null) as System.Collections.IEnumerable;
-                            if (modelsList != null)
-                            {
-                                foreach (var m in modelsList)
-                                {
-                                    if (m == null) continue;
-                                    totalModels++;
-                                    var mType = m.GetType();
-                                    var asmName = mType.Assembly.GetName().Name;
-                                    var isNative = asmName.StartsWith("TaleWorlds", StringComparison.OrdinalIgnoreCase) ||
-                                                   asmName.StartsWith("SandBox", StringComparison.OrdinalIgnoreCase) ||
-                                                   asmName.StartsWith("StoryMode", StringComparison.OrdinalIgnoreCase);
-                                    var decoratorChain = DetectDecoratorChain(m);
-                                    bool isDecorated = !string.IsNullOrEmpty(decoratorChain);
-                                    if (isDecorated) decoratedModels++;
-                                    string line = $"  • {mType.Name} ({asmName})";
-                                    if (isDecorated) line += $"\n      └── Wraps: {decoratorChain}";
-                                    if (!isNative || isDecorated)
-                                    {
-                                        modModels++;
-                                        modModelDetails.Add(line + (isDecorated ? " [DECORATED]" : " [CUSTOM OVERRIDE]"));
-                                    }
-                                    else
-                                    {
-                                        nativeModelDetails.Add(line);
-                                    }
-                                }
-                            }
+                            AppendGameModelGroup(modelsList, false, ref totalModels, ref modModels, ref decoratedModels,
+                                modModelDetails, nativeModelDetails);
                         }
                     }
                     sb.AppendLine("NOTE: Campaign is not currently active. Audited basic models from Game.Current.");
@@ -3361,11 +3287,7 @@ namespace CalradiaForge.Mod
             }
             string summaryLog = $"System Audit: {totalModels} models ({modModels} mod/dec), {totalBehaviors} behaviors ({modBehaviors} mod).";
             runtime?.Register("CalradiaForge", "Info", summaryLog);
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
         }
         public void ExecuteDumpDiagnostics() => ExecuteModelAudit();
         void RunSimulateTool(string tool)
@@ -3458,11 +3380,7 @@ namespace CalradiaForge.Mod
                 sb.AppendLine($"• Neutral Non-Aggression     (Rel +10, 0 Common Wars, Med):   {ForgeApi.Diplomacy.EvaluateAllianceStability(10, 0, 3):F1} / 100.0 (Fragile)");
                 sb.AppendLine($"• Historic Rivals Distant    (Rel -20, 0 Common Wars, Far):   {ForgeApi.Diplomacy.EvaluateAllianceStability(-20, 0, 5):F1} / 100.0 (Hostile)");
             }
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
         }
         void RunSimSettlements(string arg)
         {
@@ -3494,11 +3412,7 @@ namespace CalradiaForge.Mod
                 }
                 sb.AppendLine();
             }
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
         }
         void RunSimEconomy(string arg)
         {
@@ -3544,11 +3458,7 @@ namespace CalradiaForge.Mod
             sb.AppendLine($"• Medium Alley Racket (8 Thugs, 6.5k Prosperity, 45 Security): {gold1} gold/day, +{crime1:F1} crime/day");
             var (margin, risk) = ForgeApi.Underworld.CalculateSmugglingMargin(40, 110, 0.15f, 15f);
             sb.AppendLine($"• Smuggled Contraband Cargo (Buy 40, Sell 110, Tariff 15%): Net {margin} gold/unit (Risk Index: {risk:F2})");
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
         }
         void RunSimTactics(string arg)
         {
@@ -3581,11 +3491,7 @@ namespace CalradiaForge.Mod
             sb.AppendLine("• Battering Ram vs Level 2 Castle Outer Gate: ~45 seconds sustained hammering (18 HP/impact).");
             sb.AppendLine("• Siege Tower Docking Ramp: 100% infantries deploy rate once clamped to wall segment.");
             sb.AppendLine("• Trebuchet Wall Bombardment: 3 direct impacts trigger Wall Breach state in Campaign simulation.");
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
         }
         void RunSimProgression(string arg)
         {
@@ -3628,11 +3534,7 @@ namespace CalradiaForge.Mod
                 bool applies = ForgeApi.Progression.DoesPerkApplyToRole(p.Id, p.Role);
                 sb.AppendLine($"• Perk '{p.Id}' assigned to role '{p.Role}': {(applies ? "ACTIVE" : "INACTIVE")}");
             }
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
         }
         void RunSimDynasty(string arg)
         {
@@ -3770,11 +3672,7 @@ namespace CalradiaForge.Mod
                 sb.AppendLine("• Blood Lineage Bonus:  Direct Son/Daughter (+150), Consort (+100), Sibling (+80)");
             }
 
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
             ShowToast(T("Dynasty & succession evaluation completed."));
         }
         void RunSimCrime(string arg)
@@ -3865,11 +3763,7 @@ namespace CalradiaForge.Mod
                 sb.AppendLine("• Rule 3: Tariffs evaded via smuggling yield exponential returns in high-prosperity hubs.");
             }
 
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
             ShowToast(T("Crime & underworld simulation completed."));
         }
         void RunRuleAuditorTool(string arg)
@@ -3939,12 +3833,58 @@ namespace CalradiaForge.Mod
             {
                 sb.AppendLine("All 36 rules strictly satisfied! Mod passes 100% compliance checks.");
             }
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
         }
+        internal static void AppendGameModelGroup(
+            System.Collections.IEnumerable models,
+            bool includeBaseModel,
+            ref int totalModels,
+            ref int modModels,
+            ref int decoratedModels,
+            List<string> modModelDetails,
+            List<string> nativeModelDetails)
+        {
+            if (models == null) return;
+
+            foreach (var model in models)
+            {
+                if (model == null) continue;
+                totalModels++;
+                var modelType = model.GetType();
+                var assemblyName = modelType.Assembly.GetName().Name;
+                var isNative = assemblyName.StartsWith("TaleWorlds", StringComparison.OrdinalIgnoreCase) ||
+                               assemblyName.StartsWith("SandBox", StringComparison.OrdinalIgnoreCase) ||
+                               assemblyName.StartsWith("StoryMode", StringComparison.OrdinalIgnoreCase);
+                var decoratorChain = DetectDecoratorChain(model);
+                bool isDecorated = !string.IsNullOrEmpty(decoratorChain);
+                if (isDecorated) decoratedModels++;
+
+                string line;
+                if (includeBaseModel)
+                {
+                    string baseModelName = modelType.BaseType != null && modelType.BaseType != typeof(object)
+                        ? modelType.BaseType.Name
+                        : "GameModel";
+                    line = $"  • {modelType.Name} [{baseModelName}] ({assemblyName})";
+                }
+                else
+                {
+                    line = $"  • {modelType.Name} ({assemblyName})";
+                }
+
+                if (isDecorated) line += $"\n      └── Wraps: {decoratorChain}";
+                if (!isNative || isDecorated)
+                {
+                    modModels++;
+                    modModelDetails.Add(line + (isDecorated ? " [DECORATED]" : " [CUSTOM OVERRIDE]"));
+                }
+                else
+                {
+                    nativeModelDetails.Add(line);
+                }
+            }
+        }
+
         private static string DetectDecoratorChain(object model)
         {
             if (model == null) return null;
@@ -4064,11 +4004,7 @@ namespace CalradiaForge.Mod
             sb.AppendLine($"    Faction: {banditBlueprint.FactionStringId} | Home: {banditBlueprint.HomeSettlementStringId} | AI: {banditBlueprint.AiBehavior}");
             sb.AppendLine($"    Troops: 25 raiders (Forest Bandits) - Low Footprint");
             sb.AppendLine($"    Estimated Wage: {bndWage} gold/day | Blueprint Status: {(bndValid ? "VALIDATED" : "INVALID")}");
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
             ShowToast(T("Party simulation completed."));
         }
         void RunAudioTester(string arg)
@@ -4138,11 +4074,7 @@ namespace CalradiaForge.Mod
                 sb.AppendLine("Validation Warnings:");
                 foreach (var err in audioErrors) sb.AppendLine("  ⚠ " + err);
             }
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
             ShowToast(T("Audio test executed."));
         }
         void RunSimTrade(string arg)
@@ -4179,11 +4111,7 @@ namespace CalradiaForge.Mod
             sb.AppendLine("--- WORKSHOP 30-DAY ROI PROJECTION ---");
             var simResult = ForgeTradeSimulator.SimulateWorkshopRoi(settlement, workshopType, 10000, 30, 1.1f);
             sb.AppendLine(simResult.Summary);
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
             ShowToast(T("Trade simulation completed."));
         }
         void RunSiegeTactics(string arg)
@@ -4246,11 +4174,7 @@ namespace CalradiaForge.Mod
             sb.AppendLine($"• Casualties: Attackers {(breaches.AttackerExpectedCasualtyRate * 100):F1}% | Defenders {(breaches.DefenderExpectedCasualtyRate * 100):F1}%");
             sb.AppendLine($"• Advice: {breaches.TacticalAdvice}");
             sb.AppendLine($"• Active Dynamic Navmeshes: {string.Join(", ", breaches.NavmeshRequirements)}");
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
             ShowToast(T("Siege tactics analysis completed."));
         }
         void RunCasusBelli(string arg)
@@ -4307,11 +4231,7 @@ namespace CalradiaForge.Mod
             sb.AppendLine("--- BENCHMARK SCENARIO 2: Marriage Alliance & High Relations ---");
             var eval2 = ForgeCasusBelliEngine.EvaluateWarJustification(realmA, realmB, 6200, 3100, 4, true, 0, 15);
             sb.AppendLine(eval2.Summary);
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
             ShowToast(T("Casus Belli evaluation completed."));
         }
         void RunAudioInspectorTool(string arg)
@@ -4344,11 +4264,7 @@ namespace CalradiaForge.Mod
             {
                 sb.AppendLine($"• [{f.Severity.ToUpper()}] {f.SoundName}: {f.Message}");
             }
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
             ShowToast(T("Audio manifest audit completed."));
         }
         void RunLocalizationTester(string arg)
@@ -4401,11 +4317,7 @@ namespace CalradiaForge.Mod
             sb.AppendLine("  ✔ No Unescaped Newlines: Newlines strictly encoded as &#10; in XML definitions.");
             sb.AppendLine("  ✔ SHA-256 Token Parity: Unique string token IDs matched to English baseline.");
             sb.AppendLine("  ✔ Dynamic Variable Bounds: TextObject parameter tokens ({NAME}, {COUNT}) preserved.");
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
             ShowToast(T("Localization audit completed."));
         }
         void RunSaveInspector(string arg)
@@ -4441,11 +4353,7 @@ namespace CalradiaForge.Mod
             sb.AppendLine($"• Campaign Copy Confirmed: {(runtime?.TestEngine?.CampaignCopyConfirmed == true ? "Yes" : "No")}");
             sb.AppendLine($"• Testing Mode Protection: {(runtime?.TestEngine?.TestingEnabled == true ? "Enabled" : "Disabled")}");
             sb.AppendLine($"• Save System Health: 100% OPTIMAL (No payload overflow hazards detected)");
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
             ShowToast(T("Save system health audit passed."));
         }
         public void ExecuteKeyboardControl(string id)
@@ -4601,11 +4509,7 @@ namespace CalradiaForge.Mod
         void RunNoviceTool(string action, string arg)
         {
             var r = runtime.Handle(new Request { Action = action, Argument = arg }, System.Threading.CancellationToken.None);
-            overview = false;
-            full = r.Success ? r.Data : T("Error") + ": " + FormatError(r.Error);
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(r.Success ? r.Data : T("Error") + ": " + FormatError(r.Error));
             if (r.Success) ShowToast(T("Scaffold generated. Use Copy to clipboard to save it."));
         }
 
@@ -4977,11 +4881,7 @@ namespace CalradiaForge.Mod
             }
             sb.AppendLine();
             sb.AppendLine(T("Tip: Click ⚡ to assign a command to a Quick Slot, ★ to pin, or Run to execute."));
-            full = sb.ToString();
-            overview = false;
-            page = 0;
-            Render();
-            NotifyLayout();
+            ShowReport(sb.ToString());
             ShowToast(string.Format(T("Loaded {0} architectural guide."), currentCategory.ToUpperInvariant()));
         }
 

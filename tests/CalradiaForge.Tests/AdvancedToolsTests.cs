@@ -1,8 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Security.Cryptography;
@@ -372,6 +374,7 @@ namespace CalradiaForge.Tests
             test("Gauntlet evidence ledger retains 160 DIP at 1280x720 without colliding with controls", TestGauntletEvidenceLedgerGeometry);
             test("Gauntlet live output filter preserves source, argument, wrapping, and paging", TestGauntletLiveOutputFilter);
             test("Gauntlet output comparison is deterministic, filtered, paged, and bounded", TestGauntletOutputComparison);
+            test("Gauntlet navigation catalog and report transitions preserve route and page state", TestNavigationCatalogAndReportTransitions);
             test("Gauntlet test-results explorer parses individual and bounded batch results", TestGauntletTestResultsExplorerParser);
             test("Gauntlet test-results explorer bindings and dismissal lifecycle", TestGauntletTestResultsExplorerContracts);
             test("Desktop & In-Game UI error corrections (panel overlap, glyph fallback, action parity)", TestUiErrorCorrectionsAndSafety);
@@ -391,6 +394,7 @@ namespace CalradiaForge.Tests
             test("ModRuleAuditor Multi-Rule Compliance Validator", TestModRuleAuditorCompliance);
             test("CalradiaForge.Core.SDK Enriched Modules Integration", TestCoreSdkModulesIntegration);
             test("In-Game Gauntlet UI Simulation & Audit Systems and XML Parity", TestInGameUiSimulateAndAudit);
+            test("Gauntlet model audit preserves Campaign and BasicModels order, counts, and output", TestGameModelAuditProjection);
             test("In-Game Gauntlet UI Round 2 (LiveWatch, KeyHelp, Toast, FilterLines, 4 New Tools)", TestInGameUiRound2Enhancements);
             test("Novice Modder Hub — 7 Scaffold Generators, Action Parity, UI Buttons", TestNoviceModderFeatures);
             test("QoL Improvements & Comprehensive Gauntlet Hint System", TestQoLAndHintSystem);
@@ -1956,6 +1960,80 @@ namespace MyCustomMod.QuestBehaviors
                 throw new Exception("Runtime.cs missing case \"rule-auditor\" in Handle method.");
         }
 
+        private class AuditBaseFixtureModel { }
+        private sealed class CampaignFirstFixtureModel : AuditBaseFixtureModel { }
+        private sealed class WrappedFixtureModel : AuditBaseFixtureModel
+        {
+            readonly AuditInnerFixtureModel _previousModel = new AuditInnerFixtureModel();
+            object GetPreviousModelForTest() => _previousModel;
+        }
+        private sealed class AuditInnerFixtureModel { }
+        private sealed class BasicLastFixtureModel { }
+
+        private static void TestGameModelAuditProjection()
+        {
+            string nativeAssemblyName = "TaleWorlds.ForgeAuditFixture." + Guid.NewGuid().ToString("N");
+            var dynamicAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(
+                new AssemblyName(nativeAssemblyName), AssemblyBuilderAccess.Run);
+            var dynamicModule = dynamicAssembly.DefineDynamicModule(nativeAssemblyName);
+            var nativeType = dynamicModule.DefineType("NativeFixtureModel", TypeAttributes.Public | TypeAttributes.Class);
+            nativeType.DefineDefaultConstructor(MethodAttributes.Public);
+            object nativeModel = Activator.CreateInstance(nativeType.CreateType());
+
+            int totalModels = 0;
+            int modModels = 0;
+            int decoratedModels = 0;
+            var modDetails = new List<string>();
+            var nativeDetails = new List<string>();
+
+            // Campaign.Models path: preserves base-type text, null skipping, enumeration order,
+            // mod/native classification, and decorator annotations.
+            PanelViewModel.AppendGameModelGroup(
+                new object[] { new CampaignFirstFixtureModel(), null, new WrappedFixtureModel(), nativeModel },
+                includeBaseModel: true,
+                ref totalModels,
+                ref modModels,
+                ref decoratedModels,
+                modDetails,
+                nativeDetails);
+
+            // Game.BasicModels fallback path: appends in source order and intentionally omits
+            // the base-type segment while sharing the same counters and output lists.
+            PanelViewModel.AppendGameModelGroup(
+                new object[] { new BasicLastFixtureModel(), null, nativeModel },
+                includeBaseModel: false,
+                ref totalModels,
+                ref modModels,
+                ref decoratedModels,
+                modDetails,
+                nativeDetails);
+
+            if (totalModels != 5 || modModels != 3 || decoratedModels != 1)
+                throw new Exception($"Expected combined Campaign/BasicModels counts 5/3/1; got {totalModels}/{modModels}/{decoratedModels}.");
+
+            string testAssembly = typeof(AdvancedToolsTests).Assembly.GetName().Name;
+            string expectedNative = nativeModel.GetType().Assembly.GetName().Name;
+            string[] expectedModDetails =
+            {
+                $"  • CampaignFirstFixtureModel [AuditBaseFixtureModel] ({testAssembly}) [CUSTOM OVERRIDE]",
+                $"  • WrappedFixtureModel [AuditBaseFixtureModel] ({testAssembly})\n      └── Wraps: AuditInnerFixtureModel ({testAssembly}) [DECORATED]",
+                $"  • BasicLastFixtureModel ({testAssembly}) [CUSTOM OVERRIDE]"
+            };
+            string[] expectedNativeDetails =
+            {
+                $"  • NativeFixtureModel [GameModel] ({expectedNative})",
+                $"  • NativeFixtureModel ({expectedNative})"
+            };
+            if (!modDetails.SequenceEqual(expectedModDetails, StringComparer.Ordinal) ||
+                !nativeDetails.SequenceEqual(expectedNativeDetails, StringComparer.Ordinal))
+                throw new Exception("Campaign and BasicModels detail output changed in text, grouping, or enumeration order.");
+
+            string source = File.ReadAllText(Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.cs"));
+            if (!source.Contains("AppendGameModelGroup(modelsList, true,") ||
+                !source.Contains("AppendGameModelGroup(modelsList, false,"))
+                throw new Exception("Campaign.Models and BasicModels must keep distinct true/false formatting routes.");
+        }
+
         private static void TestInGameUiRound2Enhancements()
         {
             AssertCurrentNativePrefab();
@@ -2417,6 +2495,99 @@ namespace MyCustomMod.QuestBehaviors
             if (closeStart < 0 || closeEnd <= closeStart ||
                 !vm.Substring(closeStart, closeEnd - closeStart).Contains("_outputBaseline = null;"))
                 throw new Exception("Closing the panel must release the pinned baseline.");
+        }
+
+        private static void TestNavigationCatalogAndReportTransitions()
+        {
+            using (var runtime = new Runtime())
+            {
+                var panel = new PanelViewModel(runtime, delegate { });
+                Type panelType = typeof(PanelViewModel);
+                MethodInfo isKnownRoute = panelType.GetMethod("IsKnownNavigationPaletteRoute", BindingFlags.Instance | BindingFlags.NonPublic);
+                FieldInfo routesField = panelType.GetField("_navigationPaletteRoutes", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (isKnownRoute == null || routesField == null)
+                    throw new Exception("The navigation route catalog contract was not found.");
+
+                Func<string, bool> isKnown = id => (bool)isKnownRoute.Invoke(panel, new object[] { id });
+                string[] integratedRouteIds =
+                {
+                    "project-wizard", "summary", "modules", "dependencies", "logs", "inspect", "snapshots", "metrics", "console",
+                    "tests", "commands", "mod-settings", "framework", "extensions", "patch-diagnostics", "patch-preflight",
+                    "sim-diplomacy", "sim-settlements", "sim-economy", "sim-tactics", "sim-progression", "sim-dynasty",
+                    "sim-crime", "sim-parties", "sim-audio", "sim-trade", "siege-tactics", "casus-belli", "rule-auditor",
+                    "model-audit", "dump-diagnostics", "audit-localization", "audit-save", "audit-audio", "novice-behavior",
+                    "novice-troop", "novice-quest", "novice-item", "novice-submodule", "novice-checklist", "novice-events",
+                    "novice-hint", "novice-gauntlet", "novice-gauntlet-composer", "novice-campaign-rule-builder",
+                    "novice-workshop", "novice-party", "novice-building", "novice-combat"
+                };
+                var routeIds = ((IEnumerable)routesField.GetValue(panel))
+                    .Cast<object>()
+                    .Select(route => (string)route.GetType().GetField("Id", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(route))
+                    .ToArray();
+                string[] expectedRouteIds = integratedRouteIds.Concat(ToolDefinitionRegistry.SdkTools.Select(tool => tool.Tag)).ToArray();
+                if (integratedRouteIds.Length != 49 || routeIds.Length != expectedRouteIds.Length ||
+                    routeIds.Distinct(StringComparer.Ordinal).Count() != routeIds.Length ||
+                    integratedRouteIds.Any(id => !routeIds.Contains(id, StringComparer.Ordinal)) ||
+                    routeIds.Except(expectedRouteIds, StringComparer.Ordinal).Any() ||
+                    expectedRouteIds.Except(routeIds, StringComparer.Ordinal).Any())
+                    throw new Exception("The navigation catalog must contain all 49 integrated routes and the complete SDK route registry exactly once.");
+                if (!routeIds.Contains("summary", StringComparer.Ordinal) || !isKnown("summary"))
+                    throw new Exception("A valid integrated route must be recognized from the navigation catalog.");
+                if (isKnown("unknown-route-regression") || isKnown("sdk-unregistered-regression"))
+                    throw new Exception("Unknown integrated and SDK route IDs must remain rejected.");
+                if (routeIds.Any(id => !isKnown(id)))
+                    throw new Exception("Every registered navigation catalog entry must remain a valid route ID.");
+
+                string sdkRouteId = ToolDefinitionRegistry.SdkTools
+                    .Select(tool => tool.Tag)
+                    .FirstOrDefault(id => id.StartsWith("sdk-", StringComparison.Ordinal));
+                if (string.IsNullOrEmpty(sdkRouteId) || !routeIds.Contains(sdkRouteId, StringComparer.Ordinal) || !isKnown(sdkRouteId))
+                    throw new Exception("A registered SDK route must remain valid through the navigation catalog and SDK tool registry.");
+
+                string source = File.ReadAllText(Path.GetFullPath("src/CalradiaForge.Mod/PanelViewModel.cs"));
+                if (source.Contains("IsIntegratedNavigationRoute"))
+                    throw new Exception("Integrated route IDs must use the navigation catalog instead of a duplicate switch.");
+
+                MethodInfo showReport = panelType.GetMethod("ShowReport", BindingFlags.Instance | BindingFlags.NonPublic);
+                FieldInfo fullField = panelType.GetField("full", BindingFlags.Instance | BindingFlags.NonPublic);
+                FieldInfo pageField = panelType.GetField("page", BindingFlags.Instance | BindingFlags.NonPublic);
+                FieldInfo pageCountField = panelType.GetField("pageCount", BindingFlags.Instance | BindingFlags.NonPublic);
+                FieldInfo overviewField = panelType.GetField("overview", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (showReport == null || fullField == null || pageField == null || pageCountField == null || overviewField == null)
+                    throw new Exception("The report display state contract was not found.");
+
+                var changedProperties = new HashSet<string>(StringComparer.Ordinal);
+                panel.PropertyChanged += (sender, args) => changedProperties.Add(args.PropertyName);
+                string report = string.Join("\n", Enumerable.Range(0, 128).Select(index => "report row " + index.ToString("D3")));
+                overviewField.SetValue(panel, true);
+                pageField.SetValue(panel, 7);
+                showReport.Invoke(panel, new object[] { report });
+                string displayedContent = panel.Content;
+                bool hasLayoutNotification = changedProperties.Contains(nameof(PanelViewModel.CurrentSectionLabel));
+                bool hasOverviewVisibilityNotifications =
+                    changedProperties.Contains(nameof(PanelViewModel.IsSummaryOverview)) &&
+                    changedProperties.Contains(nameof(PanelViewModel.ShowResults));
+                if ((string)fullField.GetValue(panel) != report || (bool)overviewField.GetValue(panel) ||
+                    (int)pageField.GetValue(panel) != 0 || (int)pageCountField.GetValue(panel) < 2 ||
+                    displayedContent == null || !displayedContent.StartsWith("report row 000", StringComparison.Ordinal) ||
+                    !hasOverviewVisibilityNotifications || !hasLayoutNotification)
+                    throw new Exception("Displaying a report must leave overview, output, pagination, render, and layout notifications synchronized. " +
+                        "Overview visibility notifications=" + hasOverviewVisibilityNotifications + ", layout notification=" + hasLayoutNotification +
+                        ", page=" + pageField.GetValue(panel) + ", pageCount=" + pageCountField.GetValue(panel) +
+                        ", overview=" + overviewField.GetValue(panel) + ", content=" + (displayedContent ?? "<null>"));
+
+                string firstReportPage = panel.Content;
+                panel.ExecuteNext();
+                if ((int)pageField.GetValue(panel) != 1 || panel.Content == firstReportPage)
+                    throw new Exception("The report's next-page action must advance and render the next page.");
+
+                overviewField.SetValue(panel, true);
+                panel.ExecuteClearOutput();
+                if ((string)fullField.GetValue(panel) != string.Empty || (bool)overviewField.GetValue(panel) ||
+                    (int)pageField.GetValue(panel) != 0 || (int)pageCountField.GetValue(panel) != 1 ||
+                    panel.Content != string.Empty)
+                    throw new Exception("Clearing the report must reset only the display state to an empty first page outside overview.");
+            }
         }
 
         private static void TestGauntletTestResultsExplorerParser()
