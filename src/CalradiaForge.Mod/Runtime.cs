@@ -704,7 +704,17 @@ namespace CalradiaForge.Mod
             if (snapshotError != null) throw new InvalidOperationException(snapshotError);
 
             var commit = new HookIpcCommit { Operation = operation, Session = currentSession(), TokenConsumed = true, Succeeded = true };
-            var ordered = operation == "revert" ? plan.Hooks.AsEnumerable().Reverse().ToList() : plan.Hooks;
+            List<CalradiaForge.Core.HookIpcSnapshot> ordered;
+            if (operation == "revert")
+            {
+                ordered = new List<CalradiaForge.Core.HookIpcSnapshot>(plan.Hooks.Count);
+                for (int i = plan.Hooks.Count - 1; i >= 0; i--)
+                    ordered.Add(plan.Hooks[i]);
+            }
+            else
+            {
+                ordered = plan.Hooks;
+            }
             var applyOrRevert = operation == "apply" ? apply : revert;
             for (var index = 0; index < ordered.Count; index++)
             {

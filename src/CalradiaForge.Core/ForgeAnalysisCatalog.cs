@@ -123,60 +123,51 @@ namespace CalradiaForge.Core
 
         static Dictionary<string, string> CreateAnalyzerAliases()
         {
-            var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var id in AnalyzerIds) aliases.Add(id, id);
-
-            // Stable names passed by Desktop routes. AssemblyInspector is handled by its
-            // metadata-only workbench before requests reach this catalog.
-            aliases.Add("SubModuleValidator", "module");
-            aliases.Add("ModConflictMatrix", "module");
-            aliases.Add("ModIdAuditor", "module");
-            aliases.Add("XmlSchemaValidator", "xml");
-            aliases.Add("WatchdogParser", "watchdog");
-            aliases.Add("CrashAnalyzer", "crash");
-            // Keep the Desktop route identity, but do not claim that generic source heuristics
-            // can check API deprecations without a versioned, verifiable catalog.
-            aliases.Add("ApiDeprecationChecker", "ApiDeprecationChecker");
-            aliases.Add("PackagingAuditor", "archive");
-            aliases.Add("MissionMeshGuard", "source");
-            aliases.Add("SaveTypeDefinerAuditor", "source");
-            aliases.Add("GauntletEventPassChecker", "gauntlet");
-            aliases.Add("CampaignNamespaceGuard", "source");
-            aliases.Add("AudioFmodMixerInspector", "assets");
-            aliases.Add("SpritePackageAuditor", "assets");
-            aliases.Add("FbxAsciiPreflight", "fbx");
-
-            // Descriptive aliases retained for existing callers and test fixtures.
-            aliases.Add("module manifest audit", "module");
-            aliases.Add("source api check", "source");
-            aliases.Add("localization scan", "localization");
-            aliases.Add("gauntlet audit", "gauntlet");
-            aliases.Add("item asset audit", "assets");
-            aliases.Add("asset structure audit", "assets");
-            aliases.Add("watchdog parser", "watchdog");
-            aliases.Add("archive packaging audit", "archive");
-
+            var aliases = new Dictionary<string, string>(36, StringComparer.OrdinalIgnoreCase)
+            {
+                ["SubModuleValidator"] = "module",
+                ["ModConflictMatrix"] = "module",
+                ["ModIdAuditor"] = "module",
+                ["XmlSchemaValidator"] = "xml",
+                ["WatchdogParser"] = "watchdog",
+                ["CrashAnalyzer"] = "crash",
+                ["ApiDeprecationChecker"] = "ApiDeprecationChecker",
+                ["PackagingAuditor"] = "archive",
+                ["MissionMeshGuard"] = "source",
+                ["SaveTypeDefinerAuditor"] = "source",
+                ["GauntletEventPassChecker"] = "gauntlet",
+                ["CampaignNamespaceGuard"] = "source",
+                ["AudioFmodMixerInspector"] = "assets",
+                ["SpritePackageAuditor"] = "assets",
+                ["FbxAsciiPreflight"] = "fbx",
+                ["module manifest audit"] = "module",
+                ["source api check"] = "source",
+                ["localization scan"] = "localization",
+                ["gauntlet audit"] = "gauntlet",
+                ["item asset audit"] = "assets",
+                ["asset structure audit"] = "assets",
+                ["watchdog parser"] = "watchdog",
+                ["archive packaging audit"] = "archive"
+            };
+            foreach (var id in AnalyzerIds) aliases[id] = id;
             return aliases;
         }
 
-        static string AnalyzerName(string id)
+        static string AnalyzerName(string id) => id switch
         {
-            switch (id)
-            {
-                case "module": return "Module and dependency analysis";
-                case "xml": return "XML safety analysis";
-                case "source": return "C# structural analysis";
-                case "localization": return "Localization analysis";
-                case "gauntlet": return "Gauntlet analysis";
-                case "assets": return "Game asset analysis";
-                case "fbx": return "FBX ASCII declaration preflight";
-                case "watchdog": return "Watchdog log analysis";
-                case "crash": return "Crash metadata analysis";
-                case "archive": return "Archive analysis";
-                case "ApiDeprecationChecker": return "TaleWorlds API deprecation check";
-                default: return "Analysis";
-            }
-        }
+            "module" => "Module and dependency analysis",
+            "xml" => "XML safety analysis",
+            "source" => "C# structural analysis",
+            "localization" => "Localization analysis",
+            "gauntlet" => "Gauntlet analysis",
+            "assets" => "Game asset analysis",
+            "fbx" => "FBX ASCII declaration preflight",
+            "watchdog" => "Watchdog log analysis",
+            "crash" => "Crash metadata analysis",
+            "archive" => "Archive analysis",
+            "ApiDeprecationChecker" => "TaleWorlds API deprecation check",
+            _ => "Analysis"
+        };
 
         static void AnalyzeModules(ForgeAnalysisRequest request, ForgeAnalysisResult result)
         {

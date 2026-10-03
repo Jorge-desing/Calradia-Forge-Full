@@ -16,6 +16,78 @@ namespace CalradiaForge.Desktop.Presentation
                 new FrameworkPropertyMetadata(defaultValue, FrameworkPropertyMetadataOptions.AffectsRender));
     }
 
+    internal static class ChartRenderHelper
+    {
+        internal static Brush CreateAlphaBrush(Brush? source, byte alpha, Color fallback)
+        {
+            if (source is SolidColorBrush scb)
+            {
+                var col = scb.Color;
+                var b = new SolidColorBrush(Color.FromArgb(alpha, col.R, col.G, col.B));
+                b.Freeze();
+                return b;
+            }
+            var fb = new SolidColorBrush(Color.FromArgb(alpha, fallback.R, fallback.G, fallback.B));
+            fb.Freeze();
+            return fb;
+        }
+
+        internal static Pen CreateFrozenPen(Brush brush, double thickness, DashStyle? dash = null, PenLineCap cap = PenLineCap.Flat)
+        {
+            var pen = new Pen(brush, thickness)
+            {
+                DashStyle = dash ?? DashStyles.Solid,
+                StartLineCap = cap,
+                EndLineCap = cap
+            };
+            pen.Freeze();
+            return pen;
+        }
+
+        internal static StreamGeometry BuildClosedPolygon(IReadOnlyList<Point> points)
+        {
+            var geom = new StreamGeometry();
+            if (points == null || points.Count == 0)
+            {
+                geom.Freeze();
+                return geom;
+            }
+            using (var ctx = geom.Open())
+            {
+                ctx.BeginFigure(points[0], true, true);
+                for (int i = 1; i < points.Count; i++)
+                {
+                    ctx.LineTo(points[i], true, false);
+                }
+            }
+            geom.Freeze();
+            return geom;
+        }
+
+        internal static StreamGeometry BuildPolyline(IReadOnlyList<Point> points)
+        {
+            var geom = new StreamGeometry();
+            if (points == null || points.Count == 0)
+            {
+                geom.Freeze();
+                return geom;
+            }
+            using (var ctx = geom.Open())
+            {
+                ctx.BeginFigure(points[0], false, false);
+                for (int i = 1; i < points.Count; i++)
+                {
+                    ctx.LineTo(points[i], true, false);
+                }
+            }
+            geom.Freeze();
+            return geom;
+        }
+
+        internal static Point PolarToCartesian(double cx, double cy, double radius, double angleRad) =>
+            new Point(cx + radius * Math.Cos(angleRad), cy + radius * Math.Sin(angleRad));
+    }
+
     // =========================================================================
     // FORGE SPARKLINE CONTROL (LIGHTWEIGHT HARDWARE-ACCELERATED TIME-SERIES / AREA)
     // =========================================================================
@@ -136,8 +208,7 @@ namespace CalradiaForge.Desktop.Presentation
             // Subtle Grid lines
             if (ShowGridLines && usableH > 16)
             {
-                var gridPen = new Pen(effectiveGrid, 0.8) { DashStyle = DashStyles.Dash };
-                gridPen.Freeze();
+                var gridPen = ChartRenderHelper.CreateFrozenPen(effectiveGrid, 0.8, DashStyles.Dash);
                 dc.DrawLine(gridPen, new Point(padX, padY + usableH * 0.25), new Point(w - padX, padY + usableH * 0.25));
                 dc.DrawLine(gridPen, new Point(padX, padY + usableH * 0.50), new Point(w - padX, padY + usableH * 0.50));
                 dc.DrawLine(gridPen, new Point(padX, padY + usableH * 0.75), new Point(w - padX, padY + usableH * 0.75));
@@ -208,8 +279,7 @@ namespace CalradiaForge.Desktop.Presentation
                 }
             }
             lineGeom.Freeze();
-            var linePen = new Pen(effectiveStroke, StrokeThickness) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
-            linePen.Freeze();
+            var linePen = ChartRenderHelper.CreateFrozenPen(effectiveStroke, StrokeThickness, cap: PenLineCap.Round);
             dc.DrawGeometry(null, linePen, lineGeom);
 
             // Milestone Marker on final point
@@ -347,8 +417,7 @@ namespace CalradiaForge.Desktop.Presentation
             var effectiveStroke = Stroke ?? Brushes.Goldenrod;
             var effectiveCompStroke = ComparisonStroke ?? Brushes.MediumSeaGreen;
 
-            var gridPen = new Pen(effectiveGrid, 0.8) { DashStyle = DashStyles.Dash };
-            gridPen.Freeze();
+            var gridPen = ChartRenderHelper.CreateFrozenPen(effectiveGrid, 0.8, DashStyles.Dash);
 
             Point Vertex(int i, double rFraction)
             {
@@ -361,13 +430,9 @@ namespace CalradiaForge.Desktop.Presentation
             double[] rings = [0.25, 0.50, 0.75, 1.0];
             for (int rIdx = 0; rIdx < rings.Length; rIdx++)
             {
-                var ringGeom = new StreamGeometry();
-                using (var ctx = ringGeom.Open())
-                {
-                    ctx.BeginFigure(Vertex(0, rings[rIdx]), true, true);
-                    for (int i = 1; i < n; i++) ctx.LineTo(Vertex(i, rings[rIdx]), true, false);
-                }
-                ringGeom.Freeze();
+                var ringPts = new Point[n];
+                for (int i = 0; i < n; i++) ringPts[i] = Vertex(i, rings[rIdx]);
+                var ringGeom = ChartRenderHelper.BuildClosedPolygon(ringPts);
                 dc.DrawGeometry(null, gridPen, ringGeom);
             }
 
@@ -394,27 +459,14 @@ namespace CalradiaForge.Desktop.Presentation
             if (comp != null && comp.Count >= 3)
             {
                 var compCount = Math.Min(n, comp.Count);
-                var compGeom = new StreamGeometry();
-                using (var ctx = compGeom.Open())
+                var compPts = new Point[compCount];
+                for (int i = 0; i < compCount; i++)
                 {
-                    ctx.BeginFigure(Vertex(0, Math.Clamp(comp[0], 0.05, 1.0)), true, true);
-                    for (int i = 1; i < compCount; i++)
-                    {
-                        ctx.LineTo(Vertex(i, Math.Clamp(comp[i], 0.05, 1.0)), true, false);
-                    }
+                    compPts[i] = Vertex(i, Math.Clamp(comp[i], 0.05, 1.0));
                 }
-                compGeom.Freeze();
-
-                var compFillBrush = ComparisonFill;
-                if (compFillBrush == null)
-                {
-                    var col = (effectiveCompStroke as SolidColorBrush)?.Color ?? Colors.MediumSeaGreen;
-                    var b = new SolidColorBrush(Color.FromArgb(40, col.R, col.G, col.B));
-                    b.Freeze();
-                    compFillBrush = b;
-                }
-                var compPen = new Pen(effectiveCompStroke, 1.4);
-                compPen.Freeze();
+                var compGeom = ChartRenderHelper.BuildClosedPolygon(compPts);
+                var compFillBrush = ComparisonFill ?? ChartRenderHelper.CreateAlphaBrush(effectiveCompStroke, 40, Colors.MediumSeaGreen);
+                var compPen = ChartRenderHelper.CreateFrozenPen(effectiveCompStroke, 1.4);
                 dc.DrawGeometry(compFillBrush, compPen, compGeom);
             }
 
@@ -422,27 +474,14 @@ namespace CalradiaForge.Desktop.Presentation
             if (vals != null && vals.Count >= 3)
             {
                 var vCount = Math.Min(n, vals.Count);
-                var polyGeom = new StreamGeometry();
-                using (var ctx = polyGeom.Open())
+                var polyPts = new Point[vCount];
+                for (int i = 0; i < vCount; i++)
                 {
-                    ctx.BeginFigure(Vertex(0, Math.Clamp(vals[0], 0.05, 1.0)), true, true);
-                    for (int i = 1; i < vCount; i++)
-                    {
-                        ctx.LineTo(Vertex(i, Math.Clamp(vals[i], 0.05, 1.0)), true, false);
-                    }
+                    polyPts[i] = Vertex(i, Math.Clamp(vals[i], 0.05, 1.0));
                 }
-                polyGeom.Freeze();
-
-                var fillBrush = Fill;
-                if (fillBrush == null)
-                {
-                    var col = (effectiveStroke as SolidColorBrush)?.Color ?? Colors.Goldenrod;
-                    var b = new SolidColorBrush(Color.FromArgb(70, col.R, col.G, col.B));
-                    b.Freeze();
-                    fillBrush = b;
-                }
-                var strokePen = new Pen(effectiveStroke, 1.6);
-                strokePen.Freeze();
+                var polyGeom = ChartRenderHelper.BuildClosedPolygon(polyPts);
+                var fillBrush = Fill ?? ChartRenderHelper.CreateAlphaBrush(effectiveStroke, 70, Colors.Goldenrod);
+                var strokePen = ChartRenderHelper.CreateFrozenPen(effectiveStroke, 1.6);
                 dc.DrawGeometry(fillBrush, strokePen, polyGeom);
 
                 // Small circular nodes on vertices
@@ -580,8 +619,7 @@ namespace CalradiaForge.Desktop.Presentation
             var effectiveText = TextBrush ?? Brushes.WhiteSmoke;
 
             // Background Full Ring
-            var bgPen = new Pen(effectiveBg, t);
-            bgPen.Freeze();
+            var bgPen = ChartRenderHelper.CreateFrozenPen(effectiveBg, t);
             dc.DrawEllipse(null, bgPen, new Point(cx, cy), r, r);
 
             // Active Value Arc (starts at top: -90 deg)
@@ -590,8 +628,7 @@ namespace CalradiaForge.Desktop.Presentation
 
             if (ratio >= 0.999)
             {
-                var fullPen = new Pen(effectiveAccent, t);
-                fullPen.Freeze();
+                var fullPen = ChartRenderHelper.CreateFrozenPen(effectiveAccent, t);
                 dc.DrawEllipse(null, fullPen, new Point(cx, cy), r, r);
             }
             else if (ratio > 0.002)
@@ -608,8 +645,7 @@ namespace CalradiaForge.Desktop.Presentation
                 arcGeom.Figures.Add(arcFigure);
                 arcGeom.Freeze();
 
-                var arcPen = new Pen(effectiveAccent, t) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
-                arcPen.Freeze();
+                var arcPen = ChartRenderHelper.CreateFrozenPen(effectiveAccent, t, cap: PenLineCap.Round);
                 dc.DrawGeometry(null, arcPen, arcGeom);
             }
 
@@ -620,8 +656,7 @@ namespace CalradiaForge.Desktop.Presentation
                 var thAngle = thRatio * 2.0 * Math.PI;
                 var p1 = new Point(cx + (r - t * 0.7) * Math.Sin(thAngle), cy - (r - t * 0.7) * Math.Cos(thAngle));
                 var p2 = new Point(cx + (r + t * 0.7) * Math.Sin(thAngle), cy - (r + t * 0.7) * Math.Cos(thAngle));
-                var thPen = new Pen(ThresholdBrush ?? Brushes.IndianRed, 1.6);
-                thPen.Freeze();
+                var thPen = ChartRenderHelper.CreateFrozenPen(ThresholdBrush ?? Brushes.IndianRed, 1.6);
                 dc.DrawLine(thPen, p1, p2);
             }
 
@@ -1182,12 +1217,7 @@ namespace CalradiaForge.Desktop.Presentation
 
             var trkBrush = TrackBrush ?? new SolidColorBrush(Color.FromArgb(40, 200, 200, 200));
             trkBrush.Freeze();
-            var trkPen = new Pen(trkBrush, thick)
-            {
-                StartLineCap = PenLineCap.Round,
-                EndLineCap = PenLineCap.Round
-            };
-            trkPen.Freeze();
+            var trkPen = ChartRenderHelper.CreateFrozenPen(trkBrush, thick, cap: PenLineCap.Round);
             dc.DrawGeometry(null, trkPen, trackGeo);
 
             // Draw Progress Arc
@@ -1211,12 +1241,7 @@ namespace CalradiaForge.Desktop.Presentation
 
                 var progBrush = ProgressBrush ?? new SolidColorBrush(Color.FromArgb(240, 212, 175, 55));
                 progBrush.Freeze();
-                var progPen = new Pen(progBrush, thick)
-                {
-                    StartLineCap = PenLineCap.Round,
-                    EndLineCap = PenLineCap.Round
-                };
-                progPen.Freeze();
+                var progPen = ChartRenderHelper.CreateFrozenPen(progBrush, thick, cap: PenLineCap.Round);
                 dc.DrawGeometry(null, progPen, progGeo);
             }
 
@@ -1442,8 +1467,7 @@ namespace CalradiaForge.Desktop.Presentation
             // Subtle Grid lines (0%, 33%, 66%, 100%)
             if (ShowGridLines && usableH > 20)
             {
-                var gridPen = new Pen(effectiveGrid, 0.8) { DashStyle = DashStyles.Dash };
-                gridPen.Freeze();
+                var gridPen = ChartRenderHelper.CreateFrozenPen(effectiveGrid, 0.8, DashStyles.Dash);
                 for (int g = 0; g <= 3; g++)
                 {
                     var frac = g / 3.0;
@@ -1454,8 +1478,7 @@ namespace CalradiaForge.Desktop.Presentation
                 // Vertical graduation markers
                 if (points != null && points.Count >= 4)
                 {
-                    var vertPen = new Pen(effectiveGrid, 0.6) { DashStyle = DashStyles.Dot };
-                    vertPen.Freeze();
+                    var vertPen = ChartRenderHelper.CreateFrozenPen(effectiveGrid, 0.6, DashStyles.Dot);
                     var numVert = Math.Min(6, points.Count);
                     for (int v = 1; v < numVert - 1; v++)
                     {
@@ -1468,8 +1491,7 @@ namespace CalradiaForge.Desktop.Presentation
             // Baseline
             if (ShowBaseline)
             {
-                var basePen = new Pen(effectiveGrid, 1.0);
-                basePen.Freeze();
+                var basePen = ChartRenderHelper.CreateFrozenPen(effectiveGrid, 1.0);
                 dc.DrawLine(basePen, new Point(padLeft, padTop + usableH), new Point(w - padRight, padTop + usableH));
             }
 
@@ -1552,21 +1574,14 @@ namespace CalradiaForge.Desktop.Presentation
                 }
             }
             lineGeom.Freeze();
-            var linePen = new Pen(effectiveStroke, StrokeThickness)
-            {
-                StartLineCap = PenLineCap.Round,
-                EndLineCap = PenLineCap.Round,
-                LineJoin = PenLineJoin.Round
-            };
-            linePen.Freeze();
+            var linePen = ChartRenderHelper.CreateFrozenPen(effectiveStroke, StrokeThickness, cap: PenLineCap.Round);
             dc.DrawGeometry(null, linePen, lineGeom);
 
             // Markers on Data Points
             if (ShowDataPoints && points.Count <= 32)
             {
                 var ptBrush = HighlightPointBrush ?? effectiveStroke;
-                var ptPen = new Pen(new SolidColorBrush(Color.FromArgb(200, 20, 24, 28)), 1.0);
-                ptPen.Freeze();
+                var ptPen = ChartRenderHelper.CreateFrozenPen(new SolidColorBrush(Color.FromArgb(200, 20, 24, 28)), 1.0);
 
                 for (int i = 0; i < points.Count; i++)
                 {
@@ -1576,8 +1591,7 @@ namespace CalradiaForge.Desktop.Presentation
                 }
 
                 // Prominent outer halo ring on last point
-                var haloPen = new Pen(effectiveStroke, 1.2) { DashStyle = DashStyles.Dash };
-                haloPen.Freeze();
+                var haloPen = ChartRenderHelper.CreateFrozenPen(effectiveStroke, 1.2, DashStyles.Dash);
                 dc.DrawEllipse(null, haloPen, lastPt, 6.0, 6.0);
             }
         }
@@ -2130,15 +2144,12 @@ namespace CalradiaForge.Desktop.Presentation
             var baselineY = ShowLabels ? Math.Max(8.0, h - 14.0) : h * 0.7;
 
             // Draw horizontal baseline
-            var baselinePen = new Pen(effRulerBrush, 1.4);
-            baselinePen.Freeze();
+            var baselinePen = ChartRenderHelper.CreateFrozenPen(effRulerBrush, 1.4);
             dc.DrawLine(baselinePen, new Point(padX, baselineY), new Point(padX + rulerW, baselineY));
 
             // Draw tick marks
-            var majorTickPen = new Pen(effTickBrush, 1.2);
-            majorTickPen.Freeze();
-            var minorTickPen = new Pen(effTickBrush, 0.7);
-            minorTickPen.Freeze();
+            var majorTickPen = ChartRenderHelper.CreateFrozenPen(effTickBrush, 1.2);
+            var minorTickPen = ChartRenderHelper.CreateFrozenPen(effTickBrush, 0.7);
 
             var steps = (int)Math.Floor(maxD / minor);
             for (var i = 0; i <= steps; i++)
@@ -2177,19 +2188,16 @@ namespace CalradiaForge.Desktop.Presentation
                 var clampedTime = Math.Max(0.0, Math.Min(maxD, CurrentTime));
                 var markerX = padX + (clampedTime / maxD) * rulerW;
 
-                var markerPen = new Pen(effMarkerBrush, 1.8);
-                markerPen.Freeze();
+                var markerPen = ChartRenderHelper.CreateFrozenPen(effMarkerBrush, 1.8);
                 dc.DrawLine(markerPen, new Point(markerX, 4.0), new Point(markerX, baselineY + 2.0));
 
                 // Top pointer (downward pointing triangle)
-                var pointerGeom = new StreamGeometry();
-                using (var ctx = pointerGeom.Open())
+                var pointerGeom = ChartRenderHelper.BuildClosedPolygon(new[]
                 {
-                    ctx.BeginFigure(new Point(markerX - 4.5, 0.0), true, true);
-                    ctx.LineTo(new Point(markerX + 4.5, 0.0), true, false);
-                    ctx.LineTo(new Point(markerX, 5.5), true, false);
-                }
-                pointerGeom.Freeze();
+                    new Point(markerX - 4.5, 0.0),
+                    new Point(markerX + 4.5, 0.0),
+                    new Point(markerX, 5.5)
+                });
                 dc.DrawGeometry(effMarkerBrush, null, pointerGeom);
 
                 // Optional text label above or alongside pointer

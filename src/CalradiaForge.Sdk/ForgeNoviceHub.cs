@@ -621,118 +621,122 @@ namespace CalradiaForge.Sdk
         /// Returns an explanation of when a CampaignEvent fires and what to do with it.
         /// If eventName is empty, returns the full catalog of supported events.
         /// </summary>
+        static readonly Dictionary<string, string> CampaignEventCatalog = CreateCampaignEventCatalog();
+
+        static Dictionary<string, string> CreateCampaignEventCatalog() => new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["OnSessionLaunchedEvent"] =
+                "Fires when a campaign session starts (new game or loaded save).\n" +
+                "USE FOR: Registering custom dialogues, menu options, and initial setup.\n" +
+                "PARAMETER: CampaignGameStarter starter — call starter.AddPlayerLine() / AddBehavior() here.",
+            ["HourlyTickEvent"] =
+                "Fires every in-game hour (24 times per in-game day).\n" +
+                "USE FOR: Slow background processing — economy updates, NPC state machines.\n" +
+                "TIP: For optional work whose deferral preserves behavior, use ForgeTimeSlicer.ShouldProcess(settlement.StringId, currentHour); stable-ID bucket sizes may vary, and a loop still scans every settlement (O(N)).",
+            ["DailyTickSettlementEvent"] =
+                "Fires once per in-game day for EACH settlement.\n" +
+                "USE FOR: Settlement loyalty, food, economy adjustments.\n" +
+                "PARAMETER: Settlement settlement — always check settlement.IsTown before modifying.",
+            ["DailyTickPartyEvent"] =
+                "Fires once per in-game day for EACH mobile party on the map.\n" +
+                "USE FOR: AI behavior tweaks, troop morale, custom party mechanics.\n" +
+                "PARAMETER: MobileParty mobileParty — check mobileParty.IsActive before modifying.",
+            ["OnHeroKilledEvent"] =
+                "Fires when any hero (player or NPC) dies in battle or by other causes.\n" +
+                "USE FOR: Custom death consequences, faction power shifts, successor events.\n" +
+                "PARAMETERS: Hero victim, Hero killer, KillCharacterAction.KillCharacterActionDetail detail",
+            ["OnHeroCreatedEvent"] =
+                "Fires when a new hero is created (companions hired, children born, etc.).\n" +
+                "USE FOR: Assigning custom traits, skills, or backstory to new heroes.\n" +
+                "PARAMETER: Hero hero, bool isBornNaturally",
+            ["OnCharacterCreatedEvent"] =
+                "Fires at player character creation in the intro sequence.\n" +
+                "USE FOR: Registering starting buffs, custom starting items, or tutorial flags.",
+            ["OnSettlementOwnerChangedEvent"] =
+                "Fires when a settlement (town/castle) changes ownership (siege victory).\n" +
+                "USE FOR: Triggering custom loot distribution, NPC reactions, or reputation changes.\n" +
+                "PARAMETERS: Settlement settlement, bool openToClaim, Hero newOwner, Hero previousOwner, Hero capturingHero, ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail detail",
+            ["OnTroopRecruitedEvent"] =
+                "Fires when the player or any party recruits troops from a settlement or prisoner stack.\n" +
+                "USE FOR: Tracking recruitment stats, custom bonuses on recruitment.\n" +
+                "PARAMETERS: Hero recruiterHero, Settlement sourceSettlement, Hero recruitmentSource, CharacterObject troop, int count",
+            ["BattleEndedEvent"] =
+                "Fires after any battle (field, siege, hideout) concludes.\n" +
+                "USE FOR: Battle aftermath rewards, stat tracking, or custom loot distribution.\n" +
+                "PARAMETER: MapEvent mapEvent — check mapEvent.WinningSide for outcome.",
+            ["OnSiegeEventStartedEvent"] =
+                "Fires when a siege begins against a settlement.\n" +
+                "USE FOR: Custom siege preparations, AI reinforcement orders, garrison bonuses.\n" +
+                "PARAMETER: SiegeEvent siegeEvent",
+            ["OnQuestStartedEvent"] =
+                "Fires when any quest (vanilla or custom) begins.\n" +
+                "USE FOR: Cross-quest interaction, quest tracking, or narrative triggers.\n" +
+                "PARAMETER: QuestBase quest",
+            ["OnQuestCompletedEvent"] =
+                "Fires when any quest is completed (success or failure).\n" +
+                "USE FOR: Follow-up events, relationship changes, or follow-on quest triggers.\n" +
+                "PARAMETERS: QuestBase quest, QuestBase.QuestCompleteDetails detail",
+            ["MakePeace"] =
+                "Fires when two kingdoms sign a peace treaty.\n" +
+                "USE FOR: Post-war recovery events, trade route restoration.\n" +
+                "PARAMETERS: IFaction faction1, IFaction faction2, MakePeaceAction.MakePeaceDetail detail",
+            ["WarDeclared"] =
+                "Fires when two kingdoms declare war.\n" +
+                "USE FOR: Mobilization triggers, faction AI overrides.\n" +
+                "PARAMETERS: IFaction faction1, IFaction faction2, DeclareWarAction.DeclareWarDetail detail",
+            ["OnClanChangedKingdomEvent"] =
+                "Fires when a clan joins or leaves a kingdom.\n" +
+                "USE FOR: Vassal tracking, custom loyalty penalties, coalition building.\n" +
+                "PARAMETERS: Clan clan, Kingdom oldKingdom, Kingdom newKingdom, ChangeKingdomAction.ChangeKingdomActionDetail detail, bool showNotification",
+            ["OnHeroLevelledUpEvent"] =
+                "Fires each time a hero gains a character level.\n" +
+                "USE FOR: Custom level-up rewards, perks, or story triggers.\n" +
+                "PARAMETERS: Hero hero, bool shouldNotify",
+            ["OnSkillLevelledUpEvent"] =
+                "Fires when a hero's skill increases by any amount.\n" +
+                "USE FOR: Tracking mastery milestones, granting bonuses at skill thresholds.\n" +
+                "PARAMETERS: Hero hero, SkillObject skill, int xpChange, int levelChange",
+            ["OnMarriageEvent"] =
+                "Fires when two heroes marry.\n" +
+                "USE FOR: Dynastic bonuses, spouse trait inheritance, custom narrative events.\n" +
+                "PARAMETERS: Hero firstHero, Hero secondHero",
+            ["OnChildBornEvent"] =
+                "Fires when a child is born to two heroes.\n" +
+                "USE FOR: Heir tracking, custom naming ceremonies, custom trait assignment.\n" +
+                "PARAMETERS: Hero mother, Hero child",
+            ["OnItemsDiscardedByHeroEvent"] =
+                "Fires when a hero discards or sells items from inventory.\n" +
+                "USE FOR: Scavenging mechanics, faction asset tracking.\n" +
+                "PARAMETER: Hero hero",
+            ["OnGameLoadedEvent"] =
+                "Fires after all SyncData is restored and the session is playable.\n" +
+                "USE FOR: Post-load validation, migrating old save data to new formats.\n" +
+                "PARAMETER: CampaignGameStarter gameStarter",
+            ["OnAfterSessionLaunchedEvent"] =
+                "Fires AFTER OnSessionLaunchedEvent — the game world is fully initialized.\n" +
+                "USE FOR: Querying existing heroes, settlements, or parties that weren't available earlier.\n" +
+                "PARAMETER: CampaignGameStarter gameStarter",
+            ["OnNewGameCreatedEvent"] =
+                "Fires when a brand-new game is started (not loaded from save).\n" +
+                "USE FOR: Starting bonuses, initial faction states, custom world initialization.\n" +
+                "PARAMETER: CampaignGameStarter gameStarter",
+            ["VillageBeingRaided"] =
+                "Fires when a hostile party begins raiding a village.\n" +
+                "USE FOR: Refugee mechanics, custom militia spawning, hunger events.\n" +
+                "PARAMETER: Village village",
+            ["OnVillageLooted"] =
+                "Fires after a village has been looted by a hostile party.\n" +
+                "USE FOR: Post-raid recovery mechanics, tracking prosperity loss.\n" +
+                "PARAMETER: Village village",
+            ["OnRebelliousClanDisbandedAtSettlement"] =
+                "Fires when a rebellious clan disbands at a settlement (failed rebellion).\n" +
+                "USE FOR: Stability bonuses, survivor tracking.\n" +
+                "PARAMETERS: Settlement settlement, Clan clan"
+        };
+
         public static string ExplainCampaignEvent(string eventName = "")
         {
-            var catalog = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                { "OnSessionLaunchedEvent",
-                    "Fires when a campaign session starts (new game or loaded save).\n" +
-                    "USE FOR: Registering custom dialogues, menu options, and initial setup.\n" +
-                    "PARAMETER: CampaignGameStarter starter — call starter.AddPlayerLine() / AddBehavior() here." },
-                { "HourlyTickEvent",
-                    "Fires every in-game hour (24 times per in-game day).\n" +
-                    "USE FOR: Slow background processing — economy updates, NPC state machines.\n" +
-                    "TIP: For optional work whose deferral preserves behavior, use ForgeTimeSlicer.ShouldProcess(settlement.StringId, currentHour); stable-ID bucket sizes may vary, and a loop still scans every settlement (O(N))." },
-                { "DailyTickSettlementEvent",
-                    "Fires once per in-game day for EACH settlement.\n" +
-                    "USE FOR: Settlement loyalty, food, economy adjustments.\n" +
-                    "PARAMETER: Settlement settlement — always check settlement.IsTown before modifying." },
-                { "DailyTickPartyEvent",
-                    "Fires once per in-game day for EACH mobile party on the map.\n" +
-                    "USE FOR: AI behavior tweaks, troop morale, custom party mechanics.\n" +
-                    "PARAMETER: MobileParty mobileParty — check mobileParty.IsActive before modifying." },
-                { "OnHeroKilledEvent",
-                    "Fires when any hero (player or NPC) dies in battle or by other causes.\n" +
-                    "USE FOR: Custom death consequences, faction power shifts, successor events.\n" +
-                    "PARAMETERS: Hero victim, Hero killer, KillCharacterAction.KillCharacterActionDetail detail" },
-                { "OnHeroCreatedEvent",
-                    "Fires when a new hero is created (companions hired, children born, etc.).\n" +
-                    "USE FOR: Assigning custom traits, skills, or backstory to new heroes.\n" +
-                    "PARAMETER: Hero hero, bool isBornNaturally" },
-                { "OnCharacterCreatedEvent",
-                    "Fires at player character creation in the intro sequence.\n" +
-                    "USE FOR: Registering starting buffs, custom starting items, or tutorial flags." },
-                { "OnSettlementOwnerChangedEvent",
-                    "Fires when a settlement (town/castle) changes ownership (siege victory).\n" +
-                    "USE FOR: Triggering custom loot distribution, NPC reactions, or reputation changes.\n" +
-                    "PARAMETERS: Settlement settlement, bool openToClaim, Hero newOwner, Hero previousOwner, Hero capturingHero, ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail detail" },
-                { "OnTroopRecruitedEvent",
-                    "Fires when the player or any party recruits troops from a settlement or prisoner stack.\n" +
-                    "USE FOR: Tracking recruitment stats, custom bonuses on recruitment.\n" +
-                    "PARAMETERS: Hero recruiterHero, Settlement sourceSettlement, Hero recruitmentSource, CharacterObject troop, int count" },
-                { "BattleEndedEvent",
-                    "Fires after any battle (field, siege, hideout) concludes.\n" +
-                    "USE FOR: Battle aftermath rewards, stat tracking, or custom loot distribution.\n" +
-                    "PARAMETER: MapEvent mapEvent — check mapEvent.WinningSide for outcome." },
-                { "OnSiegeEventStartedEvent",
-                    "Fires when a siege begins against a settlement.\n" +
-                    "USE FOR: Custom siege preparations, AI reinforcement orders, garrison bonuses.\n" +
-                    "PARAMETER: SiegeEvent siegeEvent" },
-                { "OnQuestStartedEvent",
-                    "Fires when any quest (vanilla or custom) begins.\n" +
-                    "USE FOR: Cross-quest interaction, quest tracking, or narrative triggers.\n" +
-                    "PARAMETER: QuestBase quest" },
-                { "OnQuestCompletedEvent",
-                    "Fires when any quest is completed (success or failure).\n" +
-                    "USE FOR: Follow-up events, relationship changes, or follow-on quest triggers.\n" +
-                    "PARAMETERS: QuestBase quest, QuestBase.QuestCompleteDetails detail" },
-                { "MakePeace",
-                    "Fires when two kingdoms sign a peace treaty.\n" +
-                    "USE FOR: Post-war recovery events, trade route restoration.\n" +
-                    "PARAMETERS: IFaction faction1, IFaction faction2, MakePeaceAction.MakePeaceDetail detail" },
-                { "WarDeclared",
-                    "Fires when two kingdoms declare war.\n" +
-                    "USE FOR: Mobilization triggers, faction AI overrides.\n" +
-                    "PARAMETERS: IFaction faction1, IFaction faction2, DeclareWarAction.DeclareWarDetail detail" },
-                { "OnClanChangedKingdomEvent",
-                    "Fires when a clan joins or leaves a kingdom.\n" +
-                    "USE FOR: Vassal tracking, custom loyalty penalties, coalition building.\n" +
-                    "PARAMETERS: Clan clan, Kingdom oldKingdom, Kingdom newKingdom, ChangeKingdomAction.ChangeKingdomActionDetail detail, bool showNotification" },
-                { "OnHeroLevelledUpEvent",
-                    "Fires each time a hero gains a character level.\n" +
-                    "USE FOR: Custom level-up rewards, perks, or story triggers.\n" +
-                    "PARAMETERS: Hero hero, bool shouldNotify" },
-                { "OnSkillLevelledUpEvent",
-                    "Fires when a hero's skill increases by any amount.\n" +
-                    "USE FOR: Tracking mastery milestones, granting bonuses at skill thresholds.\n" +
-                    "PARAMETERS: Hero hero, SkillObject skill, int xpChange, int levelChange" },
-                { "OnMarriageEvent",
-                    "Fires when two heroes marry.\n" +
-                    "USE FOR: Dynastic bonuses, spouse trait inheritance, custom narrative events.\n" +
-                    "PARAMETERS: Hero firstHero, Hero secondHero" },
-                { "OnChildBornEvent",
-                    "Fires when a child is born to two heroes.\n" +
-                    "USE FOR: Heir tracking, custom naming ceremonies, custom trait assignment.\n" +
-                    "PARAMETERS: Hero mother, Hero child" },
-                { "OnItemsDiscardedByHeroEvent",
-                    "Fires when a hero discards or sells items from inventory.\n" +
-                    "USE FOR: Scavenging mechanics, faction asset tracking.\n" +
-                    "PARAMETER: Hero hero" },
-                { "OnGameLoadedEvent",
-                    "Fires after all SyncData is restored and the session is playable.\n" +
-                    "USE FOR: Post-load validation, migrating old save data to new formats.\n" +
-                    "PARAMETER: CampaignGameStarter gameStarter" },
-                { "OnAfterSessionLaunchedEvent",
-                    "Fires AFTER OnSessionLaunchedEvent — the game world is fully initialized.\n" +
-                    "USE FOR: Querying existing heroes, settlements, or parties that weren't available earlier.\n" +
-                    "PARAMETER: CampaignGameStarter gameStarter" },
-                { "OnNewGameCreatedEvent",
-                    "Fires when a brand-new game is started (not loaded from save).\n" +
-                    "USE FOR: Starting bonuses, initial faction states, custom world initialization.\n" +
-                    "PARAMETER: CampaignGameStarter gameStarter" },
-                { "VillageBeingRaided",
-                    "Fires when a hostile party begins raiding a village.\n" +
-                    "USE FOR: Refugee mechanics, custom militia spawning, hunger events.\n" +
-                    "PARAMETER: Village village" },
-                { "OnVillageLooted",
-                    "Fires after a village has been looted by a hostile party.\n" +
-                    "USE FOR: Post-raid recovery mechanics, tracking prosperity loss.\n" +
-                    "PARAMETER: Village village" },
-                { "OnRebelliousClanDisbandedAtSettlement",
-                    "Fires when a rebellious clan disbands at a settlement (failed rebellion).\n" +
-                    "USE FOR: Stability bonuses, survivor tracking.\n" +
-                    "PARAMETERS: Settlement settlement, Clan clan" },
-            };
+            var catalog = CampaignEventCatalog;
 
             if (string.IsNullOrWhiteSpace(eventName) || eventName.Trim().ToLowerInvariant() == "all")
             {

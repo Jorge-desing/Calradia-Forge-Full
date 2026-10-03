@@ -734,3 +734,13 @@
 - [x] Update six skill gateways with one shared reference; preserve concurrent unstaged skill edits.
 - [x] Validate all six skills through the BAT quick-validator and check new local links.
 - [x] Create the scoped documentation commit; remote push is outside this new request.
+
+## Optimización y Reducción de Código Integral — Rev098 (2026-10-03)
+- [x] Fase 1 (Mod In-Game): Crear `EngineReflectionProbe.cs` para cachear y centralizar la reflexión de TaleWorlds en `PanelViewModel.cs`.
+- [x] Fase 1 (Mod In-Game): Eliminar asignaciones LINQ en bucles críticos de `Runtime.cs` (`Reverse()`, etc.).
+- [x] Fase 2 (Desktop WPF): Extraer `ChartRenderHelper` en `ForgeChartControls.cs` para deduplicar operaciones geométricas y pinceles en OnRender.
+- [x] Fase 2 (Desktop WPF): Optimizar y compactar ViewModels de simulación y controles gráficos en `CalradiaForge.Desktop`.
+- [x] Fase 3 (Core/SDK): Compactar constructores y diccionarios declarativos en `ForgeAnalysisCatalog.cs` y `ForgeNoviceHub.cs`.
+- [x] Fase 4 (Validación): Verificar compilación Release (0 advertencias/errores), gate stateless (4/4) y suites completas BAT (Core 420/420, ForgeWeave 73/73, Desktop 67/67, Render 296/296).
+- [x] Fase 4 (Auditoría): Verificar autoría estricta de sesión en `git status` y cumplir con el flujo de entrega.
+

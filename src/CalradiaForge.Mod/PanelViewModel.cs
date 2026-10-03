@@ -2558,46 +2558,26 @@ namespace CalradiaForge.Mod
             sb.AppendLine($"Pinned Snapshots: {runtime?.PinnedSnapshotCount ?? 0}");
             try
             {
-                var campaignType = Type.GetType("TaleWorlds.CampaignSystem.Campaign, TaleWorlds.CampaignSystem");
-                if (campaignType != null)
+                var currentCampaign = EngineReflectionProbe.GetCurrentCampaign();
+                if (currentCampaign != null)
                 {
-                    var currentProp = campaignType.GetProperty("Current", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    var currentCampaign = currentProp?.GetValue(null, null);
-                    if (currentCampaign != null)
+                    sb.AppendLine("\n--- CAMPAIGN STATE ---");
+                    if (EngineReflectionProbe.TryGetMainHeroDetails(out var heroName, out var heroId, out var heroGold))
                     {
-                        sb.AppendLine("\n--- CAMPAIGN STATE ---");
-                        var heroType = Type.GetType("TaleWorlds.CampaignSystem.Hero, TaleWorlds.CampaignSystem");
-                        var mainHeroProp = heroType?.GetProperty("MainHero", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                        var mainHero = mainHeroProp?.GetValue(null, null);
-                        if (mainHero != null)
-                        {
-                            var heroName = heroType.GetProperty("Name")?.GetValue(mainHero, null);
-                            var heroGold = heroType.GetProperty("Gold")?.GetValue(mainHero, null);
-                            var heroId = heroType.GetProperty("StringId")?.GetValue(mainHero, null);
-                            sb.AppendLine($"Player Hero: {heroName} (ID: {heroId}) | Gold: {heroGold}");
-                        }
-                        var settlementType = Type.GetType("TaleWorlds.CampaignSystem.Settlement.Settlement, TaleWorlds.CampaignSystem")
-                                           ?? Type.GetType("TaleWorlds.CampaignSystem.Settlement, TaleWorlds.CampaignSystem");
-                        if (settlementType != null)
-                        {
-                            var currentSettlementProp = settlementType.GetProperty("CurrentSettlement", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                            var currentSettlement = currentSettlementProp?.GetValue(null, null);
-                            if (currentSettlement != null)
-                            {
-                                var sName = settlementType.GetProperty("Name")?.GetValue(currentSettlement, null);
-                                var sId = settlementType.GetProperty("StringId")?.GetValue(currentSettlement, null);
-                                sb.AppendLine($"Current Settlement: {sName} (ID: {sId})");
-                            }
-                            else
-                            {
-                                sb.AppendLine("Current Settlement: None (Traveling on map)");
-                            }
-                        }
+                        sb.AppendLine($"Player Hero: {heroName} (ID: {heroId}) | Gold: {heroGold}");
+                    }
+                    if (EngineReflectionProbe.TryGetCurrentSettlementDetails(out var sName, out var sId))
+                    {
+                        sb.AppendLine($"Current Settlement: {sName} (ID: {sId})");
                     }
                     else
                     {
-                        sb.AppendLine("\nCampaign: Not running (Main Menu, Custom Battle, or Mission)");
+                        sb.AppendLine("Current Settlement: None (Traveling on map)");
                     }
+                }
+                else
+                {
+                    sb.AppendLine("\nCampaign: Not running (Main Menu, Custom Battle, or Mission)");
                 }
             }
             catch (Exception ex)
@@ -2606,18 +2586,10 @@ namespace CalradiaForge.Mod
             }
             try
             {
-                var missionType = Type.GetType("TaleWorlds.MountAndBlade.Mission, TaleWorlds.MountAndBlade");
-                if (missionType != null)
+                if (EngineReflectionProbe.TryGetCurrentMissionDetails(out var sceneName, out var mode))
                 {
-                    var currentMissionProp = missionType.GetProperty("Current", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    var currentMission = currentMissionProp?.GetValue(null, null);
-                    if (currentMission != null)
-                    {
-                        sb.AppendLine("\n--- MISSION / COMBAT STATE ---");
-                        var mode = missionType.GetProperty("Mode")?.GetValue(currentMission, null);
-                        var sceneName = missionType.GetProperty("SceneName")?.GetValue(currentMission, null);
-                        sb.AppendLine($"Mission Scene: {sceneName} | Mode: {mode}");
-                    }
+                    sb.AppendLine("\n--- MISSION / COMBAT STATE ---");
+                    sb.AppendLine($"Mission Scene: {sceneName} | Mode: {mode}");
                 }
             }
             catch (Exception) { /* Non-campaign session or entity resolution fallback */ }
@@ -2625,42 +2597,12 @@ namespace CalradiaForge.Mod
         }
         public void ExecuteInspectPlayer()
         {
-            string heroId = "Hero_1";
-            try
-            {
-                var heroType = Type.GetType("TaleWorlds.CampaignSystem.Hero, TaleWorlds.CampaignSystem");
-                var mainHeroProp = heroType?.GetProperty("MainHero", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                var mainHero = mainHeroProp?.GetValue(null, null);
-                if (mainHero != null)
-                {
-                    var id = heroType.GetProperty("StringId")?.GetValue(mainHero, null) as string;
-                    if (!string.IsNullOrEmpty(id)) heroId = id;
-                }
-            }
-            catch (Exception) { /* Fallback to default Hero_1 */ }
-            Argument = heroId;
+            Argument = EngineReflectionProbe.GetPlayerHeroId("Hero_1");
             SelectSection("inspect");
         }
         public void ExecuteInspectCurrentSettlement()
         {
-            string settlementId = "Town_1";
-            try
-            {
-                var settlementType = Type.GetType("TaleWorlds.CampaignSystem.Settlement.Settlement, TaleWorlds.CampaignSystem")
-                                   ?? Type.GetType("TaleWorlds.CampaignSystem.Settlement, TaleWorlds.CampaignSystem");
-                if (settlementType != null)
-                {
-                    var currentSettlementProp = settlementType.GetProperty("CurrentSettlement", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    var currentSettlement = currentSettlementProp?.GetValue(null, null);
-                    if (currentSettlement != null)
-                    {
-                        var id = settlementType.GetProperty("StringId")?.GetValue(currentSettlement, null) as string;
-                        if (!string.IsNullOrEmpty(id)) settlementId = id;
-                    }
-                }
-            }
-            catch (Exception) { /* Fallback to default Town_1 */ }
-            Argument = settlementId;
+            Argument = EngineReflectionProbe.GetCurrentSettlementId("Town_1");
             SelectSection("inspect");
         }
         public void ExecuteSummary() => SelectSection("summary");
@@ -3183,70 +3125,47 @@ namespace CalradiaForge.Mod
             var nativeBehaviorDetails = new List<string>();
             try
             {
-                var campaignType = Type.GetType("TaleWorlds.CampaignSystem.Campaign, TaleWorlds.CampaignSystem");
-                var currentCampaign = campaignType?.GetProperty("Current", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null, null);
+                var currentCampaign = EngineReflectionProbe.GetCurrentCampaign();
                 if (currentCampaign != null)
                 {
-                    var modelsProp = campaignType.GetProperty("Models", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                    var modelsObj = modelsProp?.GetValue(currentCampaign, null);
-                    if (modelsObj != null)
+                    var modelsList = EngineReflectionProbe.GetCampaignGameModels(currentCampaign);
+                    if (modelsList != null)
                     {
-                        var getGameModelsMethod = modelsObj.GetType().GetMethod("GetGameModels");
-                        var modelsList = getGameModelsMethod?.Invoke(modelsObj, null) as System.Collections.IEnumerable;
                         AppendGameModelGroup(modelsList, true, ref totalModels, ref modModels, ref decoratedModels,
                             modModelDetails, nativeModelDetails);
                     }
-                    var cbmProp = campaignType.GetProperty("CampaignBehaviorManager", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                    var cbm = cbmProp?.GetValue(currentCampaign, null);
-                    if (cbm != null)
+                    var behaviorsObj = EngineReflectionProbe.GetCampaignBehaviors(currentCampaign);
+                    if (behaviorsObj != null)
                     {
-                        var getBehaviorsMethod = cbm.GetType().GetMethod("GetBehaviors");
-                        var behaviorBaseType = Type.GetType("TaleWorlds.CampaignSystem.CampaignBehaviorBase, TaleWorlds.CampaignSystem");
-                        if (getBehaviorsMethod != null && getBehaviorsMethod.IsGenericMethod && behaviorBaseType != null)
+                        foreach (var b in behaviorsObj)
                         {
-                            var genericMethod = getBehaviorsMethod.MakeGenericMethod(behaviorBaseType);
-                            var behaviorsObj = genericMethod.Invoke(cbm, null) as System.Collections.IEnumerable;
-                            if (behaviorsObj != null)
+                            if (b == null) continue;
+                            totalBehaviors++;
+                            var bType = b.GetType();
+                            var asmName = bType.Assembly.GetName().Name;
+                            var isNative = asmName.StartsWith("TaleWorlds", StringComparison.OrdinalIgnoreCase) ||
+                                           asmName.StartsWith("SandBox", StringComparison.OrdinalIgnoreCase) ||
+                                           asmName.StartsWith("StoryMode", StringComparison.OrdinalIgnoreCase);
+                            string line = $"  • {bType.Name} ({asmName})";
+                            if (!isNative)
                             {
-                                foreach (var b in behaviorsObj)
-                                {
-                                    if (b == null) continue;
-                                    totalBehaviors++;
-                                    var bType = b.GetType();
-                                    var asmName = bType.Assembly.GetName().Name;
-                                    var isNative = asmName.StartsWith("TaleWorlds", StringComparison.OrdinalIgnoreCase) ||
-                                                   asmName.StartsWith("SandBox", StringComparison.OrdinalIgnoreCase) ||
-                                                   asmName.StartsWith("StoryMode", StringComparison.OrdinalIgnoreCase);
-                                    string line = $"  • {bType.Name} ({asmName})";
-                                    if (!isNative)
-                                    {
-                                        modBehaviors++;
-                                        modBehaviorDetails.Add(line + " [MOD INJECTED]");
-                                    }
-                                    else
-                                    {
-                                        nativeBehaviorDetails.Add(line);
-                                    }
-                                }
+                                modBehaviors++;
+                                modBehaviorDetails.Add(line + " [MOD INJECTED]");
+                            }
+                            else
+                            {
+                                nativeBehaviorDetails.Add(line);
                             }
                         }
                     }
                 }
                 else
                 {
-                    var gameType = Type.GetType("TaleWorlds.Core.Game, TaleWorlds.Core");
-                    var currentGame = gameType?.GetProperty("Current", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null, null);
-                    if (currentGame != null)
+                    var modelsList = EngineReflectionProbe.GetBasicGameModels();
+                    if (modelsList != null)
                     {
-                        var basicModelsProp = gameType.GetProperty("BasicModels", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                        var basicModelsObj = basicModelsProp?.GetValue(currentGame, null);
-                        if (basicModelsObj != null)
-                        {
-                            var getGameModelsMethod = basicModelsObj.GetType().GetMethod("GetGameModels");
-                            var modelsList = getGameModelsMethod?.Invoke(basicModelsObj, null) as System.Collections.IEnumerable;
-                            AppendGameModelGroup(modelsList, false, ref totalModels, ref modModels, ref decoratedModels,
-                                modModelDetails, nativeModelDetails);
-                        }
+                        AppendGameModelGroup(modelsList, false, ref totalModels, ref modModels, ref decoratedModels,
+                            modModelDetails, nativeModelDetails);
                     }
                     sb.AppendLine("NOTE: Campaign is not currently active. Audited basic models from Game.Current.");
                     sb.AppendLine("Load or start a Campaign to inspect full Campaign GameModels and CampaignBehaviors.\n");
@@ -3320,13 +3239,10 @@ namespace CalradiaForge.Mod
             bool hasLiveCampaign = false;
             try
             {
-                var campaignType = Type.GetType("TaleWorlds.CampaignSystem.Campaign, TaleWorlds.CampaignSystem");
-                var currentCampaign = campaignType?.GetProperty("Current", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null, null);
+                var currentCampaign = EngineReflectionProbe.GetCurrentCampaign();
                 if (currentCampaign != null)
                 {
-                    var kingdomType = Type.GetType("TaleWorlds.CampaignSystem.Kingdom, TaleWorlds.CampaignSystem");
-                    var allKingdomsProp = kingdomType?.GetProperty("All", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    var kingdoms = allKingdomsProp?.GetValue(null, null) as System.Collections.IEnumerable;
+                    var kingdoms = EngineReflectionProbe.GetAllKingdoms();
                     if (kingdoms != null)
                     {
                         hasLiveCampaign = true;
@@ -3334,15 +3250,13 @@ namespace CalradiaForge.Mod
                         foreach (var k in kingdoms)
                         {
                             if (k == null) continue;
-                            var name = kingdomType.GetProperty("Name")?.GetValue(k, null)?.ToString() ?? "Unknown";
-                            var strObj = kingdomType.GetProperty("TotalStrength")?.GetValue(k, null);
-                            var goldObj = kingdomType.GetProperty("Gold")?.GetValue(k, null);
-                            int strength = strObj != null ? Convert.ToInt32(strObj) : 4000;
-                            int gold = goldObj != null ? Convert.ToInt32(goldObj) : 100000;
-                            int activeWars = 1;
-                            float warScore = ForgeApi.Diplomacy.CalculateWarScore(strength, gold, activeWars, 0, 0);
-                            sb.AppendLine($"• {name}: Strength {strength:N0} | Gold {gold:N0} | Active Wars: {activeWars}");
-                            sb.AppendLine($"    War Viability Index: {warScore:F1} / 100.0");
+                            if (EngineReflectionProbe.TryGetKingdomDetails(k, out var name, out var strength, out var gold))
+                            {
+                                int activeWars = 1;
+                                float warScore = ForgeApi.Diplomacy.CalculateWarScore((int)strength, gold, activeWars, 0, 0);
+                                sb.AppendLine($"• {name}: Strength {(int)strength:N0} | Gold {gold:N0} | Active Wars: {activeWars}");
+                                sb.AppendLine($"    War Viability Index: {warScore:F1} / 100.0");
+                            }
                         }
                         sb.AppendLine();
                     }
@@ -3596,13 +3510,10 @@ namespace CalradiaForge.Mod
             bool hasLiveClans = false;
             try
             {
-                var campaignType = Type.GetType("TaleWorlds.CampaignSystem.Campaign, TaleWorlds.CampaignSystem");
-                var currentCampaign = campaignType?.GetProperty("Current", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null, null);
+                var currentCampaign = EngineReflectionProbe.GetCurrentCampaign();
                 if (currentCampaign != null)
                 {
-                    var clanType = Type.GetType("TaleWorlds.CampaignSystem.Clan, TaleWorlds.CampaignSystem");
-                    var allClansProp = clanType?.GetProperty("All", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    var allClans = allClansProp?.GetValue(null, null) as System.Collections.IEnumerable;
+                    var allClans = EngineReflectionProbe.GetAllClans();
                     if (allClans != null)
                     {
                         var filter = (arg ?? "").Trim().ToLowerInvariant();
@@ -3612,17 +3523,12 @@ namespace CalradiaForge.Mod
                         foreach (var c in allClans)
                         {
                             if (c == null) continue;
-                            var isEliminated = (bool)(clanType.GetProperty("IsEliminated")?.GetValue(c, null) ?? false);
-                            var isNoble = (bool)(clanType.GetProperty("IsNoble")?.GetValue(c, null) ?? false);
+                            if (!EngineReflectionProbe.TryGetClanDetails(c, out var name, out var tier, out var leaderName, out var isEliminated, out var isNoble))
+                                continue;
                             if (isEliminated || !isNoble) continue;
 
-                            var name = clanType.GetProperty("Name")?.GetValue(c, null)?.ToString() ?? "Noble Clan";
                             if (!string.IsNullOrEmpty(filter) && filter != "all" && !name.ToLowerInvariant().Contains(filter))
                                 continue;
-
-                            var leaderProp = clanType.GetProperty("Leader")?.GetValue(c, null);
-                            var leaderName = leaderProp?.GetType().GetProperty("Name")?.GetValue(leaderProp, null)?.ToString() ?? "None";
-                            var tier = clanType.GetProperty("Tier")?.GetValue(c, null)?.ToString() ?? "0";
 
                             var successor = behavior.AssessDynasticSuccession((TaleWorlds.CampaignSystem.Clan)c);
                             string heirInfo = successor != null
@@ -3686,13 +3592,10 @@ namespace CalradiaForge.Mod
             bool hasLiveSettlements = false;
             try
             {
-                var campaignType = Type.GetType("TaleWorlds.CampaignSystem.Campaign, TaleWorlds.CampaignSystem");
-                var currentCampaign = campaignType?.GetProperty("Current", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null, null);
+                var currentCampaign = EngineReflectionProbe.GetCurrentCampaign();
                 if (currentCampaign != null)
                 {
-                    var settlementType = Type.GetType("TaleWorlds.CampaignSystem.Settlements.Settlement, TaleWorlds.CampaignSystem");
-                    var allSettlementsProp = settlementType?.GetProperty("All", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    var allSettlements = allSettlementsProp?.GetValue(null, null) as System.Collections.IEnumerable;
+                    var allSettlements = EngineReflectionProbe.GetAllSettlements();
                     if (allSettlements != null)
                     {
                         var filter = (arg ?? "").Trim().ToLowerInvariant();
@@ -3701,16 +3604,12 @@ namespace CalradiaForge.Mod
                         foreach (var s in allSettlements)
                         {
                             if (s == null) continue;
-                            var isTown = (bool)(settlementType.GetProperty("IsTown")?.GetValue(s, null) ?? false);
+                            if (!EngineReflectionProbe.TryGetSettlementTownDetails(s, out var name, out var prosperity, out var security, out var isTown))
+                                continue;
                             if (!isTown) continue;
 
-                            var name = settlementType.GetProperty("Name")?.GetValue(s, null)?.ToString() ?? "Town";
                             if (!string.IsNullOrEmpty(filter) && filter != "all" && !name.ToLowerInvariant().Contains(filter))
                                 continue;
-
-                            var townProp = settlementType.GetProperty("Town")?.GetValue(s, null);
-                            var prosperity = (int)(townProp?.GetType().GetProperty("Prosperity")?.GetValue(townProp, null) ?? 4000f);
-                            var security = (float)(townProp?.GetType().GetProperty("Security")?.GetValue(townProp, null) ?? 50f);
 
                             var yield = ForgeUnderworldSystem.CalculateAlleyDailyYield(10, prosperity, security);
                             var decay = ForgeUnderworldSystem.CalculateCrimeDecay(25f, (int)security, true);
