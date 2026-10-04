@@ -190,3 +190,14 @@ When modifying or creating new UI components for Calradia Forge (both WPF Deskto
 - **Generación y Normalización de Activos Gráficos:**
   - Para la creación de nuevos iconos, heráldica, texturas de pergamino o banners de presentación, aplicar la skill [`high-quality-image-generation`](../skills/high-quality-image-generation/SKILL.md) siguiendo la arquitectura de 9 dimensiones de intención visual.
   - Todo activo destinado al motor TaleWorlds o Gauntlet UI debe someterse a `tools/process_high_quality_asset.py` para garantizar dimensiones Power-of-Two (POT), recorte alfa sin halos oscuros (dilatación de color) y registro de integridad SHA-256.
+
+## Composición Táctica Tripartita y Dimensionamiento Elástico (Rev101/Rev135)
+- **Estándar Tripartito de Plantillas de Estudio (ToolPageTemplates.xaml):**
+  - **Medallón Dual Temático:** Todo estudio táctico debe presentar en su encabezado un marco biselado de latón con escalado de alta calidad emparejando el sello del dominio con un medallón táctico soberano (ej. `calradia-tactical-emblem-rev100.png` o `calradia-aquila-seal-rev087.png`).
+  - **Tarjetas KPI con Acento de 3px:** Los paneles de métricas deben utilizar bordes con acento inferior `BorderThickness="1,1,1,3"`, fondos `CoalBrush` o `FrameSurfaceSolidBrush`, y mini-barras proporcionales `<ProgressBar Height="4" ... Mode=OneWay .../>` para indicadores clave (rentabilidad, cohesión, riesgo de rebelión, latencia).
+  - **Terminales Monoespaciados Tipo Dossier:** Los bloques de comandos deben utilizar tipografía `Consolas`, prompt `$ `, enlace a comandos curados del ViewModel y botón de copiado rápido.
+- **Dimensionamiento Elástico de Insignias Compuestas:**
+  - Las insignias que combinan texto e indicadores LED o iconos deben contar con holgura horizontal suficiente (`MaxWidth >= 64px`, contenedor `>= 126px`) para evitar truncamiento por elipsis (`TACTI…`) en diferentes escalas de visualización DPI.
+- **Invariantes Estructurales en XAML:**
+  - Preservar exactamente 9 `DashboardTemplate` en `ToolPageTemplates.xaml` (Regla C).
+  - Cero enlaces `TwoWay` en elementos `Run.Text` (Propuesta 48; usar siempre `Mode=OneWay` o bindings estáticos).

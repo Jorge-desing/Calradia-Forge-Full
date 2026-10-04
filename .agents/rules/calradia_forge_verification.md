@@ -804,6 +804,11 @@ tools\Run-CalradiaForge-Tests.bat --skip-build --no-pause
   - Guarded route messages, atomic file swap tokens (`File.Move(temporary, path, true)`), and queue limits (`MaximumMeasurements = 64`) must remain verbatim.
   - Refactoring must preserve these contract markers or the static test suite will reject the build.
 
+## 21. Determinismo Criptográfico de Texturas en RenderTests (SHA-256)
+- **Protección de Texturas Empaquetadas:**
+  - Las texturas optimizadas en `src/CalradiaForge.Desktop/Resources/Textures/Optimized/` validadas por `AssertPackagedTextureResources()` poseen aserciones de suma de verificación SHA-256 exactas en `CalradiaForge.Desktop.RenderTests/Program.cs`.
+  - Nunca re-codificar masivamente los archivos en `Optimized/` sin verificar si poseen una aserción de hash fija (ej. `titlebar-botanical-band-v1.png`). Si el activo se actualiza intencionalmente, su hash esperado en `Program.cs` debe sincronizarse en el mismo changeset.
+
 ## Summary of Verification Rules
 
 1. **Release Build Only**: Verification requires Release configuration
@@ -826,4 +831,5 @@ tools\Run-CalradiaForge-Tests.bat --skip-build --no-pause
 18. **Current Suite Battery**: Select the relevant `.bat` launcher(s); report the counts and outcomes printed by that run, not an undated hard-coded total.
 19. **TPAC Structural Validation**: Use `-StructuralOnly` during release preflights to validate asset package headers safely
 20. **Static Source Contracts**: Preserve architectural inspection tokens verbatim in source code
+21. **Determinismo Criptográfico de Texturas**: Sincronizar hashes SHA-256 en RenderTests ante actualizaciones intencionales de texturas empaquetadas.
 

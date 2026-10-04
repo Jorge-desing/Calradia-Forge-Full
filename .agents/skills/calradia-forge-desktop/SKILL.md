@@ -90,6 +90,17 @@ Use this skill for `src/CalradiaForge.Desktop/`, its WPF presentation, and its d
 - **Real-Time IPC Telemetry in Footer:**
   - The telemetry ping control in WorkbenchFooterControl.xaml must remain within a compact horizontal stack in Column 0, preserving the central shortcut hint's margins and satisfying AssertFooterFitsShellViewport.
 
+## Tactical Studio Tripartite Composition & Invariant Guidelines (Rev101/Rev135)
+- **Tripartite Studio Architecture:**
+  - All 12 tactical studio routes in `ToolPageTemplates.xaml` implement the tripartite layout pattern:
+    1. Dual-medallion header (domain emblem + sovereign tactical crest in 512x512 POT).
+    2. KPI metric cards with 3px bottom accent borders (`BorderThickness="1,1,1,3"`) and 4px proportional progress bars (`Height="4"` with `Mode=OneWay`).
+    3. Monospace dossier console cards in Consolas with `$ ` prompt, `{Binding ...CuratedConsoleCommands}` and `CopyTextCommand`.
+- **Desktop Template Invariants:**
+  - Strictly enforce Rule C: exactly 9 `DashboardTemplate` instances in `ToolPageTemplates.xaml`.
+  - Strictly enforce Propuesta 48: zero `TwoWay` bindings in `Run.Text` elements.
+  - Test coverage: enforce structural validation via `Rev101TacticalStudiosFullCompositionOverhaul()` in `DesktopSimulationServiceTests.cs`.
+
 ## Verified hook and delivery lessons
 
 For Finalizer/ILHook boundaries, confirmation selection, serial measurement and packaging from a scoped snapshot, read [hook delivery lessons](../calradia-forge-dev-workflow/references/hook-delivery-lessons.md). Recheck current source and preserve the distinction between passing fixtures and pending live main-menu validation.
