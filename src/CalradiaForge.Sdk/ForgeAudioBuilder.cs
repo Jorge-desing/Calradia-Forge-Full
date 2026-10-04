@@ -37,6 +37,8 @@ namespace CalradiaForge.Sdk
             if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("Audio file path cannot be null or empty.");
             if (!path.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase) && !path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException($"Audio file '{path}' must have a .ogg or .wav extension.");
+            if (path.Contains(".."))
+                throw new ArgumentException($"Audio file path '{path}' cannot contain directory traversal sequences ('..').");
             if (!ValidCategories.Contains(category))
                 throw new ArgumentException($"Invalid sound category '{category}'. Valid categories: ui, mission_combat, ambient, voice.");
 
@@ -64,6 +66,8 @@ namespace CalradiaForge.Sdk
                     errors.Add($"Sound '{s.Name}' has invalid category '{s.Category}'. Valid categories: ui, mission_combat, ambient, voice.");
                 if (!s.Path.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase) && !s.Path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase))
                     errors.Add($"Sound '{s.Name}' has invalid path '{s.Path}'. Must end with .ogg or .wav.");
+                if (s.Path.Contains(".."))
+                    errors.Add($"Sound '{s.Name}' path '{s.Path}' contains forbidden directory traversal sequence '..'.");
             }
             return (errors.Count == 0, errors);
         }

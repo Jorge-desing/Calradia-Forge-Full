@@ -309,6 +309,7 @@ namespace CalradiaForge.Mod
                         data = "{\"agentCount\":" + agCount + ",\"semanticCount\":" + semCount + ",\"episodicCount\":" + epiCount + ",\"proceduralCount\":" + procCount + "}";
                         break;
                     case "agent-memory-query":
+                    case "query-agent-memory":
                         {
                             string targetAgent = s.Argument;
                             if (string.IsNullOrEmpty(targetAgent)) targetAgent = "hero_main_hero";
@@ -318,6 +319,13 @@ namespace CalradiaForge.Mod
                             string safeCaptor = captor.Replace("\\", "\\\\").Replace("\"", "\\\"");
                             string safeAgent = targetAgent.Replace("\\", "\\\\").Replace("\"", "\\\"");
                             data = "{\"agentId\":\"" + safeAgent + "\",\"isImprisoned\":" + (isImprisoned ? "true" : "false") + ",\"captorId\":\"" + safeCaptor + "\",\"slainHeroes\":" + prevKills + "}";
+                            break;
+                        }
+                    case "query-variable":
+                        {
+                            var varKey = (s.Argument ?? "").Trim();
+                            var val = CalradiaForge.Sdk.CampaignVariableInspector.GetVariable(varKey);
+                            data = val != null ? val.ToString() : "";
                             break;
                         }
                     case "framework": data = Json.Serialize(TestEngine.CaptureForgeWeave()); break;

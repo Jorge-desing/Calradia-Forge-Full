@@ -83,6 +83,7 @@ namespace CalradiaForge.Tests
             test("ForgeCommands and SDK simulation integration", TestForgeCommandsAndSimulations);
             test("ForgeEncyclopediaExtender in-game codex registry and bookmarks", TestForgeEncyclopediaExtender);
             test("Rev137 Multilayer bug fixes, lifecycle resilience, and boundary safety", TestRev137MultilayerHardeningAndSafety);
+            test("Rev138 Audio, variable inspector, and party spawner hardening", TestRev138AudioAndPartySpawnerHardening);
         }
 
         private static void TestForgeAgentMemory()
@@ -3583,6 +3584,50 @@ namespace CalradiaForge.Tests
             if (episodes.Count != ForgeAgentMemory.MaximumEpisodicEntriesPerType)
                 throw new Exception("GetAll count did not match maximum: " + episodes.Count);
             ForgeAgentMemory.ClearAgent(testAgent);
+        }
+
+        private static void TestRev138AudioAndPartySpawnerHardening()
+        {
+            // 1. ForgeAudioBuilder directory traversal protection
+            bool traversalCaught = false;
+            try
+            {
+                ForgeAudioBuilder.Create().AddSound("exploit_sound", true, "ui", "../../../secret.ogg");
+            }
+            catch (ArgumentException)
+            {
+                traversalCaught = true;
+            }
+            if (!traversalCaught) throw new Exception("ForgeAudioBuilder accepted directory traversal sequence '..'.");
+
+            // 2. ForgeAudioInspector safe path extension extraction and duplicate detection
+            string testManifest = @"<module_sounds>
+  <module_sound name=""dup_sound"" is_2d=""true"" sound_category=""ui"" path=""click.ogg"" />
+  <module_sound name=""dup_sound"" is_2d=""true"" sound_category=""ui"" path=""click2.ogg"" />
+  <module_sound name=""bad_path"" is_2d=""true"" sound_category=""ui"" path=""../bad.ogg"" />
+</module_sounds>";
+            var audit = ForgeAudioInspector.AuditSoundManifest(testManifest);
+            if (audit.ErrorCount < 2)
+                throw new Exception($"ForgeAudioInspector failed to detect duplicate or traversal errors. Errors found: {audit.ErrorCount}");
+
+            // 3. CampaignVariableInspector.GetVariable safe read
+            CampaignVariableInspector.TrackVariable("rev138_test_var", () => "tracked_value_42");
+            var readVal = CampaignVariableInspector.GetVariable("rev138_test_var");
+            if (readVal as string != "tracked_value_42")
+                throw new Exception("CampaignVariableInspector.GetVariable failed to read registered variable.");
+            if (CampaignVariableInspector.GetVariable("non_existent_key") != null)
+                throw new Exception("CampaignVariableInspector.GetVariable should return null for non-existent key.");
+            if (CampaignVariableInspector.GetVariable("   ") != null)
+                throw new Exception("CampaignVariableInspector.GetVariable should return null for whitespace key.");
+            CampaignVariableInspector.UntrackVariable("rev138_test_var");
+
+            // 4. ForgePartyBlueprint settlement whitespace validation
+            var party = ForgePartySpawner.CreateBlueprint("test_spawner_party", "Raiders", "empire")
+                .AddTroop("imperial_recruit", 20)
+                .SetHomeSettlement("   ");
+            var (valid, errors) = party.Validate();
+            if (valid || !errors.Any(e => e.Contains("Home settlement string ID cannot be blank")))
+                throw new Exception("ForgePartyBlueprint allowed whitespace HomeSettlementStringId.");
         }
     }
 }

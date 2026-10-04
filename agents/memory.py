@@ -114,7 +114,7 @@ class CoALAAgentMemory:
         self.semantic = SemanticRepositoryMemory()
         self.working = WorkingAgentMemory(objective=objective)
         self.episodic: List[EpisodicTrace] = []
-        self.max_episodic_traces: int = max_episodic_traces
+        self.max_episodic_traces: int = max(1, int(max_episodic_traces))
         self.context_token_budget: int = context_token_budget
 
     def record_step(

@@ -194,6 +194,7 @@ namespace CalradiaForge.Desktop
 
         public async Task<Response> Send(Request request, CancellationToken cancellationToken)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
             await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
@@ -264,6 +265,7 @@ namespace CalradiaForge.Desktop
 
         public async Task<Response> QueryAgentMemory(string agentId, CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrWhiteSpace(agentId)) throw new ArgumentException("AgentId cannot be null or whitespace.", nameof(agentId));
             return await Send(new Request { Action = "agent-memory-query", Argument = agentId }, cancellationToken).ConfigureAwait(false);
         }
 
@@ -272,6 +274,7 @@ namespace CalradiaForge.Desktop
             if (disposed) return;
             disposed = true;
             Disconnect();
+            gate.Dispose();
         }
     }
 }

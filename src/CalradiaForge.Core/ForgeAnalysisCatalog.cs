@@ -683,16 +683,24 @@ namespace CalradiaForge.Core
                 catch (XmlException error) { Add(result, "asset_xml", "Error", file, error.LineNumber, error.LinePosition, error.Message, "Correct the asset XML."); continue; }
                 var root = doc.Root == null ? "" : doc.Root.Name.LocalName;
                 if (root == "module_sounds")
+                {
+                    var seenSounds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     foreach (var sound in doc.Descendants("module_sound"))
                     {
                         request.CancellationToken.ThrowIfCancellationRequested();
+                        var name = (string)sound.Attribute("name") ?? "";
+                        if (!string.IsNullOrWhiteSpace(name) && !seenSounds.Add(name))
+                            Add(result, "audio_duplicate", "Error", file, null, null, "Duplicate sound name: " + name, "Ensure sound names are unique.");
                         var category = (string)sound.Attribute("sound_category");
                         if (!new[] { "ui", "mission_combat", "ambient", "voice" }.Contains(category ?? "", StringComparer.OrdinalIgnoreCase))
                             Add(result, "audio_category", "Error", file, null, null, "Unsupported sound category: " + (category ?? "missing"), "Use a documented mixer category.");
                         var path = (string)sound.Attribute("path") ?? "";
-                        if (!path.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase) && !path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase))
+                        if (string.IsNullOrWhiteSpace(path))
+                            Add(result, "audio_path_empty", "Error", file, null, null, "Sound definition has empty path attribute.", "Provide relative audio asset path.");
+                        else if (!path.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase) && !path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase))
                             Add(result, "audio_extension", "Warning", file, null, null, "Sound path has no .ogg or .wav extension.", "Use a supported sound asset extension.");
                     }
+                }
                 if (root == "NPCCharacters")
                     foreach (var troop in doc.Descendants("NPCCharacter"))
                     {

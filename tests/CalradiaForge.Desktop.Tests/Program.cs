@@ -92,7 +92,8 @@ internal static class Program
             ("Desktop PipeClient rejects null or malformed response and throws IOException", NullResponsePayload),
             ("Desktop SimulationService tolerates duplicate XML element IDs without collision", XmlDiffDuplicateIds),
             ("Desktop PreferenceService sanitizes null state and empty values on save", PreferenceNullSanitization),
-            ("Desktop SessionService validates request arguments and resets latency on error", SessionSendNullAndErrorLatency)
+            ("Desktop SessionService validates request arguments and resets latency on error", SessionSendNullAndErrorLatency),
+            ("Desktop PipeClient and SessionService enforce boundary checks and agent memory argument safety", PipeClientAndSessionBoundarySafety)
         };
         cases = cases.Concat(DesktopAssemblyServiceTests.Cases).ToArray();
         var failures = 0;
@@ -1748,6 +1749,29 @@ internal static class Program
         }
 
         Check(!session.LastRoundTripLatencyMs.HasValue, "Null send must not record latency");
+    }
+
+    static async Task PipeClientAndSessionBoundarySafety()
+    {
+        using var client = new PipeClient();
+        var metrics = new DesktopMetricsService();
+        using var session = new DesktopSessionService(metrics, client);
+
+        bool nullRequestCaught = false;
+        try { await client.Send(null); }
+        catch (ArgumentNullException) { nullRequestCaught = true; }
+        Check(nullRequestCaught, "PipeClient.Send must reject null request with ArgumentNullException");
+
+        bool whitespaceAgentCaught = false;
+        try { await client.QueryAgentMemory("   "); }
+        catch (ArgumentException) { whitespaceAgentCaught = true; }
+        Check(whitespaceAgentCaught, "PipeClient.QueryAgentMemory must reject whitespace agentId with ArgumentException");
+
+        var varResult = await session.QueryVariableAsync("   ");
+        Check(varResult == null, "QueryVariableAsync with whitespace must return null");
+
+        var memResult = await session.QueryAgentMemoryAsync("   ");
+        Check(memResult == null, "QueryAgentMemoryAsync with whitespace must return null");
     }
 
 

@@ -15,6 +15,11 @@ Read when changing persistence, failure tests, CI or delivery gates. Commit evid
   - In `ForgeSaveChunker`, enforce `maxChunkSize > 0`, calculate chunk counts using 64-bit arithmetic `((long)data.Length + maxChunkSize - 1) / maxChunkSize` to prevent integer overflow, and accumulate lengths in 64-bit integer before casting to avoid silent truncation above `int.MaxValue`.
   - In `ForgeMissionLifecycleGuard`, defer setting `_isInitialized = true` until after the deferred initializer delegate completes without throwing, enabling clean retry on transient errors.
   - In `ForgeAgentMemory`, episodic bounded eviction loops must ensure `oldestOfType >= 0 && oldestOfType < episodes.Count` before removal and break otherwise, preventing index exceptions. Pre-size `GetAll` capacity with `Math.Min(episodes.Count, MaximumEpisodicEntriesPerType)`.
+- **Rev138 — IPC alignment, audio sanitization & spawner safety:**
+  - Desktop IPC and in-game Mod server must align action contracts (`agent-memory-query` / `query-agent-memory`, `query-variable`). `CampaignVariableInspector.GetVariable(key)` enables safe querying of registered variables without throwing.
+  - In `ForgeAudioBuilder` and `ForgeAudioInspector`, reject directory traversal sequences (`..`) in relative sound paths, protect `Path.GetExtension` from invalid file character exceptions, and detect duplicate sound definitions.
+  - In `PipeClient`, explicitly dispose `SemaphoreSlim` wait handles upon disposal, and reject null `Request` payloads and whitespace agent identifiers before pipe transmission.
+  - In `ForgePartyBlueprint`, promote total troop accumulation to 64-bit integers and reject blank `HomeSettlementStringId` definitions.
 
 Use filenames emitted by the pipeline: version `25.2.0` currently produces `package-audit-2520.json` and `package-sha256-2520.txt`. Recheck this convention when changing the pipeline.
 

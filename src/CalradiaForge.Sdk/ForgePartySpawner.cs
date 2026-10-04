@@ -66,11 +66,16 @@ namespace CalradiaForge.Sdk
             if (TroopRoster.Count == 0)
                 errors.Add("Party blueprint must specify at least one troop character in the roster.");
 
-            int totalTroops = 0;
+            if (HomeSettlementStringId != null && string.IsNullOrWhiteSpace(HomeSettlementStringId))
+                errors.Add("Home settlement string ID cannot be blank when specified.");
+
+            long totalTroops = 0;
             foreach (var count in TroopRoster.Values) totalTroops += count;
 
             if (totalTroops <= 0)
                 errors.Add("Total troop count must be greater than zero.");
+            else if (totalTroops > int.MaxValue)
+                errors.Add("Total troop count exceeds maximum supported party size.");
 
             if (WageBudgetLimit < 0)
                 errors.Add("Wage budget limit cannot be negative.");

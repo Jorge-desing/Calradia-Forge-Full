@@ -120,7 +120,7 @@ namespace CalradiaForge.Desktop.Services
             if (!pipe.Connected || string.IsNullOrWhiteSpace(agentId)) return null;
             try
             {
-                var response = await SendAsync(new CalradiaForge.Core.Request { Action = "query-agent-memory", Argument = agentId }, cancellation).ConfigureAwait(true);
+                var response = await SendAsync(new CalradiaForge.Core.Request { Action = "agent-memory-query", Argument = agentId }, cancellation).ConfigureAwait(true);
                 return response?.Success == true ? response.Data : null;
             }
             catch

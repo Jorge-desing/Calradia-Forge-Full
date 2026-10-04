@@ -154,14 +154,34 @@ namespace CalradiaForge.Sdk
                         }
                         else
                         {
-                            string ext = Path.GetExtension(path).ToLowerInvariant();
+                            if (path.Contains(".."))
+                            {
+                                findings.Add(new AudioValidationFinding
+                                {
+                                    SoundName = name,
+                                    Severity = "Error",
+                                    Message = $"Audio path '{path}' contains forbidden directory traversal sequence '..'."
+                                });
+                                hasError = true;
+                            }
+
+                            string ext = "";
+                            try
+                            {
+                                ext = Path.GetExtension(path)?.ToLowerInvariant() ?? "";
+                            }
+                            catch
+                            {
+                                ext = "";
+                            }
+
                             if (ext != ".ogg" && ext != ".wav")
                             {
                                 findings.Add(new AudioValidationFinding
                                 {
                                     SoundName = name,
                                     Severity = "Error",
-                                    Message = $"Unsupported file format '{ext}'. Must be compressed .ogg or low-latency .wav."
+                                    Message = $"Unsupported file format or invalid path '{ext}'. Must be compressed .ogg or low-latency .wav."
                                 });
                                 hasError = true;
                             }

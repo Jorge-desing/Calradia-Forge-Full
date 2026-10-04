@@ -70,6 +70,19 @@ namespace CalradiaForge.Sdk
         }
 
         /// <summary>
+        /// Reads a tracked variable by key safely without throwing.
+        /// </summary>
+        public static object GetVariable(string key)
+        {
+            if (!string.IsNullOrWhiteSpace(key) && TrackedVariables.TryGetValue(key, out var accessors) && accessors.Getter != null)
+            {
+                try { return accessors.Getter(); }
+                catch { return null; }
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Generates a snapshot of all currently tracked campaign variables.
         /// </summary>
         public static Dictionary<string, object> GenerateSnapshot()
