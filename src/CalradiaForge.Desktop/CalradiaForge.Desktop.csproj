@@ -51,6 +51,8 @@
     <Resource Include="Resources/Textures/calradia-campaign-astrolabe-rev098.png" />
     <Resource Include="Resources/Textures/calradia-delivery-seal-rev098.png" />
     <Resource Include="Resources/Textures/calradia-diagnostics-aegis-rev098.png" />
+    <Resource Include="Resources/Textures/calradia-bytecode-matrix-rev100.png" />
+    <Resource Include="Resources/Textures/calradia-tactical-emblem-rev100.png" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />

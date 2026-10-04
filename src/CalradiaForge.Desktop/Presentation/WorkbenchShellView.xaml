@@ -10,7 +10,9 @@
   <Grid Grid.Row="2">
    <Grid.ColumnDefinitions><ColumnDefinition Width="0.55*" MinWidth="220" MaxWidth="276"/><ColumnDefinition Width="12"/><ColumnDefinition Width="1.45*" MinWidth="400"/></Grid.ColumnDefinitions>
    <presentation:WorkbenchNavigationControl Grid.Column="0"/>
-   <Grid Grid.Column="1"/>
+   <Grid Grid.Column="1">
+    <Border Width="1" Background="{DynamicResource BorderBrush}" HorizontalAlignment="Center" Margin="0,6" Opacity="0.6"/>
+   </Grid>
    <presentation:WorkbenchWorkspaceControl Grid.Column="2"/>
   </Grid>
   <presentation:WorkbenchFooterControl Grid.Row="3"/>

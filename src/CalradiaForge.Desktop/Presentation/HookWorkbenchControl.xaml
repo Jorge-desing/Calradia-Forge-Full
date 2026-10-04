@@ -4,36 +4,55 @@
  MinWidth="0" MinHeight="0">
  <Grid Margin="3">
   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-  <Border Grid.Row="0" Background="{DynamicResource FrameSurfaceBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1,1,1,3" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+  <Border Grid.Row="0" Background="{DynamicResource FrameSurfaceBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1,1,1,3" CornerRadius="5" Padding="12" Margin="0,0,0,8">
    <Grid>
     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-     <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,12,0" Padding="2" Width="44" Height="44" VerticalAlignment="Center" ToolTip="Calradia Bytecode Hook Workbench · IL Weave Sigil Authenticated">
+     <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="4" Margin="0,0,8,0" Padding="2" Width="46" Height="46" VerticalAlignment="Center" ToolTip="Calradia Bytecode Hook Workbench · IL Weave Sigil Authenticated">
       <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-anvil-weave-sigil-rev098.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
      </Border>
+     <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="4" Margin="0,0,12,0" Padding="2" Width="46" Height="46" VerticalAlignment="Center" ToolTip="Calradia Bytecode Matrix · Interception Engine Authenticated">
+      <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-bytecode-matrix-rev100.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+     </Border>
      <StackPanel VerticalAlignment="Center">
-      <TextBlock FontFamily="Georgia" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{DynamicResource Ui.HookWorkbench}"/>
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+       <TextBlock FontFamily="Georgia" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{DynamicResource Ui.HookWorkbench}"/>
+       <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="10,0,0,0" Padding="5,1" VerticalAlignment="Center">
+        <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="IL BYTECODE WEAVER · LIVE INTERCEPTOR"/>
+       </Border>
+      </StackPanel>
       <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" Text="{DynamicResource Ui.HookWorkbenchHelp}" TextWrapping="Wrap"/>
      </StackPanel>
     </StackPanel>
     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-     <Button AutomationProperties.AutomationId="HookSnapshotsRefreshButton" Command="{Binding RefreshSnapshotsCommand}" Content="{DynamicResource Ui.HooksRefresh}" Margin="0,0,5,0" MinHeight="32" Padding="10,4"/>
-     <Button AutomationProperties.AutomationId="HookWorkbenchCloseButton" Command="{Binding DataContext.CloseHookWorkbenchCommand, RelativeSource={RelativeSource AncestorType=Window}}" Content="{DynamicResource Ui.Close}" MinHeight="32" Padding="10,4" ToolTip="{DynamicResource Ui.Close}"/>
+     <Button AutomationProperties.AutomationId="HookSnapshotsRefreshButton" Command="{Binding RefreshSnapshotsCommand}" Content="{DynamicResource Ui.HooksRefresh}" Margin="0,0,6,0" MinHeight="34" Padding="12,5"/>
+     <Button AutomationProperties.AutomationId="HookWorkbenchCloseButton" Command="{Binding DataContext.CloseHookWorkbenchCommand, RelativeSource={RelativeSource AncestorType=Window}}" Content="{DynamicResource Ui.Close}" MinHeight="34" Padding="12,5" ToolTip="{DynamicResource Ui.Close}"/>
     </StackPanel>
    </Grid>
   </Border>
 
-  <Border Grid.Row="1" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8" Margin="0,0,0,8">
+  <Border Grid.Row="1" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1,1,1,2" CornerRadius="4" Padding="10,8" Margin="0,0,0,8">
    <Grid>
     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-    <Ellipse Width="8" Height="8" VerticalAlignment="Top" Margin="1,4,8,0" Fill="{DynamicResource BrassBrush}"/>
+    <Border Width="22" Height="22" CornerRadius="11" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.2" VerticalAlignment="Top" Margin="0,2,10,0">
+     <Ellipse Width="8" Height="8" Fill="{DynamicResource VerdigrisBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+    </Border>
     <StackPanel Grid.Column="1">
-     <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksEligibility}"/>
-     <TextBlock AutomationProperties.AutomationId="HookEligibilityMessage" FontSize="10" Foreground="{DynamicResource PaperBrush}" Text="{Binding EligibilityText}" TextWrapping="Wrap"/>
-     <TextBlock AutomationProperties.AutomationId="HookLifetimeWarning" FontSize="9" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksLifetimeWarning}" TextWrapping="Wrap" Margin="0,3,0,0"/>
-     <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding SessionId, StringFormat={}{0}}" TextTrimming="CharacterEllipsis"/>
+     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+      <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksEligibility}"/>
+      <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Margin="6,0,0,0" Padding="4,0">
+       <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}" Text="ACTIVE CONTRACT"/>
+      </Border>
+     </StackPanel>
+     <TextBlock AutomationProperties.AutomationId="HookEligibilityMessage" FontSize="10.5" Foreground="{DynamicResource PaperBrush}" Text="{Binding EligibilityText}" TextWrapping="Wrap"/>
+     <TextBlock AutomationProperties.AutomationId="HookLifetimeWarning" FontSize="9" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksLifetimeWarning}" TextWrapping="Wrap" Margin="0,3,0,2"/>
+     <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Margin="0,2,0,0" Padding="6,1" HorizontalAlignment="Left">
+      <TextBlock FontSize="9" FontFamily="Consolas" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding SessionId, StringFormat={}{0}}" TextTrimming="CharacterEllipsis"/>
+     </Border>
     </StackPanel>
-    <TextBlock Grid.Column="2" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding HooksSummary}" VerticalAlignment="Top"/>
+    <Border Grid.Column="2" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Padding="8,4" VerticalAlignment="Top">
+     <TextBlock FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="{Binding HooksSummary}"/>
+    </Border>
    </Grid>
   </Border>
 
@@ -41,18 +60,42 @@
    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
    <Grid Grid.Row="0" Margin="0,0,0,6">
     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-    <StackPanel Margin="0,0,6,0"><TextBlock Text="{DynamicResource Ui.HooksOwnerFilter}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}"/><TextBox AutomationProperties.AutomationId="HookOwnerFilter" AutomationProperties.Name="{DynamicResource Ui.HooksOwnerFilter}" Text="{Binding OwnerFilter, UpdateSourceTrigger=PropertyChanged}" MinWidth="0"/></StackPanel>
-    <StackPanel Grid.Column="1" Margin="0,0,6,0"><TextBlock Text="{DynamicResource Ui.HooksTargetFilter}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}"/><TextBox AutomationProperties.AutomationId="HookTargetFilter" AutomationProperties.Name="{DynamicResource Ui.HooksTargetFilter}" Text="{Binding TargetFilter, UpdateSourceTrigger=PropertyChanged}" MinWidth="0"/></StackPanel>
-    <StackPanel Grid.Column="2"><TextBlock Text="{DynamicResource Ui.HooksTypeFilter}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}"/><TextBox AutomationProperties.AutomationId="HookTypeFilter" AutomationProperties.Name="{DynamicResource Ui.HooksTypeFilter}" Text="{Binding TypeFilter, UpdateSourceTrigger=PropertyChanged}" MinWidth="0"/></StackPanel>
+    <Border Margin="0,0,6,0" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="7,4">
+     <StackPanel>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+       <Ellipse Width="5" Height="5" Fill="{DynamicResource BrassBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+       <TextBlock Text="{DynamicResource Ui.HooksOwnerFilter}" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}"/>
+      </StackPanel>
+      <TextBox AutomationProperties.AutomationId="HookOwnerFilter" AutomationProperties.Name="{DynamicResource Ui.HooksOwnerFilter}" Text="{Binding OwnerFilter, UpdateSourceTrigger=PropertyChanged}" MinWidth="0" Height="26" Padding="4,2"/>
+     </StackPanel>
+    </Border>
+    <Border Grid.Column="1" Margin="0,0,6,0" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="7,4">
+     <StackPanel>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+       <Ellipse Width="5" Height="5" Fill="{DynamicResource BrassBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+       <TextBlock Text="{DynamicResource Ui.HooksTargetFilter}" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}"/>
+      </StackPanel>
+      <TextBox AutomationProperties.AutomationId="HookTargetFilter" AutomationProperties.Name="{DynamicResource Ui.HooksTargetFilter}" Text="{Binding TargetFilter, UpdateSourceTrigger=PropertyChanged}" MinWidth="0" Height="26" Padding="4,2"/>
+     </StackPanel>
+    </Border>
+    <Border Grid.Column="2" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="7,4">
+     <StackPanel>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+       <Ellipse Width="5" Height="5" Fill="{DynamicResource BrassBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+       <TextBlock Text="{DynamicResource Ui.HooksTypeFilter}" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}"/>
+      </StackPanel>
+      <TextBox AutomationProperties.AutomationId="HookTypeFilter" AutomationProperties.Name="{DynamicResource Ui.HooksTypeFilter}" Text="{Binding TypeFilter, UpdateSourceTrigger=PropertyChanged}" MinWidth="0" Height="26" Padding="4,2"/>
+     </StackPanel>
+    </Border>
    </Grid>
-   <Border Grid.Row="1" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="6,4" Margin="0,0,0,3">
+   <Border Grid.Row="1" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1,1,1,2" CornerRadius="3" Padding="8,5" Margin="0,0,0,3">
     <Grid>
-     <Grid.ColumnDefinitions><ColumnDefinition Width="34"/><ColumnDefinition Width="1.15*"/><ColumnDefinition Width="0.8*"/><ColumnDefinition Width="1.8*"/><ColumnDefinition Width="1.7*"/><ColumnDefinition Width="0.65*"/></Grid.ColumnDefinitions>
-     <TextBlock Grid.Column="1" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksIdentifier}"/>
-     <TextBlock Grid.Column="2" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksOwner}"/>
-     <TextBlock Grid.Column="3" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksTarget}"/>
-     <TextBlock Grid.Column="4" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksOrder}"/>
-     <TextBlock Grid.Column="5" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksState}"/>
+     <Grid.ColumnDefinitions><ColumnDefinition Width="4"/><ColumnDefinition Width="34"/><ColumnDefinition Width="1.15*"/><ColumnDefinition Width="0.8*"/><ColumnDefinition Width="1.8*"/><ColumnDefinition Width="1.7*"/><ColumnDefinition Width="0.65*"/></Grid.ColumnDefinitions>
+     <TextBlock Grid.Column="2" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksIdentifier}"/>
+     <TextBlock Grid.Column="3" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksOwner}"/>
+     <TextBlock Grid.Column="4" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksTarget}"/>
+     <TextBlock Grid.Column="5" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksOrder}"/>
+     <TextBlock Grid.Column="6" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.HooksState}"/>
     </Grid>
    </Border>
    <Grid Grid.Row="2">
@@ -60,20 +103,27 @@
      <ItemsControl ItemsSource="{Binding FilteredHooks}">
       <ItemsControl.ItemTemplate>
        <DataTemplate>
-        <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="6,5" Margin="0,1">
+        <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="0" Margin="0,1.5">
          <Grid>
-          <Grid.ColumnDefinitions><ColumnDefinition Width="34"/><ColumnDefinition Width="1.15*"/><ColumnDefinition Width="0.8*"/><ColumnDefinition Width="1.8*"/><ColumnDefinition Width="1.7*"/><ColumnDefinition Width="0.65*"/></Grid.ColumnDefinitions>
-          <CheckBox AutomationProperties.Name="{Binding Id}" IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding IsSelectable}" IsTabStop="True" VerticalAlignment="Top" HorizontalAlignment="Center" ToolTip="{Binding Id}"/>
-          <StackPanel Grid.Column="1">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="4"/><ColumnDefinition Width="34"/><ColumnDefinition Width="1.15*"/><ColumnDefinition Width="0.8*"/><ColumnDefinition Width="1.8*"/><ColumnDefinition Width="1.7*"/><ColumnDefinition Width="0.65*"/></Grid.ColumnDefinitions>
+          <Border Grid.Column="0" Background="{DynamicResource VerdigrisBrush}" CornerRadius="2,0,0,2"/>
+          <CheckBox Grid.Column="1" AutomationProperties.Name="{Binding Id}" IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding IsSelectable}" IsTabStop="True" VerticalAlignment="Center" HorizontalAlignment="Center" ToolTip="{Binding Id}"/>
+          <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="4,5,6,5">
            <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Id}" TextWrapping="Wrap"/>
-           <TextBlock FontSize="9" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding HookKinds}" TextWrapping="Wrap"/>
+           <Border Background="{DynamicResource DeepPineBrush}" CornerRadius="2" Margin="0,2,0,0" Padding="3,1" HorizontalAlignment="Left">
+            <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" Text="{Binding HookKinds}" TextWrapping="Wrap"/>
+           </Border>
           </StackPanel>
-          <TextBlock Grid.Column="2" FontSize="9" Foreground="{DynamicResource PaperBrush}" Text="{Binding Owner}" TextWrapping="Wrap"/>
-          <TextBlock Grid.Column="3" FontFamily="Consolas" FontSize="9" Foreground="{DynamicResource PaperBrush}" Text="{Binding Target}" TextWrapping="Wrap"/>
-          <TextBlock Grid.Column="4" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding Order}" TextWrapping="Wrap"/>
-          <StackPanel Grid.Column="5">
-           <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding State}" TextWrapping="Wrap"/>
-           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding Detail}" TextWrapping="Wrap"/>
+          <TextBlock Grid.Column="3" FontSize="9" Foreground="{DynamicResource PaperBrush}" Text="{Binding Owner}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="4,5,6,5"/>
+          <Border Grid.Column="4" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="5,3" Margin="4,4,6,4" VerticalAlignment="Center">
+           <TextBlock FontFamily="Consolas" FontSize="9" Foreground="{DynamicResource PaperBrush}" Text="{Binding Target}" TextWrapping="Wrap"/>
+          </Border>
+          <TextBlock Grid.Column="5" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding Order}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="4,5,6,5"/>
+          <StackPanel Grid.Column="6" VerticalAlignment="Center" Margin="4,5,6,5">
+           <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Padding="4,1" HorizontalAlignment="Left">
+            <TextBlock FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding State}" TextWrapping="Wrap"/>
+           </Border>
+           <TextBlock FontSize="8" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding Detail}" TextWrapping="Wrap" Margin="0,2,0,0"/>
           </StackPanel>
          </Grid>
         </Border>
@@ -81,8 +131,11 @@
       </ItemsControl.ItemTemplate>
      </ItemsControl>
     </ScrollViewer>
-    <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="12" Visibility="{Binding HasFilteredHooks, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-     <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding EmptyInventoryMessage}" TextWrapping="Wrap"/>
+    <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="14" Visibility="{Binding HasFilteredHooks, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+      <Path Data="{StaticResource GameIcon.scroll_unfurled}" Fill="{DynamicResource MutedTextBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,6" Opacity="0.6"/>
+      <TextBlock HorizontalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding EmptyInventoryMessage}" TextWrapping="Wrap" TextAlignment="Center"/>
+     </StackPanel>
     </Border>
    </Grid>
    <Grid Grid.Row="3" Margin="0,8,0,0">
@@ -92,45 +145,66 @@
       <Button AutomationProperties.AutomationId="HookVerifySelectedButton" Command="{Binding VerifySelectedCommand}" Content="{DynamicResource Ui.HooksVerify}" Margin="5,0,0,0" MinHeight="34" Padding="10,4"/>
       <Button AutomationProperties.AutomationId="HookExportSnapshotsButton" Command="{Binding ExportSnapshotsCommand}" Content="{DynamicResource Ui.HooksExportSnapshots}" Margin="5,0,0,0" MinHeight="34" Padding="10,4"/>
       <Button AutomationProperties.AutomationId="HookExportResultsButton" Command="{Binding ExportResultsCommand}" Content="{DynamicResource Ui.HooksExportResults}" Margin="5,0,0,0" MinHeight="34" Padding="10,4"/>
-      <Button AutomationProperties.AutomationId="HookApplyPlanButton" Command="{Binding PlanApplyCommand}" Content="{DynamicResource Ui.HooksApply}" Margin="5,0,0,0" MinHeight="34" Padding="10,4" Style="{StaticResource HeaderPrimaryActionButton}"/>
+      <Button AutomationProperties.AutomationId="HookApplyPlanButton" Command="{Binding PlanApplyCommand}" Content="{DynamicResource Ui.HooksApply}" Margin="5,0,0,0" MinHeight="34" Padding="12,4" Style="{StaticResource HeaderPrimaryActionButton}"/>
       <Button AutomationProperties.AutomationId="HookRevertPlanButton" Command="{Binding PlanRevertCommand}" Content="{DynamicResource Ui.HooksRevert}" Margin="5,0,0,0" MinHeight="34" Padding="10,4"/>
      </WrapPanel>
-     <TextBlock AutomationProperties.AutomationId="HookSelectionStatus" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding SelectionMessage}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+     <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="6,4" VerticalAlignment="Center">
+      <TextBlock AutomationProperties.AutomationId="HookSelectionStatus" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding SelectionMessage}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+     </Border>
     </DockPanel>
-    <Border Grid.Row="1" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Padding="8" Margin="0,8,0,0" Visibility="{Binding HasPendingPlan, Converter={StaticResource BooleanToVisibilityConverter}}">
+    <Border Grid.Row="1" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1,1,1,2" CornerRadius="4" Padding="10" Margin="0,8,0,0" Visibility="{Binding HasPendingPlan, Converter={StaticResource BooleanToVisibilityConverter}}">
      <StackPanel>
       <DockPanel LastChildFill="True">
        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-        <Button AutomationProperties.AutomationId="HookPlanCancelButton" Command="{Binding CancelPlanCommand}" Content="{DynamicResource Ui.HooksCancelPlan}" Margin="0,0,5,0" MinHeight="31" Padding="9,3"/>
-        <Button AutomationProperties.AutomationId="HookPlanConfirmButton" Command="{Binding ConfirmPlanCommand}" Content="{DynamicResource Ui.HooksConfirm}" MinHeight="31" Padding="10,3" Style="{StaticResource HeaderPrimaryActionButton}"/>
+        <Button AutomationProperties.AutomationId="HookPlanCancelButton" Command="{Binding CancelPlanCommand}" Content="{DynamicResource Ui.HooksCancelPlan}" Margin="0,0,6,0" MinHeight="32" Padding="10,4"/>
+        <Button AutomationProperties.AutomationId="HookPlanConfirmButton" Command="{Binding ConfirmPlanCommand}" Content="{DynamicResource Ui.HooksConfirm}" MinHeight="32" Padding="12,4" Style="{StaticResource HeaderPrimaryActionButton}"/>
        </StackPanel>
        <StackPanel>
-        <TextBlock FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding PlanHeading}"/>
-        <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding PendingExpiryText, StringFormat={}{0}}"/>
+        <StackPanel Orientation="Horizontal">
+         <Path Data="{StaticResource GameIcon.scroll_unfurled}" Fill="{DynamicResource BrassBrush}" Width="14" Height="14" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+         <TextBlock FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding PlanHeading}" VerticalAlignment="Center"/>
+        </StackPanel>
+        <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding PendingExpiryText, StringFormat={}{0}}" Margin="20,1,0,0"/>
        </StackPanel>
       </DockPanel>
-      <ScrollViewer AutomationProperties.AutomationId="HookPlanPreviewViewport" MaxHeight="160" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Margin="0,5,0,2">
-      <ItemsControl ItemsSource="{Binding PlannedHooks}">
-       <ItemsControl.ItemTemplate><DataTemplate>
-        <Grid Margin="0,0,0,5">
-         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
-         <TextBlock Grid.Column="0" Margin="0,0,8,0" FontFamily="Consolas" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Id}" TextWrapping="Wrap"/>
-         <TextBlock Grid.Column="1" Margin="0,0,8,0" FontSize="9" Foreground="{DynamicResource PaperBrush}" Text="{Binding Owner}" TextWrapping="Wrap"/>
-         <TextBlock Grid.Column="2" FontFamily="Consolas" FontSize="9" Foreground="{DynamicResource PaperBrush}" Text="{Binding Target}" TextWrapping="Wrap"/>
-        </Grid>
-       </DataTemplate></ItemsControl.ItemTemplate>
-      </ItemsControl>
+      <ScrollViewer AutomationProperties.AutomationId="HookPlanPreviewViewport" MaxHeight="160" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Margin="0,6,0,4">
+       <ItemsControl ItemsSource="{Binding PlannedHooks}">
+        <ItemsControl.ItemTemplate><DataTemplate>
+         <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="6,3" Margin="0,0,0,4">
+          <Grid>
+           <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+           <TextBlock Grid.Column="0" Margin="0,0,8,0" FontFamily="Consolas" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Id}" TextWrapping="Wrap"/>
+           <TextBlock Grid.Column="1" Margin="0,0,8,0" FontSize="9" Foreground="{DynamicResource PaperBrush}" Text="{Binding Owner}" TextWrapping="Wrap"/>
+           <TextBlock Grid.Column="2" FontFamily="Consolas" FontSize="9" Foreground="{DynamicResource PaperBrush}" Text="{Binding Target}" TextWrapping="Wrap"/>
+          </Grid>
+         </Border>
+        </DataTemplate></ItemsControl.ItemTemplate>
+       </ItemsControl>
       </ScrollViewer>
-      <TextBlock AutomationProperties.AutomationId="HookApplyPartialWarning" FontSize="9" Foreground="{DynamicResource BrassBrush}" Text="{Binding PlanWarning}" TextWrapping="Wrap" Margin="0,3,0,2" Visibility="{Binding IsApplyPlan, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-      <CheckBox AutomationProperties.AutomationId="HookExplicitConfirmationCheckbox" Content="{DynamicResource Ui.HooksConfirmPrompt}" Foreground="{DynamicResource PaperBrush}" IsChecked="{Binding IsConfirmationChecked, Mode=TwoWay}" Margin="0,3,0,0" Padding="2"/>
+      <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource EmberBrush}" BorderThickness="1" CornerRadius="2" Padding="6,3" Margin="0,2,0,3" Visibility="{Binding IsApplyPlan, Converter={StaticResource BooleanToVisibilityConverter}}">
+       <TextBlock AutomationProperties.AutomationId="HookApplyPartialWarning" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource EmberBrush}" Text="{Binding PlanWarning}" TextWrapping="Wrap"/>
+      </Border>
+      <CheckBox AutomationProperties.AutomationId="HookExplicitConfirmationCheckbox" Content="{DynamicResource Ui.HooksConfirmPrompt}" Foreground="{DynamicResource PaperBrush}" IsChecked="{Binding IsConfirmationChecked, Mode=TwoWay}" Margin="0,4,0,0" Padding="4,2"/>
      </StackPanel>
     </Border>
    </Grid>
   </Grid>
-  <Border Grid.Row="3" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="7" Margin="0,8,0,0" MaxHeight="112">
-   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-    <TextBlock AutomationProperties.AutomationId="HookWorkbenchStatus" FontFamily="Consolas" FontSize="9" Foreground="{DynamicResource PaperBrush}" Text="{Binding Status}" TextWrapping="Wrap"/>
-   </ScrollViewer>
+  <Border Grid.Row="3" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0,8,0,0" MaxHeight="128">
+   <Grid>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+    <Border Grid.Row="0" Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,4">
+     <Grid>
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+       <Ellipse Width="6" Height="6" Fill="{DynamicResource VerdigrisBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+       <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="CALRADIA BYTECODE AUDIT CONSOLE · REALTIME LOG"/>
+      </StackPanel>
+      <TextBlock HorizontalAlignment="Right" FontSize="7.5" FontFamily="Consolas" Foreground="{DynamicResource MutedTextBrush}" Text="IL-WEAVE-ENGINE v25.2.0"/>
+     </Grid>
+    </Border>
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="8,6">
+     <TextBlock AutomationProperties.AutomationId="HookWorkbenchStatus" FontFamily="Consolas" FontSize="9.5" Foreground="{DynamicResource PaperBrush}" Text="{Binding Status}" TextWrapping="Wrap"/>
+    </ScrollViewer>
+   </Grid>
   </Border>
  </Grid>
 </UserControl>

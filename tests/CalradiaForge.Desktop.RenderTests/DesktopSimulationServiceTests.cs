@@ -65,6 +65,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies Rev098 major visual studio upgrades — anvil sigil, gauntlet seal, campaign astrolabe, delivery seal, diagnostics aegis");
         Rev099TacticalViewsAndUnretouchedFunctionsPolish();
         Console.WriteLine("PASS Desktop simulation verifies Rev099 tactical views and unretouched functions visual overhaul — palette, status, dossier, split deck, footer");
+        Rev100HookWorkbenchAndPresentationViewsVisualOverhaul();
+        Console.WriteLine("PASS Desktop simulation verifies Rev100 Hook Workbench and presentation views visual overhaul — bytecode matrix, header, window chrome, studio templates");
     }
 
     static void Rev095FiveStudioMedallionUpgrades()
@@ -1130,6 +1132,62 @@ static void Rev099TacticalViewsAndUnretouchedFunctionsPolish()
             "calradia-aquila-seal-rev087.png",
         };
         foreach (var tex in upgradedTextures)
+        {
+            string fullPath = Path.Combine(texturesDir, tex);
+            Check(File.Exists(fullPath), $"Texture '{tex}' must exist.");
+            long bytes = new FileInfo(fullPath).Length;
+            Check(bytes > 350_000, $"Texture '{tex}' must be upgraded to high-resolution (>350 KB), found {bytes} bytes.");
+        }
+    }
+
+    static void Rev100HookWorkbenchAndPresentationViewsVisualOverhaul()
+    {
+        string basePath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "CalradiaForge.Desktop");
+        string hookXaml = File.ReadAllText(Path.Combine(basePath, "Presentation", "HookWorkbenchControl.xaml"));
+        string headerXaml = File.ReadAllText(Path.Combine(basePath, "Presentation", "WorkbenchHeaderControl.xaml"));
+        string mainXaml = File.ReadAllText(Path.Combine(basePath, "MainWindow.xaml"));
+        string shellXaml = File.ReadAllText(Path.Combine(basePath, "Presentation", "WorkbenchShellView.xaml"));
+        string templatesXaml = File.ReadAllText(Path.Combine(basePath, "Resources", "Views", "ToolPageTemplates.xaml"));
+        string csproj = File.ReadAllText(Path.Combine(basePath, "CalradiaForge.Desktop.csproj"));
+        string texturesDir = Path.Combine(basePath, "Resources", "Textures");
+
+        // 1. New Rev100 master textures registered in csproj
+        Check(csproj.Contains("calradia-bytecode-matrix-rev100.png"), "csproj must register calradia-bytecode-matrix-rev100.png.");
+        Check(csproj.Contains("calradia-tactical-emblem-rev100.png"), "csproj must register calradia-tactical-emblem-rev100.png.");
+
+        // 2. HookWorkbenchControl must feature dual medallions and live interceptor badges
+        Check(hookXaml.Contains("calradia-anvil-weave-sigil-rev098.png"), "HookWorkbenchControl must retain anvil-weave-sigil-rev098.");
+        Check(hookXaml.Contains("calradia-bytecode-matrix-rev100.png"), "HookWorkbenchControl must reference new calradia-bytecode-matrix-rev100.png.");
+        Check(hookXaml.Contains("IL BYTECODE WEAVER · LIVE INTERCEPTOR"), "HookWorkbenchControl must feature live interceptor badge.");
+        Check(hookXaml.Contains("ACTIVE CONTRACT"), "HookWorkbenchControl must feature active contract eligibility badge.");
+        Check(hookXaml.Contains("CALRADIA BYTECODE AUDIT CONSOLE · REALTIME LOG"), "HookWorkbenchControl must feature realtime bytecode console header.");
+
+        // 3. WorkbenchHeaderControl must feature refined brand group and tactical chip
+        Check(headerXaml.Contains("CornerRadius=\"5\""), "WorkbenchHeaderControl must use refined border corner radius.");
+        Check(headerXaml.Contains("TACTICAL"), "WorkbenchHeaderControl must retain TACTICAL badge.");
+
+        // 4. MainWindow and WorkbenchShellView must feature version badge and architectural dividing rule
+        Check(mainXaml.Contains("v25.2.0 · BANNERLORD PRO"), "MainWindow titlebar must feature v25.2.0 Bannerlord Pro badge.");
+        Check(shellXaml.Contains("Grid.Column=\"1\""), "WorkbenchShellView must retain column 1 separator.");
+
+        // 5. ToolPageTemplates must feature tactical sovereign emblem and preserve invariants
+        Check(templatesXaml.Contains("calradia-tactical-emblem-rev100.png"), "ToolPageTemplates must reference calradia-tactical-emblem-rev100.png.");
+        int templateCount = System.Text.RegularExpressions.Regex.Matches(
+            templatesXaml, @"<DataTemplate x:Key=""\w+DashboardTemplate""").Count;
+        Check(templateCount == 9, $"Rule C invariant: expected exactly 9 DashboardTemplates, got {templateCount}.");
+
+        int twoway = System.Text.RegularExpressions.Regex.Matches(
+            templatesXaml, @"<Run[^>]+Text=""\{Binding[^""]*Mode=TwoWay[^""]*\}""").Count;
+        Check(twoway == 0, $"Propuesta 48: found {twoway} TwoWay Run.Text bindings — must be 0.");
+
+        // 6. Texture file sizes must prove high-resolution master grade (>350 KB)
+        string[] rev100Textures = {
+            "calradia-bytecode-matrix-rev100.png",
+            "calradia-tactical-emblem-rev100.png",
+            "tool-card-top-corners-v1.png",
+        };
+        foreach (var tex in rev100Textures)
         {
             string fullPath = Path.Combine(texturesDir, tex);
             Check(File.Exists(fullPath), $"Texture '{tex}' must exist.");

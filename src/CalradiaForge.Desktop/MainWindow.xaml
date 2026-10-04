@@ -55,7 +55,12 @@
     <Image AutomationProperties.AutomationId="ParchmentTitleBarJournalMark" Grid.Column="0" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/Optimized/parchment-field-journal-ornament-v1.png" Width="30" Height="30" Stretch="Uniform" Opacity="0.86" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" Focusable="False">
      <Image.Visibility><MultiBinding Converter="{StaticResource DecorativeAccentVisibilityConverter}" ConverterParameter="TitleBarJournalMarkVisibility"><Binding Path="DecorativeAccentsEnabled"/><Binding Path="ThemeId"/></MultiBinding></Image.Visibility>
     </Image>
-    <TextBlock Grid.Column="1" Text="{DynamicResource Ui.AppTitle}" Foreground="{DynamicResource PaperBrush}" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" IsHitTestVisible="False"/>
+    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+     <TextBlock Text="{DynamicResource Ui.AppTitle}" Foreground="{DynamicResource PaperBrush}" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" IsHitTestVisible="False"/>
+     <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="10,0,0,0" Padding="5,1" VerticalAlignment="Center" IsHitTestVisible="False">
+      <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="v25.2.0 · BANNERLORD PRO"/>
+     </Border>
+    </StackPanel>
     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Stretch">
      <Button AutomationProperties.AutomationId="WindowMinimizeButton" AutomationProperties.Name="{DynamicResource Ui.WindowMinimize}" ToolTip="{DynamicResource Ui.WindowMinimize}" Style="{StaticResource TitleBarCaptionButton}" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="Window_MinimizeClick" TabIndex="0">
       <Path Data="M2,8 L10,8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.6" Width="12" Height="12" Stretch="Uniform"/>

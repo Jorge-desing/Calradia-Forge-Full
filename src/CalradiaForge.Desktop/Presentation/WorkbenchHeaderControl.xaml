@@ -6,7 +6,7 @@
  xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
  xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
  MinWidth="0" MinHeight="0">
-<Border AutomationProperties.AutomationId="MainCommandHeaderBand" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="4" Padding="4,4,4,5" RenderOptions.EdgeMode="Aliased" SnapsToDevicePixels="True">
+<Border AutomationProperties.AutomationId="MainCommandHeaderBand" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1,1,1,2" CornerRadius="5" Padding="4,4,4,5" RenderOptions.EdgeMode="Aliased" SnapsToDevicePixels="True">
     <Border.Style>
      <Style TargetType="Border">
       <Setter Property="Background" Value="{DynamicResource FrameSurfaceBrush}"/>
@@ -17,7 +17,7 @@
      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="2"/></Grid.RowDefinitions>
      <WrapPanel Grid.Row="0" MinHeight="40">
       
-      <Grid AutomationProperties.AutomationId="HeaderBrandGroup" Margin="1,0,2,0" VerticalAlignment="Center" Width="110">
+      <Grid AutomationProperties.AutomationId="HeaderBrandGroup" Margin="1,0,3,0" VerticalAlignment="Center" Width="112">
        <Grid.ColumnDefinitions><ColumnDefinition Width="58"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
        <Button AutomationProperties.AutomationId="HeaderSealButton" AutomationProperties.Name="{DynamicResource Ui.HeaderSeal}" Command="{Binding OpenPaletteCommand}" Height="56" HorizontalAlignment="Left" Style="{StaticResource HeaderSealButton}" TabIndex="4" ToolTip="{DynamicResource Ui.HeaderSeal}" VerticalAlignment="Center" Width="56">
         <Grid Width="56" Height="56" IsHitTestVisible="False">
@@ -33,55 +33,69 @@
        </Button>
        <StackPanel Grid.Column="1" Margin="5,0,2,0" VerticalAlignment="Center">
         <TextBlock FontSize="9.5" Foreground="{DynamicResource MutedTextBrush}" Text="{DynamicResource Ui.Subtitle}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" ToolTip="{DynamicResource Ui.Subtitle}"/>
-        <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Margin="0,2,0,0" Padding="3,1" HorizontalAlignment="Left" MaxWidth="50" ToolTip="TACTICAL · PE">
-         <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="TACTICAL" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+        <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,2,0,0" Padding="4,1" HorizontalAlignment="Left" MaxWidth="52" ToolTip="TACTICAL · PE">
+         <StackPanel Orientation="Horizontal">
+          <Ellipse Width="4" Height="4" Fill="{DynamicResource VerdigrisBrush}" Margin="0,0,3,0" VerticalAlignment="Center"/>
+          <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="TACTICAL" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+         </StackPanel>
         </Border>
        </StackPanel>
       </Grid>
-      <Button AutomationProperties.AutomationId="CommandPaletteButton" AutomationProperties.Name="{DynamicResource Ui.CommandPalette}" Command="{Binding OpenPaletteCommand}" FontSize="10" HorizontalAlignment="Stretch" Margin="1,0,1,0" MinHeight="40" Padding="8,5" Style="{StaticResource HeaderPrimaryActionButton}" ToolTip="{DynamicResource Ui.CommandPalette}" VerticalAlignment="Center" Width="140">
+      <Button AutomationProperties.AutomationId="CommandPaletteButton" AutomationProperties.Name="{DynamicResource Ui.CommandPalette}" Command="{Binding OpenPaletteCommand}" FontSize="10" HorizontalAlignment="Stretch" Margin="2,0,2,0" MinHeight="40" Padding="8,5" Style="{StaticResource HeaderPrimaryActionButton}" ToolTip="{DynamicResource Ui.CommandPalette}" VerticalAlignment="Center" Width="142">
        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
         <Path Data="{StaticResource GameIcon.magnifying_glass}" Fill="{DynamicResource InkBrush}" Focusable="False" Height="15" IsHitTestVisible="False" Margin="0,0,7,0" Stretch="Uniform" Width="15"/>
         <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource InkBrush}" Text="{DynamicResource Ui.CommandPalette}" TextWrapping="Wrap" VerticalAlignment="Center"/>
        </StackPanel>
       </Button>
-      <StackPanel AutomationProperties.AutomationId="LanguageSettingGroup" Margin="1,0,1,0" VerticalAlignment="Center" Width="88">
-       <TextBlock FontSize="{DynamicResource Token.LabelFont}" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.Language}" TextTrimming="CharacterEllipsis"/>
+      <StackPanel AutomationProperties.AutomationId="LanguageSettingGroup" Margin="2,0,2,0" VerticalAlignment="Center" Width="90">
+       <StackPanel Orientation="Horizontal" Margin="0,0,0,1">
+        <Ellipse Width="4" Height="4" Fill="{DynamicResource BrassBrush}" Margin="0,0,3,0" VerticalAlignment="Center"/>
+        <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.Language}" TextTrimming="CharacterEllipsis"/>
+       </StackPanel>
        <ComboBox AutomationProperties.AutomationId="LanguageSelector" AutomationProperties.Name="{DynamicResource Ui.Language}" Height="32" ItemsSource="{Binding SupportedLanguages}" Margin="0,1,0,0" MinWidth="0" SelectedItem="{Binding LanguageCode}" ToolTip="{DynamicResource Ui.Language}">
         <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="NoWrap"/></DataTemplate></ComboBox.ItemTemplate>
        </ComboBox>
       </StackPanel>
-      <StackPanel AutomationProperties.AutomationId="ThemeSettingGroup" Margin="1,0,1,0" VerticalAlignment="Center" Width="160">
-       <TextBlock FontSize="{DynamicResource Token.LabelFont}" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.Theme}" TextTrimming="CharacterEllipsis"/>
+      <StackPanel AutomationProperties.AutomationId="ThemeSettingGroup" Margin="2,0,2,0" VerticalAlignment="Center" Width="162">
+       <StackPanel Orientation="Horizontal" Margin="0,0,0,1">
+        <Ellipse Width="4" Height="4" Fill="{DynamicResource BrassBrush}" Margin="0,0,3,0" VerticalAlignment="Center"/>
+        <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.Theme}" TextTrimming="CharacterEllipsis"/>
+       </StackPanel>
        <ComboBox AutomationProperties.AutomationId="ThemeSelector" AutomationProperties.Name="{DynamicResource Ui.Theme}" HorizontalAlignment="Stretch" ItemsSource="{Binding AvailableThemes}" Margin="0,1,0,0" MinWidth="0" SelectedValue="{Binding ThemeId, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Id" ToolTip="{DynamicResource Ui.ThemeHelp}">
         <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Converter={StaticResource ThemeDisplayConverter}}" TextWrapping="Wrap"/></DataTemplate></ComboBox.ItemTemplate>
        </ComboBox>
       </StackPanel>
-      <StackPanel AutomationProperties.AutomationId="SessionSettingGroup" Margin="1,0,2,0" VerticalAlignment="Center" Width="154">
-        <TextBlock FontSize="{DynamicResource Token.LabelFont}" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.Session}"/>
+      <StackPanel AutomationProperties.AutomationId="SessionSettingGroup" Margin="2,0,2,0" VerticalAlignment="Center" Width="156">
+       <StackPanel Orientation="Horizontal" Margin="0,0,0,1">
+        <Ellipse Width="4" Height="4" Fill="{DynamicResource BrassBrush}" Margin="0,0,3,0" VerticalAlignment="Center"/>
+        <TextBlock FontSize="{DynamicResource Token.LabelFont}" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.Session}"/>
+       </StackPanel>
        <Grid Margin="0,1,0,0">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-        <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="5,2" VerticalAlignment="Center">
+        <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Padding="5,2" VerticalAlignment="Center">
          <Grid>
-          <Grid.ColumnDefinitions><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-          <Ellipse AutomationProperties.AutomationId="SessionConnectionIndicator" Width="6" Height="6" VerticalAlignment="Center" HorizontalAlignment="Left" Focusable="False" IsHitTestVisible="False">
-           <Ellipse.Style>
-            <Style TargetType="Ellipse">
-             <Setter Property="Fill" Value="{DynamicResource EmberBrush}"/>
-             <Style.Triggers>
-              <DataTrigger Binding="{Binding Session.Connection}" Value="Connected"><Setter Property="Fill" Value="{DynamicResource VerdigrisBrush}"/></DataTrigger>
-              <DataTrigger Binding="{Binding Session.Connection}" Value="Connecting"><Setter Property="Fill" Value="{DynamicResource BrassBrush}"/></DataTrigger>
-             </Style.Triggers>
-            </Style>
-           </Ellipse.Style>
-          </Ellipse>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <Border Width="8" Height="8" CornerRadius="4" Background="{DynamicResource FrameSurfaceSolidBrush}" VerticalAlignment="Center" HorizontalAlignment="Left">
+           <Ellipse AutomationProperties.AutomationId="SessionConnectionIndicator" Width="6" Height="6" VerticalAlignment="Center" HorizontalAlignment="Center" Focusable="False" IsHitTestVisible="False">
+            <Ellipse.Style>
+             <Style TargetType="Ellipse">
+              <Setter Property="Fill" Value="{DynamicResource EmberBrush}"/>
+              <Style.Triggers>
+               <DataTrigger Binding="{Binding Session.Connection}" Value="Connected"><Setter Property="Fill" Value="{DynamicResource VerdigrisBrush}"/></DataTrigger>
+               <DataTrigger Binding="{Binding Session.Connection}" Value="Connecting"><Setter Property="Fill" Value="{DynamicResource BrassBrush}"/></DataTrigger>
+              </Style.Triggers>
+             </Style>
+            </Ellipse.Style>
+           </Ellipse>
+          </Border>
           <TextBlock AutomationProperties.AutomationId="SessionConnectionStatus" AutomationProperties.Name="{DynamicResource Ui.Session}" Grid.Column="1" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Session.Connection}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" ToolTip="{Binding Session.Connection}" VerticalAlignment="Center" Margin="3,0,0,0"/>
          </Grid>
         </Border>
-        <Button AutomationProperties.AutomationId="ConnectButton" AutomationProperties.Name="{DynamicResource Ui.Connect}" Command="{Binding ConnectCommand}" Content="{DynamicResource Ui.Connect}" FontSize="8" Grid.Column="1" Margin="5,0,0,0" MinWidth="52" Padding="3,2"/>
+        <Button AutomationProperties.AutomationId="ConnectButton" AutomationProperties.Name="{DynamicResource Ui.Connect}" Command="{Binding ConnectCommand}" Content="{DynamicResource Ui.Connect}" FontSize="8.5" FontWeight="SemiBold" Grid.Column="1" Margin="5,0,0,0" MinWidth="54" Height="28" Padding="4,2"/>
        </Grid>
       </StackPanel>
-      <CheckBox AutomationProperties.AutomationId="DecorativeAccentsToggle" AutomationProperties.Name="{DynamicResource Ui.DecorativeAccents}" Cursor="Hand" FontSize="9.5" Foreground="{DynamicResource PaperBrush}" IsChecked="{Binding DecorativeAccentsEnabled, Mode=TwoWay}" Margin="1,0,1,0" MaxWidth="80" MinHeight="40" ToolTip="{DynamicResource Ui.DecorativeAccents}" VerticalAlignment="Center" Width="80"><TextBlock FontSize="9" MaxWidth="44" Text="{DynamicResource Ui.DecorativeAccentsShort}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/></CheckBox>
-      <Button AutomationProperties.AutomationId="SplitDeckToggleButton" AutomationProperties.Name="{DynamicResource Ui.SplitDeck}" Command="{Binding ToggleSplitDeckCommand}" FontSize="9" HorizontalAlignment="Right" Margin="1,0,1,0" MinHeight="36" Padding="5,3" ToolTip="{DynamicResource Ui.SplitDeckToolTip}" VerticalAlignment="Center" Width="112">
+      <CheckBox AutomationProperties.AutomationId="DecorativeAccentsToggle" AutomationProperties.Name="{DynamicResource Ui.DecorativeAccents}" Cursor="Hand" FontSize="9.5" Foreground="{DynamicResource PaperBrush}" IsChecked="{Binding DecorativeAccentsEnabled, Mode=TwoWay}" Margin="2,0,2,0" MaxWidth="82" MinHeight="40" ToolTip="{DynamicResource Ui.DecorativeAccents}" VerticalAlignment="Center" Width="82"><TextBlock FontSize="9" MaxWidth="44" Text="{DynamicResource Ui.DecorativeAccentsShort}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/></CheckBox>
+      <Button AutomationProperties.AutomationId="SplitDeckToggleButton" AutomationProperties.Name="{DynamicResource Ui.SplitDeck}" Command="{Binding ToggleSplitDeckCommand}" FontSize="9" HorizontalAlignment="Right" Margin="2,0,2,0" MinHeight="36" Padding="6,3" ToolTip="{DynamicResource Ui.SplitDeckToolTip}" VerticalAlignment="Center" Width="114">
        <StackPanel Orientation="Horizontal">
         <Path Data="M2,2 H6 V10 H2 Z M7,2 H11 V10 H7 Z" Fill="Transparent" Height="11" Margin="0,0,5,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.3" VerticalAlignment="Center" Width="12"/>
         <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.SplitDeck}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
@@ -91,7 +105,7 @@
         </Border>
        </StackPanel>
       </Button>
-     <ToggleButton AutomationProperties.AutomationId="ContextDossierToggleButton" AutomationProperties.Name="{DynamicResource Ui.DossierHeading}" Cursor="Hand" FontSize="9" Height="36" IsChecked="{Binding IsContextDossierOpen, Mode=TwoWay}" Margin="1,0,1,0" Padding="3" Style="{StaticResource ContextDossierToggleButton}" ToolTip="{DynamicResource Ui.DossierHeading}" Width="38"><Path Data="{StaticResource GameIcon.open_book}" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}" Focusable="False" Height="17" IsHitTestVisible="False" Stretch="Uniform" Width="17"/></ToggleButton></WrapPanel>
+     <ToggleButton AutomationProperties.AutomationId="ContextDossierToggleButton" AutomationProperties.Name="{DynamicResource Ui.DossierHeading}" Cursor="Hand" FontSize="9" Height="36" IsChecked="{Binding IsContextDossierOpen, Mode=TwoWay}" Margin="2,0,1,0" Padding="3" Style="{StaticResource ContextDossierToggleButton}" ToolTip="{DynamicResource Ui.DossierHeading}" Width="38"><Path Data="{StaticResource GameIcon.open_book}" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}" Focusable="False" Height="17" IsHitTestVisible="False" Stretch="Uniform" Width="17"/></ToggleButton></WrapPanel>
      <Border Background="{StaticResource TitleBarBotanicalRuleBrush}" Focusable="False" Grid.Row="1" Height="2" IsHitTestVisible="False" Margin="12,1,12,0" VerticalAlignment="Bottom">
       <Border.Visibility><MultiBinding Converter="{StaticResource DecorativeAccentVisibilityConverter}" ConverterParameter="DecorativeTextureVisibility"><Binding Path="DecorativeAccentsEnabled"/><Binding Path="ThemeId"/></MultiBinding></Border.Visibility>
      </Border>
