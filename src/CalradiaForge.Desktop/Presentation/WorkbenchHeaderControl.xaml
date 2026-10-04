@@ -17,7 +17,7 @@
      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="2"/></Grid.RowDefinitions>
      <WrapPanel Grid.Row="0" MinHeight="40">
       
-      <Grid AutomationProperties.AutomationId="HeaderBrandGroup" Margin="1,0,3,0" VerticalAlignment="Center" Width="112">
+      <Grid AutomationProperties.AutomationId="HeaderBrandGroup" Margin="1,0,3,0" VerticalAlignment="Center" Width="126">
        <Grid.ColumnDefinitions><ColumnDefinition Width="58"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
        <Button AutomationProperties.AutomationId="HeaderSealButton" AutomationProperties.Name="{DynamicResource Ui.HeaderSeal}" Command="{Binding OpenPaletteCommand}" Height="56" HorizontalAlignment="Left" Style="{StaticResource HeaderSealButton}" TabIndex="4" ToolTip="{DynamicResource Ui.HeaderSeal}" VerticalAlignment="Center" Width="56">
         <Grid Width="56" Height="56" IsHitTestVisible="False">
@@ -33,7 +33,7 @@
        </Button>
        <StackPanel Grid.Column="1" Margin="5,0,2,0" VerticalAlignment="Center">
         <TextBlock FontSize="9.5" Foreground="{DynamicResource MutedTextBrush}" Text="{DynamicResource Ui.Subtitle}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" ToolTip="{DynamicResource Ui.Subtitle}"/>
-        <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,2,0,0" Padding="4,1" HorizontalAlignment="Left" MaxWidth="52" ToolTip="TACTICAL · PE">
+        <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="0,2,0,0" Padding="4,1" HorizontalAlignment="Left" MaxWidth="64" ToolTip="TACTICAL · PE">
          <StackPanel Orientation="Horizontal">
           <Ellipse Width="4" Height="4" Fill="{DynamicResource VerdigrisBrush}" Margin="0,0,3,0" VerticalAlignment="Center"/>
           <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="TACTICAL" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>

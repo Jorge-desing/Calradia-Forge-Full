@@ -1166,6 +1166,10 @@ static void Rev099TacticalViewsAndUnretouchedFunctionsPolish()
         // 3. WorkbenchHeaderControl must feature refined brand group and tactical chip
         Check(headerXaml.Contains("CornerRadius=\"5\""), "WorkbenchHeaderControl must use refined border corner radius.");
         Check(headerXaml.Contains("TACTICAL"), "WorkbenchHeaderControl must retain TACTICAL badge.");
+        Check(headerXaml.Contains("Width=\"126\""), "HeaderBrandGroup must allocate 126px width to prevent label clipping.");
+        Check(headerXaml.Contains("MaxWidth=\"64\""), "TACTICAL badge must support up to 64px width.");
+        Check(mainXaml.Contains("Fill=\"{DynamicResource VerdigrisBrush}\""), "MainWindow title bar badge must feature Verdigris activity LED indicator.");
+        Check(templatesXaml.Contains("calradia-cohort-badge-rev096.png"), "CombatStudioViewTemplate must feature cohort badge.");
 
         // 4. MainWindow and WorkbenchShellView must feature version badge and architectural dividing rule
         Check(mainXaml.Contains("v25.2.0 · BANNERLORD PRO"), "MainWindow titlebar must feature v25.2.0 Bannerlord Pro badge.");

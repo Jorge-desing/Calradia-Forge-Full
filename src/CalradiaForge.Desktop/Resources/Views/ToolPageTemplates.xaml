@@ -1554,6 +1554,9 @@
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="8,0,0,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Imperial Battle Cohort Tactical Badge — Formation Command Authenticated">
             <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-cohort-badge-rev096.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
            </Border>
+            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="6,0,0,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Imperial Calradic Tactical Sovereign Emblem Authenticated">
+             <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-tactical-emblem-rev100.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+            </Border>
           </StackPanel>
          </Grid>
         </Border>

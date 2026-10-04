@@ -58,7 +58,10 @@
     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
      <TextBlock Text="{DynamicResource Ui.AppTitle}" Foreground="{DynamicResource PaperBrush}" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" IsHitTestVisible="False"/>
      <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="10,0,0,0" Padding="5,1" VerticalAlignment="Center" IsHitTestVisible="False">
-      <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="v25.2.0 · BANNERLORD PRO"/>
+      <StackPanel Orientation="Horizontal">
+       <Ellipse Width="4" Height="4" Fill="{DynamicResource VerdigrisBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+       <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="v25.2.0 · BANNERLORD PRO"/>
+      </StackPanel>
      </Border>
     </StackPanel>
     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Stretch">
