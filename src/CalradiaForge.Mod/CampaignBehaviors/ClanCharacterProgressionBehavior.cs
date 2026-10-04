@@ -711,7 +711,9 @@ namespace CalradiaForge.Mod.CampaignBehaviors
             if (aliveHeroes == null) return;
 
             int count = aliveHeroes.Count;
-            int currentHour = (int)CampaignTime.Now.ToHours;
+            int currentHour;
+            try { currentHour = (int)CampaignTime.Now.ToHours; }
+            catch { return; }
 
             for (int i = 0; i < count; i++)
             {

@@ -30,8 +30,8 @@ namespace CalradiaForge.Sdk
         {
             if (_isInitialized) return false;
 
-            _isInitialized = true;
             _deferredInitializer();
+            _isInitialized = true;
             return true;
         }
 

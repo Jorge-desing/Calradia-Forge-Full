@@ -294,7 +294,7 @@ namespace CalradiaForge.Core
         {
             var result=new ForgeReplayResult {
                 SourceSequence=sourceSequence,Event=source==null?ForgeEventKind.ForgeReady:source.Event,
-                Context=source==null?services.CurrentContext:source.Context,Replayed=false,Status="Rejected",RejectionReason=Bound(reason,512)
+                Context=source!=null?source.Context:(services!=null?services.CurrentContext:Context.Any),Replayed=false,Status="Rejected",RejectionReason=Bound(reason,512)
             };
             RecordReplayAttempt(result);
             RecordReplayRejection(result);
@@ -304,7 +304,7 @@ namespace CalradiaForge.Core
         ForgeReplayResult CancelReplay(ForgeReplayRecord source,ITestServices services,string reason)
         {
             var result=new ForgeReplayResult {
-                SourceSequence=source.Sequence,Event=source.Event,Context=source.Context,Replayed=false,Status="Cancelled",RejectionReason=Bound(reason,512)
+                SourceSequence=source.Sequence,Event=source.Event,Context=source!=null?source.Context:(services!=null?services.CurrentContext:Context.Any),Replayed=false,Status="Cancelled",RejectionReason=Bound(reason,512)
             };
             RecordReplayAttempt(result);
             RecordReplayRejection(result);

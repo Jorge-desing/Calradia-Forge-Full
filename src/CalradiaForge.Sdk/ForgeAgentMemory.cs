@@ -453,7 +453,14 @@ namespace CalradiaForge.Sdk
                     while (CountType(episodes, type) > MaximumEpisodicEntriesPerType)
                     {
                         int oldestOfType = FindOldestTypeIndex(episodes, type);
-                        episodes.RemoveAt(oldestOfType);
+                        if (oldestOfType >= 0 && oldestOfType < episodes.Count)
+                        {
+                            episodes.RemoveAt(oldestOfType);
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
 
                     return true;
@@ -469,7 +476,7 @@ namespace CalradiaForge.Sdk
                     List<Episode> episodes;
                     if (!_data.TryGetValue(agentId, out episodes)) return new List<object>();
 
-                    var result = new List<object>();
+                    var result = new List<object>(Math.Min(episodes.Count, MaximumEpisodicEntriesPerType));
                     for (int i = 0; i < episodes.Count; i++)
                     {
                         if (string.Equals(episodes[i].Type, type, StringComparison.Ordinal))

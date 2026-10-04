@@ -82,6 +82,7 @@ namespace CalradiaForge.Tests
             test("Wave 3 Mod and SDK hardening, optimization, and anti-shadowing", TestWave3ModHardeningAndOptimizations);
             test("ForgeCommands and SDK simulation integration", TestForgeCommandsAndSimulations);
             test("ForgeEncyclopediaExtender in-game codex registry and bookmarks", TestForgeEncyclopediaExtender);
+            test("Rev137 Multilayer bug fixes, lifecycle resilience, and boundary safety", TestRev137MultilayerHardeningAndSafety);
         }
 
         private static void TestForgeAgentMemory()
@@ -3522,6 +3523,66 @@ namespace CalradiaForge.Tests
             CalradiaForge.Core.SDK.UI.ForgeEncyclopediaExtender.Clear();
             if (CalradiaForge.Core.SDK.UI.ForgeEncyclopediaExtender.GetAllEntries().Count != 0)
                 throw new Exception("Clear failed to wipe entries.");
+        }
+
+        private static void TestRev137MultilayerHardeningAndSafety()
+        {
+            // 1. ForgeSaveChunker boundary safety
+            if (ForgeSaveChunker.NeedsChunking("abc", -1)) throw new Exception("NeedsChunking should return false for negative maxChunkSize.");
+            if (ForgeSaveChunker.NeedsChunking("abc", 0)) throw new Exception("NeedsChunking should return false for zero maxChunkSize.");
+            if (ForgeSaveChunker.NeedsChunking(null, 10)) throw new Exception("NeedsChunking should return false for null data.");
+            if (ForgeSaveChunker.NeedsChunking("", 10)) throw new Exception("NeedsChunking should return false for empty data.");
+            if (!ForgeSaveChunker.NeedsChunking("hello world", 5)) throw new Exception("NeedsChunking should return true for length 11 > 5.");
+
+            var chunks = ForgeSaveChunker.Chunk("hello world", 5);
+            if (chunks.Length != 3 || chunks[0] != "hello" || chunks[1] != " worl" || chunks[2] != "d")
+                throw new Exception("ForgeSaveChunker.Chunk produced unexpected chunks.");
+            if (ForgeSaveChunker.Reassemble(chunks) != "hello world")
+                throw new Exception("ForgeSaveChunker.Reassemble failed to reconstruct original string.");
+            if (ForgeSaveChunker.Reassemble(new string[] { null, "a", null, "b" }) != "ab")
+                throw new Exception("ForgeSaveChunker.Reassemble failed null element tolerance.");
+
+            // 2. ForgeMissionLifecycleGuard deferred initializer error resilience
+            int attempts = 0;
+            var guard = new ForgeMissionLifecycleGuard(() =>
+            {
+                attempts++;
+                if (attempts == 1) throw new InvalidOperationException("Simulation transient error");
+            });
+            bool caught = false;
+            try { guard.OnTick(0.1f); } catch (InvalidOperationException) { caught = true; }
+            if (!caught || guard.IsInitialized) throw new Exception("Guard prematurely marked initialized on exception.");
+            bool second = guard.OnTick(0.1f);
+            if (!second || !guard.IsInitialized || attempts != 2) throw new Exception("Guard failed to initialize on retry.");
+            bool third = guard.OnTick(0.1f);
+            if (third) throw new Exception("Guard re-executed after successful initialization.");
+
+            // 3. ForgePartyBlueprint StartingFood and troop ID guards
+            var bp = ForgePartySpawner.CreateBlueprint("test_party", "Raiders", "vlandia")
+                .SetBudget(500, -5f)
+                .AddTroop("vlandian_recruit", 10);
+            var (isValid, errors) = bp.Validate();
+            if (isValid || !errors.Any(e => e.Contains("Starting food cannot be negative")))
+                throw new Exception("Blueprint allowed negative starting food.");
+
+            bp.AddTroop("   ", 5);
+            bp.AddTroop("valid_troop", 0);
+            if (bp.TroopRoster.ContainsKey("   ") || bp.TroopRoster.ContainsKey("valid_troop"))
+                throw new Exception("Blueprint accepted invalid troop addition.");
+
+            // 4. ForgeAgentMemory Episodic bounded eviction and GetAll pre-allocation
+            string testAgent = "test_agent_rev137";
+            for (int i = 0; i < ForgeAgentMemory.MaximumEpisodicEntriesPerType + 10; i++)
+            {
+                ForgeAgentMemory.Episodic.Add(testAgent, "test_event", i);
+            }
+            int count = ForgeAgentMemory.Episodic.Count(testAgent, "test_event");
+            if (count != ForgeAgentMemory.MaximumEpisodicEntriesPerType)
+                throw new Exception("Episodic count exceeded MaximumEpisodicEntriesPerType: " + count);
+            var episodes = ForgeAgentMemory.Episodic.GetAll(testAgent, "test_event");
+            if (episodes.Count != ForgeAgentMemory.MaximumEpisodicEntriesPerType)
+                throw new Exception("GetAll count did not match maximum: " + episodes.Count);
+            ForgeAgentMemory.ClearAgent(testAgent);
         }
     }
 }

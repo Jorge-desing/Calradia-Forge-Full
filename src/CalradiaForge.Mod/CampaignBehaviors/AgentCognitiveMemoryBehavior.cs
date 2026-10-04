@@ -197,7 +197,10 @@ namespace CalradiaForge.Mod.CampaignBehaviors
                 {
                     string leaderId = victimClan.Leader.StringId;
                     TryRecordEpisodicMemory(leaderId, "BloodFeud", "Kin " + victimName + " was killed by " + (killer.Name?.ToString() ?? "enemy") + ".");
-                    TryUpdateSemanticFact(leaderId, "FeudTargetHeroId", killerId);
+                    if (!string.IsNullOrEmpty(killerId))
+                    {
+                        TryUpdateSemanticFact(leaderId, "FeudTargetHeroId", killerId);
+                    }
                 }
             }
 
@@ -261,7 +264,9 @@ namespace CalradiaForge.Mod.CampaignBehaviors
             if (Campaign.Current == null) return;
 
             // Stable-ID time-slicing processes each hero in one of the 24 hourly buckets.
-            int currentHour = (int)CampaignTime.Now.ToHours;
+            int currentHour;
+            try { currentHour = (int)CampaignTime.Now.ToHours; }
+            catch { return; }
 
             var aliveHeroes = Hero.AllAliveHeroes;
             if (aliveHeroes == null || aliveHeroes.Count == 0) return;

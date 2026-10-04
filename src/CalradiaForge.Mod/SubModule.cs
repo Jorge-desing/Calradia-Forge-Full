@@ -228,7 +228,7 @@ namespace CalradiaForge.Mod
                     }
                 }
 
-                if (keyboardControl != null && (layer.UIContext.EventManager.FocusedWidget != keyboardControl || !IsAvailable(keyboardControl)))
+                if (keyboardControl != null && (layer?.UIContext?.EventManager?.FocusedWidget != keyboardControl || !IsAvailable(keyboardControl)))
                     ClearKeyboardFocus();
 
                 if (Input.IsKeyPressed(InputKey.Tab))
@@ -237,12 +237,12 @@ namespace CalradiaForge.Mod
                 if (Input.IsKeyPressed(InputKey.Enter) && !Input.IsKeyDown(InputKey.LeftControl) && !Input.IsKeyDown(InputKey.RightControl) && keyboardControl is ButtonWidget)
                 {
                     var id = keyboardControl.Id;
-                    layer.UIContext.EventManager.ClearFocus();
+                    layer?.UIContext?.EventManager?.ClearFocus();
                     ClearKeyboardFocus();
                     if (!TryExecuteCampaignRuleConditionKeyboard(id)) vm?.ExecuteKeyboardControl(id);
                 }
 
-                var focusedId = layer.UIContext.EventManager.FocusedWidget?.Id;
+                var focusedId = layer?.UIContext?.EventManager?.FocusedWidget?.Id;
                 if (focusedId == "ForgeArgument" || focusedId == "ForgeCommandArgument")
                 {
                     if (Input.IsKeyPressed(InputKey.Up)) vm?.ExecuteHistoryPrevious();
@@ -255,7 +255,7 @@ namespace CalradiaForge.Mod
                     {
                         FocusMainSearch();
                     }
-                    else if (Input.IsKeyPressed(InputKey.Enter)) { layer.UIContext.EventManager.ClearFocus(); vm?.ExecuteRefresh(); }
+                    else if (Input.IsKeyPressed(InputKey.Enter)) { layer?.UIContext?.EventManager?.ClearFocus(); vm?.ExecuteRefresh(); }
                     else if (Input.IsKeyPressed(InputKey.L)) vm?.ExecuteClearOutput();
                     else if (Input.IsKeyPressed(InputKey.K)) vm?.ExecuteToggleKeyHelp();
                     else if (Input.IsKeyPressed(InputKey.W)) vm?.ExecuteToggleLiveWatch();
@@ -289,7 +289,7 @@ namespace CalradiaForge.Mod
             var isOpen = vm.IsNavigationPaletteOpen;
             if (isOpen && !navigationPaletteWasOpen)
             {
-                navigationPaletteReturnFocus = layer.UIContext.EventManager.FocusedWidget;
+                navigationPaletteReturnFocus = layer?.UIContext?.EventManager?.FocusedWidget;
                 ClearKeyboardFocus();
                 FocusNavigationPaletteSearch();
             }
@@ -305,6 +305,7 @@ namespace CalradiaForge.Mod
         {
             var previous = navigationPaletteReturnFocus;
             navigationPaletteReturnFocus = null;
+            if (layer?.UIContext?.EventManager == null) { ClearKeyboardFocus(); return; }
             if (previous is ButtonWidget || previous is EditableTextWidget)
             {
                 if (IsAvailable(previous))
@@ -328,7 +329,7 @@ namespace CalradiaForge.Mod
         }
         void FocusFirstWidget(Func<Widget, bool> predicate)
         {
-            if (layer == null) return;
+            if (layer?.UIContext?.Root == null || layer.UIContext.EventManager == null) return;
             var field = layer.UIContext.Root.GetFirstInChildrenRecursive(predicate);
             if (field == null || !IsAvailable(field)) return;
             ClearKeyboardFocus();
@@ -410,6 +411,7 @@ namespace CalradiaForge.Mod
         }
         void MoveKeyboardFocus(bool backwards)
         {
+            if (layer?.UIContext?.Root == null || layer.UIContext.EventManager == null) return;
             var ui=layer.UIContext;
             var controls=new List<Widget>();
             CollectFocusableControls(ui.Root,controls);
@@ -590,6 +592,7 @@ namespace CalradiaForge.Mod
             try
             {
                 Close();
+                AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
                 CalradiaForge.Sdk.ForgeUI.PageOpenRequested -= OpenExtensionPage;
                 CalradiaForge.Sdk.ForgeUI.PageCloseRequested -= RequestCloseExtensionPage;
                 CalradiaForge.Sdk.ForgeApi.UiPagesRemoved -= OnUiPagesRemoved;

@@ -18,7 +18,7 @@ namespace CalradiaForge.Sdk
         /// </summary>
         public static bool NeedsChunking(string data, int maxChunkSize = SafeChunkSize)
         {
-            return !string.IsNullOrEmpty(data) && data.Length > maxChunkSize;
+            return !string.IsNullOrEmpty(data) && maxChunkSize > 0 && data.Length > maxChunkSize;
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace CalradiaForge.Sdk
                 return new[] { data };
             }
 
-            int chunkCount = (data.Length + maxChunkSize - 1) / maxChunkSize;
+            int chunkCount = (int)(((long)data.Length + maxChunkSize - 1) / maxChunkSize);
             var chunks = new string[chunkCount];
 
             for (int i = 0; i < chunkCount; i++)
@@ -61,15 +61,19 @@ namespace CalradiaForge.Sdk
             if (chunks == null || chunks.Length == 0) return string.Empty;
             if (chunks.Length == 1) return chunks[0] ?? string.Empty;
 
-            int totalLength = 0;
+            long safeLength = 0;
             for (int i = 0; i < chunks.Length; i++)
             {
                 if (chunks[i] != null)
                 {
-                    totalLength += chunks[i].Length;
+                    safeLength += chunks[i].Length;
                 }
             }
 
+            if (safeLength > int.MaxValue)
+                throw new InvalidOperationException("Reassembled string length exceeds maximum supported size.");
+
+            int totalLength = (int)safeLength;
             var sb = new StringBuilder(totalLength);
             for (int i = 0; i < chunks.Length; i++)
             {

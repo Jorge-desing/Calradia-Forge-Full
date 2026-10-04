@@ -47,7 +47,7 @@ namespace CalradiaForge.Sdk
 
         public ForgePartyBlueprint AddTroop(string troopCharacterId, int count)
         {
-            if (string.IsNullOrEmpty(troopCharacterId) || count <= 0) return this;
+            if (string.IsNullOrWhiteSpace(troopCharacterId) || count <= 0) return this;
             if (TroopRoster.ContainsKey(troopCharacterId)) TroopRoster[troopCharacterId] += count;
             else TroopRoster[troopCharacterId] = count;
             return this;
@@ -74,6 +74,9 @@ namespace CalradiaForge.Sdk
 
             if (WageBudgetLimit < 0)
                 errors.Add("Wage budget limit cannot be negative.");
+
+            if (StartingFood < 0f)
+                errors.Add("Starting food cannot be negative.");
 
             var validBehaviors = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
