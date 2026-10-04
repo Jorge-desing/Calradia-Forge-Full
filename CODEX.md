@@ -92,6 +92,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1
 - For an authorized live review, build both Client and Modding Kit profiles first, close the Modding Kit completely, launch Bannerlord from Steam with Calradia Forge enabled, and inspect the actual panel. Do not leave the game and Modding Kit open together or ask the user to open the game first.
 - Before each source correction, close Bannerlord and the Modding Kit and end/reset Ordenador/Computer Use; keep them closed through edits and builds. After each live check, close Bannerlord and end/reset the Computer Use session before another correction or task completion.
 - Treat source audits and Resource Browser import as separate from live rendering and interaction evidence.
+- **Campaign Rule Builder interaction evidence:** The selected row, editor fields, and sample preview can represent the mutable rule currently being edited; cycling its event/action changes that same rule live. A visible row or changing label does not prove that `Add rule` added the user's intended rule, that it appeared as an additional row, or that the draft was saved. In this live review, the user reported that the intended new rule never appeared while the active editor row remained visible. Treat the cause as unresolved: confirm the Add command was received, compare visible row count and stable IDs before/after, and verify `Save draft` separately. Never infer an Add click or save from row visibility.
 
 ---
 
