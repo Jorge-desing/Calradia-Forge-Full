@@ -46,7 +46,7 @@ namespace CalradiaForge.Desktop.Services
             report.Append("SHA-256: ").AppendLine(inputHash);
             report.Append("Size: ").Append(info.Length.ToString("N0")).AppendLine(" bytes");
             report.Append("Assembly: ").AppendLine(assembly.Name?.ToString() ?? "<unnamed>");
-            report.Append("Version: ").AppendLine(assembly.Version.ToString());
+            report.Append("Version: ").AppendLine(assembly.Version?.ToString() ?? "0.0.0.0");
             report.Append("Module: ").AppendLine(module.Name?.ToString() ?? "<unnamed>");
             report.Append("Runtime: ").AppendLine(module.RuntimeVersion?.ToString() ?? "unknown");
             report.Append("IL-only: ").AppendLine(module.IsILOnly ? "True" : "False");

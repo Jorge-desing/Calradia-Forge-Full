@@ -41,9 +41,9 @@ namespace CalradiaForge.Desktop.Services
                     return true;
                 }, "Short named-pipe connection only; not a game-performance attribution.").ConfigureAwait(true);
             }
-            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { if (connectionCompleted) pipe.Disconnect(); LastError = "Connection was cancelled."; return false; }
-            catch (OperationCanceledException error) { LastError = error.Message; return false; }
-            catch (Exception error) { LastError = error.Message; return false; }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { if (connectionCompleted) pipe.Disconnect(); LastError = "Connection was cancelled."; LastRoundTripLatencyMs = null; return false; }
+            catch (OperationCanceledException error) { LastError = error.Message; LastRoundTripLatencyMs = null; return false; }
+            catch (Exception error) { LastError = error.Message; LastRoundTripLatencyMs = null; return false; }
         }
 
         public async Task<bool> ReconnectAsync(CancellationToken cancellation)
@@ -62,19 +62,29 @@ namespace CalradiaForge.Desktop.Services
                     return result;
                 }, "Short named-pipe reconnection only; not a game-performance attribution.").ConfigureAwait(true);
             }
-            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { if (reconnectionCompleted) pipe.Disconnect(); LastError = "Reconnection was cancelled."; return false; }
-            catch (OperationCanceledException error) { LastError = error.Message; return false; }
-            catch (Exception error) { LastError = error.Message; return false; }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { if (reconnectionCompleted) pipe.Disconnect(); LastError = "Reconnection was cancelled."; LastRoundTripLatencyMs = null; return false; }
+            catch (OperationCanceledException error) { LastError = error.Message; LastRoundTripLatencyMs = null; return false; }
+            catch (Exception error) { LastError = error.Message; LastRoundTripLatencyMs = null; return false; }
         }
 
         public async Task<CalradiaForge.Core.Response> SendAsync(CalradiaForge.Core.Request request, CancellationToken cancellation)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
             cancellation.ThrowIfCancellationRequested();
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            var response = await pipe.Send(request, cancellation).ConfigureAwait(true);
-            sw.Stop();
-            LastRoundTripLatencyMs = sw.Elapsed.TotalMilliseconds;
-            return response;
+            try
+            {
+                var response = await pipe.Send(request, cancellation).ConfigureAwait(true);
+                sw.Stop();
+                LastRoundTripLatencyMs = sw.Elapsed.TotalMilliseconds;
+                return response;
+            }
+            catch
+            {
+                sw.Stop();
+                LastRoundTripLatencyMs = null;
+                throw;
+            }
         }
 
         public async Task<double?> PingAsync(CancellationToken cancellation = default)

@@ -198,6 +198,16 @@ namespace CalradiaForge.Desktop.Services
             }
 
             var response = await session.SendAsync(new CalradiaForge.Core.Request { Action = tool.PipeAction, Argument = normalizedArgument }, cancellation).ConfigureAwait(true);
+            if (response == null)
+            {
+                return new WorkspaceExecutionResult
+                {
+                    Status = "Failed",
+                    RawResult = "The session returned a null response.",
+                    EvidenceCount = 1,
+                    Evidence = [ new WorkspaceEvidence("Forge session", "Failed", "Action: " + tool.PipeAction + " returned no response object.") ]
+                };
+            }
 
             if (response.Success && tool.PipeAction == "framework")
             {

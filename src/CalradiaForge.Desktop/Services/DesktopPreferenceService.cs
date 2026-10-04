@@ -50,9 +50,14 @@ namespace CalradiaForge.Desktop.Services
             string temporary = null;
             try
             {
+                var sanitized = new DesktopPreferenceState
+                {
+                    ThemeId = string.IsNullOrWhiteSpace(state?.ThemeId) ? "war-table" : state.ThemeId,
+                    LanguageCode = string.IsNullOrWhiteSpace(state?.LanguageCode) ? "en" : state.LanguageCode
+                };
                 Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
                 temporary = path + ".tmp-" + Guid.NewGuid().ToString("N");
-                File.WriteAllText(temporary, JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true }));
+                File.WriteAllText(temporary, JsonSerializer.Serialize(sanitized, new JsonSerializerOptions { WriteIndented = true }));
                 File.Move(temporary, path, true);
                 return true;
             }

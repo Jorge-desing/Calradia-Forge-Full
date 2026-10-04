@@ -88,7 +88,11 @@ internal static class Program
             ("Desktop metrics are bounded and scoped", MetricsSurface),
             ("Desktop metrics keep sync allocations and mark async allocations unavailable", MetricsMeasurementSemantics),
             ("Desktop title and documentation share the release value", DesktopVersionBlockSynchronization),
-            ("Desktop tactical studios expose documentation, invariants, commands, and shell role presets", TacticalStudioEnrichmentAndRolePresets)
+            ("Desktop tactical studios expose documentation, invariants, commands, and shell role presets", TacticalStudioEnrichmentAndRolePresets),
+            ("Desktop PipeClient rejects null or malformed response and throws IOException", NullResponsePayload),
+            ("Desktop SimulationService tolerates duplicate XML element IDs without collision", XmlDiffDuplicateIds),
+            ("Desktop PreferenceService sanitizes null state and empty values on save", PreferenceNullSanitization),
+            ("Desktop SessionService validates request arguments and resets latency on error", SessionSendNullAndErrorLatency)
         };
         cases = cases.Concat(DesktopAssemblyServiceTests.Cases).ToArray();
         var failures = 0;
@@ -1647,6 +1651,103 @@ internal static class Program
         }
 
         await Task.CompletedTask;
+    }
+
+    static async Task NullResponsePayload()
+    {
+        var serverId = Random.Shared.Next(100000000, int.MaxValue);
+        var pipeServer = new NamedPipeServerStream("CalradiaForge-" + serverId, PipeDirection.InOut, 1,
+            PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+
+        var serverTask = Task.Run(async () =>
+        {
+            await pipeServer.WaitForConnectionAsync();
+            using var reader = new StreamReader(pipeServer, new UTF8Encoding(false), false, 4096, true);
+            using var writer = new StreamWriter(pipeServer, new UTF8Encoding(false), 4096, true) { AutoFlush = true };
+
+            var line = await reader.ReadLineAsync();
+            var req = Json.Deserialize<Request>(line);
+            await writer.WriteLineAsync(Json.Serialize(new Response { Id = req.Id, Success = true, Version = 1, Data = HelloData() }));
+
+            line = await reader.ReadLineAsync();
+            await writer.WriteLineAsync("null");
+        });
+
+        using var client = new PipeClient();
+        await client.Connect(serverId);
+        try
+        {
+            await client.Send(new Request { Action = "test-null" });
+            throw new Exception("Expected IOException for null response payload");
+        }
+        catch (IOException ex)
+        {
+            Check(ex.Message.Contains("null or malformed response payload"), "Unexpected exception message: " + ex.Message);
+        }
+        finally
+        {
+            pipeServer.Dispose();
+            await serverTask.WaitAsync(TimeSpan.FromSeconds(3));
+        }
+    }
+
+    static Task XmlDiffDuplicateIds()
+    {
+        var tempA = Path.GetTempFileName();
+        var tempB = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempA, "<root><NPCCharacter id=\"soldier_1\" name=\"Soldier A\" /><NPCCharacter id=\"soldier_1\" name=\"Soldier A Dup\" /><NPCCharacter id=\"soldier_2\" name=\"Soldier B\" /></root>");
+            File.WriteAllText(tempB, "<root><NPCCharacter id=\"soldier_1\" name=\"Soldier A V2\" /><NPCCharacter id=\"soldier_3\" name=\"Soldier C\" /></root>");
+
+            var sim = new DesktopSimulationService();
+            var (report, evidence) = sim.SimulateTroopTree($"{tempA}|{tempB}", CancellationToken.None);
+
+            Check(report.Contains("GAME DATA XML SEMANTIC DIFF VIEWER"), "Diff header missing");
+            Check(!report.Contains("Diff error:"), "Semantic XML diff failed on duplicate IDs: " + report);
+            Check(evidence.Any(e => e.Source == "XML Diff / Added"), "Missing Added evidence");
+            Check(evidence.Any(e => e.Source == "XML Diff / Removed"), "Missing Removed evidence");
+        }
+        finally
+        {
+            if (File.Exists(tempA)) File.Delete(tempA);
+            if (File.Exists(tempB)) File.Delete(tempB);
+        }
+        return Task.CompletedTask;
+    }
+
+    static Task PreferenceNullSanitization()
+    {
+        var service = new DesktopPreferenceService();
+        bool ok = service.Save(null, out var error);
+        Check(ok && error == null, "Save with null state failed: " + error);
+        var loaded = service.Load();
+        Check(loaded.State != null && loaded.State.ThemeId == "war-table" && loaded.State.LanguageCode == "en", "Saved null state was not sanitized to defaults");
+
+        ok = service.Save(new DesktopPreferenceState { ThemeId = "", LanguageCode = "  " }, out error);
+        Check(ok && error == null, "Save with empty fields failed: " + error);
+        loaded = service.Load();
+        Check(loaded.State.ThemeId == "war-table" && loaded.State.LanguageCode == "en", "Empty preference fields were not sanitized to defaults");
+        return Task.CompletedTask;
+    }
+
+    static async Task SessionSendNullAndErrorLatency()
+    {
+        var metrics = new DesktopMetricsService();
+        using var client = new PipeClient();
+        using var session = new DesktopSessionService(metrics, client);
+
+        try
+        {
+            await session.SendAsync(null, CancellationToken.None);
+            throw new Exception("Expected ArgumentNullException for null request");
+        }
+        catch (ArgumentNullException)
+        {
+            // Expected
+        }
+
+        Check(!session.LastRoundTripLatencyMs.HasValue, "Null send must not record latency");
     }
 
 

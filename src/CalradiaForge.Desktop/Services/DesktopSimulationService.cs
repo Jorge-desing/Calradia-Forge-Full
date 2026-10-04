@@ -263,8 +263,18 @@ namespace CalradiaForge.Desktop.Services
             {
                 var docA = XDocument.Load(parts[0]);
                 var docB = XDocument.Load(parts[1]);
-                var elemsA = docA.Descendants().Where(e => e.Attribute("id") != null).ToDictionary(e => e.Attribute("id").Value, StringComparer.Ordinal);
-                var elemsB = docB.Descendants().Where(e => e.Attribute("id") != null).ToDictionary(e => e.Attribute("id").Value, StringComparer.Ordinal);
+                var elemsA = new Dictionary<string, XElement>(StringComparer.Ordinal);
+                foreach (var el in docA.Descendants())
+                {
+                    var idAttr = el.Attribute("id");
+                    if (idAttr != null && !string.IsNullOrEmpty(idAttr.Value)) elemsA[idAttr.Value] = el;
+                }
+                var elemsB = new Dictionary<string, XElement>(StringComparer.Ordinal);
+                foreach (var el in docB.Descendants())
+                {
+                    var idAttr = el.Attribute("id");
+                    if (idAttr != null && !string.IsNullOrEmpty(idAttr.Value)) elemsB[idAttr.Value] = el;
+                }
 
                 var added = elemsB.Keys.Except(elemsA.Keys, StringComparer.Ordinal).ToArray();
                 var removed = elemsA.Keys.Except(elemsB.Keys, StringComparer.Ordinal).ToArray();
@@ -526,6 +536,7 @@ namespace CalradiaForge.Desktop.Services
 
         private static string RenderBar(double percentage, int width)
         {
+            if (double.IsNaN(percentage) || double.IsInfinity(percentage)) percentage = 0.0;
             int filled = (int)Math.Round((percentage / 100.0) * width);
             if (filled < 0) filled = 0;
             if (filled > width) filled = width;

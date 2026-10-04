@@ -29,10 +29,18 @@ namespace CalradiaForge.Desktop.Services
                 CurrentLanguageCode = code;
                 return;
             }
-            var next = new ResourceDictionary { Source = new Uri(DictionaryPrefix + code + ".xaml", UriKind.Relative) };
-            dictionaries.Add(next);
-            activeDictionary = next;
-            CurrentLanguageCode = code;
+            try
+            {
+                var next = new ResourceDictionary { Source = new Uri(DictionaryPrefix + code + ".xaml", UriKind.Relative) };
+                dictionaries.Add(next);
+                activeDictionary = next;
+                CurrentLanguageCode = code;
+            }
+            catch
+            {
+                activeDictionary = englishFallback;
+                CurrentLanguageCode = "en";
+            }
         }
 
         static bool IsForgeLanguageDictionary(ResourceDictionary dictionary) =>

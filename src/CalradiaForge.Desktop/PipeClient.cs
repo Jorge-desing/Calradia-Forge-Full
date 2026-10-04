@@ -100,8 +100,11 @@ namespace CalradiaForge.Desktop
             responseReader = new BoundedLineReader(responseStreamReader, maximumResponseCharacters);
             writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, true) { AutoFlush = true };
             var response = await SendCore(new Request { Action = "hello" }, cancellationToken, timeoutMs).ConfigureAwait(false);
-            if (!response.Success || response.Version != 1) throw new IOException("Incompatible server");
-            Capabilities = new HashSet<string>(Json.Deserialize<string[]>(response.Data) ?? [], StringComparer.OrdinalIgnoreCase);
+            if (response == null || !response.Success || response.Version != 1) throw new IOException("Incompatible server");
+            var capabilitiesData = !string.IsNullOrWhiteSpace(response.Data)
+                ? Json.Deserialize<string[]>(response.Data)
+                : null;
+            Capabilities = new HashSet<string>(capabilitiesData ?? [], StringComparer.OrdinalIgnoreCase);
             LastPid = pid;
         }
 
@@ -217,6 +220,7 @@ namespace CalradiaForge.Desktop
                     var line = await responseReader.ReadLineAsync(linked.Token).ConfigureAwait(false);
                     if (line == null) throw new EndOfStreamException();
                     var response = Json.Deserialize<Response>(line);
+                    if (response == null) throw new IOException("Received null or malformed response payload from named pipe.");
                     if (response.Id != request.Id || response.Version != 1) throw new IOException("Protocol mismatch");
                     return response;
                 }

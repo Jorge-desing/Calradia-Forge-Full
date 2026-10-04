@@ -67,9 +67,15 @@ namespace CalradiaForge.Desktop.Services
             }
 
             var previousPalettes = dictionaries.Where(IsPaletteDictionary).ToArray();
-            var insertIndex = previousPalettes.Length == 0
-                ? Math.Min(1, dictionaries.Count)
-                : Enumerable.Range(0, dictionaries.Count).First(index => IsPaletteDictionary(dictionaries[index]));
+            var insertIndex = Math.Min(1, dictionaries.Count);
+            for (var index = 0; index < dictionaries.Count; index++)
+            {
+                if (IsPaletteDictionary(dictionaries[index]))
+                {
+                    insertIndex = index;
+                    break;
+                }
+            }
             var previous = activePalette;
             try
             {
