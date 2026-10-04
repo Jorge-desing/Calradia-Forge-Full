@@ -73,12 +73,13 @@ OnApplicationTick(float dt)
     ├─ Hotkey handling (F10 default)
     ├─ Language refresh
     ├─ Panel ViewModel Tick
-    └─ Keyboard navigation
+    └─ Navegación por teclado con guardas de nulidad (UIContext/EventManager)
 
 OnMissionBehaviorInitialize(Mission)
     └─ Add EventObserver (agent create/delete)
 
 OnSubModuleUnloaded()
+    ├─ Desacoplar manejador UnhandledException (prevención de fugas)
     ├─ Close Gauntlet layer
     ├─ Clear SDK singletons
     ├─ ForgeDetour.UnpatchAll()
