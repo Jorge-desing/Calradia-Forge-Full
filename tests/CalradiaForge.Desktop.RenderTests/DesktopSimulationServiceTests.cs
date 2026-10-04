@@ -67,6 +67,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies Rev099 tactical views and unretouched functions visual overhaul — palette, status, dossier, split deck, footer");
         Rev100HookWorkbenchAndPresentationViewsVisualOverhaul();
         Console.WriteLine("PASS Desktop simulation verifies Rev100 Hook Workbench and presentation views visual overhaul — bytecode matrix, header, window chrome, studio templates");
+        Rev101TacticalStudiosFullCompositionOverhaul();
+        Console.WriteLine("PASS Desktop simulation verifies Rev101 tactical studios full composition overhaul — dual medallions, KPI cards, mini-progress bars, and dossier consoles");
     }
 
     static void Rev095FiveStudioMedallionUpgrades()
@@ -1197,6 +1199,81 @@ static void Rev099TacticalViewsAndUnretouchedFunctionsPolish()
             Check(File.Exists(fullPath), $"Texture '{tex}' must exist.");
             long bytes = new FileInfo(fullPath).Length;
             Check(bytes > 350_000, $"Texture '{tex}' must be upgraded to high-resolution (>350 KB), found {bytes} bytes.");
+        }
+    }
+
+    static void Rev101TacticalStudiosFullCompositionOverhaul()
+    {
+        string basePath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "CalradiaForge.Desktop");
+        string templatesXaml = File.ReadAllText(Path.Combine(basePath, "Resources", "Views", "ToolPageTemplates.xaml"));
+        string csproj = File.ReadAllText(Path.Combine(basePath, "CalradiaForge.Desktop.csproj"));
+
+        // 1. Rule C Invariant: exactly 9 DashboardTemplates
+        int templateCount = System.Text.RegularExpressions.Regex.Matches(
+            templatesXaml, @"<DataTemplate x:Key=""\w+DashboardTemplate""").Count;
+        Check(templateCount == 9, $"Rule C invariant: expected exactly 9 DashboardTemplates, got {templateCount}.");
+
+        // 2. Propuesta 48 Invariant: zero TwoWay Run.Text bindings
+        int twoway = System.Text.RegularExpressions.Regex.Matches(
+            templatesXaml, @"<Run[^>]+Text=""\{Binding[^""]*Mode=TwoWay[^""]*\}""").Count;
+        Check(twoway == 0, $"Propuesta 48: found {twoway} TwoWay Run.Text bindings — must be 0.");
+
+        // 3. Structural assertions for all 12 Tactical Studios
+        var studioMedallionPairs = new (string TemplateKey, string PrimaryMedallion, string SecondaryMedallion)[]
+        {
+            ("WorkshopSimulatorDashboardTemplate", "calradia-guild-medallion-rev092.png", "calradia-tactical-emblem-rev100.png"),
+            ("KingdomDiplomacyStudioDashboardTemplate", "calradia-diplomacy-medallion-rev095.png", "calradia-aquila-seal-rev087.png"),
+            ("CaravanTradeViewTemplate", "calradia-trade-sigil-rev096.png", "calradia-astrolabe-dial-rev086.png"),
+            ("GauntletStudioViewTemplate", "calradia-gauntlet-sigil-rev098.png", "calradia-anvil-weave-sigil-rev098.png"),
+            ("CampaignStudioViewTemplate", "calradia-campaign-astrolabe-rev098.png", "calradia-astrolabe-dial-rev086.png"),
+            ("DeliveryStudioViewTemplate", "calradia-delivery-seal-rev098.png", "imperial-wax-seal-rev085.png"),
+            ("DiagnosticsStudioViewTemplate", "calradia-diagnostics-aegis-rev098.png", "calradia-sentinel-eye-rev096.png"),
+            ("LiveSessionViewTemplate", "calradia-pipe-seal-rev096.png", "calradia-bytecode-matrix-rev100.png"),
+            ("AgentMemoryInspectorDashboardTemplate", "calradia-mind-medallion-rev093.png", "calradia-tactical-emblem-rev100.png"),
+            ("CodeSecurityAuditorDashboardTemplate", "calradia-cipher-seal-rev095.png", "calradia-bytecode-matrix-rev100.png"),
+            ("ModuleHierarchyValidatorDashboardTemplate", "calradia-hierarchy-seal-rev095.png", "calradia-aquila-seal-rev087.png"),
+            ("ComponentGeneratorStudioDashboardTemplate", "calradia-mechanism-medallion-rev095.png", "calradia-anvil-weave-sigil-rev098.png")
+        };
+
+        foreach (var (templateKey, primary, secondary) in studioMedallionPairs)
+        {
+            int start = templatesXaml.IndexOf(templateKey, StringComparison.Ordinal);
+            Check(start >= 0, $"Studio template '{templateKey}' must exist in ToolPageTemplates.xaml.");
+
+            int nextTemplate = templatesXaml.IndexOf("<DataTemplate x:Key=", start + templateKey.Length, StringComparison.Ordinal);
+            if (nextTemplate < 0)
+            {
+                nextTemplate = templatesXaml.IndexOf("<DataTemplate DataType=", start + templateKey.Length, StringComparison.Ordinal);
+            }
+            int end = nextTemplate >= 0 ? nextTemplate : templatesXaml.Length;
+            string templateSlice = templatesXaml.Substring(start, end - start);
+
+            Check(templateSlice.Contains(primary), $"Studio '{templateKey}' must feature primary medallion '{primary}'.");
+            Check(templateSlice.Contains(secondary), $"Studio '{templateKey}' must feature secondary medallion '{secondary}'.");
+            Check(templateSlice.Contains("1,1,1,3") || templateSlice.Contains("0,0,0,3") || templateSlice.Contains("BorderThickness=\"3\""),
+                $"Studio '{templateKey}' must feature tactical KPI cards with 3px accent borders.");
+            Check(templateSlice.Contains("ProgressBar") && templateSlice.Contains("Height=\"4\""),
+                $"Studio '{templateKey}' must feature proportional 4px mini-progress bars.");
+            Check(templateSlice.Contains("Consolas") && templateSlice.Contains("$ "),
+                $"Studio '{templateKey}' must feature dossier console blocks with Consolas and prompt '$ '.");
+        }
+
+        // 4. Verify all 19 medallion assets are registered in csproj
+        string[] allMedallionAssets = {
+            "calradia-guild-medallion-rev092.png", "calradia-tactical-emblem-rev100.png",
+            "calradia-diplomacy-medallion-rev095.png", "calradia-aquila-seal-rev087.png",
+            "calradia-trade-sigil-rev096.png", "calradia-astrolabe-dial-rev086.png",
+            "calradia-gauntlet-sigil-rev098.png", "calradia-anvil-weave-sigil-rev098.png",
+            "calradia-campaign-astrolabe-rev098.png", "calradia-delivery-seal-rev098.png",
+            "imperial-wax-seal-rev085.png", "calradia-diagnostics-aegis-rev098.png",
+            "calradia-sentinel-eye-rev096.png", "calradia-pipe-seal-rev096.png",
+            "calradia-bytecode-matrix-rev100.png", "calradia-mind-medallion-rev093.png",
+            "calradia-cipher-seal-rev095.png", "calradia-hierarchy-seal-rev095.png",
+            "calradia-mechanism-medallion-rev095.png"
+        };
+        foreach (var asset in allMedallionAssets)
+        {
+            Check(csproj.Contains(asset), $"CalradiaForge.Desktop.csproj must register Resource entry for '{asset}'.");
         }
     }
 }
