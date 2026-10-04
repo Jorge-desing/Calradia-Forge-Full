@@ -1936,7 +1936,9 @@
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding GauntletStudio.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-laurel-crest-rev089.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,8,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Calradia Gauntlet UI Prefab Seal — Layout &amp; Widget Hierarchy Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-gauntlet-sigil-rev098.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
             <StackPanel Orientation="Horizontal">
              <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
@@ -2129,7 +2131,9 @@
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding CampaignStudio.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-laurel-crest-rev089.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,8,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Imperial Campaign Expedition Astrolabe — Realm Cartography &amp; Settlement Governance Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-campaign-astrolabe-rev098.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
             <StackPanel Orientation="Horizontal">
              <Path Data="{StaticResource Icon.Flag}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource VerdigrisBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
@@ -2525,7 +2529,9 @@
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding DeliveryStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-laurel-crest-rev089.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,8,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Imperial Delivery &amp; Distribution Wax Seal — Packaging Integrity &amp; Hygiene Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-delivery-seal-rev098.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
             <StackPanel Orientation="Horizontal">
              <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>
@@ -2718,7 +2724,9 @@
            <TextBlock FontSize="8.5" Foreground="{DynamicResource EmberBrush}" Margin="22,2,0,0" Text="{Binding DiagnosticsStudioDashboard.StudioCaveat}" TextWrapping="Wrap"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-           <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-laurel-crest-rev089.png" Height="28" Width="28" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,8,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Forensic Diagnostics Aegis — System Health, Crash Triage &amp; Watchdog Authenticated">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-diagnostics-aegis-rev098.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
            <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{Binding DiagnosticsStudioDashboard.HealthBrushKey, Converter={StaticResource BrushKeyConverter}}" BorderThickness="1.5" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
             <StackPanel Orientation="Horizontal">
              <Path Data="{StaticResource Icon.Recent}" Height="12" Margin="0,0,4,0" Stretch="Uniform" Stroke="{Binding DiagnosticsStudioDashboard.HealthBrushKey, Converter={StaticResource BrushKeyConverter}}" StrokeThickness="1.5" VerticalAlignment="Center" Width="12"/>

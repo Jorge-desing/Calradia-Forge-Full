@@ -61,6 +61,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies Rev095 five thematic studio medallions registered and XAML templates upgraded");
         Rev096FiveResidualIconUpgrades();
         Console.WriteLine("PASS Desktop simulation verifies Rev096 five residual icon upgrades — troop crest, cohort badge, trade sigil, pipe seal, sentinel eye");
+        Rev098MajorVisualAndStudioUpgrades();
+        Console.WriteLine("PASS Desktop simulation verifies Rev098 major visual studio upgrades — anvil sigil, gauntlet seal, campaign astrolabe, delivery seal, diagnostics aegis");
     }
 
     static void Rev095FiveStudioMedallionUpgrades()
@@ -1032,5 +1034,56 @@ internal static class DesktopSimulationServiceTests
         // 28x28 centurion-rev090 must be gone (upgraded to 36x36 pipe-seal)
         Check(!xaml.Contains("calradia-centurion-medallion-rev090.png\" Height=\"28\" Width=\"28\""),
             "28x28 centurion-rev090 icon must be replaced by 36x36 pipe-seal-rev096 in Rev096.");
+    }
+
+    static void Rev098MajorVisualAndStudioUpgrades()
+    {
+        // Rev098: Verify 5 new thematic studio medallions and visual upgrades across untracked/placeholder panels.
+        string xamlPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "CalradiaForge.Desktop", "Resources", "Views", "ToolPageTemplates.xaml");
+        string hookXamlPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "CalradiaForge.Desktop", "Presentation", "HookWorkbenchControl.xaml");
+        string csprojPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "CalradiaForge.Desktop", "CalradiaForge.Desktop.csproj");
+
+        string xaml = File.ReadAllText(xamlPath);
+        string hookXaml = File.ReadAllText(hookXamlPath);
+        string csproj = File.ReadAllText(csprojPath);
+
+        // 1. All 5 new Rev098 assets must be registered in csproj
+        string[] rev098Assets = {
+            "calradia-anvil-weave-sigil-rev098.png",
+            "calradia-gauntlet-sigil-rev098.png",
+            "calradia-campaign-astrolabe-rev098.png",
+            "calradia-delivery-seal-rev098.png",
+            "calradia-diagnostics-aegis-rev098.png",
+        };
+        foreach (var asset in rev098Assets)
+        {
+            Check(csproj.Contains(asset), $"csproj must register new Rev098 asset '{asset}'.");
+        }
+
+        // 2. HookWorkbenchControl header must reference anvil-weave-sigil-rev098
+        Check(hookXaml.Contains("calradia-anvil-weave-sigil-rev098.png"),
+            "HookWorkbenchControl.xaml must reference calradia-anvil-weave-sigil-rev098.png in header.");
+
+        // 3. ToolPageTemplates must reference the 4 upgraded studio medallions
+        Check(xaml.Contains("calradia-gauntlet-sigil-rev098.png"), "ToolPageTemplates must reference gauntlet-sigil-rev098.");
+        Check(xaml.Contains("calradia-campaign-astrolabe-rev098.png"), "ToolPageTemplates must reference campaign-astrolabe-rev098.");
+        Check(xaml.Contains("calradia-delivery-seal-rev098.png"), "ToolPageTemplates must reference delivery-seal-rev098.");
+        Check(xaml.Contains("calradia-diagnostics-aegis-rev098.png"), "ToolPageTemplates must reference diagnostics-aegis-rev098.");
+
+        // 4. Old bare 28x28 laurel-crest placeholders must be completely eliminated from ToolPageTemplates
+        Check(!xaml.Contains("calradia-laurel-crest-rev089.png\" Height=\"28\" Width=\"28\""),
+            "ToolPageTemplates must not retain unboxed 28x28 laurel-crest placeholders after Rev098 studio upgrades.");
+
+        // 5. Invariants: Exactly 9 DashboardTemplates & zero TwoWay Run.Text bindings
+        int templateCount = System.Text.RegularExpressions.Regex.Matches(
+            xaml, @"<DataTemplate x:Key=""\w+DashboardTemplate""").Count;
+        Check(templateCount == 9, $"Rule C invariant: expected exactly 9 DashboardTemplates, got {templateCount}.");
+
+        int twoway = System.Text.RegularExpressions.Regex.Matches(
+            xaml, @"<Run[^>]+Text=""\{Binding[^""]*Mode=TwoWay[^""]*\}""").Count;
+        Check(twoway == 0, $"Propuesta 48: found {twoway} TwoWay Run.Text bindings — must be 0.");
     }
 }

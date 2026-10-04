@@ -46,6 +46,11 @@
     <Resource Include="Resources/Textures/calradia-trade-sigil-rev096.png" />
     <Resource Include="Resources/Textures/calradia-pipe-seal-rev096.png" />
     <Resource Include="Resources/Textures/calradia-sentinel-eye-rev096.png" />
+    <Resource Include="Resources/Textures/calradia-anvil-weave-sigil-rev098.png" />
+    <Resource Include="Resources/Textures/calradia-gauntlet-sigil-rev098.png" />
+    <Resource Include="Resources/Textures/calradia-campaign-astrolabe-rev098.png" />
+    <Resource Include="Resources/Textures/calradia-delivery-seal-rev098.png" />
+    <Resource Include="Resources/Textures/calradia-diagnostics-aegis-rev098.png" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />

@@ -7,11 +7,16 @@
   <Border Grid.Row="0" Background="{DynamicResource FrameSurfaceBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1,1,1,3" CornerRadius="4" Padding="12" Margin="0,0,0,8">
    <Grid>
     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-    <StackPanel>
-     <TextBlock FontFamily="Georgia" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{DynamicResource Ui.HookWorkbench}"/>
-     <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" Text="{DynamicResource Ui.HookWorkbenchHelp}" TextWrapping="Wrap"/>
+    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+     <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,12,0" Padding="2" Width="44" Height="44" VerticalAlignment="Center" ToolTip="Calradia Bytecode Hook Workbench · IL Weave Sigil Authenticated">
+      <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-anvil-weave-sigil-rev098.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+     </Border>
+     <StackPanel VerticalAlignment="Center">
+      <TextBlock FontFamily="Georgia" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="{DynamicResource Ui.HookWorkbench}"/>
+      <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" Text="{DynamicResource Ui.HookWorkbenchHelp}" TextWrapping="Wrap"/>
+     </StackPanel>
     </StackPanel>
-    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
      <Button AutomationProperties.AutomationId="HookSnapshotsRefreshButton" Command="{Binding RefreshSnapshotsCommand}" Content="{DynamicResource Ui.HooksRefresh}" Margin="0,0,5,0" MinHeight="32" Padding="10,4"/>
      <Button AutomationProperties.AutomationId="HookWorkbenchCloseButton" Command="{Binding DataContext.CloseHookWorkbenchCommand, RelativeSource={RelativeSource AncestorType=Window}}" Content="{DynamicResource Ui.Close}" MinHeight="32" Padding="10,4" ToolTip="{DynamicResource Ui.Close}"/>
     </StackPanel>
