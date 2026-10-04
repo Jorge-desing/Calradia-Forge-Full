@@ -349,7 +349,7 @@ namespace CalradiaForge.Mod
                 if (rule.ActionId == "influence" || rule.ActionId == "renown") checks.Add("Hero.MainHero.Clan != null");
             }
             if (rule.TargetId == "event" && (rule.ActionId == "influence" || rule.ActionId == "renown") && CampaignRuleBuilderKinds.HasHero(eventId)) checks.Add("hero.Clan != null");
-            if (rule.TargetId == "event" && rule.ActionId == "renown" && eventId == "OnClanCreatedEvent") checks.Add("clan.Leader != null && clan.Leader.Clan != null");
+            if (rule.TargetId == "event" && rule.ActionId == "renown" && eventId == "OnClanCreatedEvent") checks.Add("clan.Leader != null && clan.Leader.Clan == clan");
             if (rule.ActionId == "relation") checks.Add("Hero.MainHero != null && hero != Hero.MainHero");
             if (rule.GroupA.Count > 0)
             {

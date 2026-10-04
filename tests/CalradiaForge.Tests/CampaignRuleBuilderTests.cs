@@ -141,9 +141,9 @@ namespace CalradiaForge.Tests
             clanLeaderRenown.TargetId = "event";
             if (!CampaignRuleBuilderGenerator.TryGenerate(new CampaignRuleBuilderDraft { Rules = new List<CampaignRuleBuilderRule> { clanLeaderRenown } }, out var clanLeaderRenownPackage, out errors))
                 throw new Exception(string.Join("; ", errors));
-            if (!clanLeaderRenownPackage.BehaviorCode.Contains("clan != null && clan.Leader != null && clan.Leader.Clan != null") ||
+            if (!clanLeaderRenownPackage.BehaviorCode.Contains("clan != null && clan.Leader != null && clan.Leader.Clan == clan") ||
                 !clanLeaderRenownPackage.BehaviorCode.Contains("GainRenownAction.Apply(clan.Leader, 100f);"))
-                throw new Exception("Clan-created renown must require a leader with a clan.");
+                throw new Exception("Clan-created renown must require a leader whose clan is the event clan.");
 
             var playerInfluence = CampaignRuleBuilderKinds.CreateRule();
             playerInfluence.ActionId = "influence";

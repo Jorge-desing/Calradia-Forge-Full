@@ -46,7 +46,7 @@ Extracted from `artifacts/package-sha256-2520.txt`:
 
 ## Follow-up validation — 2026-10-02
 
-This is a separate follow-up run on version 25.2.0; the product version and public SDK API were not changed. It covers the Campaign Rule Builder starter-row/event affordance and the generator/pipeline fixes that keep Gauntlet bindings and localized resources intact after packaging.
+This is a separate follow-up run on version 25.2.0; the product version and public SDK API were not changed. It covers the Campaign Rule Builder starter-row/event affordance and the generator/pipeline fixes that keep Gauntlet bindings and localized resources intact after packaging. At the time, commit `22359f4` provided an unsaved starter row when no draft existed. The later same-day commit `08f4eaa` removed it and restored the empty-first-visit behavior; the starter-row identity results below are historical, not the current missing-draft contract.
 
 ### Passed verification
 
@@ -54,7 +54,7 @@ This is a separate follow-up run on version 25.2.0; the product version and publ
 - `tools/verify_stateless_behavior.ps1`: all four acceptance checks passed.
 - `tools/audit_gauntlet_ui.py`: PASS, 0 errors and 0 warnings.
 - `tools/audit_localization.py`: PASS; 13 native languages with 747 keys each, including 71 Campaign Rule Builder keys.
-- `tools/Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul`: all selected suites passed. Campaign Rule Builder regressions cover first-visit starter identity, reorder/removal, save/reload, generated behavior compilation, and local preview/copy. The WPF render suite passed 295 cases; ForgeWeave passed 73 tests; Desktop MVVM passed 65 tests.
+- `tools/Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul`: all selected suites passed. At that point, Campaign Rule Builder regressions covered first-visit starter identity, reorder/removal, save/reload, generated behavior compilation, and local preview/copy. The current regression instead requires a missing draft to remain empty until Add; the historical identity result is retained here only as dated evidence. The WPF render suite passed 295 cases; ForgeWeave passed 73 tests; Desktop MVVM passed 65 tests.
 - `tools/package.ps1`: the three 25.2.0 archives passed the archive audit. Independent SHA-256 checks matched `artifacts/package-sha256-2520.txt`.
 - Steam deployment completed to Client and Modding Kit profiles with backups. The installed prefab, English and Spanish language resources, and Client assembly matched their workspace hashes. The Steam runtime TPAC remained unchanged at `8899A48A407591ADA53573EFC0DD699EA47D2A30F32A0C12C1875003F7993047`.
 - Bannerlord launched through the documented Steam path and reached the 1920×1080 main menu. The available Computer Use session captured the game window, but F10 did not reveal the Forge panel and arrow input did not change the menu selection. Therefore the in-game panel, keyboard interaction, and the requested smaller layouts are **not verified** in this run. The game was closed afterward.

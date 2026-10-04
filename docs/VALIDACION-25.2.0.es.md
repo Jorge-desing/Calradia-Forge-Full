@@ -46,7 +46,7 @@ Extraídos de `artifacts/package-sha256-2520.txt`:
 
 ## Validación de seguimiento — 2026-10-02
 
-Esta es una ejecución de seguimiento separada en la versión 25.2.0; no cambiaron la versión del producto ni la API pública del SDK. Cubre la identificación de la fila inicial del Constructor de reglas de campaña, el control de evento y las correcciones del generador/pipeline que conservan los bindings Gauntlet y los recursos localizados después del empaquetado.
+Esta es una ejecución de seguimiento separada en la versión 25.2.0; no cambiaron la versión del producto ni la API pública del SDK. Cubre la identificación de la fila inicial del Constructor de reglas de campaña, el control de evento y las correcciones del generador/pipeline que conservan los bindings Gauntlet y los recursos localizados después del empaquetado. En ese momento, el commit `22359f4` creaba una fila inicial sin guardar cuando no había borrador. El commit posterior del mismo día, `08f4eaa`, eliminó esa fila y restableció la primera visita vacía; los resultados de identidad de la fila inicial que siguen son históricos y no describen el contrato actual para un borrador ausente.
 
 ### Verificaciones superadas
 
@@ -54,7 +54,7 @@ Esta es una ejecución de seguimiento separada en la versión 25.2.0; no cambiar
 - `tools/verify_stateless_behavior.ps1`: pasaron las cuatro comprobaciones de aceptación.
 - `tools/audit_gauntlet_ui.py`: PASS, 0 errores y 0 advertencias.
 - `tools/audit_localization.py`: PASS; 13 idiomas nativos con 747 claves cada uno, incluidas 71 claves del Constructor de reglas de campaña.
-- `tools/Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul`: pasaron todas las suites seleccionadas. Las regresiones del Constructor de reglas de campaña cubren identidad inicial, reordenamiento/eliminación, guardado/carga, compilación del comportamiento generado y vista previa/copiado local. La suite de renderizado WPF pasó 295 casos; ForgeWeave pasó 73 pruebas; Desktop MVVM pasó 65 pruebas.
+- `tools/Run-CalradiaForge-Tests.bat --skip-build --no-pause <nul`: pasaron todas las suites seleccionadas. En esa revisión, las regresiones del Constructor de reglas de campaña cubrían la identidad de la fila inicial, reordenamiento/eliminación, guardado/carga, compilación del comportamiento generado y vista previa/copiado local. La regresión actual exige que un borrador ausente permanezca vacío hasta pulsar Añadir; aquí se conserva el resultado de identidad solo como evidencia histórica fechada. La suite de renderizado WPF pasó 295 casos; ForgeWeave pasó 73 pruebas; Desktop MVVM pasó 65 pruebas.
 - `tools/package.ps1`: los tres archivos 25.2.0 pasaron la auditoría de archivos. La comprobación independiente de SHA-256 coincidió con `artifacts/package-sha256-2520.txt`.
 - El despliegue por Steam terminó en los perfiles Client y Modding Kit con respaldos. El prefab instalado, los recursos de idioma inglés y español y el ensamblado Client coincidieron por hash con los del workspace. El TPAC de Steam permaneció sin cambios en `8899A48A407591ADA53573EFC0DD699EA47D2A30F32A0C12C1875003F7993047`.
 - Bannerlord se inició mediante la ruta documentada de Steam y llegó al menú principal de 1920×1080. La sesión disponible de Computer Use capturó la ventana del juego, pero F10 no mostró el panel Forge y las flechas no cambiaron la selección del menú. Por lo tanto, el panel dentro del juego, la interacción por teclado y los tamaños menores solicitados **no quedan verificados** en esta ejecución. El juego se cerró al terminar.
