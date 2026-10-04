@@ -675,10 +675,13 @@
 - [ ] Desplegar tras la verificación en vivo, con respaldo y hashes; sin importar assets ni modificar TPAC.
 
 ## Constructor visual de reglas de campaña — 2026-09-29
-- [ ] Implementar borrador versionado, catálogo tipado de eventos/condiciones/acciones, validación y generación C# sin estado.
-- [ ] Integrar la ruta Gauntlet, vista previa local, teclado, localización en 13 idiomas y guía EN/ES.
-- [ ] Verificar regresiones, compilación Release, gate stateless, suite completa y auditorías Gauntlet/localización.
-- [ ] Revisar la ruta en Steam y desplegar con simulación previa, respaldo y hashes, preservando el TPAC.
+- [x] Implementar borrador versionado, catálogo tipado de eventos/condiciones/acciones, validación y generación C# sin estado.
+- [x] Integrar la ruta Gauntlet, vista previa local, teclado, localización en 13 idiomas y guía EN/ES.
+- [x] Verificar regresiones, compilación Release, gate stateless, suite completa y auditorías Gauntlet/localización.
+- [x] Desplegar a Steam con simulación previa, respaldo y hashes, preservando el TPAC.
+- [ ] Completar la revisión de interacción y persistencia tras reiniciar Bannerlord. El juego quedó en pausa el 2026-10-04 por instrucción del usuario; no reanudar hasta que lo indique.
+- Nota de verificación: los paquetes generados compilaron contra las DLL instaladas para todas las combinaciones compatibles de evento, acción y objetivo. Build Release, stateless, suite completa, auditorías Gauntlet/localización y hashes del empaquetado pasaron. El DLL Release y el DLL instalado coinciden en SHA-256 `AA43606F03484E3CFC3848F16480E9CEE08A66DB16AC0E02D0917EAAF26B4A85`; los tres ZIP coinciden con `artifacts/package-sha256-2520.txt` y las comprobaciones remotas del commit `82cc1853f3101c7debb327c32e2bfe16617ab445` finalizaron correctamente.
+- Nota de interacción pendiente: una fila visible o un cambio de evento no demuestra que se haya agregado o guardado una regla; el selector de evento edita la regla de trabajo. La verificación de Add y de guardar/reabrir requiere una observación en juego que se realizará solo cuando el usuario reanude la prueba.
 
 ## Entorno Python aislado para herramientas de desarrollo — 2026-09-30
 - [x] Crear el entorno local Python 3.12 y perfiles fijados de utilidades y Ruff; mantener Antigravity como perfil opcional fuera del runtime del mod.
