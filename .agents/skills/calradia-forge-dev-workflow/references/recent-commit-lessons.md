@@ -20,6 +20,11 @@ Read when changing persistence, failure tests, CI or delivery gates. Commit evid
   - In `ForgeAudioBuilder` and `ForgeAudioInspector`, reject directory traversal sequences (`..`) in relative sound paths, protect `Path.GetExtension` from invalid file character exceptions, and detect duplicate sound definitions.
   - In `PipeClient`, explicitly dispose `SemaphoreSlim` wait handles upon disposal, and reject null `Request` payloads and whitespace agent identifiers before pipe transmission.
   - In `ForgePartyBlueprint`, promote total troop accumulation to 64-bit integers and reject blank `HomeSettlementStringId` definitions.
+- **Rev139 — Deterministic mission combat simulation & substantive analytics:**
+  - Non-linear armor absorption curves follow hyperbolic Bannerlord formulas (`DamageMultiplier = 100 / (100 + EffectiveArmor)`) where effective armor scales by damage type factor (Cut: 1.0, Pierce: 0.65, Blunt: 0.40).
+  - Mission combat simulations implement real `AgentComponent` / `MissionBehavior` lifecycle (`StaminaManagementComponent`, `MoraleShockComponent`) with fixed delta time ticks (`DeltaTime = 0.05s`), reproducible via explicit seeds (`RandomSeed`).
+  - Strict anti-mock invariant: never implement cosmetic or text-only simulations without real mathematical models, data structures, and state mutations.
+  - Desktop simulation routing dispatch (`DesktopWorkspaceService`) integrates `CombatAgentSpawner` directly into `SimulateMissionCombat`, generating verified `WorkspaceEvidence` audit records.
 
 Use filenames emitted by the pipeline: version `25.2.0` currently produces `package-audit-2520.json` and `package-sha256-2520.txt`. Recheck this convention when changing the pipeline.
 

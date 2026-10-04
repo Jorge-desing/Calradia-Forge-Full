@@ -16,6 +16,7 @@ namespace CalradiaForge.Tests
             test("Campaign rule builder bounds and stable IDs", TestBoundsAndIds);
             test("Campaign rule builder validates event data and targets", TestCompatibility);
             test("Campaign rule builder validates action amounts", TestActionAmounts);
+            test("Campaign rule builder generated action guards match required entities", TestActionGuardsMatchRequiredEntities);
             test("Campaign rule builder action normalization updates amount text", TestActionNormalizationUpdatesAmountText);
             test("Campaign rule builder generates grouped stateless handlers", TestGeneration);
             test("Campaign rule builder generated behavior compiles against installed game DLLs", TestGeneratedCodeCompiles);
@@ -101,6 +102,37 @@ namespace CalradiaForge.Tests
             rule.Amount = amount;
             bool accepted = CampaignRuleBuilderKinds.TryNormalize(new CampaignRuleBuilderDraft { Rules = new List<CampaignRuleBuilderRule> { rule } }, out _, out _);
             if (accepted != expected) throw new Exception("Unexpected amount validation for " + actionId + ": " + amount + ".");
+        }
+
+        private static void TestActionGuardsMatchRequiredEntities()
+        {
+            var playerRenown = CampaignRuleBuilderKinds.CreateRule();
+            playerRenown.ActionId = "renown";
+            if (!CampaignRuleBuilderGenerator.TryGenerate(new CampaignRuleBuilderDraft { Rules = new List<CampaignRuleBuilderRule> { playerRenown } }, out var playerRenownPackage, out var errors))
+                throw new Exception(string.Join("; ", errors));
+            if (!playerRenownPackage.BehaviorCode.Contains("Hero.MainHero != null") ||
+                playerRenownPackage.BehaviorCode.Contains("Hero.MainHero.Clan != null") ||
+                !playerRenownPackage.BehaviorCode.Contains("GainRenownAction.Apply(Hero.MainHero, 100f);"))
+                throw new Exception("Player renown must require the player hero, not a clan.");
+
+            var eventHeroRenown = CampaignRuleBuilderKinds.CreateRule();
+            eventHeroRenown.EventId = "DailyTickHeroEvent";
+            eventHeroRenown.ActionId = "renown";
+            eventHeroRenown.TargetId = "event";
+            if (!CampaignRuleBuilderGenerator.TryGenerate(new CampaignRuleBuilderDraft { Rules = new List<CampaignRuleBuilderRule> { eventHeroRenown } }, out var eventHeroRenownPackage, out errors))
+                throw new Exception(string.Join("; ", errors));
+            if (!eventHeroRenownPackage.BehaviorCode.Contains("hero != null") ||
+                eventHeroRenownPackage.BehaviorCode.Contains("hero.Clan != null") ||
+                !eventHeroRenownPackage.BehaviorCode.Contains("GainRenownAction.Apply(hero, 100f);"))
+                throw new Exception("Event-hero renown must require the event hero, not its clan.");
+
+            var playerInfluence = CampaignRuleBuilderKinds.CreateRule();
+            playerInfluence.ActionId = "influence";
+            if (!CampaignRuleBuilderGenerator.TryGenerate(new CampaignRuleBuilderDraft { Rules = new List<CampaignRuleBuilderRule> { playerInfluence } }, out var playerInfluencePackage, out errors))
+                throw new Exception(string.Join("; ", errors));
+            if (!playerInfluencePackage.BehaviorCode.Contains("Hero.MainHero.Clan != null") ||
+                !playerInfluencePackage.BehaviorCode.Contains("ChangeClanInfluenceAction.Apply(Hero.MainHero.Clan, 100f);"))
+                throw new Exception("Influence must retain the clan null guard required by its action.");
         }
 
         private static void TestActionNormalizationUpdatesAmountText()

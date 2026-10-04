@@ -93,7 +93,8 @@ internal static class Program
             ("Desktop SimulationService tolerates duplicate XML element IDs without collision", XmlDiffDuplicateIds),
             ("Desktop PreferenceService sanitizes null state and empty values on save", PreferenceNullSanitization),
             ("Desktop SessionService validates request arguments and resets latency on error", SessionSendNullAndErrorLatency),
-            ("Desktop PipeClient and SessionService enforce boundary checks and agent memory argument safety", PipeClientAndSessionBoundarySafety)
+            ("Desktop PipeClient and SessionService enforce boundary checks and agent memory argument safety", PipeClientAndSessionBoundarySafety),
+            ("Desktop WorkspaceService routes CombatAgentSpawner to deterministic mission combat simulation", MissionCombatSimulationRoute)
         };
         cases = cases.Concat(DesktopAssemblyServiceTests.Cases).ToArray();
         var failures = 0;
@@ -1772,6 +1773,28 @@ internal static class Program
 
         var memResult = await session.QueryAgentMemoryAsync("   ");
         Check(memResult == null, "QueryAgentMemoryAsync with whitespace must return null");
+    }
+
+    static async Task MissionCombatSimulationRoute()
+    {
+        var metrics = new DesktopMetricsService();
+        var workspace = new DesktopWorkspaceService(metrics);
+        var tool = DesktopToolDefinitions.All.FirstOrDefault(t => t.Id == "CombatAgentSpawner");
+        Check(tool != null, "CombatAgentSpawner tool must exist in DesktopToolDefinitions.All");
+
+        var result = await workspace.ExecuteAsync(tool, "LegionariesVsRaiders", CancellationToken.None);
+        Check(result.RawResult != null, "RawResult should not be null");
+        Check(result.RawResult.Contains("TACTICAL MISSION COMBAT SIMULATION"), "RawResult should contain header");
+        Check(result.RawResult.Contains("BATTLE OUTCOME"), "RawResult should contain battle outcome");
+        Check(result.RawResult.Contains("Team 0 (Allied / Attacker):"), "RawResult should contain Team 0 breakdown");
+        Check(result.RawResult.Contains("Team 1 (Opponent / Defender):"), "RawResult should contain Team 1 breakdown");
+        Check(result.Evidence != null && result.Evidence.Length >= 4, "Should emit at least 4 evidence records");
+        Check(result.Evidence.Any(e => e.Source == "Combat / Mission Verdict" && e.Status == "Verified"), "Combat verdict evidence must be verified");
+        Check(result.Evidence.Any(e => e.Source == "Combat / Force Ratio" && e.Status == "Verified"), "Force ratio evidence must be verified");
+
+        // Test alternate preset "CataphractsVsFians"
+        var fianResult = await workspace.ExecuteAsync(tool, "CataphractsVsFians", CancellationToken.None);
+        Check(fianResult.RawResult.Contains("CataphractsVsFians"), "RawResult should execute CataphractsVsFians scenario");
     }
 
 

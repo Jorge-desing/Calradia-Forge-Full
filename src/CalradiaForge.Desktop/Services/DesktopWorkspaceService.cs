@@ -46,6 +46,8 @@ namespace CalradiaForge.Desktop.Services
                     return await RunSimulationAsync(tool, () => simulations.AuditAudioWaveform(input, cancellation), cancellation).ConfigureAwait(true);
                 if (tool.Id == "WorkshopEnterpriseSimulator" || tool.Id == "SettlementCalculator" || tool.Id == "UnderworldCrimeSimulator" || tool.Id == "DynasticSuccessionEvaluator")
                     return await RunSimulationAsync(tool, () => simulations.SimulateEconomyAndCampaign(input, cancellation), cancellation).ConfigureAwait(true);
+                if (tool.Id == "CombatAgentSpawner" || tool.Id == "NoviceCombatAi" || tool.Id == "SiegeNavmeshTactician")
+                    return await RunSimulationAsync(tool, () => simulations.SimulateMissionCombat(input, cancellation), cancellation).ConfigureAwait(true);
                 return tool.Kind switch
                 {
                     DesktopToolKind.Analyzer => await AnalyzeAsync(tool, input, cancellation).ConfigureAwait(true),

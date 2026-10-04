@@ -84,6 +84,7 @@ namespace CalradiaForge.Tests
             test("ForgeEncyclopediaExtender in-game codex registry and bookmarks", TestForgeEncyclopediaExtender);
             test("Rev137 Multilayer bug fixes, lifecycle resilience, and boundary safety", TestRev137MultilayerHardeningAndSafety);
             test("Rev138 Audio, variable inspector, and party spawner hardening", TestRev138AudioAndPartySpawnerHardening);
+            test("Rev139 Mission combat simulator determinism, non-linear armor mitigation, stamina and morale components", TestRev139MissionCombatSimulator);
         }
 
         private static void TestForgeAgentMemory()
@@ -3628,6 +3629,106 @@ namespace CalradiaForge.Tests
             var (valid, errors) = party.Validate();
             if (valid || !errors.Any(e => e.Contains("Home settlement string ID cannot be blank")))
                 throw new Exception("ForgePartyBlueprint allowed whitespace HomeSettlementStringId.");
+        }
+
+        private static void TestRev139MissionCombatSimulator()
+        {
+            // 1. Armor absorption mathematical exactness
+            // Raw 50, Armor 40, Skill 100 (skill bonus = 1.2)
+            float cutDmg = ForgeMissionCombatSimulator.CalculateAbsorbedDamage(50f, 40f, CombatDamageType.Cut, 100);
+            float pierceDmg = ForgeMissionCombatSimulator.CalculateAbsorbedDamage(50f, 40f, CombatDamageType.Pierce, 100);
+            float bluntDmg = ForgeMissionCombatSimulator.CalculateAbsorbedDamage(50f, 40f, CombatDamageType.Blunt, 100);
+
+            // Expected values:
+            // Cut: 50 * (100 / 140) * 1.2 = 42.857f
+            // Pierce: 50 * (100 / 126) * 1.2 = 47.619f
+            // Blunt: 50 * (100 / 116) * 1.2 = 51.724f
+            if (Math.Abs(cutDmg - 42.857f) > 0.05f)
+                throw new Exception($"Cut armor damage mismatch. Expected ~42.86, got {cutDmg:F3}");
+            if (Math.Abs(pierceDmg - 47.619f) > 0.05f)
+                throw new Exception($"Pierce armor damage mismatch. Expected ~47.62, got {pierceDmg:F3}");
+            if (Math.Abs(bluntDmg - 51.724f) > 0.05f)
+                throw new Exception($"Blunt armor damage mismatch. Expected ~51.72, got {bluntDmg:F3}");
+            if (pierceDmg <= cutDmg)
+                throw new Exception("Pierce damage should penetrate armor more effectively than Cut damage.");
+            if (bluntDmg <= pierceDmg)
+                throw new Exception("Blunt damage should penetrate armor more effectively than Pierce damage.");
+
+            // Zero armor test
+            float zeroArmor = ForgeMissionCombatSimulator.CalculateAbsorbedDamage(50f, 0f, CombatDamageType.Cut, 100);
+            if (Math.Abs(zeroArmor - 60f) > 0.01f) // 50 * 1.0 * 1.2
+                throw new Exception($"Zero armor should yield pure unmitigated skill damage (60.0), got {zeroArmor}");
+
+            // Negative raw damage
+            float negDmg = ForgeMissionCombatSimulator.CalculateAbsorbedDamage(-10f, 20f, CombatDamageType.Cut, 100);
+            if (negDmg != 0f)
+                throw new Exception("Negative raw damage should return 0.");
+
+            // 2. Full simulation execution
+            var scenario = ForgeMissionCombatSimulator.CreateStandardScenario("LegionariesVsRaiders");
+            scenario.RandomSeed = 1001;
+            var result = ForgeMissionCombatSimulator.Simulate(scenario);
+
+            if (result.TotalTicks <= 0)
+                throw new Exception("Simulation executed 0 ticks.");
+            if (result.ElapsedTimeSeconds <= 0f)
+                throw new Exception("Simulation elapsed time was non-positive.");
+            if (result.Team0InitialCount != 6 || result.Team1InitialCount != 6)
+                throw new Exception($"Team count mismatch: {result.Team0InitialCount} vs {result.Team1InitialCount}");
+            if ((result.Team0Casualties + result.Team0Survivors + result.Team0Routed) != 6)
+                throw new Exception("Team 0 troop sum invariant failed.");
+            if ((result.Team1Casualties + result.Team1Survivors + result.Team1Routed) != 6)
+                throw new Exception("Team 1 troop sum invariant failed.");
+            if (result.Events == null || result.Events.Count == 0)
+                throw new Exception("Simulation produced zero recorded combat events.");
+            if (result.Team0TotalDamageDealt <= 0f || result.Team1TotalDamageDealt <= 0f)
+                throw new Exception("Zero damage exchanged during active combat simulation.");
+
+            // 3. Determinism test
+            var scenarioA = ForgeMissionCombatSimulator.CreateStandardScenario("CataphractsVsFians");
+            scenarioA.RandomSeed = 4242;
+            var resA = ForgeMissionCombatSimulator.Simulate(scenarioA);
+
+            var scenarioB = ForgeMissionCombatSimulator.CreateStandardScenario("CataphractsVsFians");
+            scenarioB.RandomSeed = 4242;
+            var resB = ForgeMissionCombatSimulator.Simulate(scenarioB);
+
+            if (resA.TotalTicks != resB.TotalTicks)
+                throw new Exception("Non-deterministic total ticks between identical seeds.");
+            if (resA.Verdict != resB.Verdict)
+                throw new Exception("Non-deterministic verdict between identical seeds.");
+            if (resA.Team0Casualties != resB.Team0Casualties || resA.Team1Casualties != resB.Team1Casualties)
+                throw new Exception("Non-deterministic casualty count between identical seeds.");
+            if (Math.Abs(resA.Team0TotalDamageDealt - resB.Team0TotalDamageDealt) > 0.001f)
+                throw new Exception("Non-deterministic damage dealt between identical seeds.");
+
+            // 4. Boundary validations
+            var emptyScenario = new CombatSimulationScenario { ScenarioName = "Empty" };
+            bool emptyCaught = false;
+            try
+            {
+                ForgeMissionCombatSimulator.Simulate(emptyScenario);
+            }
+            catch (InvalidOperationException)
+            {
+                emptyCaught = true;
+            }
+            if (!emptyCaught)
+                throw new Exception("ForgeMissionCombatSimulator accepted an empty scenario without troops.");
+
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            bool cancelCaught = false;
+            try
+            {
+                ForgeMissionCombatSimulator.Simulate(scenarioA, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                cancelCaught = true;
+            }
+            if (!cancelCaught)
+                throw new Exception("ForgeMissionCombatSimulator ignored pre-canceled CancellationToken.");
         }
     }
 }
