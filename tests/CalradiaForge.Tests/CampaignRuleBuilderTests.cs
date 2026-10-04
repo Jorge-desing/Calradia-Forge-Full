@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.CodeDom.Compiler;
+using System.Reflection;
 using System.Xml;
 using Microsoft.CSharp;
 using CalradiaForge.Mod;
@@ -22,6 +23,7 @@ namespace CalradiaForge.Tests
             test("Campaign rule builder generated behavior compiles against installed game DLLs", TestGeneratedCodeCompiles);
             test("Campaign rule builder draft loads and saves safely", TestPersistence);
             test("Campaign rule builder restores its draft after the Gauntlet view model is constructed", TestRouteLoadsDraftAfterConstruction);
+            test("Campaign rule builder defaults to LocalAppData without loading before route entry", TestDefaultDraftPathIsDeferred);
             test("Campaign rule builder restores the exact draft after explicit save and a new view model", TestViewModelSaveRestoresDraftAfterNewInstance);
             test("Campaign rule builder first visit stays empty until Add rule", TestMissingDraftStartsEmptyUntilAdd);
             test("Campaign rule builder saved empty drafts stay empty", TestEmptyDraftPersistsWithoutImplicitRule);
@@ -284,6 +286,27 @@ namespace CalradiaForge.Tests
                 }
             }
             finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+        }
+
+        private static void TestDefaultDraftPathIsDeferred()
+        {
+            using (var runtime = new Runtime())
+            {
+                var viewModel = new PanelViewModel(runtime, delegate { });
+                var pathField = typeof(PanelViewModel).GetField("_campaignRuleBuilderDraftPath", BindingFlags.Instance | BindingFlags.NonPublic);
+                var loadedField = typeof(PanelViewModel).GetField("_campaignRuleBuilderDraftLoaded", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (pathField == null || loadedField == null) throw new Exception("Campaign rule builder draft state fields were not found.");
+
+                string localApplicationData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string expectedPath = string.IsNullOrWhiteSpace(localApplicationData)
+                    ? null
+                    : Path.Combine(localApplicationData, "CalradiaForge", "campaign-rule-builder.json");
+                string actualPath = pathField.GetValue(viewModel) as string;
+                if (!string.Equals(actualPath, expectedPath, StringComparison.OrdinalIgnoreCase))
+                    throw new Exception("The default campaign rule builder draft path must be under LocalAppData\\CalradiaForge.");
+                if ((bool)loadedField.GetValue(viewModel))
+                    throw new Exception("Constructing the panel view model must not load the user's draft before route entry.");
+            }
         }
 
         private static void TestMissingDraftStartsEmptyUntilAdd()
