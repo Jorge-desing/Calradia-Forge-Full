@@ -14,24 +14,26 @@
    <ColumnDefinition Width="Auto"/>
   </Grid.ColumnDefinitions>
   <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-   <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-astrolabe-dial-rev086.png" Width="14" Height="14" Margin="2,0,4,0" Stretch="Uniform" VerticalAlignment="Center" Opacity="0.85" RenderOptions.BitmapScalingMode="HighQuality"/>
-   <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Padding="4,1" Margin="0,2,4,2" VerticalAlignment="Center">
+   <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="9" Width="18" Height="18" Margin="2,0,5,0" Padding="1" VerticalAlignment="Center">
+    <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-astrolabe-dial-rev086.png" Stretch="Uniform" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/>
+   </Border>
+   <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1,1,1,2" CornerRadius="2" Padding="5,1" Margin="0,2,4,2" VerticalAlignment="Center">
     <TextBlock Text="Ctrl+K PALETTE" FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}"/>
    </Border>
-   <Button AutomationProperties.AutomationId="FooterPingButton" Command="{Binding PingConnectionCommand}" ToolTip="Ping IPC Session" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource SteelBorderBrush}" BorderThickness="1" Padding="4,1" Margin="0,2,2,2" MinHeight="18" Height="18" VerticalAlignment="Center">
+   <Button AutomationProperties.AutomationId="FooterPingButton" Command="{Binding PingConnectionCommand}" ToolTip="Ping IPC Session" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" Padding="5,1" Margin="0,2,2,2" MinHeight="18" Height="18" VerticalAlignment="Center">
     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
      <Ellipse Width="6" Height="6" Margin="0,0,4,0" VerticalAlignment="Center" Fill="{DynamicResource VerdigrisBrush}"/>
-     <TextBlock Text="{Binding ConnectionLatencyText, Mode=OneWay}" FontSize="8" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center"/>
+     <TextBlock Text="{Binding ConnectionLatencyText, Mode=OneWay}" FontSize="8" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" VerticalAlignment="Center"/>
     </StackPanel>
    </Button>
   </StackPanel>
   <TextBlock AutomationProperties.AutomationId="KeyboardShortcutHint" Grid.Column="1" FontSize="{DynamicResource Token.LabelFont}" Foreground="{DynamicResource MutedTextBrush}" Margin="8,2,8,2" MinHeight="18" Text="{DynamicResource Ui.ShortcutHint}" TextAlignment="Center" TextWrapping="Wrap" VerticalAlignment="Center"/>
   <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-   <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Padding="4,1" Margin="0,2,4,2" VerticalAlignment="Center">
+   <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1,1,1,2" CornerRadius="2" Padding="5,1" Margin="0,2,4,2" VerticalAlignment="Center">
     <TextBlock Text="Ctrl+D SPLIT" FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}"/>
    </Border>
-   <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" CornerRadius="2" Padding="4,1" Margin="0,2,2,2" VerticalAlignment="Center">
-    <TextBlock Text="NET8.0" FontSize="7" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}"/>
+   <Border Background="{DynamicResource DeepPineBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1,1,1,2" CornerRadius="2" Padding="5,1" Margin="0,2,2,2" VerticalAlignment="Center">
+    <TextBlock Text=".NET 8.0 WPF" FontSize="7" FontWeight="Bold" Foreground="{DynamicResource VerdigrisBrush}"/>
    </Border>
   </StackPanel>
  </Grid>

@@ -14,9 +14,11 @@
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
         <StackPanel>
          <StackPanel Orientation="Horizontal">
-          <Image Height="16" Margin="0,0,7,0" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-astrolabe-dial-rev086.png" Stretch="Uniform" VerticalAlignment="Center" Width="16"/>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,9,0" Padding="2" Width="36" Height="36" VerticalAlignment="Center" ToolTip="Calradia Imperial Tactical Command Palette — Quick Tool Dispatch">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-astrolabe-dial-rev086.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
           <TextBlock Style="{StaticResource SectionHeading}" Text="{DynamicResource Ui.CommandPalette}" VerticalAlignment="Center"/>
-          <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="8,0,0,0" Padding="4,1" VerticalAlignment="Center">
+          <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="8,0,0,0" Padding="5,2" VerticalAlignment="Center">
            <TextBlock FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="194 TOOLS"/>
           </Border>
          </StackPanel>
@@ -55,13 +57,13 @@
          <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-         <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="5,1" Margin="0,0,6,0">
+         <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,1,1,2" CornerRadius="2" Padding="6,2" Margin="0,0,6,0">
           <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="↑↓ NAVIGATE"/>
          </Border>
-         <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Padding="5,1" Margin="0,0,6,0">
+         <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1,1,1,2" CornerRadius="2" Padding="6,2" Margin="0,0,6,0">
           <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="↵ SELECT"/>
          </Border>
-         <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="5,1">
+         <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,1,1,2" CornerRadius="2" Padding="6,2">
           <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource PaperBrush}" Text="ESC DISMISS"/>
          </Border>
         </StackPanel>
@@ -75,20 +77,25 @@
        <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling"/></ItemsPanelTemplate></ListBox.ItemsPanel>
        <ListBox.ItemTemplate>
         <DataTemplate>
-         <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="4,6">
+         <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,1,0,3" Padding="6,5">
           <Grid>
-           <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-           <StackPanel>
+           <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="4"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+           </Grid.ColumnDefinitions>
+           <Border Grid.Column="0" Background="{Binding CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}" CornerRadius="2" Margin="0,1,6,1" VerticalAlignment="Stretch"/>
+           <StackPanel Grid.Column="1" Margin="6,0,0,0">
             <StackPanel Orientation="Horizontal">
              <Ellipse Width="6" Height="6" Fill="{Binding CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}" VerticalAlignment="Center" Margin="0,0,6,0"/>
              <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="{Binding Title}"/>
-             <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Margin="8,0,0,0" Padding="4,0" VerticalAlignment="Center">
+             <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Margin="8,0,0,0" Padding="5,1" VerticalAlignment="Center">
               <TextBlock FontSize="7.5" FontWeight="SemiBold" Foreground="{Binding CategoryAccentBrushKey, Converter={StaticResource BrushKeyConverter}}" Text="{Binding Group}"/>
              </Border>
             </StackPanel>
             <TextBlock FontSize="9.5" Foreground="{DynamicResource MutedTextBrush}" Margin="12,2,0,0" Text="{Binding Id}"/>
            </StackPanel>
-           <Border Grid.Column="1" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Padding="5,2" VerticalAlignment="Center">
+           <Border Grid.Column="2" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="3" Padding="6,2" VerticalAlignment="Center">
             <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding KindLabel}"/>
            </Border>
           </Grid>

@@ -63,6 +63,8 @@ internal static class DesktopSimulationServiceTests
         Console.WriteLine("PASS Desktop simulation verifies Rev096 five residual icon upgrades — troop crest, cohort badge, trade sigil, pipe seal, sentinel eye");
         Rev098MajorVisualAndStudioUpgrades();
         Console.WriteLine("PASS Desktop simulation verifies Rev098 major visual studio upgrades — anvil sigil, gauntlet seal, campaign astrolabe, delivery seal, diagnostics aegis");
+        Rev099TacticalViewsAndUnretouchedFunctionsPolish();
+        Console.WriteLine("PASS Desktop simulation verifies Rev099 tactical views and unretouched functions visual overhaul — palette, status, dossier, split deck, footer");
     }
 
     static void Rev095FiveStudioMedallionUpgrades()
@@ -1085,5 +1087,54 @@ internal static class DesktopSimulationServiceTests
         int twoway = System.Text.RegularExpressions.Regex.Matches(
             xaml, @"<Run[^>]+Text=""\{Binding[^""]*Mode=TwoWay[^""]*\}""").Count;
         Check(twoway == 0, $"Propuesta 48: found {twoway} TwoWay Run.Text bindings — must be 0.");
+    }
+static void Rev099TacticalViewsAndUnretouchedFunctionsPolish()
+    {
+        string basePath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "CalradiaForge.Desktop");
+        string paletteXaml = File.ReadAllText(Path.Combine(basePath, "Presentation", "CommandPaletteControl.xaml"));
+        string statusXaml = File.ReadAllText(Path.Combine(basePath, "Presentation", "WorkbenchStatusControl.xaml"));
+        string dossierXaml = File.ReadAllText(Path.Combine(basePath, "Presentation", "ToolDossierControl.xaml"));
+        string workspaceXaml = File.ReadAllText(Path.Combine(basePath, "Presentation", "WorkbenchWorkspaceControl.xaml"));
+        string footerXaml = File.ReadAllText(Path.Combine(basePath, "Presentation", "WorkbenchFooterControl.xaml"));
+        string navXaml = File.ReadAllText(Path.Combine(basePath, "Presentation", "WorkbenchNavigationControl.xaml"));
+        string texturesDir = Path.Combine(basePath, "Resources", "Textures");
+
+        // 1. CommandPaletteControl must feature the 36x36 framed medallion header and category left accent
+        Check(paletteXaml.Contains("calradia-astrolabe-dial-rev086.png"), "CommandPaletteControl must reference astrolabe dial.");
+        Check(paletteXaml.Contains("CategoryAccentBrushKey"), "CommandPaletteControl list items must feature category accent stripe.");
+
+        // 2. WorkbenchStatusControl must have framed circular icon badges and 3px tactile status bars
+        Check(statusXaml.Contains("CornerRadius=\"10\""), "WorkbenchStatusControl must use rounded circular badges for status icons.");
+        Check(statusXaml.Contains("Height=\"3\""), "WorkbenchStatusControl cards must use 3px tactile status indicators.");
+
+        // 3. ToolDossierControl must feature the 42x42 framed imperial wax seal and terminal syntax blocks
+        Check(dossierXaml.Contains("imperial-wax-seal-rev085.png"), "ToolDossierControl must reference imperial-wax-seal.");
+        Check(dossierXaml.Contains("DossierStatelessCertificationBadge"), "ToolDossierControl must retain DossierStatelessCertificationBadge.");
+
+        // 4. WorkbenchWorkspaceControl Split Deck must feature tactical-dial-plate-rev084.png framed medallion
+        Check(workspaceXaml.Contains("tactical-dial-plate-rev084.png"), "WorkbenchWorkspaceControl Split Deck must reference tactical-dial-plate-rev084.png.");
+
+        // 5. WorkbenchFooterControl must feature framed dial badge and .NET 8.0 WPF pill
+        Check(footerXaml.Contains("calradia-astrolabe-dial-rev086.png"), "WorkbenchFooterControl must reference astrolabe dial badge.");
+        Check(footerXaml.Contains(".NET 8.0 WPF"), "WorkbenchFooterControl must feature .NET 8.0 WPF pill.");
+
+        // 6. WorkbenchNavigationControl must feature framed gear hammer badge
+        Check(navXaml.Contains("GameIcon.gear_hammer"), "WorkbenchNavigationControl must retain gear_hammer icon.");
+
+        // 7. Texture file sizes must prove high-resolution upgrade (>350 KB)
+        string[] upgradedTextures = {
+            "calradia-mind-medallion-rev093.png",
+            "imperial-wax-seal-rev085.png",
+            "calradia-astrolabe-dial-rev086.png",
+            "calradia-aquila-seal-rev087.png",
+        };
+        foreach (var tex in upgradedTextures)
+        {
+            string fullPath = Path.Combine(texturesDir, tex);
+            Check(File.Exists(fullPath), $"Texture '{tex}' must exist.");
+            long bytes = new FileInfo(fullPath).Length;
+            Check(bytes > 350_000, $"Texture '{tex}' must be upgraded to high-resolution (>350 KB), found {bytes} bytes.");
+        }
     }
 }

@@ -27,12 +27,14 @@
          </Grid.ColumnDefinitions>
          <StackPanel Grid.Column="0">
           <StackPanel Orientation="Horizontal">
-            <Image Height="14" Margin="0,0,6,0" Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/calradia-astrolabe-dial-rev086.png" Stretch="Uniform" VerticalAlignment="Center" Width="14"/>
-            <TextBlock FontFamily="Georgia" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.PinnedDeckSplitView}" TextWrapping="Wrap" VerticalAlignment="Center"/>
-            <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="6,0,0,0" Padding="4,0" VerticalAlignment="Center">
-             <TextBlock FontSize="7" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="SPLIT VIEW"/>
-            </Border>
-           </StackPanel>
+           <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,8,0" Padding="2" Width="32" Height="32" VerticalAlignment="Center" ToolTip="Imperial War Table Split Deck — Active Tool Comparison">
+            <Image Source="pack://application:,,,/CalradiaForge.Desktop;component/Resources/Textures/tactical-dial-plate-rev084.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+           </Border>
+           <TextBlock FontFamily="Georgia" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{DynamicResource Ui.PinnedDeckSplitView}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+           <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Margin="6,0,0,0" Padding="5,1" VerticalAlignment="Center">
+            <TextBlock FontSize="7" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="SPLIT VIEW"/>
+           </Border>
+          </StackPanel>
           <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="{Binding PinnedToolTitle}" TextTrimming="CharacterEllipsis"/>
           <TextBlock FontSize="9" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding PinnedToolCategory}" TextTrimming="CharacterEllipsis"/>
          </StackPanel>
@@ -56,14 +58,16 @@
           <ItemsControl ItemsSource="{Binding PinnedEvidence}">
            <ItemsControl.ItemTemplate>
             <DataTemplate>
-             <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="4,2">
+             <Border Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Margin="0,1,0,2" Padding="6,3">
               <Grid>
                <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                </Grid.ColumnDefinitions>
-               <TextBlock FontSize="8" FontWeight="SemiBold" Foreground="{DynamicResource BrassBrush}" Grid.Column="0" Margin="0,0,6,0" Text="{Binding Status}"/>
-               <TextBlock FontSize="8" Foreground="{DynamicResource PaperBrush}" Grid.Column="1" Text="{Binding Detail}" TextWrapping="Wrap"/>
+               <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" CornerRadius="2" Padding="4,1" Margin="0,0,6,0" VerticalAlignment="Center">
+                <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding Status}"/>
+               </Border>
+               <TextBlock FontSize="8.5" Foreground="{DynamicResource PaperBrush}" Grid.Column="1" Text="{Binding Detail}" TextWrapping="Wrap" VerticalAlignment="Center"/>
               </Grid>
              </Border>
             </DataTemplate>

@@ -33,7 +33,9 @@
          </Style>
         </Button.Style>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-         <Path Data="{StaticResource GameIcon.gear_hammer}" Fill="{DynamicResource BrassBrush}" Focusable="False" Height="15" IsHitTestVisible="False" Margin="0,0,6,0" Stretch="Uniform" Width="15"/>
+         <Border Width="20" Height="20" CornerRadius="10" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" Margin="0,0,7,0" VerticalAlignment="Center">
+          <Path Data="{StaticResource GameIcon.gear_hammer}" Fill="{DynamicResource BrassBrush}" Focusable="False" Height="12" Width="12" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" Stretch="Uniform"/>
+         </Border>
          <TextBlock FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource PaperBrush}" Text="{DynamicResource Ui.HookWorkbench}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center"/>
         </StackPanel>
        </Button>
