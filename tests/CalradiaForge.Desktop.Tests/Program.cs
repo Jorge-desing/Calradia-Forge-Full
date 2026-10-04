@@ -94,7 +94,8 @@ internal static class Program
             ("Desktop PreferenceService sanitizes null state and empty values on save", PreferenceNullSanitization),
             ("Desktop SessionService validates request arguments and resets latency on error", SessionSendNullAndErrorLatency),
             ("Desktop PipeClient and SessionService enforce boundary checks and agent memory argument safety", PipeClientAndSessionBoundarySafety),
-            ("Desktop WorkspaceService routes CombatAgentSpawner to deterministic mission combat simulation", MissionCombatSimulationRoute)
+            ("Desktop WorkspaceService routes CombatAgentSpawner to deterministic mission combat simulation", MissionCombatSimulationRoute),
+            ("Desktop WorkspaceService routes dynamic economy, settlement, crime, and succession simulation tools", DynamicSimulationToolsExecution)
         };
         cases = cases.Concat(DesktopAssemblyServiceTests.Cases).ToArray();
         var failures = 0;
@@ -1795,6 +1796,79 @@ internal static class Program
         // Test alternate preset "CataphractsVsFians"
         var fianResult = await workspace.ExecuteAsync(tool, "CataphractsVsFians", CancellationToken.None);
         Check(fianResult.RawResult.Contains("CataphractsVsFians"), "RawResult should execute CataphractsVsFians scenario");
+    }
+
+    static async Task DynamicSimulationToolsExecution()
+    {
+        var metrics = new DesktopMetricsService();
+        var workspace = new DesktopWorkspaceService(metrics);
+
+        // 1. WorkshopEnterpriseSimulator
+        var workshopTool = DesktopToolDefinitions.All.FirstOrDefault(t => t.Id == "WorkshopEnterpriseSimulator");
+        Check(workshopTool != null, "WorkshopEnterpriseSimulator tool must exist in DesktopToolDefinitions.All");
+
+        var defaultWorkshop = await workspace.ExecuteAsync(workshopTool, string.Empty, CancellationToken.None);
+        Check(defaultWorkshop.Status == "Simulated", "Workshop tool status must be Simulated");
+        Check(defaultWorkshop.RawResult.Contains("WORKSHOP ENTERPRISE PROFITABILITY AUDIT"), "Workshop report must contain audit");
+        Check(defaultWorkshop.RawResult.Contains("Silversmith") && defaultWorkshop.RawResult.Contains("Smithy"), "Workshop report must model Silversmith and Smithy");
+        Check(defaultWorkshop.Evidence.Any(e => e.Source == "Economy / Workshop Enterprise" && e.Status == "Verified"), "Economy / Workshop Enterprise evidence must be verified");
+        Check(defaultWorkshop.Evidence.Any(e => e.Source == "Economy / Supply Chain" && e.Status == "Verified"), "Economy / Supply Chain evidence must be verified");
+        Check(defaultWorkshop.Evidence.Any(e => e.Source == "Economy / Production Volume" && e.Status == "Verified"), "Economy / Production Volume evidence must be verified");
+
+        // Dynamic parameter modification: capital and days
+        var customWorkshop = await workspace.ExecuteAsync(workshopTool, "capital:25000 days:60 demand:1.5", CancellationToken.None);
+        Check(customWorkshop.RawResult.Contains("60 Days"), "Custom workshop must reflect 60 days");
+        Check(customWorkshop.RawResult.Contains("25,000d"), "Custom workshop must reflect 25,000d starting capital");
+        Check(customWorkshop.RawResult.Contains("1.50x"), "Custom workshop must reflect 1.50x demand factor");
+
+        // 2. SettlementCalculator
+        var settlementTool = DesktopToolDefinitions.All.FirstOrDefault(t => t.Id == "SettlementCalculator");
+        Check(settlementTool != null, "SettlementCalculator tool must exist in DesktopToolDefinitions.All");
+
+        var defaultSettlement = await workspace.ExecuteAsync(settlementTool, string.Empty, CancellationToken.None);
+        Check(defaultSettlement.Status == "Simulated", "Settlement tool status must be Simulated");
+        Check(defaultSettlement.RawResult.Contains("SETTLEMENT CIVIC EQUILIBRIUM & REBELLION RISK"), "Settlement report must contain civic equilibrium");
+        Check(defaultSettlement.RawResult.Contains("Rebellion Risk Index"), "Settlement report must calculate Rebellion Risk Index");
+        Check(defaultSettlement.Evidence.Any(e => e.Source == "Settlement / Civic Stability" && e.Status == "Verified"), "Settlement / Civic Stability evidence must be verified");
+        Check(defaultSettlement.Evidence.Any(e => e.Source == "Settlement / Rebellion Risk" && e.Status == "Verified"), "Settlement / Rebellion Risk evidence must be verified");
+
+        // Dynamic parameter modification: critical rebellion scenario
+        var rebelSettlement = await workspace.ExecuteAsync(settlementTool, "loyalty:12 garrison:20 militia:180", CancellationToken.None);
+        Check(rebelSettlement.RawResult.Contains("Imminent Rebellion") || rebelSettlement.RawResult.Contains("CRITICAL REBELLION RISK"), "Low loyalty and high militia must trigger critical rebellion risk");
+
+        // 3. UnderworldCrimeSimulator
+        var crimeTool = DesktopToolDefinitions.All.FirstOrDefault(t => t.Id == "UnderworldCrimeSimulator");
+        Check(crimeTool != null, "UnderworldCrimeSimulator tool must exist in DesktopToolDefinitions.All");
+
+        var defaultCrime = await workspace.ExecuteAsync(crimeTool, string.Empty, CancellationToken.None);
+        Check(defaultCrime.Status == "Simulated", "Crime tool status must be Simulated");
+        Check(defaultCrime.RawResult.Contains("UNDERWORLD CRIME & ROGUE ENTERPRISE SIMULATION"), "Crime report must contain rogue enterprise simulation");
+        Check(defaultCrime.RawResult.Contains("ALLEY EXTORTION & SHADOW ECONOMY"), "Crime report must contain alley extortion");
+        Check(defaultCrime.Evidence.Any(e => e.Source == "Underworld / Alley Extortion Yield" && e.Status == "Verified"), "Underworld / Alley Extortion Yield evidence must be verified");
+        Check(defaultCrime.Evidence.Any(e => e.Source == "Underworld / Smuggling Arbitrage" && e.Status == "Verified"), "Underworld / Smuggling Arbitrage evidence must be verified");
+        Check(defaultCrime.Evidence.Any(e => e.Source == "Underworld / Crime Decay Equilibrium" && e.Status == "Verified"), "Underworld / Crime Decay Equilibrium evidence must be verified");
+
+        // Dynamic parameter modification: high thugs and smuggling
+        var heavyCrime = await workspace.ExecuteAsync(crimeTool, "thugs:24 prosperity:8000 buy:30 sell:210", CancellationToken.None);
+        Check(heavyCrime.RawResult.Contains("24 Thugs"), "Crime report must reflect 24 thugs");
+        Check(heavyCrime.RawResult.Contains("8,000 prosperity"), "Crime report must reflect 8,000 prosperity");
+
+        // 4. DynasticSuccessionEvaluator
+        var dynasticTool = DesktopToolDefinitions.All.FirstOrDefault(t => t.Id == "DynasticSuccessionEvaluator");
+        Check(dynasticTool != null, "DynasticSuccessionEvaluator tool must exist in DesktopToolDefinitions.All");
+
+        var defaultDynasty = await workspace.ExecuteAsync(dynasticTool, string.Empty, CancellationToken.None);
+        Check(defaultDynasty.Status == "Simulated", "Dynasty tool status must be Simulated");
+        Check(defaultDynasty.RawResult.Contains("DYNASTIC SUCCESSION & CLAN HEIRSHIP EVALUATION"), "Dynasty report must contain succession evaluation");
+        Check(defaultDynasty.RawResult.Contains("SUCCESSION CANDIDATES RANKING"), "Dynasty report must contain candidates ranking");
+        Check(defaultDynasty.RawResult.Contains("APPOINTED HEIR"), "Dynasty report must designate appointed heir");
+        Check(defaultDynasty.Evidence.Any(e => e.Source == "Dynasty / Succession Hierarchy" && e.Status == "Verified"), "Dynasty / Succession Hierarchy evidence must be verified");
+        Check(defaultDynasty.Evidence.Any(e => e.Source == "Dynasty / Clan Stability Projection" && e.Status == "Verified"), "Dynasty / Clan Stability Projection evidence must be verified");
+
+        // Dynamic parameter modification: clan name
+        var customDynasty = await workspace.ExecuteAsync(dynasticTool, "clan:dey_Meroc tier:6 leader:Derthert", CancellationToken.None);
+        Check(customDynasty.RawResult.Contains("dey_Meroc"), "Dynasty report must reflect clan dey_Meroc");
+        Check(customDynasty.RawResult.Contains("Tier 6"), "Dynasty report must reflect Tier 6");
     }
 
 

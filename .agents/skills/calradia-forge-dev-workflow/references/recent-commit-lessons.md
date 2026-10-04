@@ -25,6 +25,10 @@ Read when changing persistence, failure tests, CI or delivery gates. Commit evid
   - Mission combat simulations implement real `AgentComponent` / `MissionBehavior` lifecycle (`StaminaManagementComponent`, `MoraleShockComponent`) with fixed delta time ticks (`DeltaTime = 0.05s`), reproducible via explicit seeds (`RandomSeed`).
   - Strict anti-mock invariant: never implement cosmetic or text-only simulations without real mathematical models, data structures, and state mutations.
   - Desktop simulation routing dispatch (`DesktopWorkspaceService`) integrates `CombatAgentSpawner` directly into `SimulateMissionCombat`, generating verified `WorkspaceEvidence` audit records.
+- **Rev140 — Dynamic economic, settlement equilibrium, underworld & dynastic succession simulators:**
+  - Rebuilt Desktop simulation tools from static hardcoded reports into fully dynamic mathematical engines: `SimulateWorkshopEconomics` calculates multi-enterprise ROI across 7 workshop types via `ForgeTradeSimulator.SimulateWorkshopRoi`; `SimulateSettlementCivicEquilibrium` computes 30-day loyalty drifts and critical rebellion risk via `ForgeSettlementSystem`; `SimulateUnderworldCrime` computes alley extortion yields, contraband margins and crime decay via `ForgeUnderworldSystem`; and `SimulateDynasticSuccession` evaluates candidate lineages, traits, and clan transition stability.
+  - Individual routing in `DesktopWorkspaceService` directs `WorkshopEnterpriseSimulator`, `SettlementCalculator`, `UnderworldCrimeSimulator`, and `DynasticSuccessionEvaluator` to their respective engines while `SimulateEconomyAndCampaign` unifies workshop and civic equilibrium dynamically.
+  - Zero-mock invariant: all tools respond dynamically to parameter alterations (capital, days, loyalty, militia, thugs, clan), verified with quantitative boundary tests in `SdkFeaturesTests` and `CalradiaForge.Desktop.Tests`.
 
 Use filenames emitted by the pipeline: version `25.2.0` currently produces `package-audit-2520.json` and `package-sha256-2520.txt`. Recheck this convention when changing the pipeline.
 

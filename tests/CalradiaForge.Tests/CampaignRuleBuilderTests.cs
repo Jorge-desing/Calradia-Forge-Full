@@ -111,9 +111,9 @@ namespace CalradiaForge.Tests
             if (!CampaignRuleBuilderGenerator.TryGenerate(new CampaignRuleBuilderDraft { Rules = new List<CampaignRuleBuilderRule> { playerRenown } }, out var playerRenownPackage, out var errors))
                 throw new Exception(string.Join("; ", errors));
             if (!playerRenownPackage.BehaviorCode.Contains("Hero.MainHero != null") ||
-                playerRenownPackage.BehaviorCode.Contains("Hero.MainHero.Clan != null") ||
+                !playerRenownPackage.BehaviorCode.Contains("Hero.MainHero.Clan != null") ||
                 !playerRenownPackage.BehaviorCode.Contains("GainRenownAction.Apply(Hero.MainHero, 100f);"))
-                throw new Exception("Player renown must require the player hero, not a clan.");
+                throw new Exception("Player renown must require the player hero and its clan.");
 
             var eventHeroRenown = CampaignRuleBuilderKinds.CreateRule();
             eventHeroRenown.EventId = "DailyTickHeroEvent";
@@ -121,10 +121,29 @@ namespace CalradiaForge.Tests
             eventHeroRenown.TargetId = "event";
             if (!CampaignRuleBuilderGenerator.TryGenerate(new CampaignRuleBuilderDraft { Rules = new List<CampaignRuleBuilderRule> { eventHeroRenown } }, out var eventHeroRenownPackage, out errors))
                 throw new Exception(string.Join("; ", errors));
-            if (!eventHeroRenownPackage.BehaviorCode.Contains("hero != null") ||
-                eventHeroRenownPackage.BehaviorCode.Contains("hero.Clan != null") ||
+            if (!eventHeroRenownPackage.BehaviorCode.Contains("hero != null && hero.Clan != null") ||
                 !eventHeroRenownPackage.BehaviorCode.Contains("GainRenownAction.Apply(hero, 100f);"))
-                throw new Exception("Event-hero renown must require the event hero, not its clan.");
+                throw new Exception("Event-hero renown must require the event hero and its clan.");
+
+            var eventHeroInfluence = CampaignRuleBuilderKinds.CreateRule();
+            eventHeroInfluence.EventId = "DailyTickHeroEvent";
+            eventHeroInfluence.ActionId = "influence";
+            eventHeroInfluence.TargetId = "event";
+            if (!CampaignRuleBuilderGenerator.TryGenerate(new CampaignRuleBuilderDraft { Rules = new List<CampaignRuleBuilderRule> { eventHeroInfluence } }, out var eventHeroInfluencePackage, out errors))
+                throw new Exception(string.Join("; ", errors));
+            if (!eventHeroInfluencePackage.BehaviorCode.Contains("hero != null && hero.Clan != null") ||
+                !eventHeroInfluencePackage.BehaviorCode.Contains("ChangeClanInfluenceAction.Apply(hero.Clan, 100f);"))
+                throw new Exception("Event-hero influence must require the event hero and its clan.");
+
+            var clanLeaderRenown = CampaignRuleBuilderKinds.CreateRule();
+            clanLeaderRenown.EventId = "OnClanCreatedEvent";
+            clanLeaderRenown.ActionId = "renown";
+            clanLeaderRenown.TargetId = "event";
+            if (!CampaignRuleBuilderGenerator.TryGenerate(new CampaignRuleBuilderDraft { Rules = new List<CampaignRuleBuilderRule> { clanLeaderRenown } }, out var clanLeaderRenownPackage, out errors))
+                throw new Exception(string.Join("; ", errors));
+            if (!clanLeaderRenownPackage.BehaviorCode.Contains("clan != null && clan.Leader != null && clan.Leader.Clan != null") ||
+                !clanLeaderRenownPackage.BehaviorCode.Contains("GainRenownAction.Apply(clan.Leader, 100f);"))
+                throw new Exception("Clan-created renown must require a leader with a clan.");
 
             var playerInfluence = CampaignRuleBuilderKinds.CreateRule();
             playerInfluence.ActionId = "influence";

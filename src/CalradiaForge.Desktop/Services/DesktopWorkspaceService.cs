@@ -44,8 +44,14 @@ namespace CalradiaForge.Desktop.Services
                     return await RunSimulationAsync(tool, () => simulations.SimulateTroopTree(input, cancellation), cancellation).ConfigureAwait(true);
                 if (tool.Id == "AudioFmodMixerInspector" || tool.Id == "SoundXmlSynthesizer")
                     return await RunSimulationAsync(tool, () => simulations.AuditAudioWaveform(input, cancellation), cancellation).ConfigureAwait(true);
-                if (tool.Id == "WorkshopEnterpriseSimulator" || tool.Id == "SettlementCalculator" || tool.Id == "UnderworldCrimeSimulator" || tool.Id == "DynasticSuccessionEvaluator")
-                    return await RunSimulationAsync(tool, () => simulations.SimulateEconomyAndCampaign(input, cancellation), cancellation).ConfigureAwait(true);
+                if (tool.Id == "WorkshopEnterpriseSimulator")
+                    return await RunSimulationAsync(tool, () => simulations.SimulateWorkshopEconomics(input, cancellation), cancellation).ConfigureAwait(true);
+                if (tool.Id == "SettlementCalculator")
+                    return await RunSimulationAsync(tool, () => simulations.SimulateSettlementCivicEquilibrium(input, cancellation), cancellation).ConfigureAwait(true);
+                if (tool.Id == "UnderworldCrimeSimulator")
+                    return await RunSimulationAsync(tool, () => simulations.SimulateUnderworldCrime(input, cancellation), cancellation).ConfigureAwait(true);
+                if (tool.Id == "DynasticSuccessionEvaluator")
+                    return await RunSimulationAsync(tool, () => simulations.SimulateDynasticSuccession(input, cancellation), cancellation).ConfigureAwait(true);
                 if (tool.Id == "CombatAgentSpawner" || tool.Id == "NoviceCombatAi" || tool.Id == "SiegeNavmeshTactician")
                     return await RunSimulationAsync(tool, () => simulations.SimulateMissionCombat(input, cancellation), cancellation).ConfigureAwait(true);
                 return tool.Kind switch

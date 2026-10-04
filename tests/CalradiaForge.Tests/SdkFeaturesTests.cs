@@ -85,6 +85,7 @@ namespace CalradiaForge.Tests
             test("Rev137 Multilayer bug fixes, lifecycle resilience, and boundary safety", TestRev137MultilayerHardeningAndSafety);
             test("Rev138 Audio, variable inspector, and party spawner hardening", TestRev138AudioAndPartySpawnerHardening);
             test("Rev139 Mission combat simulator determinism, non-linear armor mitigation, stamina and morale components", TestRev139MissionCombatSimulator);
+            test("Rev140 Dynamic economic, settlement equilibrium, and underworld rogue simulations", TestRev140DynamicEconomicAndCivicSimulations);
         }
 
         private static void TestForgeAgentMemory()
@@ -3729,6 +3730,84 @@ namespace CalradiaForge.Tests
             }
             if (!cancelCaught)
                 throw new Exception("ForgeMissionCombatSimulator ignored pre-canceled CancellationToken.");
+        }
+
+        private static void TestRev140DynamicEconomicAndCivicSimulations()
+        {
+            // 1. ForgeTradeSimulator: Market Equilibrium
+            var surplus = ForgeTradeSimulator.CalculateMarketEquilibrium("grain", 500f, 100f, 15f);
+            if (surplus.SupplyDemandRatio < 4.0f)
+                throw new Exception($"Expected high supply/demand ratio for grain surplus, got {surplus.SupplyDemandRatio}");
+            if (surplus.PriceMultiplier >= 1.0f)
+                throw new Exception($"Surplus market should reduce price multiplier below 1.0, got {surplus.PriceMultiplier}");
+            if (surplus.LocalPrice >= surplus.BasePrice)
+                throw new Exception($"Surplus market price {surplus.LocalPrice} should be lower than base price {surplus.BasePrice}");
+            if (surplus.MarketCondition != "Severe Surplus")
+                throw new Exception($"Expected Severe Surplus, got {surplus.MarketCondition}");
+
+            var deficit = ForgeTradeSimulator.CalculateMarketEquilibrium("grain", 20f, 100f, 15f);
+            if (deficit.PriceMultiplier <= 1.0f)
+                throw new Exception($"Deficit market should increase price multiplier above 1.0, got {deficit.PriceMultiplier}");
+            if (deficit.LocalPrice <= deficit.BasePrice)
+                throw new Exception($"Deficit market price {deficit.LocalPrice} should be higher than base price {deficit.BasePrice}");
+            if (deficit.MarketCondition != "Critical Shortage")
+                throw new Exception($"Expected Critical Shortage, got {deficit.MarketCondition}");
+
+            // 2. ForgeTradeSimulator: Workshop ROI
+            var silversmith = ForgeTradeSimulator.SimulateWorkshopRoi("Marunath", "Silversmith", 10000, 30, 1.0f);
+            if (silversmith.NetProfit <= 0)
+                throw new Exception($"Silversmith should be profitable over 30 days, got net profit {silversmith.NetProfit}");
+            if (silversmith.TotalProduced <= 0 || silversmith.TotalInputConsumed <= 0)
+                throw new Exception("Silversmith did not produce output or consume input.");
+            if (silversmith.TotalWagesPaid != 60 * 30)
+                throw new Exception($"Expected wages of 1800d for 30 days, got {silversmith.TotalWagesPaid}");
+
+            var insolvent = ForgeTradeSimulator.SimulateWorkshopRoi("Marunath", "Silversmith", 1000, 30, 0.2f);
+            if (insolvent.FinalCapital >= 1000)
+                throw new Exception("Low capital and depressed demand should not gain capital.");
+
+            // 3. ForgeSettlementSystem: Loyalty & Security Deltas
+            float stableLoyalty = ForgeSettlementSystem.CalculateDailyLoyaltyDelta(false, true, 10, 2, 0);
+            if (stableLoyalty <= 0f)
+                throw new Exception($"Matching culture and high food should yield positive loyalty drift, got {stableLoyalty}");
+
+            float decayingLoyalty = ForgeSettlementSystem.CalculateDailyLoyaltyDelta(true, false, -5, 4, 3);
+            if (decayingLoyalty >= -2.0f)
+                throw new Exception($"Culture mismatch, starvation, and corruption should severely degrade loyalty, got {decayingLoyalty}");
+
+            float securityDelta = ForgeSettlementSystem.CalculateDailySecurityDelta(150, 100, 0, false);
+            if (securityDelta <= 0f)
+                throw new Exception($"High garrison and militia with 0 rackets should yield positive security delta, got {securityDelta}");
+
+            float suppressedSecurity = ForgeSettlementSystem.CalculateDailySecurityDelta(10, 20, 3, true);
+            if (suppressedSecurity >= 0f)
+                throw new Exception($"Weak garrison with 3 rackets and bandit lair should degrade security, got {suppressedSecurity}");
+
+            // 4. ForgeSettlementSystem: Rebellion Risk
+            var (safeCrit, safeDanger, safeStatus) = ForgeSettlementSystem.EvaluateRebellionRisk(70f, 50, 100);
+            if (safeCrit || safeDanger > 15f || safeStatus != "Stable")
+                throw new Exception($"High loyalty should be Stable, got {safeStatus} (danger: {safeDanger}, crit: {safeCrit})");
+
+            var (rebelCrit, rebelDanger, rebelStatus) = ForgeSettlementSystem.EvaluateRebellionRisk(12f, 250, 50);
+            if (!rebelCrit || rebelDanger < 80f || rebelStatus != "Imminent Rebellion")
+                throw new Exception($"Critical low loyalty and overwhelming militia must trigger Imminent Rebellion, got {rebelStatus}");
+
+            // 5. ForgeUnderworldSystem: Alley Yields & Smuggling
+            var (gold, crime) = ForgeUnderworldSystem.CalculateAlleyDailyYield(10, 5000, 40f);
+            if (gold <= 0 || crime <= 0f)
+                throw new Exception($"Active thugs in prosperous town must produce gold and crime, got gold: {gold}, crime: {crime}");
+
+            var (zeroGold, zeroCrime) = ForgeUnderworldSystem.CalculateAlleyDailyYield(0, 5000, 40f);
+            if (zeroGold != 0 || zeroCrime != 0f)
+                throw new Exception("Zero thugs must produce zero yield.");
+
+            var (profit, risk) = ForgeUnderworldSystem.CalculateSmugglingMargin(50, 200, 0.20f, 10f);
+            if (profit <= 100 || risk <= 0f)
+                throw new Exception($"Smuggling margin calculation failed: profit: {profit}, risk: {risk}");
+
+            float decayed = ForgeUnderworldSystem.CalculateCrimeDecay(50f, 80, false);
+            if (decayed >= 50f)
+                throw new Exception($"High security should decay crime rating, got {decayed} from 50");
         }
     }
 }
