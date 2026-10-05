@@ -14,6 +14,24 @@ using System.Runtime.CompilerServices;
 
 namespace CalradiaForge.Mod
 {
+    internal static class UnloadCleanupRunner
+    {
+        internal static void Run(IEnumerable<KeyValuePair<string, Action>> steps, Action<string, Exception> reportFailure)
+        {
+            if (steps == null) return;
+            foreach (var step in steps)
+            {
+                if (step.Value == null) continue;
+                try { step.Value(); }
+                catch (Exception error)
+                {
+                    try { reportFailure?.Invoke(step.Key, error); }
+                    catch { /* A diagnostic callback must never abort the remaining unload actions. */ }
+                }
+            }
+        }
+    }
+
     public sealed class SubModule : MBSubModuleBase
     {
         internal static Runtime CurrentRuntime { get; set; }
@@ -26,6 +44,12 @@ namespace CalradiaForge.Mod
         Widget keyboardControl;
         Widget navigationPaletteReturnFocus;
         bool navigationPaletteWasOpen;
+        sealed class PanelCloseState
+        {
+            public GauntletLayer Layer;
+            public ScreenBase Owner;
+            public PanelViewModel ViewModel;
+        }
         private static readonly Func<Widget, bool> IsForgeArgumentPredicate = w => w != null && (w.Id == "ForgeArgument" || w.Id == "ForgeCommandArgument");
         private static readonly Func<Widget, bool> IsGauntletComposerTitlePredicate = w => w is EditableTextWidget && w.Id == "ForgeComposerTitle";
         private static readonly Func<Widget, bool> IsSdkCatalogSearchPredicate = w => w is EditableTextWidget && w.Id == "ForgeSdkCatalogSearch";
@@ -60,7 +84,7 @@ namespace CalradiaForge.Mod
                     System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
                     System.IO.File.WriteAllText(path, dump);
                 }
-                catch { }
+                catch { /* Crash reporting is best effort and must not mask the original unhandled exception. */ }
             }
         }
 
@@ -571,44 +595,79 @@ namespace CalradiaForge.Mod
         void Close()
         {
             CloseExtensionPage();
+            ClosePanelLayer();
+        }
+
+        void ClosePanelLayer()
+        {
+            var closing = DetachPanelLayer();
+            try { RemovePanelLayer(closing); }
+            finally { closing.ViewModel?.CancelPendingWork(); closing.ViewModel?.OnFinalize(); }
+        }
+
+        PanelCloseState DetachPanelLayer()
+        {
             keyboardControl=null;
             navigationPaletteReturnFocus=null;
             navigationPaletteWasOpen=false;
-            var closingLayer=layer;var closingOwner=owner;var closingViewModel=vm;
+            var closing = new PanelCloseState { Layer = layer, Owner = owner, ViewModel = vm };
             // Detach our references first: removing a layer can reenter screen teardown.
             layer=null;owner=null;vm=null;
-            try {
-                // Screen shutdown already releases its layers. Touching their input/native
-                // resources again during module unload can access a destroyed screen.
-                if(closingLayer!=null && !closingLayer.IsFinalized && closingOwner!=null && !closingOwner.IsFinalized) {
-                    closingLayer.InputRestrictions.ResetInputRestrictions();
-                    ScreenManager.TryLoseFocus(closingLayer);
-                    if(closingOwner.HasLayer(closingLayer))closingOwner.RemoveLayer(closingLayer);
-                }
-            } finally {closingViewModel?.CancelPendingWork();closingViewModel?.OnFinalize();}
+            return closing;
         }
-        protected override void OnSubModuleUnloaded()
+
+        static void RemovePanelLayer(PanelCloseState closing)
+        {
+            // Screen shutdown already releases its layers. Touching their input/native
+            // resources again during module unload can access a destroyed screen.
+            if(closing.Layer!=null && !closing.Layer.IsFinalized && closing.Owner!=null && !closing.Owner.IsFinalized) {
+                closing.Layer.InputRestrictions.ResetInputRestrictions();
+                ScreenManager.TryLoseFocus(closing.Layer);
+                if(closing.Owner.HasLayer(closing.Layer))closing.Owner.RemoveLayer(closing.Layer);
+            }
+        }
+
+        static void ReportUnloadCleanupFailure(string name, Exception error)
         {
             try
             {
-                Close();
-                AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
-                CalradiaForge.Sdk.ForgeUI.PageOpenRequested -= OpenExtensionPage;
-                CalradiaForge.Sdk.ForgeUI.PageCloseRequested -= RequestCloseExtensionPage;
-                CalradiaForge.Sdk.ForgeApi.UiPagesRemoved -= OnUiPagesRemoved;
-                CalradiaForge.Sdk.ForgeCampaignEvents.ClearSubscribers();
-                CalradiaForge.Sdk.CampaignVariableInspector.ClearTrackedVariables();
-                CalradiaForge.Sdk.CampaignVariableInspector.ClearSnapshotListeners();
-                CalradiaForge.Sdk.ForgeData.ClearAll();
-                CalradiaForge.Sdk.ForgeAgentMemory.ClearAll();
-                CalradiaForge.Sdk.ForgeUI.Clear();
+                TaleWorlds.Library.Debug.Print("[CalradiaForge] Unload cleanup step '" + name + "' failed: " + error, 0, TaleWorlds.Library.Debug.DebugColor.Red);
+            }
+            catch { /* Logging cleanup failures must not interrupt teardown. */ }
+        }
+
+        protected override void OnSubModuleUnloaded()
+        {
+            Runtime unloadingRuntime = runtime;
+            PanelCloseState closingPanel = DetachPanelLayer();
+            try
+            {
+                UnloadCleanupRunner.Run(new[]
+                {
+                    new KeyValuePair<string, Action>("close extension page", CloseExtensionPage),
+                    new KeyValuePair<string, Action>("remove panel layer", () => RemovePanelLayer(closingPanel)),
+                    new KeyValuePair<string, Action>("cancel pending panel work", () => closingPanel.ViewModel?.CancelPendingWork()),
+                    new KeyValuePair<string, Action>("finalize panel ViewModel", () => closingPanel.ViewModel?.OnFinalize()),
+                    new KeyValuePair<string, Action>("remove unhandled-exception handler", () => AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException),
+                    new KeyValuePair<string, Action>("remove extension-page open handler", () => CalradiaForge.Sdk.ForgeUI.PageOpenRequested -= OpenExtensionPage),
+                    new KeyValuePair<string, Action>("remove extension-page close handler", () => CalradiaForge.Sdk.ForgeUI.PageCloseRequested -= RequestCloseExtensionPage),
+                    new KeyValuePair<string, Action>("remove UI-page removal handler", () => CalradiaForge.Sdk.ForgeApi.UiPagesRemoved -= OnUiPagesRemoved),
+                    new KeyValuePair<string, Action>("clear campaign event subscribers", CalradiaForge.Sdk.ForgeCampaignEvents.ClearSubscribers),
+                    new KeyValuePair<string, Action>("clear tracked campaign variables", CalradiaForge.Sdk.CampaignVariableInspector.ClearTrackedVariables),
+                    new KeyValuePair<string, Action>("clear campaign snapshot listeners", CalradiaForge.Sdk.CampaignVariableInspector.ClearSnapshotListeners),
+                    new KeyValuePair<string, Action>("clear Forge data", CalradiaForge.Sdk.ForgeData.ClearAll),
+                    new KeyValuePair<string, Action>("clear agent memory", CalradiaForge.Sdk.ForgeAgentMemory.ClearAll),
+                    new KeyValuePair<string, Action>("clear UI registrations", CalradiaForge.Sdk.ForgeUI.Clear)
+                }, ReportUnloadCleanupFailure);
             }
             finally
             {
-                Runtime unloadingRuntime = runtime;
                 runtime = null;
                 CurrentRuntime = null;
-                unloadingRuntime?.Dispose();
+                UnloadCleanupRunner.Run(new[]
+                {
+                    new KeyValuePair<string, Action>("dispose runtime", () => unloadingRuntime?.Dispose())
+                }, ReportUnloadCleanupFailure);
             }
         }
         public override void OnMissionBehaviorInitialize(Mission mission)

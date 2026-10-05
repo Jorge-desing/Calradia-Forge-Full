@@ -172,3 +172,7 @@ checks, not measurements of callback duration or proof of runtime behavior in
 Bannerlord. No representative in-game time-slicing benchmark is established by
 these checks; report harness results separately and leave game performance
 unverified until measured in a controlled live scenario.
+
+## Verified campaign-clock failure behavior (Rev141)
+
+When a periodic selector depends on `CampaignTime.Now.ToHours`, handle an engine clock read failure explicitly and fail closed by skipping that item (`false`). Do not substitute a guessed hour or treat the item as eligible. The current regression is source-structural; a failing live clock was not injected, so keep engine-runtime behavior marked unverified.

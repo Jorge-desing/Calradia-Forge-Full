@@ -15,6 +15,7 @@ namespace CalradiaForge.Tests
             test("Game-thread action queue delivers trusted completions beyond request capacity", TrustedCompletion);
             test("UI page removal defers Gauntlet teardown to the game thread", UiPageRemovalDispatch);
             test("Game-thread queue capacity accounting stays bounded under concurrent producers", ConcurrentCapacity);
+            test("SubModule unload cleanup continues after an individual failure", UnloadCleanupIsolation);
         }
 
         static void Capacity()
@@ -78,6 +79,40 @@ namespace CalradiaForge.Tests
             var dequeued = 0;
             while (queue.TryDequeue(out _)) dequeued++;
             Require(dequeued == capacity && queue.PendingCount == 0, "All accepted actions should be dequeued exactly once.");
+        }
+
+        static void UnloadCleanupIsolation()
+        {
+            var events = new List<string>();
+            var failures = new List<string>();
+            UnloadCleanupRunner.Run(new[]
+            {
+                new KeyValuePair<string, Action>("first", () => events.Add("first")),
+                new KeyValuePair<string, Action>("cancel pending panel work", () => throw new InvalidOperationException("cancel fault")),
+                new KeyValuePair<string, Action>("finalize panel ViewModel", () => events.Add("finalized")),
+                new KeyValuePair<string, Action>("last", () => events.Add("last"))
+            }, (name, error) => failures.Add(name + ":" + error.Message));
+
+            Require(events.SequenceEqual(new[] { "first", "finalized", "last" }), "A failing cancellation must not prevent ViewModel finalization or later cleanup steps.");
+            Require(failures.SequenceEqual(new[] { "cancel pending panel work:cancel fault" }), "The cleanup failure should be reported with its step name and exception.");
+
+            var source = File.ReadAllText(Path.Combine(FindWorkspaceRoot(), "src", "CalradiaForge.Mod", "SubModule.cs"));
+            var start = source.IndexOf("protected override void OnSubModuleUnloaded()", StringComparison.Ordinal);
+            var end = start < 0 ? -1 : source.IndexOf("public override void OnMissionBehaviorInitialize", start, StringComparison.Ordinal);
+            Require(start >= 0 && end > start, "Could not locate module-unload cleanup wiring.");
+            var unload = source.Substring(start, end - start);
+            Require(unload.Contains("\"cancel pending panel work\"") && unload.Contains("\"finalize panel ViewModel\""),
+                "Unload must isolate panel cancellation and ViewModel finalization as separate cleanup actions.");
+
+            var runtimeSource = File.ReadAllText(Path.Combine(FindWorkspaceRoot(), "src", "CalradiaForge.Mod", "Runtime.cs"));
+            var disposeStart = runtimeSource.IndexOf("public void Dispose()", StringComparison.Ordinal);
+            var disposeEnd = disposeStart < 0 ? -1 : runtimeSource.IndexOf("static void ReportRuntimeCleanupFailure", disposeStart, StringComparison.Ordinal);
+            Require(disposeStart >= 0 && disposeEnd > disposeStart, "Could not locate runtime cleanup wiring.");
+            var dispose = runtimeSource.Substring(disposeStart, disposeEnd - disposeStart);
+            Require(dispose.Contains("UnloadCleanupRunner.Run") && dispose.Contains("\"stop SDK applications\"") &&
+                    dispose.Contains("\"disconnect SDK\"") && dispose.Contains("\"dispose IPC server\"") &&
+                    dispose.Contains("\"schedule session log persistence\""),
+                "Runtime.Dispose must isolate engine stop, SDK disconnect, IPC disposal, and log persistence.");
         }
 
         static void Require(bool value, string message)

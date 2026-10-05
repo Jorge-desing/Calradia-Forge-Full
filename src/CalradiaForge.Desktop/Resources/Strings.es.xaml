@@ -54,6 +54,13 @@
  <sys:String x:Key="Ui.RecentCount">Herramientas recientes</sys:String>
  <sys:String x:Key="Ui.Pin">Fijar</sys:String>
  <sys:String x:Key="Ui.Unpin">Quitar fijación</sys:String>
+  <sys:String x:Key="Ui.CycleAction">SIGUIENTE ➔</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnly">FAVORITOS</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActive">★ FAVORITOS</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyHelp">Mostrar solo las herramientas fijadas como favoritas</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActiveHelp">Se muestran solo las herramientas favoritas fijadas. Activa para mostrar todas las herramientas.</sys:String>
+  <sys:String x:Key="Ui.PingConnectionName">Comprobar sesión IPC</sys:String>
+  <sys:String x:Key="Ui.PingConnectionHelp">Mide la latencia de conexión con la sesión activa de Bannerlord.</sys:String>
  <sys:String x:Key="Ui.ConnectionLive">Sesión Forge conectada</sys:String>
  <sys:String x:Key="Ui.ConnectionOffline">Sesión Forge desconectada</sys:String>
  <sys:String x:Key="Ui.Theme">TEMA</sys:String>

@@ -55,6 +55,34 @@ internal static class ForgeWeaveTests
                 ForgeApi.Disconnect();
             }
         });
+        test("ForgeApi legacy availability delivery skips superseded reentrant generations",()=>{
+            ForgeApi.Disconnect();
+            var first=new TestEngine();var current=new TestEngine();
+            var observed=new List<IForgeRegistry>();
+            Action<IForgeRegistry> reconnect=registry=>
+            {
+                if(ReferenceEquals(registry,first))
+                {
+                    ForgeApi.Disconnect();
+                    ForgeApi.Connect(current);
+                }
+            };
+            Action<IForgeRegistry> observer=registry=>observed.Add(registry);
+            ForgeApi.Available+=reconnect;
+            ForgeApi.Available+=observer;
+            try
+            {
+                ForgeApi.Connect(first);
+                Require(ReferenceEquals(ForgeApi.Registry,current));
+                Require(observed.Count==1 && ReferenceEquals(observed[0],current));
+            }
+            finally
+            {
+                ForgeApi.Available-=reconnect;
+                ForgeApi.Available-=observer;
+                ForgeApi.Disconnect();
+            }
+        });
         test("ForgeApi unregister skips a managed callback already captured by Connect",()=>{
             ForgeApi.Disconnect();
             using(var blockerEntered=new ManualResetEventSlim(false))

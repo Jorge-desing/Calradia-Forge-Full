@@ -65,3 +65,11 @@ During SDK disconnect, Forge attempts to revert its owned hooks in reverse order
 
 - **Never** query `Campaign.Current` or heroes in behavior **constructors** (documented on `ClanCharacterProgressionBehavior`); defer to events / ticks.
 - `OnCampaignStart` runs later than `OnGameStart` — register data behaviors that need full campaign there, not in `OnGameStart`, unless you know they are safe at starter time.
+
+## Verified unload and clock-failure handling (Rev141)
+
+- On module unload, detach owned panel references before removing layers. Run layer removal, pending-work cancellation, ViewModel finalization, event unsubscription, SDK state clearing, and runtime disposal as separate guarded actions. Log each exception and continue; teardown must not abandon later cleanup because an earlier `Dispose` or callback failed.
+- `PipeServer.Dispose` must isolate `shutdown.Cancel`, active-stream disposal, and queue draining. Cancellation callbacks registered by request consumers may throw; for each queued request, still complete its response and release the queue ownership, then continue to the next request. A regression injects one throwing token callback and checks that later requests are drained.
+- Keep normal panel close behavior distinct from module unload. The cleanup runner is internal and testable; its regression should inject a failing step and prove subsequent finalization and disposal still run.
+- `ClanCharacterProgressionBehavior.ShouldProcessInCurrentHour` fails closed (`false`) if `CampaignTime.Now.ToHours` cannot be read. A source-contract test verifies the guard but does not prove behavior against a failing live engine clock.
+- The in-game request pipe must enforce input limits while decoding/reading, before JSON deserialization. Maintain UTF-8 line framing compatibility (CR, LF, CRLF), the 65,536 decoded UTF-16 code-unit bound, cancellation, and a bounded incomplete-line timeout. Fixtures do not prove live game transport reliability.

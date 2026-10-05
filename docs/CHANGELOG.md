@@ -1,5 +1,19 @@
 # Changelog
 
+## Rev141 accessibility and run-evidence clarification — 2026-10-04 (Registry Rev142)
+
+- Clarifies that the cycle hint received localized text; state-specific UI Automation name/help were added to the favorites toggle, while Ping received localized name/help. Rev141 remains immutable.
+- Identifies the final integrated evidence as `artifacts/rev141-full-suite-final4.txt` and `artifacts/desktop-render-rev141-final4.json`: Core 436/436, ForgeWeave 74/74, Desktop 75/75, and WPF 296 cases/320 layout passes. The BAT console reports 25,994 ms and the JSON reports 25,997 ms total; both are harness timings, not app latency.
+- No source behavior, product/API version, contracts, dependencies, routes, permissions, or target frameworks changed. Bannerlord was not launched.
+
+## Suite robustness corrections — 2026-10-04 (Registry Rev141)
+
+- Bounded named-pipe request reads incrementally at the existing 65,536-character limit, with cancellation and a 15-second incomplete-line deadline while preserving UTF-8 line protocol delimiters.
+- Isolated module/runtime unload and per-request IPC cancellation cleanup so callback failures are reported without preventing later shutdown work; campaign scheduling now fails closed if the engine clock is unavailable.
+- Stopped legacy SDK availability notifications when a callback invalidates the connected provider generation. Localized WPF cycle/favorites labels; the favorites filter now exposes its active state through localized accessible name/help. Ping keeps its existing command and ID with explicit accessible name/help.
+- Full BAT suite passed: clean build (0 warnings/errors), Core 436/436, ForgeWeave 74/74, Desktop 75/75, and WPF render 296 cases/320 layout passes. Stateless 4/4, Gauntlet structural audit, and read-only UIA 23/23 passed. Render timing is harness-only; no live Bannerlord session was run.
+- Product remains 25.2.0 and Forge API 13; public contracts, IPC schema, routes, permissions, target frameworks, and dependencies are unchanged.
+
 ## Python unittest summary parsing — 2026-10-02 (Registry Rev131)
 
 - The Rev130 CI repair used a fixture without the blank line that Python's standard `unittest` runner can emit between `Ran N tests` and `OK`. A final review caught that the first regex still missed that normal output shape before the repair was committed.

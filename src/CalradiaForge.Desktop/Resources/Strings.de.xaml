@@ -54,6 +54,13 @@
  <sys:String x:Key="Ui.RecentCount">Aktuelle Werkzeuge</sys:String>
  <sys:String x:Key="Ui.Pin">Anheften</sys:String>
  <sys:String x:Key="Ui.Unpin">Lösen</sys:String>
+  <sys:String x:Key="Ui.CycleAction">WEITER ➔</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnly">FAVORITEN</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActive">★ FAVORITEN</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyHelp">Nur angeheftete Favoriten anzeigen</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActiveHelp">Es werden nur angeheftete Favoriten angezeigt. Aktivieren, um alle Werkzeuge anzuzeigen.</sys:String>
+  <sys:String x:Key="Ui.PingConnectionName">IPC-Sitzung prüfen</sys:String>
+  <sys:String x:Key="Ui.PingConnectionHelp">Latenz der Verbindung zur aktiven Bannerlord-Sitzung messen.</sys:String>
  <sys:String x:Key="Ui.ConnectionLive">Forge-Sitzung online</sys:String>
  <sys:String x:Key="Ui.ConnectionOffline">Forge-Sitzung offline</sys:String>
  <sys:String x:Key="Ui.Theme">THEMA</sys:String>

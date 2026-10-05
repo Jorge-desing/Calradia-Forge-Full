@@ -262,7 +262,7 @@ namespace CalradiaForge.Tests
             string missionEnd = GetMethodBlock(subModule, "protected override void OnEndMission()");
             if (!onGameStart.Contains("campaignStarter.AddBehavior(new CalradiaForge.Mod.DataExtensions.DataBehavior())"))
                 throw new Exception("SubModule.OnGameStart must register DataBehavior so campaign memory lifecycle cleanup is active.");
-            if (!unload.Contains("ForgeAgentMemory.ClearAll()"))
+            if (!unload.Contains("\"clear agent memory\", CalradiaForge.Sdk.ForgeAgentMemory.ClearAll"))
                 throw new Exception("SubModule unload must retain cleanup of volatile agent memory.");
             if (missionEnd.Contains("ForgeAgentMemory.ClearAll()"))
                 throw new Exception("Ending a mission must not clear campaign-wide volatile agent memory.");

@@ -54,6 +54,13 @@
  <sys:String x:Key="Ui.RecentCount">Recent tools</sys:String>
  <sys:String x:Key="Ui.Pin">Pin</sys:String>
  <sys:String x:Key="Ui.Unpin">Unpin</sys:String>
+  <sys:String x:Key="Ui.CycleAction">次へ ➔</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnly">お気に入り</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActive">★ お気に入り</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyHelp">ピン留めしたお気に入りだけを表示します</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActiveHelp">ピン留めしたお気に入りのみを表示中です。すべてのツールを表示するには有効化します。</sys:String>
+  <sys:String x:Key="Ui.PingConnectionName">IPC セッションを確認</sys:String>
+  <sys:String x:Key="Ui.PingConnectionHelp">アクティブな Bannerlord セッションへの接続遅延を測定します。</sys:String>
  <sys:String x:Key="Ui.ConnectionLive">Forge session online</sys:String>
  <sys:String x:Key="Ui.ConnectionOffline">Forge session offline</sys:String>
  <sys:String x:Key="Ui.Theme">THEME</sys:String>

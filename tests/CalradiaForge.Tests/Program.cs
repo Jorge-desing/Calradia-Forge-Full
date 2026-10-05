@@ -109,6 +109,7 @@ class Program
             Test("Extension diagnostic failure isolated",()=>{var m=new TestEngine();m.Register(new BadProvider());Equal(m.Diagnose(new Services()).Single().Code,"extension_error");});
             Test("English is default and Spanish available",()=>{Equal(Localization.Text("Summary","en"),"Summary");Equal(Localization.Text("Summary","es"),"Resumen");});
             Test("Named pipe roundtrip and reconnect",()=>PipeRoundtrip());
+            PipeServerTests.Run(Test);
             if(args.Length>0 && Directory.Exists(args[0])) Test("Installed modules can be scanned",()=>{var d=ModuleValidator.Inspect(args[0]);True(d.Modules.Any(m=>m.Id=="Native" && m.Version=="v1.4.8"));Console.WriteLine("Installed modules: "+d.Modules.Count+"; findings: "+d.Findings.Count);Json.Save(Path.Combine("artifacts","installed-module-scan.json"),d);});
         } finally {Directory.Delete(temp,true);}
         Console.WriteLine("RESULT: "+passed+" passed, "+failed+" failed");Environment.ExitCode=failed==0?0:1;

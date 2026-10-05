@@ -104,3 +104,10 @@ Use this skill for `src/CalradiaForge.Desktop/`, its WPF presentation, and its d
 ## Verified hook and delivery lessons
 
 For Finalizer/ILHook boundaries, confirmation selection, serial measurement and packaging from a scoped snapshot, read [hook delivery lessons](../calradia-forge-dev-workflow/references/hook-delivery-lessons.md). Recheck current source and preserve the distinction between passing fixtures and pending live main-menu validation.
+
+## Verified navigation and connection accessibility (Rev141)
+
+- Keep the role-cycle hint and favorites-only label localized in all thirteen resource catalogs. The favorites filter should expose explicit localized `AutomationProperties.Name` and `HelpText`; do not assume a nested icon/text layout yields a stable UIA name.
+- When a toggle changes state, update its localized UI Automation name and help/tooltip alongside its visible label. Test both inactive and active states through the rendered control; static resource presence alone does not prove state announcements.
+- The footer ping control keeps its existing `AutomationId`, command, and compact layout while exposing localized automation `Name` and `HelpText`. Extend both structural and rendered-resource checks when these bindings change.
+- Resource parity, a render harness, and UI Automation are separate evidence: do not claim live WPF observation from resource-key or template tests alone.

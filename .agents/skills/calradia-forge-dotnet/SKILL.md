@@ -53,6 +53,12 @@ Adhere strictly to KISS principles in all C# development:
    - Do not create a Controller + Service + Repository + DTO + Mapper pipeline for a simple 30-line calculation.
    - Scale the architectural pattern to the exact scope of the problem.
 
+## Verified IPC and availability-callback boundaries (Rev141)
+
+- A connection callback can synchronously disconnect its provider and connect a replacement. Revalidate the connection generation before each legacy `ForgeApi.Available` callback and after callbacks; stop delivering a superseded generation. Preserve callback exception isolation and the current public API/version.
+- The in-game named-pipe server uses incremental UTF-8 line decoding and must enforce its 65,536 UTF-16 code-unit request bound before JSON parsing. Preserve CR, LF, and CRLF line terminators, cancellation, and the 15-second incomplete-line deadline. The Desktop response limit is a separate direction and contract.
+- Run multi-target regressions through the repository BAT launcher; do not infer in-game engine behavior from a source-only assertion or a `net472` build.
+
 ---
 
 ## 3. Dual-TFM Architecture Awareness

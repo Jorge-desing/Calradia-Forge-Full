@@ -54,6 +54,13 @@
  <sys:String x:Key="Ui.RecentCount">Recent tools</sys:String>
  <sys:String x:Key="Ui.Pin">Pin</sys:String>
  <sys:String x:Key="Ui.Unpin">Unpin</sys:String>
+  <sys:String x:Key="Ui.CycleAction">AVANTI ➔</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnly">PREFERITI</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActive">★ PREFERITI</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyHelp">Mostra solo gli strumenti fissati tra i preferiti</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActiveHelp">Sono mostrati solo gli strumenti preferiti fissati. Attiva per mostrare tutti gli strumenti.</sys:String>
+  <sys:String x:Key="Ui.PingConnectionName">Verifica sessione IPC</sys:String>
+  <sys:String x:Key="Ui.PingConnectionHelp">Misura la latenza della connessione alla sessione Bannerlord attiva.</sys:String>
  <sys:String x:Key="Ui.ConnectionLive">Forge session online</sys:String>
  <sys:String x:Key="Ui.ConnectionOffline">Forge session offline</sys:String>
  <sys:String x:Key="Ui.Theme">THEME</sys:String>

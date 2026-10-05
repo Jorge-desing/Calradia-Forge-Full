@@ -86,6 +86,10 @@ OnSubModuleUnloaded()
     └─ Runtime.Dispose()
 ```
 
+### Descarga aislada ante fallos y delimitación IPC (Rev141)
+
+`OnSubModuleUnloaded` separa primero las referencias del panel y después ejecuta el cierre de extensiones, la retirada de la capa, la cancelación del trabajo, la finalización del ViewModel, la baja de eventos, la limpieza del SDK y la disposición del runtime como pasos protegidos independientes. Cada fallo se registra y no omite los pasos posteriores. El servidor local de named pipes decodifica las líneas de solicitud de forma incremental, acepta delimitadores CR/LF/CRLF, limita la entrada decodificada a 65.536 unidades de código UTF-16 y desconecta líneas incompletas después de 15 segundos. La evidencia de código y pruebas no demuestra el comportamiento en Bannerlord en vivo.
+
 ### Arquitectura de los comportamientos de campaña
 
 ```

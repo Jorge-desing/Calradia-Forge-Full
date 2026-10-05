@@ -969,6 +969,7 @@ internal static class Program
             RefreshSelectorBindings(window);
             Render(window);
             AssertCompactHeaderAtMinimum(window, language);
+            AssertRailLabelsLocalized(app, window);
             AssertFooterFitsShellViewport(window);
         }
 
@@ -1516,8 +1517,16 @@ internal static class Program
             grid.Margin == new Thickness(14, 8, 14, 12));
         var footer = Descendants(window).OfType<TextBlock>().SingleOrDefault(element =>
             string.Equals(AutomationProperties.GetAutomationId(element), "KeyboardShortcutHint", StringComparison.Ordinal));
+        var pingButton = Descendants(window).OfType<Button>().SingleOrDefault(element =>
+            string.Equals(AutomationProperties.GetAutomationId(element), "FooterPingButton", StringComparison.Ordinal));
+        var expectedPingName = Application.Current.TryFindResource("Ui.PingConnectionName") as string;
+        var expectedPingHelp = Application.Current.TryFindResource("Ui.PingConnectionHelp") as string;
         Check(shell != null && layout != null && footer != null && footer.IsVisible && footer.ActualWidth > 0 && footer.ActualHeight > 0,
             "The keyboard-shortcut footer and its shell viewport must remain visible at minimum window size.");
+        Check(pingButton != null && pingButton.IsVisible &&
+              string.Equals(AutomationProperties.GetName(pingButton), expectedPingName, StringComparison.Ordinal) &&
+              string.Equals(AutomationProperties.GetHelpText(pingButton), expectedPingHelp, StringComparison.Ordinal),
+            "FooterPingButton must expose its current locale's explicit automation name and help text.");
         if (layout == null || footer == null) return;
 
         var bounds = Bounds(footer, layout);
@@ -1535,6 +1544,42 @@ internal static class Program
         };
         Check(measuredText.Height <= footer.ActualHeight + 1,
             $"The complete localized shortcut hint must fit inside its own text bounds at minimum window size: desired {measuredText.Height:0.#}, actual {footer.ActualHeight:0.#} DIP.");
+    }
+
+    static void AssertRailLabelsLocalized(Application app, Window window)
+    {
+        var cycleButton = Descendants(window).OfType<Button>().SingleOrDefault(element =>
+            string.Equals(AutomationProperties.GetAutomationId(element), "ModderRolePresetButton", StringComparison.Ordinal));
+        var cycleText = cycleButton == null ? null : Descendants(cycleButton).OfType<TextBlock>().SingleOrDefault(element =>
+            string.Equals(element.Text, app.TryFindResource("Ui.CycleAction") as string, StringComparison.Ordinal));
+        var favoritesButton = Descendants(window).OfType<Button>().SingleOrDefault(element =>
+            string.Equals(AutomationProperties.GetAutomationId(element), "FavoritesOnlyFilterButton", StringComparison.Ordinal));
+        var favoritesText = favoritesButton == null ? null : Descendants(favoritesButton).OfType<TextBlock>().SingleOrDefault(element =>
+            string.Equals(element.Text, app.TryFindResource("Ui.FavoritesOnly") as string, StringComparison.Ordinal));
+        Check(cycleText != null && cycleText.IsVisible,
+            "The role-cycle hint must resolve to the current locale's CycleAction resource.");
+        Check(favoritesText != null && favoritesText.IsVisible &&
+              string.Equals(favoritesButton?.ToolTip as string, app.TryFindResource("Ui.FavoritesOnlyHelp") as string, StringComparison.Ordinal),
+            "The inactive favorites filter label and tooltip must resolve to the current locale's resources.");
+        Check(string.Equals(AutomationProperties.GetName(favoritesButton), app.TryFindResource("Ui.FavoritesOnly") as string, StringComparison.Ordinal) &&
+              string.Equals(AutomationProperties.GetHelpText(favoritesButton), app.TryFindResource("Ui.FavoritesOnlyHelp") as string, StringComparison.Ordinal),
+            "The favorites filter must expose its localized name and help text through WPF automation properties.");
+
+        if (favoritesButton?.Command?.CanExecute(null) == true)
+        {
+            favoritesButton.Command.Execute(null);
+            var activeLabel = app.TryFindResource("Ui.FavoritesOnlyActive") as string;
+            var activeHelp = app.TryFindResource("Ui.FavoritesOnlyActiveHelp") as string;
+            Check(string.Equals(AutomationProperties.GetName(favoritesButton), activeLabel, StringComparison.Ordinal) &&
+                  string.Equals(AutomationProperties.GetHelpText(favoritesButton), activeHelp, StringComparison.Ordinal) &&
+                  string.Equals(favoritesButton.ToolTip as string, activeHelp, StringComparison.Ordinal),
+                "The active favorites filter must expose its localized on-state through UI Automation and its tooltip.");
+            favoritesButton.Command.Execute(null);
+        }
+        else
+        {
+            Check(false, "The favorites filter command must be available for its active accessibility-state regression.");
+        }
     }
 
     static void AssertHeaderLabelsFitAtNormalWidth(Application app, Window window)

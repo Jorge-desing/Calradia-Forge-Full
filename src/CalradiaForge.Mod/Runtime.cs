@@ -986,20 +986,30 @@ namespace CalradiaForge.Mod
             // A detour can remain installed if SDK disconnect is rejected. Make its callback
             // route permanently inert before attempting cleanup; the published hook capability
             // can still verify/revert retained state while its normal mutation gate allows it.
-            TestEngine.StopApplicationsForUnload();
+            // Keep each finalization action independent: a failure stopping callbacks or
+            // disconnecting the SDK must not leave the named-pipe listener alive.
+            UnloadCleanupRunner.Run(new[]
+            {
+                new KeyValuePair<string, Action>("stop SDK applications", TestEngine.StopApplicationsForUnload),
+                new KeyValuePair<string, Action>("disconnect SDK", ForgeApi.DisconnectForUnload),
+                // A rejected SDK disconnect may preserve a hook capability for recovery,
+                // but this Runtime is unloading and its pipe listener must still stop.
+                new KeyValuePair<string, Action>("dispose IPC server", server.Dispose),
+                new KeyValuePair<string, Action>("schedule session log persistence", () => Task.Run(() =>
+                {
+                    try { Log.Persist(Paths.Sessions); }
+                    catch (Exception error) { ReportRuntimeCleanupFailure("persist session log", error); }
+                }))
+            }, ReportRuntimeCleanupFailure);
+        }
+
+        static void ReportRuntimeCleanupFailure(string name, Exception error)
+        {
             try
             {
-                ForgeApi.DisconnectForUnload();
+                TaleWorlds.Library.Debug.Print("[CalradiaForge] Runtime cleanup step '" + name + "' failed: " + error, 0, TaleWorlds.Library.Debug.DebugColor.Red);
             }
-            finally
-            {
-                // A rejected SDK disconnect can preserve the published capability while
-                // this Runtime is still ticking, but module unload stops that recovery
-                // route. Always stop the pipe server here so unload cannot leave a listener
-                // whose host no longer exists.
-                try { server.Dispose(); }
-                finally { Task.Run(() => Log.Persist(Paths.Sessions)); }
-            }
+            catch { }
         }
     }
 }

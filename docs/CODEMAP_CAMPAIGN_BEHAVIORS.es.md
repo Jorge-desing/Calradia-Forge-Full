@@ -718,3 +718,7 @@ DataBehavior (registrado en SubModule.OnGameStart)
 9. **Deja `SyncData` vacío en behaviors sin estado**: sin datos propios que serializar.
 10. **Usa `[AutoRegisterBehavior]` para el descubrimiento**: registro automático de behaviors.
 
+### Lecturas del reloj de campaña con fallo cerrado (Rev141)
+
+`ClanCharacterProgressionBehavior.ShouldProcessInCurrentHour` devuelve `false` cuando no puede leer `CampaignTime.Now.ToHours`. Un fallo transitorio del reloj del motor omite ese elemento periódico en vez de considerarlo listo para procesar. La regresión comprueba estructuralmente la protección; no inyecta un reloj defectuoso del motor en vivo.
+

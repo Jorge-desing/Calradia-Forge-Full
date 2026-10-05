@@ -919,10 +919,10 @@ namespace CalradiaForge.Sdk
                     try
                     {
                         if(managed!=null)TryDeliverAvailability(managed,registry,generation);
-                        else s(registry);
+                        else if(IsCurrentAvailabilityGeneration(registry,generation))s(registry);
                     }
                     catch(Exception ex) { errors.Add(ex); }
-                    if(managed!=null && !IsCurrentAvailabilityGeneration(registry,generation))break;
+                    if(!IsCurrentAvailabilityGeneration(registry,generation))break;
                 }
             }
             if(errors.Count>0)throw new AggregateException("One or more ForgeWeave subscribers threw an exception during initialization.",errors);

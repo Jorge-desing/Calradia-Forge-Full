@@ -378,6 +378,14 @@ namespace CalradiaForge.Tests
                 !content.Contains("ForgeTimeSlicer.ShouldProcess(hero.StringId, currentHour)") ||
                 content.Contains("GetHashCode()"))
                 throw new Exception("ClanCharacterProgressionBehavior must route periodic party and hero scheduling through ForgeTimeSlicer and avoid process-dependent GetHashCode bucketing.");
+
+            var selectorStart = content.IndexOf("public static bool ShouldProcessInCurrentHour(string stringId)", StringComparison.Ordinal);
+            var selectorEnd = selectorStart < 0 ? -1 : content.IndexOf("#endregion", selectorStart, StringComparison.Ordinal);
+            if (selectorStart < 0 || selectorEnd <= selectorStart)
+                throw new Exception("Could not locate ShouldProcessInCurrentHour for the CampaignTime failure guard.");
+            var selector = content.Substring(selectorStart, selectorEnd - selectorStart);
+            if (!selector.Contains("try { currentHour = (int)CampaignTime.Now.ToHours; }") || !selector.Contains("catch { return false; }"))
+                throw new Exception("ShouldProcessInCurrentHour must fail closed if CampaignTime cannot be read.");
         }
 
         private static void TestDefensiveNullGuards()

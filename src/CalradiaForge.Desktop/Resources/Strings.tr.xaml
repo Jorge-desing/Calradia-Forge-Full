@@ -54,6 +54,13 @@
  <sys:String x:Key="Ui.RecentCount">Recent tools</sys:String>
  <sys:String x:Key="Ui.Pin">Pin</sys:String>
  <sys:String x:Key="Ui.Unpin">Unpin</sys:String>
+  <sys:String x:Key="Ui.CycleAction">SONRAKİ ➔</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnly">FAVORİLER</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActive">★ FAVORİLER</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyHelp">Yalnızca sabitlenmiş favori araçları göster</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActiveHelp">Yalnızca sabitlenmiş favoriler gösteriliyor. Tüm araçları göstermek için etkinleştirin.</sys:String>
+  <sys:String x:Key="Ui.PingConnectionName">IPC oturumunu denetle</sys:String>
+  <sys:String x:Key="Ui.PingConnectionHelp">Etkin Bannerlord oturumuna bağlantı gecikmesini ölçer.</sys:String>
  <sys:String x:Key="Ui.ConnectionLive">Forge session online</sys:String>
  <sys:String x:Key="Ui.ConnectionOffline">Forge session offline</sys:String>
  <sys:String x:Key="Ui.Theme">THEME</sys:String>

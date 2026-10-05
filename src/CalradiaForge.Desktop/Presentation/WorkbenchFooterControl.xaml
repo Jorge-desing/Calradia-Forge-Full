@@ -20,7 +20,7 @@
    <Border Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1,1,1,2" CornerRadius="2" Padding="5,1" Margin="0,2,4,2" VerticalAlignment="Center">
     <TextBlock Text="Ctrl+K PALETTE" FontSize="7.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}"/>
    </Border>
-   <Button AutomationProperties.AutomationId="FooterPingButton" Command="{Binding PingConnectionCommand}" ToolTip="Ping IPC Session" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" Padding="5,1" Margin="0,2,2,2" MinHeight="18" Height="18" VerticalAlignment="Center">
+   <Button AutomationProperties.AutomationId="FooterPingButton" AutomationProperties.Name="{DynamicResource Ui.PingConnectionName}" AutomationProperties.HelpText="{DynamicResource Ui.PingConnectionHelp}" Command="{Binding PingConnectionCommand}" ToolTip="{DynamicResource Ui.PingConnectionHelp}" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource VerdigrisBrush}" BorderThickness="1" Padding="5,1" Margin="0,2,2,2" MinHeight="18" Height="18" VerticalAlignment="Center">
     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
      <Ellipse Width="6" Height="6" Margin="0,0,4,0" VerticalAlignment="Center" Fill="{DynamicResource VerdigrisBrush}"/>
      <TextBlock Text="{Binding ConnectionLatencyText, Mode=OneWay}" FontSize="8" FontWeight="SemiBold" Foreground="{DynamicResource VerdigrisBrush}" VerticalAlignment="Center"/>

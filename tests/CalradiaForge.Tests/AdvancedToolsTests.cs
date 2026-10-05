@@ -2962,10 +2962,12 @@ namespace MyCustomMod.QuestBehaviors
             if (closeStart < 0 || closeEnd <= closeStart)
                 throw new Exception("Could not isolate panel cleanup for partial initialization regression checks.");
             string close = source.Substring(closeStart, closeEnd - closeStart);
-            if (close.Contains("if(layer==null)return;") ||
-                !close.Contains("var closingLayer=layer;var closingOwner=owner;var closingViewModel=vm;") ||
-                !close.Contains("finally {closingViewModel?.CancelPendingWork();closingViewModel?.OnFinalize();}"))
-                throw new Exception("Close() must finalize the ViewModel even when layer construction failed before assigning a layer.");
+            int closePanelStart = close.IndexOf("void ClosePanelLayer()", StringComparison.Ordinal);
+            int detachPanelStart = close.IndexOf("PanelCloseState DetachPanelLayer()", StringComparison.Ordinal);
+            int removePanelStart = close.IndexOf("static void RemovePanelLayer(", StringComparison.Ordinal);
+            if (!close.Contains("void ClosePanelLayer()") || closePanelStart < 0 || detachPanelStart <= closePanelStart ||
+                removePanelStart <= detachPanelStart || !close.Contains("finally { closing.ViewModel?.CancelPendingWork(); closing.ViewModel?.OnFinalize(); }"))
+                throw new Exception("Close() must finalize the ViewModel in a finally block even when layer construction failed before assigning a layer.");
         }
 
         private static void TestNoviceModderFeatures()

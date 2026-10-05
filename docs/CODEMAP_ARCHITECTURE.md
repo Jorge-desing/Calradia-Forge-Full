@@ -86,6 +86,10 @@ OnSubModuleUnloaded()
     └─ Runtime.Dispose()
 ```
 
+### Failure-Isolated Unload and IPC Framing (Rev141)
+
+`OnSubModuleUnloaded` detaches panel references first, then runs extension close, layer removal, work cancellation, ViewModel finalization, event unsubscription, SDK clearing, and runtime disposal as individually guarded cleanup actions. Each failure is logged and does not skip later actions. The local named-pipe server decodes request lines incrementally, accepts CR/LF/CRLF framing, bounds decoded input to 65,536 UTF-16 code units, and disconnects incomplete lines after 15 seconds. This source/test evidence does not establish live Bannerlord behavior.
+
 ### Campaign Behavior Architecture
 
 ```

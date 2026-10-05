@@ -72,7 +72,7 @@
            <TextBlock FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}" Text="{Binding ActiveModderRoleLabel}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
           </StackPanel>
           <Border Grid.Column="1" Background="{DynamicResource CoalBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="2" Padding="3,1" VerticalAlignment="Center">
-           <TextBlock FontSize="7" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" Text="CYCLE ➔"/>
+           <TextBlock FontSize="7" FontWeight="Bold" Foreground="{DynamicResource MutedTextBrush}" Text="{DynamicResource Ui.CycleAction}"/>
           </Border>
          </Grid>
         </Button>
@@ -80,16 +80,30 @@
        <!-- Favorites & Tool Count Indicator -->
        <Grid Margin="0,0,0,4">
         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-        <Button AutomationProperties.AutomationId="FavoritesOnlyFilterButton" Command="{Binding ToggleFavoritesOnlyCommand}" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" Padding="6,2" Cursor="Hand" ToolTip="Toggle showing only pinned favorites">
+        <Button AutomationProperties.AutomationId="FavoritesOnlyFilterButton" Command="{Binding ToggleFavoritesOnlyCommand}" Background="{DynamicResource FrameSurfaceSolidBrush}" BorderBrush="{DynamicResource BrassBrush}" BorderThickness="1" Padding="6,2" Cursor="Hand">
+         <Button.Style>
+          <Style TargetType="{x:Type Button}">
+           <Setter Property="AutomationProperties.Name" Value="{DynamicResource Ui.FavoritesOnly}"/>
+           <Setter Property="AutomationProperties.HelpText" Value="{DynamicResource Ui.FavoritesOnlyHelp}"/>
+           <Setter Property="ToolTip" Value="{DynamicResource Ui.FavoritesOnlyHelp}"/>
+           <Style.Triggers>
+            <DataTrigger Binding="{Binding ShowFavoritesOnly}" Value="True">
+             <Setter Property="AutomationProperties.Name" Value="{DynamicResource Ui.FavoritesOnlyActive}"/>
+             <Setter Property="AutomationProperties.HelpText" Value="{DynamicResource Ui.FavoritesOnlyActiveHelp}"/>
+             <Setter Property="ToolTip" Value="{DynamicResource Ui.FavoritesOnlyActiveHelp}"/>
+            </DataTrigger>
+           </Style.Triggers>
+          </Style>
+         </Button.Style>
          <StackPanel Orientation="Horizontal">
           <Path Data="{StaticResource Icon.Shield}" Height="10" Margin="0,0,4,0" Stretch="Uniform" Stroke="{DynamicResource BrassBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Width="10"/>
           <TextBlock FontSize="8" FontWeight="Bold" Foreground="{DynamicResource BrassBrush}">
            <TextBlock.Style>
             <Style TargetType="TextBlock">
-             <Setter Property="Text" Value="FAVORITES"/>
+             <Setter Property="Text" Value="{DynamicResource Ui.FavoritesOnly}"/>
              <Style.Triggers>
               <DataTrigger Binding="{Binding ShowFavoritesOnly}" Value="True">
-               <Setter Property="Text" Value="★ FAVORITES"/>
+               <Setter Property="Text" Value="{DynamicResource Ui.FavoritesOnlyActive}"/>
               </DataTrigger>
              </Style.Triggers>
             </Style>

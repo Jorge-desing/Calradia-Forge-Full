@@ -718,3 +718,7 @@ DataBehavior (Registered in SubModule.OnGameStart)
 9. **Empty SyncData for Stateless** - Do not serialize behavior-owned state
 10. **[AutoRegisterBehavior] for Discovery** - Automatic behavior registration
 
+### Fail-Closed Campaign Clock Reads (Rev141)
+
+`ClanCharacterProgressionBehavior.ShouldProcessInCurrentHour` returns `false` when `CampaignTime.Now.ToHours` cannot be read. A transient engine-clock failure therefore skips that periodic item rather than treating it as eligible. The regression verifies the guard structurally; it does not inject a failing live engine clock.
+

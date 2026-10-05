@@ -54,6 +54,13 @@
  <sys:String x:Key="Ui.RecentCount">Recent tools</sys:String>
  <sys:String x:Key="Ui.Pin">Pin</sys:String>
  <sys:String x:Key="Ui.Unpin">Unpin</sys:String>
+  <sys:String x:Key="Ui.CycleAction">ДАЛЕЕ ➔</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnly">ИЗБРАННОЕ</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActive">★ ИЗБРАННОЕ</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyHelp">Показывать только закреплённые избранные инструменты</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActiveHelp">Показаны только закреплённые избранные. Включите, чтобы показать все инструменты.</sys:String>
+  <sys:String x:Key="Ui.PingConnectionName">Проверить сеанс IPC</sys:String>
+  <sys:String x:Key="Ui.PingConnectionHelp">Измеряет задержку соединения с активным сеансом Bannerlord.</sys:String>
  <sys:String x:Key="Ui.ConnectionLive">Forge session online</sys:String>
  <sys:String x:Key="Ui.ConnectionOffline">Forge session offline</sys:String>
  <sys:String x:Key="Ui.Theme">THEME</sys:String>

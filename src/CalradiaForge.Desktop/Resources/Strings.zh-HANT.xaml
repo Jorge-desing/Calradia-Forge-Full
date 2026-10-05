@@ -54,6 +54,13 @@
  <sys:String x:Key="Ui.RecentCount">Recent tools</sys:String>
  <sys:String x:Key="Ui.Pin">Pin</sys:String>
  <sys:String x:Key="Ui.Unpin">Unpin</sys:String>
+  <sys:String x:Key="Ui.CycleAction">下一項 ➔</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnly">最愛</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActive">★ 最愛</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyHelp">僅顯示已釘選的最愛工具</sys:String>
+  <sys:String x:Key="Ui.FavoritesOnlyActiveHelp">目前僅顯示已釘選的最愛。啟用即可顯示所有工具。</sys:String>
+  <sys:String x:Key="Ui.PingConnectionName">檢查 IPC 工作階段</sys:String>
+  <sys:String x:Key="Ui.PingConnectionHelp">測量與目前 Bannerlord 工作階段的連線延遲。</sys:String>
  <sys:String x:Key="Ui.ConnectionLive">Forge session online</sys:String>
  <sys:String x:Key="Ui.ConnectionOffline">Forge session offline</sys:String>
  <sys:String x:Key="Ui.Theme">THEME</sys:String>

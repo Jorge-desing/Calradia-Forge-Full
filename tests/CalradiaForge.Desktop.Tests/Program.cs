@@ -61,6 +61,7 @@ internal static class Program
             ("Desktop page releases evidence and cancels work on disposal", PageDisposalSurface),
             ("Desktop Split Deck fallback labels exist in all locale catalogs", SplitDeckFallbackCatalogLocalization),
             ("Desktop search and role-filter labels and help are localized in all catalogs", SearchAndRoleFilterLocalization),
+            ("Desktop favorites and footer connection labels are localized and accessible", NavigationConnectionLocalization),
             ("Desktop services have no WPF control dependency", ServiceIsolationSurface),
             ("Desktop analyzer results retain provenance and bounded evidence", AnalyzerSurface),
             ("Desktop evidence ledger and export preserve actionable finding context", AnalyzerEvidenceProjection),
@@ -404,6 +405,65 @@ internal static class Program
             checkedLocales++;
         }
         Check(checkedLocales == 13, "Search and role-filter localization must cover all 13 supported languages.");
+        return Task.CompletedTask;
+    }
+
+    static Task NavigationConnectionLocalization()
+    {
+        var resourceKeys = new[]
+        {
+            "Ui.CycleAction", "Ui.FavoritesOnly", "Ui.FavoritesOnlyActive", "Ui.FavoritesOnlyHelp", "Ui.FavoritesOnlyActiveHelp",
+            "Ui.PingConnectionName", "Ui.PingConnectionHelp"
+        };
+        var english = LoadSourceXml(FindDesktopFile("Resources/Strings.en.xaml"));
+        string ReadValue(XDocument document, string key, string catalog)
+        {
+            var matches = document.Descendants().Where(node =>
+                string.Equals(node.Attribute(XName.Get("Key", "http://schemas.microsoft.com/winfx/2006/xaml"))?.Value,
+                    key, StringComparison.Ordinal)).ToArray();
+            Check(matches.Length == 1 && !string.IsNullOrWhiteSpace(matches[0].Value),
+                catalog + " must define exactly one non-empty resource " + key + ".");
+            return matches.Length == 1 ? matches[0].Value : string.Empty;
+        }
+
+        var englishValues = resourceKeys.ToDictionary(key => key, key => ReadValue(english, key, "Strings.en.xaml"), StringComparer.Ordinal);
+        var checkedLocales = 0;
+        foreach (var language in Localization.SupportedLanguages)
+        {
+            var path = FindDesktopFile("Resources/Strings." + language.Code + ".xaml");
+            var document = LoadSourceXml(path);
+            foreach (var key in resourceKeys)
+            {
+                var value = ReadValue(document, key, Path.GetFileName(path));
+                if (!string.Equals(language.Code, "en", StringComparison.OrdinalIgnoreCase))
+                    Check(!string.Equals(value, englishValues[key], StringComparison.Ordinal),
+                        Path.GetFileName(path) + " still uses the English fallback for " + key + ".");
+            }
+            checkedLocales++;
+        }
+        Check(checkedLocales == 13, "Navigation and connection labels must cover all 13 supported languages.");
+
+        var navigation = ReadSourceText(Desktop("Presentation/WorkbenchNavigationControl.xaml"));
+        Check(navigation.Contains("Text=\"{DynamicResource Ui.CycleAction}\"", StringComparison.Ordinal) &&
+              navigation.Contains("Binding ShowFavoritesOnly", StringComparison.Ordinal) &&
+              navigation.Contains("Setter Property=\"AutomationProperties.Name\" Value=\"{DynamicResource Ui.FavoritesOnly}\"", StringComparison.Ordinal) &&
+              navigation.Contains("Setter Property=\"AutomationProperties.HelpText\" Value=\"{DynamicResource Ui.FavoritesOnlyHelp}\"", StringComparison.Ordinal) &&
+              navigation.Contains("Setter Property=\"AutomationProperties.Name\" Value=\"{DynamicResource Ui.FavoritesOnlyActive}\"", StringComparison.Ordinal) &&
+              navigation.Contains("Setter Property=\"AutomationProperties.HelpText\" Value=\"{DynamicResource Ui.FavoritesOnlyActiveHelp}\"", StringComparison.Ordinal) &&
+              navigation.Contains("Setter Property=\"ToolTip\" Value=\"{DynamicResource Ui.FavoritesOnlyActiveHelp}\"", StringComparison.Ordinal) &&
+              navigation.Contains("Value=\"{DynamicResource Ui.FavoritesOnly}\"", StringComparison.Ordinal) &&
+              navigation.Contains("Value=\"{DynamicResource Ui.FavoritesOnlyActive}\"", StringComparison.Ordinal),
+            "Cycle and both favorites filter states and its tooltip must resolve through localized resources.");
+
+        var footer = ReadSourceText(Desktop("Presentation/WorkbenchFooterControl.xaml"));
+        var pingButton = footer.Split('<').SingleOrDefault(part => part.StartsWith("Button AutomationProperties.AutomationId=\"FooterPingButton\"", StringComparison.Ordinal));
+        Check(pingButton != null &&
+              pingButton.Contains("AutomationProperties.Name=\"{DynamicResource Ui.PingConnectionName}\"", StringComparison.Ordinal) &&
+              pingButton.Contains("AutomationProperties.HelpText=\"{DynamicResource Ui.PingConnectionHelp}\"", StringComparison.Ordinal) &&
+              pingButton.Contains("ToolTip=\"{DynamicResource Ui.PingConnectionHelp}\"", StringComparison.Ordinal) &&
+              pingButton.Contains("Command=\"{Binding PingConnectionCommand}\"", StringComparison.Ordinal) &&
+              pingButton.Contains("MinHeight=\"18\" Height=\"18\"", StringComparison.Ordinal),
+            "FooterPingButton must keep its AutomationId, command, and layout while exposing localized automation name and help.");
         return Task.CompletedTask;
     }
 
@@ -895,6 +955,8 @@ internal static class Program
         var requiredTranslations = new[]
         {
             "Ui.CopyCommandAccessibleName", "Ui.CopyCommandAccessibleNameFormat", "Ui.CopyCliAccessibleName",
+            "Ui.CycleAction", "Ui.FavoritesOnly", "Ui.FavoritesOnlyActive", "Ui.FavoritesOnlyHelp", "Ui.FavoritesOnlyActiveHelp",
+            "Ui.PingConnectionName", "Ui.PingConnectionHelp",
             "Ui.ClipboardCopyFailed", "Ui.ClipboardCopySucceeded", "Ui.ReportExported",
             "Ui.ReportExportFailed", "Ui.ReportExportCancelled", "Ui.ReportExportedShort", "Ui.HooksCancelUnconfirmed", "Viz.Audio.Title", "Viz.Memory.Title",
             "Viz.Audio.Equalizer", "Viz.Audio.Waveform", "Viz.Operation.Title", "Viz.Operation.ExecutionGuard",

@@ -214,3 +214,10 @@ In addition to root invariants, the repository maintains modular rules in `.agen
 
 ### Explicit follow-up push authorization
 A later user request to push supersedes an earlier no-push instruction for the completed objective. Deliver its scoped commits and requested guide corrections, then review the exact remote SHA and repair task-related CI failures under the same authorization. Do not request permission again or include unrelated concurrent work. Publication and force-push remain outside this authorization. See `.agents/rules/git_sync_workflow.md`.
+
+## Rev141 verified robustness contracts
+
+- Read IPC requests incrementally and enforce the 65,536 UTF-16 code-unit limit before JSON deserialization; preserve CR, LF, and CRLF framing, cancellation, and the 15-second incomplete-line timeout.
+- During `OnSubModuleUnloaded`, isolate and log each cleanup action so a failed close, cancellation, event removal, or disposal does not prevent later teardown steps. IPC disposal must also isolate cancellation callbacks per pending request, then complete and release every queued request. Reentrant `ForgeApi.Available` callbacks must stop delivery when their connection generation is superseded.
+- Periodic campaign selection fails closed when `CampaignTime.Now` cannot be read. WPF localizes the role-cycle hint and favorites label; the favorites toggle exposes state-specific localized accessibility names/help, and Ping exposes localized name/help. Preserve all 13 catalogs, existing AutomationIds, and commands.
+- WPF toggle controls must expose a localized accessibility name/help that follows their active state, not only a changed visual label. BAT fixtures verify the listed source contracts; they do not establish live Bannerlord or live WPF behavior.

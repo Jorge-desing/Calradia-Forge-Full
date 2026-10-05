@@ -1,5 +1,19 @@
 # Lista de cambios
 
+## Aclaración de accesibilidad y evidencia de Rev141 — 04-10-2026 (Registro Rev142)
+
+- Precisa que la pista de ciclo recibió texto localizado; el nombre/ayuda de UI Automation dependiente del estado se añadió al filtro de favoritos, mientras que Ping recibió nombre/ayuda localizados. Rev141 permanece inmutable.
+- Identifica la evidencia integrada final como `artifacts/rev141-full-suite-final4.txt` y `artifacts/desktop-render-rev141-final4.json`: Core 436/436, ForgeWeave 74/74, Desktop 75/75 y WPF con 296 casos/320 pases de layout. La consola BAT informa 25.994 ms y el JSON 25.997 ms totales; ambos son tiempos del arnés, no latencia de la app.
+- No cambiaron el comportamiento de fuente, versión del producto/API, contratos, dependencias, rutas, permisos ni frameworks objetivo. No se inició Bannerlord.
+
+## Correcciones de robustez de la suite — 04-10-2026 (Registro Rev141)
+
+- Se limitaron las lecturas named-pipe de forma incremental al máximo existente de 65.536 caracteres, con cancelación y vencimiento de 15 segundos para líneas incompletas, conservando los terminadores del protocolo UTF-8.
+- Se aislaron la descarga del módulo/runtime y la cancelación IPC por solicitud para que los errores de callbacks se registren sin impedir el resto del cierre; la planificación de campañas ahora falla cerrado si el reloj del motor no está disponible.
+- Se detuvieron las notificaciones legacy de disponibilidad del SDK cuando un callback invalida la generación conectada. Se localizaron las etiquetas WPF del ciclo/favoritos; el filtro de favoritos ahora anuncia su estado activo con nombre/ayuda accesibles localizados. Ping conserva su comando e ID con nombre/ayuda explícitos.
+- Suite BAT completa aprobada: compilación limpia (0 advertencias/errores), Core 436/436, ForgeWeave 74/74, Desktop 75/75 y render WPF con 296 casos/320 pases de layout. Stateless 4/4, auditoría estructural Gauntlet y UIA de solo lectura 23/23 aprobadas. El tiempo de render es solo del arnés; no se inició Bannerlord en vivo.
+- El producto permanece en 25.2.0 y Forge API en 13; no cambian los contratos públicos, esquema IPC, rutas, permisos, frameworks objetivo ni dependencias.
+
 ## Análisis de resumen unittest Python — 02-10-2026 (Registro Rev131)
 
 - La corrección CI Rev130 usaba una fixture sin la línea vacía que el `unittest` estándar de Python puede imprimir entre `Ran N tests` y `OK`. La revisión final detectó que la primera expresión regular aún omitía ese formato antes de confirmar la corrección.

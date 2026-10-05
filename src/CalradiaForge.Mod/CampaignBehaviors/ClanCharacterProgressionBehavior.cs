@@ -163,7 +163,9 @@ namespace CalradiaForge.Mod.CampaignBehaviors
         {
             if (string.IsNullOrEmpty(stringId)) return false;
             if (!IsCampaignActive) return true;
-            int currentHour = (int)CampaignTime.Now.ToHours;
+            int currentHour;
+            try { currentHour = (int)CampaignTime.Now.ToHours; }
+            catch { return false; }
             return CalradiaForge.Sdk.ForgeTimeSlicer.ShouldProcess(stringId, currentHour);
         }
 
